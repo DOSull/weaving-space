@@ -10,7 +10,7 @@ output:
     code_folding: hide
     downcute_theme: "chaos"
     embed_fonts: true
-    self_contained: true
+    self_contained: false
     toc_depth: 3
   # ioslides_presentation:
   #   incremental: true
