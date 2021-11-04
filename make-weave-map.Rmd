@@ -334,7 +334,7 @@ tm_shape(region, name = "Dose 2 uptake") +
   tm_basemap(server = "CartoDB.VoyagerNoLabels")
 ```
 
-[Online full screen version](https://dosull.github.io/tiling-space/example-map-1.html)
+[Online full screen version](https://dosull.github.io/weaving-space/example-map-1.html)
 
 ## Another example
 ```{r echo = FALSE, message = FALSE, warning = FALSE, results = FALSE}
@@ -381,6 +381,6 @@ There is lots to do (at least potentially!)
 # Acknowledgments
 
 + Thanks to co-conspirator Luke Bergmann (UBC)
-+ You'll find code at [github.com/DOSull/weaving-space](https://github.com/DOSull/tiling-space)
++ You'll find code at [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
 
 ## Questions?
