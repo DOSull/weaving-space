@@ -1,0 +1,8 @@
+.ipynb_checkpoints/
+__pycache__/
+*.zip
+.Rproj.user
+.Rhistory
+.RData
+other-data/
+code-junkyard/
