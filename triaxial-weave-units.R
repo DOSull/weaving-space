@@ -15,8 +15,7 @@ S3 <- sqrt(3)
 
 
 get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0, 
-                                    ids = "a|b|c", type = "hex", 
-                                    crs = 3857) {
+                                    ids = "a|b|c", type = "hex", crs = 3857) {
   
   pc <- get_primitive_cell(
     spacing = spacing, aspect = aspect, margin = margin,
@@ -34,9 +33,8 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
 
 # Delegates creation of the tileable unit to an appropriate function
 # based on the supplied type "hex", "diamond" or "cube".
-get_primitive_cell <- function(spacing, aspect, 
-                               margin, ids, type,
-                               square, n_twill, crs) {
+get_primitive_cell <- function(spacing = 500, aspect = 1, margin = 0, 
+                               ids = "a|b|c", type = "hex", crs = 3857) {
   # parse e.g. "a|bc|d" to list(c("a"), c("b", "c"), c("d"))
   labels <- ids %>% 
     parse_labels() %>%
@@ -77,10 +75,10 @@ get_rot_matrix <- function(angle) {
 #
 #      /    /
 #     /    / \
-#  __/____/___\___
+#  __/____/   \___
 #         \    \
 #  ________\    \_
-#      /    \    \
+#           \    \
 #
 # where the tileable shape is the 'points up' hexagon enclosing this
 # spacing, is the repeat width of the hexagon, aspect is the (normal) width
@@ -142,7 +140,7 @@ getHexPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
 #   \___\/   but rotated 90 degrees!
 # 
 # and which doesn't really read as a weave!
-getCubePrimitiveCell <- function(spacing = 300, margin = 0,
+getCubePrimitiveCell <- function(spacing = 500, margin = 0,
                                  labels_1 = letters[1:2], labels_2 = letters[3:4],
                                  labels_3 = letters[5:6], crs = 3857) {
   L <- spacing / S3
@@ -156,7 +154,7 @@ getCubePrimitiveCell <- function(spacing = 300, margin = 0,
     rot <- get_rot_matrix(angles[dir])
     n <- ns[dir]
     for (p in 1:n) {
-      p1 <- get_parallelogram(c(W / S3, -W) * (p - 1) / n, L, W / n, "UR")
+      p1 <- get_parallelogram(c(-W / S3, W) * (p - 1) / n, L, W / n, "UR")
       polys[[i]] <- p1 * rot
       i <- i + 1
     }

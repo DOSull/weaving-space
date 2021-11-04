@@ -249,7 +249,7 @@ hex_unit$primitive %>% plot(lwd = 0.01)
 
 A cube is another option, although this produces some odd 3D effects when tiled
 
-```{r}
+```{r warning = FALSE}
 cube_unit <-
   get_triaxial_weave_unit(spacing = 600, ids = "ab|cd|ef", margin = 5, 
                           type = "cube", crs = st_crs(region))
