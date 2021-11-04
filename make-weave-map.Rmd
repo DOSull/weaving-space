@@ -242,7 +242,7 @@ We can also make weaves with threads running in 3 directions. This example is ba
 
 ```{r warning = FALSE}
 hex_unit <- ## hex example
-  get_triaxial_weave_unit(width = 200, spacing = 600, margin = 2,
+  get_triaxial_weave_unit(spacing = 600, margin = 2,
                           ids = "a|b|cd", type = "hex", crs = st_crs(region))
 hex_unit$primitive %>% plot(lwd = 0.01)
 ```
@@ -251,7 +251,7 @@ A cube is another option, although this produces some odd 3D effects when tiled
 
 ```{r}
 cube_unit <-
-  get_triaxial_weave_unit(spacing = 500, ids = "ab|cd|ef", margin = 5, 
+  get_triaxial_weave_unit(spacing = 600, ids = "ab|cd|ef", margin = 5, 
                           type = "cube", crs = st_crs(region))
 cube_unit$primitive %>% plot(lwd = 0.01)
 ```
@@ -261,7 +261,7 @@ An alternative way to produce a triangular weave is with a diamond repeating uni
 
 ```{r warning = FALSE}
 diamond_unit <-   ## diamond example
-  get_triaxial_weave_unit(width = 200, spacing = 600, margin = 10,
+  get_triaxial_weave_unit(spacing = 600, margin = 10,
                           ids = "a|b|c", type = "diamond", crs = st_crs(region))
 diamond_unit$primitive %>% plot(lwd = 0.01)
 ```
@@ -343,9 +343,9 @@ welly.votes <- st_read("data/welly-sa2-votes-2020.gpkg")
 
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
 weave_maps <- list()
-widths <- c(250, 500, 750)
-for (i in 1:length(widths)) {
-  weave <- get_triaxial_weave_unit(width = widths[i], type = "hex", crs = st_crs(welly.votes)) %>%
+spacings <- c(500, 1000, 1500)
+for (i in 1:length(spacings)) {
+  weave <- get_triaxial_weave_unit(spacing = spacings[i], type = "hex", crs = st_crs(welly.votes)) %>%
     weave_layer(welly.votes, angle = 15) 
   weave_maps[[i]] <- 
     tm_shape(dplyr::filter(weave, id == "a"), name = "Labour") +
