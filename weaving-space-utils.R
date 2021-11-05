@@ -24,14 +24,27 @@ get_base_rect <- function(L, W, orientation = "horizontal") {
   }
 }
 
+# translates and returns the supplied sf shapes by the offsets dx and dy
 sf_translate <- function(shapes, dx = 0, dy = 0) {
   return(shapes %>% sf_transform(wk_affine_translate(dx, dy)))
 }
 
+# rotates the supplied sf shapes by the specified angle in degrees, around
+# the specified centre coordinates
 sf_rotate <- function(shapes, angle, cx = 0, cy = 0) {
   return(shapes %>% sf_transform(affine_rotn_around_xy(angle, cx, cy)))
 }
 
+# affine transforms the supplied sf shapes such that the diamond
+#
+#      0.5,S3/2
+#      /\
+# 0,0 /  \1,0
+#     \  /
+#      \/
+#      0.5,S3/2
+#
+# is transformed to the unit square 0,0 1,0 1,1 0,1
 sf_diamond_to_square <- function(shapes) {
   return(shapes %>% sf_transform(
     wk_affine_invert(
@@ -40,11 +53,14 @@ sf_diamond_to_square <- function(shapes) {
   ))
 }
 
+# affine transforms the supplied sf shapes such that the unit square
+# becomes the diamond shape (see previous)
 sf_square_to_diamond <- function(shapes) {
   return(shapes %>% sf_transform(
     affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2)))
 }
 
+# returns coordinates of the centroid of the bounding box of the supplied sf shapes
 sf_get_centroid <- function(shapes) {
   return(shapes %>%
            st_bbox() %>%
@@ -66,11 +82,14 @@ geoms_transform <- function(geoms, transform) {
   )
 }
 
+# wrapper function to transform the suppied sf by the provide wk transform
 sf_transform <- function(shapes, transform) {
   st_geometry(shapes) <- geoms_transform(st_geometry(shapes), transform)
   return(shapes)
 }
 
+# returns the wk affine transform for the rotation by angle (in degrees)
+# around centre of rotation cx, cy
 affine_rotn_around_xy <- function(angle, cx, cy) {
   return(wk_affine_compose(
     wk_affine_translate(-cx, -cy),
@@ -79,6 +98,8 @@ affine_rotn_around_xy <- function(angle, cx, cy) {
   ))
 }
 
+# returns the wk affine transform that will transform the unit square
+# basis vectors 0,1 and 1,0 to a,b and c,d, while preserving area
 affine_abcd <- function(a, b, c, d) {
   areaScale = abs(a * d - b * c)
   return(wk_affine_compose(
@@ -87,7 +108,8 @@ affine_abcd <- function(a, b, c, d) {
   ))
 }
 
-
+# parses an ids string "ab|c|de" (for example) by splitting at '|'s
+# i.e. to c("ab", "c", "de")
 parse_labels <- function(ids) {
   lbls <- strsplit(ids, "|", fixed = TRUE)
   labels_1 <- lbls[[1]][1] 
@@ -104,6 +126,7 @@ parse_labels <- function(ids) {
   return(c(labels_1, labels_2, labels_3))
 }
 
+# converts a string to a vector of characters
 string_to_chars <- function(s) {
   return(substring(s, 1:nchar(s), 1:nchar(s)))
 }

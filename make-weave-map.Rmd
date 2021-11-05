@@ -177,7 +177,7 @@ The simplest case is a plain weave.
 rect11_unit <-   ## plain weave example
   get_biaxial_weave_unit(spacing = 300, type = "plain",
                     ids = "a|b", crs = st_crs(region))
-rect11_unit$primitive %>% plot(lwd = 0.01)
+rect11_unit$primitive %>% plot(border = "white")
 ```
 
 This could be useful if clearly distinct palettes were used in the warp and weft elements. More useful is if we change the aspect to the warp and weft elements so we can distinguish directions.
@@ -186,7 +186,7 @@ This could be useful if clearly distinct palettes were used in the warp and weft
 rect11_unit <-   ## plain weave example
   get_biaxial_weave_unit(spacing = 300, aspect = 0.8,
                     ids = "ab|cd", crs = st_crs(region))
-rect11_unit$primitive %>% plot(lwd = 0.01)
+rect11_unit$primitive %>% plot(border = "white")
 ```
 
 ### More threads
@@ -196,7 +196,7 @@ This is highly customisable
 rect32_unit <-
   get_biaxial_weave_unit(spacing = 150, aspect = sqrt(0.5), 
                     ids = "abc|de", crs = st_crs(region))
-rect32_unit$primitive %>% plot(lwd = 0.01)
+rect32_unit$primitive %>% plot(border = "white")
 ```
 
 ### Missing threads
@@ -206,7 +206,7 @@ We can even leave gaps or duplicate threads
 rect34_unit <-   ## plain weave example
   get_biaxial_weave_unit(spacing = 300, aspect = 0.8,
                     ids = "ab-|cc-d", crs = st_crs(region))
-rect34_unit$primitive %>% plot(lwd = 0.01)
+rect34_unit$primitive %>% plot(border = "white")
 ```
 
 ### Twill weaves and basket weaves
@@ -214,16 +214,16 @@ There are near infinite possibilities here...
 
 ```{r warning = FALSE}
 twill_unit <- 
-  get_biaxial_weave_unit(spacing = 200, type = "twill", n = 2, 
+  get_biaxial_weave_unit(spacing = 200, type = "twill", n = c(2, 2), 
                          aspect = 0.6, ids = "ab|cd", crs = st_crs(region))
-twill_unit$primitive %>% plot(lwd = 0.01)
+twill_unit$primitive %>% plot(border = "white")
 ```
 
 ```{r warning = FALSE}
 basket_unit <- 
   get_biaxial_weave_unit(spacing = 200, type = "basket", n = 2, 
-                         aspect = 0.8, ids = "ab|cd", crs = st_crs(region))
-basket_unit$primitive %>% plot(lwd = 0.01)
+                         aspect = 0.6, ids = "ab|cd", crs = st_crs(region))
+basket_unit$primitive %>% plot(border = "white")
 ```
 
 ### Other weaves
@@ -233,7 +233,7 @@ And here is another example (this makes use of the capability to generate any we
 this_unit <- 
   get_biaxial_weave_unit(spacing = 200, type = "this", aspect = 0.8,
                         ids = "a|b", crs = st_crs(region))
-this_unit$primitive %>% plot(lwd = 0.01)
+this_unit$primitive %>% plot(border = "white")
 ```
 
 ## Triaxial weaves
@@ -244,7 +244,7 @@ We can also make weaves with threads running in 3 directions. This example is ba
 hex_unit <- ## hex example
   get_triaxial_weave_unit(spacing = 600, margin = 2,
                           ids = "a|b|cd", type = "hex", crs = st_crs(region))
-hex_unit$primitive %>% plot(lwd = 0.01)
+hex_unit$primitive %>% plot(border = "white")
 ```
 
 A cube is another option, although this produces some odd 3D effects when tiled
@@ -253,7 +253,7 @@ A cube is another option, although this produces some odd 3D effects when tiled
 cube_unit <-
   get_triaxial_weave_unit(spacing = 600, ids = "ab|cd|ef", margin = 5, 
                           type = "cube", crs = st_crs(region))
-cube_unit$primitive %>% plot(lwd = 0.01)
+cube_unit$primitive %>% plot(border = "white")
 ```
 
 ### Diamond
@@ -263,7 +263,7 @@ An alternative way to produce a triangular weave is with a diamond repeating uni
 diamond_unit <-   ## diamond example
   get_triaxial_weave_unit(spacing = 600, margin = 10,
                           ids = "a|b|c", type = "diamond", crs = st_crs(region))
-diamond_unit$primitive %>% plot(lwd = 0.01)
+diamond_unit$primitive %>% plot(border = "white")
 ```
 
 ### Tiling diamond units and transforming weaves
@@ -284,7 +284,7 @@ region[, 2] %>% sf_diamond_to_square() %>% tm_shape() + tm_polygons()
 then tile it with any weave unit, and transform back to the original map coordinates. This allows us to (say) take the twill tile above and apply it in this form:
 
 ```{r}
-twill_unit$primitive %>% sf_square_to_diamond() %>% plot(lwd = 0.01)
+twill_unit$primitive %>% sf_square_to_diamond() %>% plot(border = "white")
 ```
 
 
@@ -373,14 +373,15 @@ There is lots to do (at least potentially!)
 
 + Clarify the API for the tools to make their usage clearer
 + Figure out how to make legends...
-+ Develop guidelines for what works
-+ How does colour work in this setting (how many, what combinations?)
++ Develop guidelines for what works (and what doesn't)
++ Figure out how colour work in this setting (how many, what combinations?)
 + Explore what symbolisations work (continuous, classified, categorical?)
 + Understand better how orientation operates
++ Consider the use of 'gaps' in a weave pattern
 
 # Acknowledgments
 
-+ Thanks to co-conspirator Luke Bergmann (UBC)
++ Thanks to co-conspirator [Luke Bergmann (UBC)](https://geog.ubc.ca/profile/luke-bergmann/)
 + You'll find code at [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
 
 ## Questions?

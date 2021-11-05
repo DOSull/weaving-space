@@ -157,15 +157,34 @@ make_plain_pattern <- function(warp_n = 1, weft_n = 1) {
 # twill weave with n the number of over-unders
 # note this is used with n = 1 to make plain weaves
 make_twill_pattern <- function(n = 2, warp_n = 2, weft_n = 2) {
-  tie_up <- make_twill_matrix(n)
+  ou <- n
+  if (length(ou) == 1) {
+    ou <- rep(n, 2)
+  }
+  nr <- Lcm(sum(ou), weft_n)
+  nc <- Lcm(sum(ou), warp_n)
+  tie_up <- make_twill_matrix(ou, nr, nc)
   threading <- diag(nrow(tie_up)) 
   treadling <- diag(ncol(tie_up)) 
   return(get_pattern(tie_up, treadling, threading, warp_n, weft_n))
 }
 
-# retunrs a vector of n 1s followed by n 0s
-make_overunder_row <- function(n) {
-  return(c(rep(1, n), rep(0, n)))
+
+# returns a vector of runs of 1s and 0s 
+# per the supplied vector. If n is a single
+# value it is converted to c(n, n)
+make_over_under_row <- function(n) {
+  ou <- n
+  if (length(n) == 1) {
+    ou <- rep(n, 2)
+  }
+  x <- 1
+  row <- c()
+  for (y in ou) {
+    row <- c(row, rep(x, y))
+    x <- 1 - x
+  }
+  return(row)
 }
 
 # wraps a vector
@@ -181,11 +200,16 @@ wrap_row <- function(by, r) {
 # 0 0 1 1
 # 1 0 0 1
 # where the repeat runs in each row are length n
-make_twill_matrix <- function(n) {
-  return(0:(2 * n - 1) %>% 
-           sapply(wrap_row, r = make_overunder_row(n))
-  )
+make_twill_matrix <- function(over_under, nr, nc) {
+  row <- make_over_under_row(over_under)
+  out <- row
+  for (by in 2:nr) {
+    row <- wrap_row(1, row)
+    out <- c(out, row)
+  }
+  return(matrix(out, nr, nc, byrow = TRUE))
 }
+
 
 make_basket_pattern <- function(n = 2, warp_n = 2, weft_n = 2) {
   tie_up <- make_basket_matrix(n)
@@ -203,8 +227,8 @@ make_basket_pattern <- function(n = 2, warp_n = 2, weft_n = 2) {
 make_basket_matrix <- function(n) {
   return(
     matrix(
-      c(rep(make_overunder_row(n), n), 
-        rep(rev(make_overunder_row(n)), n)), n * 2, n * 2))
+      c(rep(make_over_under_row(n), n), 
+        rep(rev(make_over_under_row(n)), n)), n * 2, n * 2))
 }
 
 
@@ -317,16 +341,18 @@ make_polygons_from_matrix <- function(ww, spacing, aspect, margin,
 
 get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, 
                                    margin = 0, type = "plain", 
-                                   n = 2, # used by twill
+                                   n = c(2, 2), # used by twill
                                    ids = "ab|cd", crs = 3857) {
   
   parsed_labels = ids %>% parse_labels() %>% lapply(string_to_chars)
   warp_threads = parsed_labels[[1]]
   weft_threads = parsed_labels[[2]]
   
-  cell <- get_weave_pattern_matrix(
-      type = type, n = ifelse(type %in% c("twill", "basket"), n, 1),
-      warp_threads, weft_threads) %>%
+  if (type == "basket") {
+    n = n[1]
+  }
+  cell <- get_weave_pattern_matrix(type = type, n = n, 
+                                   warp_threads, weft_threads) %>%
     make_polygons_from_matrix(
       spacing = spacing, margin = margin, aspect = aspect,
       warp_threads, weft_threads, crs = crs)
