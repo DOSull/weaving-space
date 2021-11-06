@@ -1,5 +1,3 @@
-# 
-
 require(pracma)
 require(abind)
 require(tidyr)
@@ -7,22 +5,27 @@ require(dplyr)
 require(sf)
 require(wk)
 
-# Functions that can be used to generate sf data 'weave units' i.e. a tileable
-# repeating element that when tiled gives the appearance of a biaxial woven
-# surface composed of criss-crossing rectangular elements. Implementation is 
-# based on ideas discussed in variously
+# Functions that can be used to generate sf data 'weave units' i.e. a 
+# tileable repeating element that when tiled gives the appearance of a 
+# biaxial woven surface composed of criss-crossing rectangular
+# elements. Implementation is based on ideas discussed in variously
 #
-#
-# Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 22 (6):108–118.
-# ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 23 (2):80–83.
-# ———. 2003b. Digital weaving.2. IEEE Computer Graphics and Applications 23 (1):77–90.
+# Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and 
+#    Applications 22 (6):108–118.
+# ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and 
+#    Applications 23 (2):80–83.
+# ———. 2003b. Digital weaving. 2. IEEE Computer Graphics and 
+#    Applications 23 (1):77–90.
 #
 # and (unpublished)
 # 
-# Griswold, R. 2006. Mathematical and Computational Topics in Weaving. https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf (last accessed 29 October 2021).
+# Griswold, R. 2006. Mathematical and Computational Topics in Weaving. 
+# www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf 
+# (last accessed 29 October 2021).
 #
-# where weaving is shown to be essentially a matrix multiplication of tie-up, 
-# threading and treadling matrices. An accessible introduction can be found at
+# where weaving is shown to be essentially a matrix multiplication of 
+# tie-up, threading and treadling matrices. An accessible introduction 
+# can be found at
 #
 # https://www.youtube.com/watch?v=oMOSiag3dxg
 #
@@ -57,7 +60,8 @@ get_weave_pattern_matrix <- function (type = "plain", n = 2,
 
     "plain" = make_plain_pattern(warp_n = width, weft_n = height),
 
-    "twill" = make_twill_pattern(n = n, warp_n = width, weft_n = height),
+    "twill" = make_twill_pattern(n = n, 
+                                 warp_n = width, weft_n = height),
     
     "basket" = make_basket_pattern(n = n, 
                                    warp_n = width, weft_n = height),
@@ -91,15 +95,17 @@ reps_needed <- function(n, m) {
 }
 
 # given tie up treadling and threading matrix returns 
-# a 1/2 warp/weft matrix
+# a 1/2 pattern matrix
 get_pattern <- function(tie_up, treadling, threading, warp_n, weft_n) {
-  rep_warp <- reps_needed(weft_n, nrow(tie_up)) # repeat to match weft
-  rep_weft <- reps_needed(warp_n, ncol(tie_up)) # repeat to match warp
+  rep_weft <- reps_needed(weft_n, nrow(tie_up)) # repeat to match weft
+  rep_warp <- reps_needed(warp_n, ncol(tie_up)) # repeat to match warp
   return(
-    (((repmat(threading, n = rep_warp, m = 1)) %*%
-        tie_up %*% 
-        (repmat(treadling, n = 1, m = rep_weft))) > 0) + 1)
+    (((repmat(treadling, n = rep_weft, m = 1)) %*%
+        tie_up %*%     
+        (repmat(threading, n = 1, m = rep_warp))) > 0) + 1)
 }
+
+
 
 # given warp weft pattern and column and row matrices, handles 
 # missing threads
@@ -148,9 +154,8 @@ make_twill_pattern <- function(n = 2, warp_n = 2, weft_n = 2) {
   if (length(ou) == 1) {
     ou <- rep(n, 2)
   }
-  nr <- Lcm(sum(ou), weft_n)
-  nc <- Lcm(sum(ou), warp_n)
-  tie_up <- make_twill_matrix(ou, nr, nc)
+  dimension <- sum(ou)
+  tie_up <- make_twill_matrix(ou, dimension)
   threading <- diag(nrow(tie_up)) 
   treadling <- diag(ncol(tie_up)) 
   return(get_pattern(tie_up, treadling, threading, warp_n, weft_n))
@@ -187,14 +192,14 @@ wrap_row <- function(by, r) {
 # 0 0 1 1
 # 1 0 0 1
 # where the repeat runs in each row are length n
-make_twill_matrix <- function(over_under, nr, nc) {
+make_twill_matrix <- function(over_under, d) {
   row <- make_over_under_row(over_under)
   out <- row
-  for (by in 2:nr) {
+  for (by in 2:d) {
     row <- wrap_row(1, row)
     out <- c(out, row)
   }
-  return(matrix(out, nr, nc, byrow = TRUE))
+  return(matrix(out, d, d, byrow = TRUE))
 }
 
 
@@ -220,7 +225,8 @@ make_basket_matrix <- function(n) {
 
 
 # stuff it let's see what happens!
-make_this_pattern <- function(tie_up = this_tu, th = this_th, tr = this_tr,
+make_this_pattern <- function(tie_up = this_tu, 
+                              th = this_th, tr = this_tr,
                               warp_n = 2, weft_n = 2) {
   rep_warp <- reps_needed(weft_n, nrow(tie_up))
   threading <- th %>% 
@@ -236,12 +242,13 @@ make_this_pattern <- function(tie_up = this_tu, th = this_th, tr = this_tr,
 # This function makes a random pattern (as a matrix of values) 
 # with the number of different warp and weft threads specfied by
 # warp and weft. Default values will make a 2 x 2 repeating unit. 
-make_random_pattern <- function(warp_n = 1, weft_n = 1) {
-  dimension <- Lcm(warp_n * 2, weft_n * 2)
-  tie_up <- matrix(sample(0:1, dimension ^ 2, replace = TRUE), 
-                   dimension, dimension)
-  treadling <- make_matrix_from_seq(sample(1:dimension, dimension))
-  threading <- make_matrix_from_seq(sample(1:dimension, dimension))
+make_random_pattern <- function(n = 4, warp_n = 1, weft_n = 1) {
+  width <- Lcm(n, warp_n)
+  height <- Lcm(n, weft_n)
+  tie_up <- matrix(sample(0:1, width * height, replace = TRUE), 
+                   height, width)
+  treadling <- make_matrix_from_seq(sample(1:height, width))
+  threading <- make_matrix_from_seq(sample(1:width, height))
   return(
     get_pattern(tie_up, treadling, threading, warp_n, weft_n)
   )
@@ -333,10 +340,19 @@ make_polygons_from_matrix <- function(ww, spacing, aspect, margin,
 
 
 # hard-coded defaults for the arbitrary weave
-this_tu <- matrix(c(0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0), 4, 3)
-this_th <- matrix(c(0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 
-                    0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0), 6, 4)
-this_tr <- matrix(c(0, 0, 1, 0, 1, 0, 1, 0, 0), 3, 3)
+this_tr <- matrix(c(1, 0, 0, 0,
+                    0, 1, 0, 0, 
+                    0, 0, 1, 0,
+                    0, 0, 0, 1,
+                    0, 0, 1, 0,
+                    0, 1, 0, 0), 6, 4, byrow = TRUE)
+this_tu <- matrix(c(0, 0, 1, 
+                    0, 1, 0,
+                    1, 1, 0, 
+                    1, 0, 0), 4, 3, byrow = TRUE)
+this_th <- matrix(c(0, 0, 1,
+                    0, 1, 0, 
+                    1, 0, 0), 3, 3, byrow = TRUE)
 
 get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, 
                                    margin = 0, type = "plain", 
@@ -354,7 +370,8 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1,
   }
   cell <- get_weave_pattern_matrix(type = type, n = n, 
                                    warp_threads, weft_threads, 
-                                   tie_up = tie_up, tr = tr, th = th) %>%
+                                   tie_up = tie_up, 
+                                   tr = tr, th = th) %>%
     make_polygons_from_matrix(
       spacing = spacing, margin = margin, aspect = aspect,
       warp_threads, weft_threads, crs = crs)
