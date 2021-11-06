@@ -40,7 +40,9 @@ require(wk)
 #              and "-" indicates that a thread should be skipped
 get_weave_pattern_matrix <- function (type = "plain", n = 2, 
                                       warp = letters[1:2], 
-                                      weft = letters[3:4]) {
+                                      weft = letters[3:4], 
+                                      tie_up = this_tu,
+                                      th = this_th, tr = this_tr) {
   # make a sequence of ints from the warp/weft, 
   # substituting -1 for any "-"
   idxs <- 1:(length(c(warp, weft)))
@@ -51,8 +53,8 @@ get_weave_pattern_matrix <- function (type = "plain", n = 2,
   height <- length(weft)
   p <- switch(
     type,
-    # "random" = make_random_pattern(warp = width, weft = height),
-    # 
+    "random" = make_random_pattern(warp = width, weft = height),
+
     "plain" = make_plain_pattern(warp_n = width, weft_n = height),
 
     "twill" = make_twill_pattern(n = n, warp_n = width, weft_n = height),
@@ -60,7 +62,8 @@ get_weave_pattern_matrix <- function (type = "plain", n = 2,
     "basket" = make_basket_pattern(n = n, 
                                    warp_n = width, weft_n = height),
     
-    "this" = make_this_pattern(warp_n = width, weft_n = height)
+    "this" = make_this_pattern(tie_up = tie_up, th = th, tr = tr, 
+                               warp_n = width, weft_n = height)
   )
   nc <- ncol(p)
   nr <- nrow(p)
@@ -132,22 +135,6 @@ assign_indexes <- function(pattern, warp, weft) {
            matrix(nr, nc))
 }
 
-
-# This function makes a random pattern (as a matrix of values) 
-# with the number of different warp and weft threads specfied by
-# warp and weft. Default values will make a 2 x 2 repeating unit. 
-make_random_pattern <- function(warp_n = 1, weft_n = 1) {
-  dimension <- Lcm(2 * warp_n, 2 * weft_n)
-  tie_up <- matrix(sample(0:1, dimension ^ 2, replace = TRUE), 
-                   dimension, dimension)
-  treadling <- make_matrix_from_seq(dimension, 
-                                    sample(1:dimension, dimension))
-  threading <- make_matrix_from_seq(dimension, 
-                                    sample(1:dimension, dimension))
-  return(
-    get_pattern(tie_up, treadling, threading, warp_n, weft_n)
-  )
-}
 
 # simple over-under weave
 make_plain_pattern <- function(warp_n = 1, weft_n = 1) {
@@ -233,26 +220,31 @@ make_basket_matrix <- function(n) {
 
 
 # stuff it let's see what happens!
-make_this_pattern <- function(warp_n = 2, weft_n = 2) {
-  tie_up <- matrix(c(0, 0, 1, 
-                     0, 1, 0,
-                     1, 1, 0, 
-                     1, 0, 0), 4, 3)
-  
+make_this_pattern <- function(tie_up = this_tu, th = this_th, tr = this_tr,
+                              warp_n = 2, weft_n = 2) {
   rep_warp <- reps_needed(weft_n, nrow(tie_up))
-  threading <- matrix(c(0, 0, 0, 0, 0, 1, 
-                        1, 0, 0, 0, 1, 0, 
-                        0, 1, 0, 1, 0, 0,
-                        0, 0, 1, 0, 0, 0), 6, 4) %>% 
+  threading <- th %>% 
     repmat(n = rep_warp, m = 1) 
   
   rep_weft <- reps_needed(warp_n, ncol(tie_up))
-  treadling <- matrix(c(0, 0, 1,
-                        0, 1, 0,
-                        1, 0, 0), 3, 3) %>%
+  treadling <- tr %>%
     repmat(n = 1, m = rep_weft)
   
   return(get_pattern(tie_up, treadling, threading, warp_n, weft_n))
+}
+
+# This function makes a random pattern (as a matrix of values) 
+# with the number of different warp and weft threads specfied by
+# warp and weft. Default values will make a 2 x 2 repeating unit. 
+make_random_pattern <- function(warp_n = 1, weft_n = 1) {
+  dimension <- Lcm(warp_n * 2, weft_n * 2)
+  tie_up <- matrix(sample(0:1, dimension ^ 2, replace = TRUE), 
+                   dimension, dimension)
+  treadling <- make_matrix_from_seq(sample(1:dimension, dimension))
+  threading <- make_matrix_from_seq(sample(1:dimension, dimension))
+  return(
+    get_pattern(tie_up, treadling, threading, warp_n, weft_n)
+  )
 }
 
 zeros_with_a_one <- function(idx, n) {
@@ -261,8 +253,9 @@ zeros_with_a_one <- function(idx, n) {
   return(z)
 }
 
-make_matrix_from_seq <- function(ncols, row_picks) {
+make_matrix_from_seq <- function(row_picks) {
   nrows <- max(row_picks)
+  ncols <- length(row_picks)
   values <- sapply(row_picks, zeros_with_a_one, n = nrows)
   return(matrix(values, nrows, ncols))
 }
@@ -339,10 +332,18 @@ make_polygons_from_matrix <- function(ww, spacing, aspect, margin,
 
 
 
+# hard-coded defaults for the arbitrary weave
+this_tu <- matrix(c(0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0), 4, 3)
+this_th <- matrix(c(0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 
+                    0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0), 6, 4)
+this_tr <- matrix(c(0, 0, 1, 0, 1, 0, 1, 0, 0), 3, 3)
+
 get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, 
                                    margin = 0, type = "plain", 
                                    n = c(2, 2), # used by twill
-                                   ids = "ab|cd", crs = 3857) {
+                                   ids = "ab|cd", crs = 3857,
+                                   tie_up = this_tu, 
+                                   tr = this_tr, th = this_th) {
   
   parsed_labels = ids %>% parse_labels() %>% lapply(string_to_chars)
   warp_threads = parsed_labels[[1]]
@@ -352,7 +353,8 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1,
     n = n[1]
   }
   cell <- get_weave_pattern_matrix(type = type, n = n, 
-                                   warp_threads, weft_threads) %>%
+                                   warp_threads, weft_threads, 
+                                   tie_up = tie_up, tr = tr, th = th) %>%
     make_polygons_from_matrix(
       spacing = spacing, margin = margin, aspect = aspect,
       warp_threads, weft_threads, crs = crs)
