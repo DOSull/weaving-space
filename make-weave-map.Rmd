@@ -383,4 +383,15 @@ There is lots to do (at least potentially!)
 + Thanks to co-conspirator [Luke Bergmann (UBC)](https://geog.ubc.ca/profile/luke-bergmann/)
 + You'll find code at [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
 
+## References
+Glassner, A. 2002. [Digital Weaving 1](https://dx.doi.org/10.1109/MCG.2002.1046635). IEEE Computer Graphics and Applications 22 (6):108–118.
+
+———. 2003a. [Digital Weaving 2](https://dx.doi.org/10.1109/MCG.2003.1159616). IEEE Computer Graphics and Applications 23 (1):77–90.
+
+———. 2003b. [Digital Weaving 3](https://dx.doi.org/10.1109/MCG.2003.1185583). IEEE Computer Graphics and Applications 23 (2):80–83.
+
+Griswold, R. 2006 (unpublished manuscript). [Mathematical and Computational Topics in Weaving](https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf) (last accessed 29 October 2021).
+
+And this video provided a nice way in to the topic for us: ["It's Just Matrix Multiplication": Notation for Weaving](https://www.youtube.com/watch?v=oMOSiag3dxg) by Lea Albaugh, presented at the Strange Loop conference, St Louis, 27-28 Sept, 2018. 
+
 ## Questions?
