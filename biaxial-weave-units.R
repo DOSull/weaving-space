@@ -87,22 +87,33 @@ augment <- function(mat, x = 1) {
   return(result[1:(rc[1] + x), 1:(rc[2] + x)])
 }
 
-# returns number of repetitions of vector 
-# length m needed to match some number of 
-# repetitions of vector of length n
-reps_needed <- function(n, m) {
-  return(Lcm(n, m) / m)
+# returns the lowest common multiple of v1 and v2 divided by each 
+# used to determine how many repetitions of v1 and v2 required to 
+# make matched length vectors
+# Returns a vector with item 1 being the required repeats of v1 
+# and item 2 the required repeats of v2
+reps_needed <- function(v1, v2) {
+  n <- Lcm(v1, v2)
+  return(c(n / v1, n / v2))
 }
 
-# given tie up treadling and threading matrix returns 
-# a 1/2 pattern matrix
-get_pattern <- function(tie_up, treadling, threading, warp_n, weft_n) {
-  rep_weft <- reps_needed(weft_n, nrow(tie_up)) # repeat to match weft
-  rep_warp <- reps_needed(warp_n, ncol(tie_up)) # repeat to match warp
-  return(
-    (((repmat(treadling, n = rep_weft, m = 1)) %*%
-        tie_up %*%     
-        (repmat(threading, n = 1, m = rep_warp))) > 0) + 1)
+# Returns a 1/2 encoded weave matrix given tie_up, treadling and 
+# threading matrices. The following conditions must be satisfied to
+# avoid non-conformable matrix error:
+# ncol(treadling) == nrow(tie_up)
+# ncol(tie_ip) == nrow(threading)
+# The "twill", "random", "basket" and "plain" options should guarantee
+# this, but the "this" option requires the user to make this happen
+# If the warp_n and weft_n values are not factors of nrow(treadling) and 
+# ncol(threading) respectively, the output matrix will be repeated as
+# needed to make this match
+get_pattern <- function(tie_up, treadling, threading, 
+                        warp_n, weft_n, rep = 1) {
+  pat <- ((treadling %*% tie_up %*% threading) > 0) + 1
+  # now determine repetitions needed to match warp_n and weft_n
+  rep_warp <- reps_needed(warp_n, ncol(pat))
+  rep_weft <- reps_needed(weft_n, nrow(pat))
+  return(repmat(pat, n = rep_weft[2] * rep, m = rep_warp[2] * rep))
 }
 
 
@@ -154,20 +165,22 @@ make_twill_pattern <- function(n = 2, warp_n = 2, weft_n = 2) {
   if (length(ou) == 1) {
     ou <- rep(n, 2)
   }
-  dimension <- sum(ou)
-  tie_up <- make_twill_matrix(ou, dimension)
+  tie_up <- make_twill_matrix(ou)
   threading <- diag(nrow(tie_up)) 
   treadling <- diag(ncol(tie_up)) 
   return(get_pattern(tie_up, treadling, threading, warp_n, weft_n))
 }
 
 
-# returns a vector of runs of 1s and 0s 
-# per the supplied vector. If n is a single
-# value it is converted to c(n, n)
+# returns a vector of runs of 1s and 0s per the supplied vector. 
+# If the length of n is odd then it is doubled to produce an even
+# length over-under sequence that repeats. If we don't do this then, 
+# e.g, 1:3 becomes 100111 which repeated is 1001111001111, i.e. a 2-4
+# over-under pattern. Doubling it makes 100111011000 which has the 
+# requested pattern
 make_over_under_row <- function(n) {
   ou <- n
-  if (length(n) == 1) {
+  if (length(n) %% 2 != 0) {
     ou <- rep(n, 2)
   }
   x <- 1
@@ -192,10 +205,11 @@ wrap_row <- function(by, r) {
 # 0 0 1 1
 # 1 0 0 1
 # where the repeat runs in each row are length n
-make_twill_matrix <- function(over_under, d) {
+make_twill_matrix <- function(over_under) {
   row <- make_over_under_row(over_under)
+  d <- length(row)
   out <- row
-  for (by in 2:d) {
+  for (i in 2:d) {
     row <- wrap_row(1, row)
     out <- c(out, row)
   }
@@ -224,18 +238,14 @@ make_basket_matrix <- function(n) {
 }
 
 
-# stuff it let's see what happens!
+# this is just a pass through function
+# could try to enforce ncol(treadling) == nrow(tie_up) and
+# ncol(tie_up) == nrow(threading) 
+# but unsure what would be an appropriate way to do this...
 make_this_pattern <- function(tie_up = this_tu, 
-                              th = this_th, tr = this_tr,
+                              threading = this_th, 
+                              treadling = this_tr,
                               warp_n = 2, weft_n = 2) {
-  rep_warp <- reps_needed(weft_n, nrow(tie_up))
-  threading <- th %>% 
-    repmat(n = rep_warp, m = 1) 
-  
-  rep_weft <- reps_needed(warp_n, ncol(tie_up))
-  treadling <- tr %>%
-    repmat(n = 1, m = rep_weft)
-  
   return(get_pattern(tie_up, treadling, threading, warp_n, weft_n))
 }
 
@@ -384,3 +394,21 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1,
     )
   )
 }
+
+
+############ TRY THESE!
+# the below options make the pattern give or take an offset in the colours)
+# from Figure 22 of Glassner 2002
+# type <- "this"
+this_tu <- matrix(c(0,0,0,0,1,1,1,1,
+                    0,0,0,1,0,1,1,1,
+                    0,0,1,0,1,0,1,1,
+                    0,1,0,1,0,1,0,1,
+                    1,0,1,0,1,0,1,0,
+                    1,1,0,1,0,1,0,0,
+                    1,1,1,0,1,0,0,0,
+                    1,1,1,1,0,0,0,0), 8, 8, byrow = TRUE)
+this_tr <- diag(8)
+this_th <- diag(8)
+ids <- "aaaaaaaabbbbbbbb|aaaaaaaacccccccc"
+

@@ -142,8 +142,7 @@ This example made using `tmap` and data preparation code from [James Smythe's cu
 # Our idea
 A weave pattern where each 'thread' or 'ribbon' (the warp and weft) represents a different attribute that can be independently symbolised
 
-![from Chaves LF, MD Friberg, LA Hurtado, R Marín Rodríguez, D O’Sullivan, and LR Bergmann. 2021 (online first). [Trade, uneven development and people in motion: Used territories and the initial spread of COVID-19 in Mesoamerica and the Caribbean](https://dx.doi.org/10.1016/j.seps.2021.101161). _Socio-Economic Planning Sciences_.
-](images/chaves-et-al-2021-example.jpg)
+![from Chaves LF, MD Friberg, LA Hurtado, R Marín Rodríguez, D O’Sullivan, and LR Bergmann. 2021 (online first). [Trade, uneven development and people in motion: Used territories and the initial spread of COVID-19 in Mesoamerica and the Caribbean](https://dx.doi.org/10.1016/j.seps.2021.101161). _Socio-Economic Planning Sciences_.](images/chaves-et-al-2021-example.jpg)
 
 This was done with SVG symbol fills in QGIS, and was (very!) fiddly to produce
 
@@ -227,12 +226,12 @@ basket_unit$primitive %>% plot(border = NA)
 ```
 
 ### Other weaves
-And here is another example (this makes use of the capability to generate any weavable repeat pattern, but the pattern is hardcoded for now...)
+We can generate any weavable repeat pattern, even crazy ones!
 
 ```{r warning = FALSE}
 this_unit <- 
-  get_biaxial_weave_unit(spacing = 200, type = "this", aspect = 0.8,
-                        ids = "a|b", crs = st_crs(region))
+  get_biaxial_weave_unit(spacing = 200, type = "this", ids = ids,
+                        crs = st_crs(region))
 this_unit$primitive %>% plot(border = NA)
 ```
 
