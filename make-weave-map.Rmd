@@ -316,6 +316,7 @@ There is lots to do (at least potentially!)
 + Explore what symbolisations work (continuous, classified, categorical?)
 + Understand better how orientation operates
 + Consider the use of 'gaps' in a weave pattern
++ Ultimately an exploration of pattern and texture as visual variables
 
 # Acknowledgments
 
