@@ -1,0 +1,12 @@
+#content{
+    background:#fcfcfc;
+    height:100%;
+    margin-left:200px;
+    /* margin:auto; */
+    max-width:1720px;
+    min-height:100%;
+}
+#sidebar {
+    left: 0;
+    width: 200px;
+}

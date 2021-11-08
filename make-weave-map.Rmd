@@ -12,73 +12,46 @@ output:
     embed_fonts: true
     self_contained: false
     toc_depth: 3
-  # ioslides_presentation:
-  #   incremental: true
+    css: "data/extra.css" # to override the sidebar width
+editor_options: 
+  chunk_output_type: console
 ---
 
-<style>
-.menu ul li {
-  /* padding of the menu items in material is stupidly large */
-  padding: 0px 0px 0px 0px;
-}
-</style>
-
-# Preliminaries
-We've been working in _R_ for the 'one-stop-shop' mix of coding, handling spatial data, and visualization
-
-It's work in progress, so these aren't slides, more an annotated _RMarkdown_ notebook
-
-This section gives a sense of the requirements
-
-## Source code
-Our code lives in these files
-
-```{r message = FALSE}
+```{r message = FALSE, echo = FALSE, warning = FALSE, results = FALSE}
 source("weaving-space-utils.R")
 source("biaxial-weave-units.R")
 source("triaxial-weave-units.R")
 source("weave-map.R")
-```
 
-## Libraries
-And here, for reference are the packages we've used (so far!)
-
-```{r message = FALSE}
 library(sf)        # vector spatial data
-library(wk)        # WKT features and affine transforms
 library(tmap)      # thematic maps
 library(dplyr)     # data wrangling
-library(pracma)    # more matrix stuff
-```
 
-And some more used to make example maps of other approaches
-
-```{r message = FALSE}
 library(ggplot2)   # plotting
 library(tricolore) # trivariate choropleths
 library(ggtern)    # trivariate legend
-```
 
-## Some example data to mess with
-
-```{r message = FALSE, warning = FALSE}
 region <- st_read("data/vax-auckland-20211006.gpkg")
 ```
 
-Note that for our method we need this in part so we can match its CRS
+Weave patterns where each 'thread' or 'strand' represents a different attribute that can be independently symbolised in a map.
+
+![from Chaves LF, MD Friberg, LA Hurtado, R Marín Rodríguez, D O’Sullivan, and LR Bergmann. 2021 (online first). [Trade, uneven development and people in motion: Used territories and the initial spread of COVID-19 in Mesoamerica and the Caribbean](https://dx.doi.org/10.1016/j.seps.2021.101161). _Socio-Economic Planning Sciences_.](images/chaves-et-al-2021-example.jpg)
+
+This was done with SVG symbol fills in QGIS, and was (very!) fiddly to produce.
 
 
-# Motivation
-Increasingly, we deal with highly multivariate data. 
+# Motivation and other approaches
+Increasingly, we deal with highly multivariate data.
 
-Many approaches can be used to visualise these in spatial contexts, but it's always challenging. Often we resort to small multiple displays, where each attribute is presented as an individual (small) map. Or perhaps more often, we finding ourselves flipping back and forward among many layers in a GIS or other tool.
+Many approaches can be used to visualise these spatially, but it's always challenging. We may resort to small multiple displays, where each attribute is presented as an individual (small) map. Or perhaps more often, we flip back and forward among many layers in a GIS.
 
 Wouldn't it be nice to see multiple attributes together?! Perhaps to be able to identify patterns across more than one attribute in combination.
 
 We're not the first to think this, so there are plenty of approaches already around...
 
 ## Small multiples
-This is `sf`'s default plot output for a dataset
+This is `sf`'s default plot output for a dataset.
 
 ```{r warning = FALSE, message = FALSE}
 plot(region)
@@ -86,7 +59,7 @@ plot(region)
 
 
 ## Bivariate choropleths 
-A crude approach uses alpha values for each attribute, e.g., in `tmap`
+A crude approach uses alpha values for each attribute, e.g., in `tmap`.
 
 ```{r}
 tm_shape(region) + 
@@ -100,11 +73,11 @@ tm_shape(region) +
 
 Or, use something like [Jan Caha's QGIS plugin](https://jancaha.github.io/qgis-plugin-bivariate-renderer/) which implements the approach described by Joshua Stevens in [this post](https://www.joshuastevens.net/cartography/make-a-bivariate-choropleth-map/)
 
-![bivariate choropleth](images/bivariate-choropleth-stevens-qgis.png)
+![Bivariate choropleth made in QGIS](images/bivariate-choropleth-stevens-qgis.png)
 
 ## Trivariate choropleths
 
-Mixing three colours is hard, but e.g., the [`tricolore` package](https://github.com/jschoeley/tricolore) can do this...
+Mixing three colours is hard, but e.g., the [`tricolore`](https://github.com/jschoeley/tricolore) package can do this...
 
 ```{r message = FALSE, warning = FALSE}
 eth_mix <- tricolore::Tricolore(
@@ -121,81 +94,114 @@ ggplot(region) +
 ```
 
 ## Symbols over choropleths
-A simple example
 
-![choropleth with symbols](images/choropleth-with-symbols-qgis.png)
+![Choropleth with symbols made in QGIS](images/choropleth-with-symbols-qgis.png)
 
 ## Multivariate symbols
-The classic example here is Dorling's Chernoff faces map of the UK 1987 election
+The classic example is Dorling's Chernoff faces map of the UK 1987 election.
 
-![Figure 8.10 Dorling D. 2012. _The visualisation of spatial social structure_. Chichester, England: John Wiley & Sons.](images/dorling-chernoff-faces.jpg)
+![Figure 8.10 Dorling D. 2012. [_The visualisation of spatial social structure_](). Chichester, England: John Wiley & Sons.](images/dorling-chernoff-faces.jpg)
 
 
 ## Multi-element patterns
-There are many variations on this idea, but perhaps the most common is a categorical dot map
+There are many variations on this idea, but perhaps the most common is a categorical dot map.
 
 This example made using `tmap` and data preparation code from [James Smythe's cultureofinsight blog](https://www.cultureofinsight.com/post/multivariate-dot-density-maps-in-r-with-sf-ggplot2)
 
 ![dot map of ethnic composition](images/dot-map.png)
 
+# A woven map
 
-# Our idea
-A weave pattern where each 'thread' or 'ribbon' (the warp and weft) represents a different attribute that can be independently symbolised
+```{r warning = FALSE, message = FALSE}
+weave_unit <- get_biaxial_weave_unit(spacing = 200, type = "twill", n = 3, 
+                                     aspect = 0.6, ids = "ab|cd", 
+                                     crs = st_crs(region))
+fabric <- weave_layer(weave_unit, region, angle = 30)
+```
 
-![from Chaves LF, MD Friberg, LA Hurtado, R Marín Rodríguez, D O’Sullivan, and LR Bergmann. 2021 (online first). [Trade, uneven development and people in motion: Used territories and the initial spread of COVID-19 in Mesoamerica and the Caribbean](https://dx.doi.org/10.1016/j.seps.2021.101161). _Socio-Economic Planning Sciences_.](images/chaves-et-al-2021-example.jpg)
+```{r echo = FALSE, message = FALSE, warning = FALSE, results = FALSE}
+tmap_mode("view")
+tmap_options(check.and.fix = TRUE)
+```
 
-This was done with SVG symbol fills in QGIS, and was (very!) fiddly to produce
+Split the data by the `id` so that it is convenient to symbolise them separately.
 
-But it got us thinking about the wider possibilities...
+```{r}
+layers <- fabric %>% split(as.factor(fabric$id))
+```
 
-![A flax kete](images/weave-pic-1.jpg)
++ Each `id` value can be symbolised separately using symbolisation the data can support
++ We can also plot the region data as a choropleth if desired
 
-## Preliminary implementation
+```{r warning = FALSE, message = FALSE}
+tm_shape(region, name = "Dose 2 uptake") +
+  tm_fill(col = "dose2_uptake", palette = "inferno", style = "cont", 
+          title = "Dose 2 per 1000", id = "SA22018_V1_00_NAME") +
+  tm_shape(layers$a, name = "Pākehā") +
+  tm_fill(col = "pEuropean", palette = "Greys", title = "% Pākehā", n = 3, 
+          id = "SA22018_V1_00_NAME") +
+  tm_shape(layers$b, name = "Māori") +
+  tm_fill(col = "pMaori", palette = "Reds", title = "% Māori", n = 3, 
+          id = "SA22018_V1_00_NAME") +
+  tm_shape(layers$c, name = "Pasifika") +
+  tm_fill(col = "pPacific", palette = "Purples", title = "% Pasifika", n = 3, 
+          id = "SA22018_V1_00_NAME") +
+  tm_shape(layers$d, name = "Asian") +
+  tm_fill(col = "pAsian", palette = "Greens", title = "% Asian", n = 3, 
+          id = "SA22018_V1_00_NAME")
+```
+
+[Online full screen version](example-map-1.html)
+
+
+# Implementing woven maps
 
 + Regular rectangular or hex grids of points generated by geospatial tools
 
 ![tiling a weave unit](images/weave-unit-tiling.png)
 
-+ What repeatable units can tile across such grids to give the appearance of a woven pattern? 
+What repeatable units can tile across such grids to give the appearance of a woven pattern? 
 
-We have proof-of-concept _R_ tools to make weave patterns:
+Turns out this is of interest to mathematicians (Grünbaum and Shephard 1985, 1986), who call such tileable elements the _fundamental blocks_ of _isonemal fabrics_
 
-+ [Make a weave unit](#weave-units)
-+ [Tile the map area with the weave unit](#weave-a-map)
-+ [Symbolise the resulting weave elements as desired](#weave-a-map)
-+ [Export to a multi-layer GPKG](#write-the-weave-layers)
+Anyway... we have proof-of-concept _R_ tools to make weave patterns:
 
-# Weave units
+1. [Make a weave unit](#weave-units)
+2. [Tile the map area with the weave unit](#weave-a-map)
+3. [Export to a multi-layer GPKG](#write-the-weave-layers)
+4. Symbolise the weave elements as desired in _any_ tool
+
+# Weave units (or fundamental blocks)
 ## Biaxial weaves
 ### Plain weaves
-Traditional weave patterns with threads in two directions, the warp and the weft. These are all generated drawing on the matrix multiplication underpinnings of weaving! 
+Traditional weave patterns with threads in two directions, the warp and the weft. We generate these using matrix multiplication (cf. Glassner 2002) 
 
-The simplest case is a plain weave.
+Simplest is a plain weave
 
 ```{r warning = FALSE}
 rect11_unit <-   ## plain weave example
   get_biaxial_weave_unit(spacing = 300, type = "plain",
                     ids = "a|b", crs = st_crs(region))
-rect11_unit$primitive %>% plot(border = NA)
+rect11_unit$primitive %>% plot(border = NA, main = "Plain weave unit")
 ```
 
-This could be useful if clearly distinct palettes were used in the warp and weft elements. More useful is if we change the aspect to the warp and weft elements so we can distinguish directions.
+This could be useful if clearly distinct palettes were used in the warp and weft elements. More useful is if we change the aspect to the warp and weft elements so we can distinguish directions:
 
 ```{r warning = FALSE}
 rect11_unit <-   ## plain weave example
   get_biaxial_weave_unit(spacing = 300, aspect = 0.8,
-                    ids = "ab|cd", crs = st_crs(region))
-rect11_unit$primitive %>% plot(border = NA)
+                    ids = "a|b", crs = st_crs(region))
+rect11_unit$primitive %>% plot(border = NA, main = "Plain weave unit, with directions")
 ```
 
-### More threads
-This is highly customisable
+### More threads, more colours
+This is highly customisable:
 
 ```{r warning = FALSE}
 rect32_unit <-
   get_biaxial_weave_unit(spacing = 150, aspect = sqrt(0.5), 
                     ids = "abc|de", crs = st_crs(region))
-rect32_unit$primitive %>% plot(border = NA)
+rect32_unit$primitive %>% plot(border = NA, main = "Plain weave, 3 warp and 2 weft colours")
 ```
 
 ### Missing threads
@@ -205,54 +211,54 @@ We can even leave gaps or duplicate threads
 rect34_unit <-   ## plain weave example
   get_biaxial_weave_unit(spacing = 300, aspect = 0.8,
                     ids = "ab-|cc-d", crs = st_crs(region))
-rect34_unit$primitive %>% plot(border = NA)
+rect34_unit$primitive %>% plot(border = NA, main = "Complex plain weave with missing strands")
 ```
 
 ### Twill weaves and basket weaves
-There are near infinite possibilities here...
 
 ```{r warning = FALSE}
 twill_unit <- 
   get_biaxial_weave_unit(spacing = 200, type = "twill", n = c(2, 2), 
-                         aspect = 0.6, ids = "ab|cd", crs = st_crs(region))
-twill_unit$primitive %>% plot(border = NA)
+                         aspect = 0.7, ids = "a|b", crs = st_crs(region))
+twill_unit$primitive %>% plot(border = NA, main = "2 over 2 under twill weave")
 ```
 
 ```{r warning = FALSE}
 basket_unit <- 
   get_biaxial_weave_unit(spacing = 200, type = "basket", n = 2, 
-                         aspect = 0.6, ids = "ab|cd", crs = st_crs(region))
-basket_unit$primitive %>% plot(border = NA)
+                         aspect = 0.7, ids = "a|b", crs = st_crs(region))
+basket_unit$primitive %>% plot(border = NA, main = "2 over 2 under basket weave")
 ```
 
 ### Other weaves
-We can generate any weavable repeat pattern, even crazy ones!
+We can generate any biaxial weavable pattern, even crazy ones!
 
 ```{r warning = FALSE}
 this_unit <- 
   get_biaxial_weave_unit(spacing = 200, type = "this", ids = ids,
                         crs = st_crs(region))
-this_unit$primitive %>% plot(border = NA)
+this_unit$primitive %>% plot(border = NA, main = "Pattern from Glassner 2002")
 ```
 
-## Triaxial weaves
+## Triaxial weave units
 ### Hexagonal
-We can also make weaves with threads running in 3 directions. This example is based on a hexagonal tileable unit, and can allow for more than one thread in each direction
+We can also make weaves with threads running in 3 directions. This example is based on a hexagonal tileable unit, and can also allow for more than one thread in each direction
 
 ```{r warning = FALSE}
 hex_unit <- ## hex example
   get_triaxial_weave_unit(spacing = 600, margin = 2,
-                          ids = "a|b|cd", type = "hex", crs = st_crs(region))
-hex_unit$primitive %>% plot(border = NA)
+                          ids = "a|bc|def", type = "hex", crs = st_crs(region))
+hex_unit$primitive %>% plot(border = NA, main = "Hex-based triangular weave")
 ```
 
 A cube is another option, although this produces some odd 3D effects when tiled
 
 ```{r warning = FALSE}
 cube_unit <-
-  get_triaxial_weave_unit(spacing = 600, ids = "ab|cd|ef", margin = 5, 
+  get_triaxial_weave_unit(spacing = 600, ids = "ab|cd|ef", margin = 2, 
                           type = "cube", crs = st_crs(region))
-cube_unit$primitive %>% plot(border = NA)
+cube_unit$primitive %>% plot(border = NA, 
+                             main = "Mad weave (so called) with two colours in each direction")
 ```
 
 ### Diamond
@@ -260,112 +266,45 @@ An alternative way to produce a triangular weave is with a diamond repeating uni
 
 ```{r warning = FALSE}
 diamond_unit <-   ## diamond example
-  get_triaxial_weave_unit(spacing = 600, margin = 10,
+  get_triaxial_weave_unit(spacing = 600, margin = 2,
                           ids = "a|b|c", type = "diamond", crs = st_crs(region))
-diamond_unit$primitive %>% plot(border = NA)
+diamond_unit$primitive %>% plot(border = NA, 
+                                main = "Triangular weave with a diamond fundamental block")
 ```
-
-### Tiling diamond units and transforming weaves
-Tiling the diamond unit is slightly more involved than rectangular or hexagonal units:
-
-+ transform to a rectangle (applying the same transformation to the map)
-+ perform the tiling (rectangularly)
-+ invert the transformation
-
-We allow for any of the weave unit 'tiles' to be transformed in this way. 
-
-For example we can transform the region to tile like this
-
-```{r}
-region[, 2] %>% sf_diamond_to_square() %>% tm_shape() + tm_polygons()
-```
-
-then tile it with any weave unit, and transform back to the original map coordinates. This allows us to (say) take the twill tile above and apply it in this form:
-
-```{r}
-twill_unit$primitive %>% sf_square_to_diamond() %>% plot(border = NA)
-```
-
 
 
 # Weave a map
-Now 'weave' the map with one of the weave unit tiles applied to the region
 
-We can also optionally specify a rotation and an affine transformation
-
-```{r warning = FALSE}
-cloth <- weave_layer(twill_unit, region, angle = 30)
-# cloth <- weave_layer(weave_unit, region,
-#                      transform = affine_abcd(1, 0, 0.5, 1))
+```{r warning = FALSE, message = FALSE}
+tri_unit <-   get_triaxial_weave_unit(spacing = 550, margin = 5, 
+                          ids = "a|b|c", type = "hex", crs = st_crs(region))
+fabric2 <- weave_layer(tri_unit, region, angle = 45)
+layers2 <- fabric2 %>% split(as.factor(fabric2$id))
 ```
-
-## Make the map
-Do this in `tmap` "view" mode for a zoomable web map.
 
 ```{r warning = FALSE, message = FALSE}
 tmap_mode("view")
-```
-
-```{r echo = FALSE}
-tmap_options(check.and.fix = TRUE)
-```
-
-Split the data by the `id` so that it is convenient to symbolise them separately
-
-```{r}
-layers <- cloth %>% split(as.factor(cloth$id))
-```
-
-+ Each `id` value can be symbolised separately using symbolisation the data can support
-+ We can also plot the region data as a choropleth if desired
-
-```{r warning = FALSE, message = FALSE}
 tm_shape(region, name = "Dose 2 uptake") +
-  tm_fill(col = "dose2_uptake", palette = "inferno", style = "cont", title = "Dose 2 per 1000") +
-  tm_shape(layers$a, name = "Pākehā") +
-  tm_fill(col = "pEuropean", palette = "Greys", title = "% Pākehā", n = 3) +
-  tm_shape(layers$b, name = "Māori") +
-  tm_fill(col = "pMaori", palette = "Reds", title = "% Māori", n = 3) +
-  tm_shape(layers$c, name = "Pasifika") +
-  tm_fill(col = "pPacific", palette = "Purples", title = "% Pasifika", n = 3) +
-  tm_shape(layers$d, name = "Asian") +
-  tm_fill(col = "pAsian", palette = "Greens", title = "% Asian", n = 3) +
-  tm_basemap(server = "CartoDB.VoyagerNoLabels")
+  tm_fill(col = "dose2_uptake", palette = "-Greys", style = "cont", 
+          title = "Dose 2 per 1000") +
+  tm_shape(layers2$a, name = "Māori") +
+  tm_fill(col = "pMaori", palette = "Reds", title = "% Māori", n = 5) +
+  tm_shape(layers2$b, name = "Pasifika") +
+  tm_fill(col = "pPacific", palette = "Purples", title = "% Pasifika", n = 5) +
+  tm_shape(layers2$c, name = "Asian") +
+  tm_fill(col = "pAsian", palette = "Greens", title = "% Asian", n = 5)
 ```
 
-[Online full screen version](https://dosull.github.io/weaving-space/example-map-1.html)
-
-## Another example
-```{r echo = FALSE, message = FALSE, warning = FALSE, results = FALSE}
-welly.votes <- st_read("data/welly-sa2-votes-2020.gpkg")
-```
-
-```{r echo = FALSE, message = FALSE, warning = FALSE}
-weave_maps <- list()
-spacings <- c(500, 1000, 1500)
-for (i in 1:length(spacings)) {
-  weave <- get_triaxial_weave_unit(spacing = spacings[i], type = "hex", crs = st_crs(welly.votes)) %>%
-    weave_layer(welly.votes, angle = 15) 
-  weave_maps[[i]] <- 
-    tm_shape(dplyr::filter(weave, id == "a"), name = "Labour") +
-    tm_fill(col = "Labour.Party", palette = "Reds", legend.show = FALSE, title = "Labour") +
-    tm_shape(dplyr::filter(weave, id == "b"), name = "National") +
-    tm_fill(col = "National.Party", palette = "Blues", legend.show = FALSE, title = "National") +
-    tm_shape(dplyr::filter(weave, id == "c"), name = "Green") +
-    tm_fill(col = "Green.Party", palette = "Greens", legend.show = FALSE, title = "Green") +
-    tm_shape(welly.votes, name = "SA2s") +
-    tm_borders()
-}
-tmap_arrange(weave_maps)
-```
-
+[Online full screen version](example-map-2.html)
 
 # Write the weave layers
-We can also save out to a multi-layer GPKG for use in any tool
+We can save out to a multi-layer GPKG for use in any tool
 
 ```{r eval = FALSE}
-write_weave_layers(cloth, region, "data/cloth.gpkg")
+write_weave_layers(fabric, region, "data/fabric.gpkg")
+write_weave_layers(fabric2, region, "data/fabric2.gpkg")
 ```
+
 
 # Further work
 There is lots to do (at least potentially!)
@@ -384,14 +323,18 @@ There is lots to do (at least potentially!)
 + You'll find code at [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
 
 ## References
-Glassner, A. 2002. [Digital Weaving 1](https://dx.doi.org/10.1109/MCG.2002.1046635). IEEE Computer Graphics and Applications 22 (6):108–118.
+Glassner A. 2002. [_Digital weaving 1_](https://dx.doi.org/10.1109/MCG.2002.1046635). IEEE Computer Graphics and Applications 22 (6):108–118.
 
-———. 2003a. [Digital Weaving 2](https://dx.doi.org/10.1109/MCG.2003.1159616). IEEE Computer Graphics and Applications 23 (1):77–90.
+Glassner A. 2003a. [_Digital weaving 2_](https://dx.doi.org/10.1109/MCG.2003.1159616). IEEE Computer Graphics and Applications 23 (1):77–90.
 
-———. 2003b. [Digital Weaving 3](https://dx.doi.org/10.1109/MCG.2003.1185583). IEEE Computer Graphics and Applications 23 (2):80–83.
+Glassner A. 2003b. [_Digital weaving 3_](https://dx.doi.org/10.1109/MCG.2003.1185583). IEEE Computer Graphics and Applications 23 (2):80–83.
 
-Griswold, R. 2006 (unpublished manuscript). [Mathematical and Computational Topics in Weaving](https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf) (last accessed 29 October 2021).
+Griswold R. 2006 (unpublished manuscript). [Mathematical and Computational Topics in Weaving](https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf) (last accessed 29 October 2021).
 
-And this video provided a nice way in to the topic for us: ["It's Just Matrix Multiplication": Notation for Weaving](https://www.youtube.com/watch?v=oMOSiag3dxg) by Lea Albaugh, presented at the Strange Loop conference, St Louis, 27-28 Sept, 2018. 
+Grünbaum B and GC Shephard. 1985. [_A catologue of isonemal fabrics_](https://dx.doi.org/10.1111/j.1749-6632.1985.tb14560.x). Annals of the New York Academy of Sciences 440 (1 Discrete Geom):279–298.
+
+Grünbaum B and GC Shephard. 1986. [_An extension to the catalogue of isonemal fabrics_](https://dx.doi.org/10.1016/0012-365X(86)90010-5). Discrete Mathematics 60:155–192.
+
+And this video by Lea Albaugh provided a nice way in to the topic for us: ["It's Just Matrix Multiplication": Notation for Weaving](https://www.youtube.com/watch?v=oMOSiag3dxg), presented at the Strange Loop conference, St Louis, 27-28 Sept, 2018. 
 
 ## Questions?
