@@ -12,11 +12,14 @@ get_centres <- function(region, tile, hexes) {
   h <- bb$ymax - bb$ymin
   region_b <- region %>% st_union() %>% st_buffer(max(w, h))
   if (hexes) {
-    pts <- region_b %>% st_make_grid(cellsize = w * 0.99, what = "centers", square = FALSE)
+    pts <- region_b %>% st_make_grid(cellsize = w * 0.99, 
+                                     what = "centers", square = FALSE)
   } else {
-    pts <- region_b %>% st_make_grid(cellsize = c(w, h), what = "centers")
+    pts <- region_b %>% st_make_grid(cellsize = c(w, h), 
+                                     what = "centers")
   }
   return(pts %>% st_as_sf() %>%
+           st_filter(region_b) %>%
            st_coordinates() %>%
            ## next steps make a list of pairs so we can lapply for speed 
            t() %>%              
@@ -53,13 +56,14 @@ weave_layer <- function(weave_unit, region, angle = 0,
   #   the_tile <- the_tile %>% sf_diamond_to_square()
   # }
   
-  pts <- get_centres(to_tile, the_tile, hex = weave_unit$type %in% hex_types)
+  pts <- get_centres(to_tile, the_tile, 
+                     hex = weave_unit$type %in% hex_types)
   
   tiling <- lapply(pts, sf_shift, shapes = the_tile) %>% 
     bind_rows() %>% 
     st_set_crs(st_crs(region)) %>%
     st_cast() %>%            # this avoids issues with odd geometry types
-    group_by(id) %>%      # dissolve on the id attribute
+    group_by(id) %>%         # dissolve on the id attribute
     summarise() %>%
     st_intersection(to_tile) # and intersect with the region
   

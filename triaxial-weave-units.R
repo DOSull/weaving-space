@@ -163,8 +163,8 @@ getCubePrimitiveCell <- function(spacing = 500, margin = 0,
   tile <- get_hexagon(spacing)
   return(list(
     cell = st_sf(id = ids, geometry = st_as_sfc(polys)) %>%
-      st_buffer(-margin) %>%
       st_intersection(tile) %>%
+      st_buffer(-margin) %>%
       st_as_sf() %>%
       st_set_crs(crs),
     transform = wk_affine_identity(),
