@@ -15,17 +15,17 @@ S3 <- sqrt(3)
 
 
 get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0, 
-                                    ids = "a|b|c", type = "hex", crs = 3857) {
+                                    strands = "a|b|c", type = "hex", crs = 3857) {
   
   pc <- get_primitive_cell(
     spacing = spacing, aspect = aspect, margin = margin,
-    ids = ids, type = type, crs = crs)
+    strands = strands, type = type, crs = crs)
   
   return(
     list(
       primitive = pc$cell,
       transform = pc$transform,
-      ids = pc$ids,
+      strands = pc$strands,
       tile = pc$tile,
       type = type
     )
@@ -35,9 +35,9 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
 # Delegates creation of the tileable unit to an appropriate function
 # based on the supplied type "hex", "diamond" or "cube".
 get_primitive_cell <- function(spacing = 500, aspect = 1, margin = 0, 
-                               ids = "a|b|c", type = "hex", crs = 3857) {
+                               strands = "a|b|c", type = "hex", crs = 3857) {
   # parse e.g. "a|bc|d" to list(c("a"), c("b", "c"), c("d"))
-  labels <- ids %>% 
+  labels <- strands %>% 
     parse_labels() %>%
     lapply(string_to_chars)
 
@@ -121,16 +121,16 @@ getHexPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
   # and a hexagonal tile
   tile <- get_hexagon(spacing)
   return(list(
-    cell = st_sf(id = ids, geometry = st_as_sfc(polys)) %>%
+    cell = st_sf(strand = ids, geometry = st_as_sfc(polys)) %>%
       st_buffer(-margin) %>%          # inset margin
-      group_by(id) %>%                # dissolve by id
+      group_by(strand) %>%                # dissolve by id
       summarise() %>% 
       st_intersection(tile) %>%       # hex
       st_as_sf() %>%
       st_set_crs(crs), 
     transform = wk_affine_identity(), # no transform needed
     tile = tile,
-    ids = unique(ids)
+    strands = unique(ids)
   ))
 }
 
@@ -164,14 +164,14 @@ getCubePrimitiveCell <- function(spacing = 500, margin = 0,
   ids <- c(labels_1, labels_2, labels_3)
   tile <- get_hexagon(spacing)
   return(list(
-    cell = st_sf(id = ids, geometry = st_as_sfc(polys)) %>%
+    cell = st_sf(strand = ids, geometry = st_as_sfc(polys)) %>%
       st_intersection(tile) %>%
       st_buffer(-margin) %>%
       st_as_sf() %>%
       st_set_crs(crs),
     transform = wk_affine_identity(),
     tile = tile,
-    ids = unique(ids)
+    strands = unique(ids)
   ))
 }
 
@@ -267,7 +267,7 @@ getDiamondPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
   ids <- c(rep(labels_1, 4), rep(labels_2, 4), rep(labels_3, 4))
   # now make an sf and further process as needed
   return(list( 
-    cell = st_sf(id = ids, geometry = st_as_sfc(polys)) %>% 
+    cell = st_sf(strand = ids, geometry = st_as_sfc(polys)) %>% 
       st_buffer(-margin / 2) %>%  # inset margin
       st_intersection(tile) %>%   # intersect to the tile
       st_as_sf() %>%
@@ -280,7 +280,7 @@ getDiamondPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
     transform = wk_affine_invert(
       affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2)),
     tile = tile,
-    ids = unique(ids)
+    strands = unique(ids)
   ))
 }
 

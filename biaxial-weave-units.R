@@ -337,9 +337,9 @@ make_polygons_from_matrix <- function(ww, spacing, aspect, margin,
   polys <- polys %>%
     st_as_sfc() %>% st_sf() %>%
     # add in the id attribute and dissolve
-    mutate(id = out_ids) %>%    # the indices into the thread names
-    filter(id != "-") %>%       # throw away the missing ones coded -1
-    group_by(id) %>%            # dissolve
+    mutate(strand = out_ids) %>%    # the indices into the thread names
+    filter(strand != "-") %>%       # throw away the missing ones coded -1
+    group_by(strand) %>%            # dissolve
     summarise() %>%
     st_buffer(-margin) %>%
     st_crop(bb) %>%
@@ -369,11 +369,11 @@ this_th <- matrix(c(0, 0, 1,
 get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, 
                                    margin = 0, type = "plain", 
                                    n = c(2, 2), # used by twill
-                                   ids = "ab|cd", crs = 3857,
+                                   strands = "ab|cd", crs = 3857,
                                    tie_up = this_tu, 
                                    tr = this_tr, th = this_th) {
   
-  parsed_labels = ids %>% parse_labels() %>% lapply(string_to_chars)
+  parsed_labels = strands %>% parse_labels() %>% lapply(string_to_chars)
   warp_threads = parsed_labels[[1]]
   weft_threads = parsed_labels[[2]]
   
@@ -391,7 +391,7 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1,
     list(
       primitive = cell$weave_unit,
       transform = wk_affine_identity(),
-      ids = unique(cell$id),
+      strands = unique(cell$strand),
       tile = cell$tile,
       type = type
     )

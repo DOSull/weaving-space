@@ -64,7 +64,7 @@ weave_layer <- function(weave_unit, region, angle = 0,
     bind_rows() %>% 
     st_set_crs(st_crs(region)) %>%
     st_intersection(to_tile) %>% 
-    qgis::qgis_dissolve(FIELD = c("id", "to_tile_id")) %>% 
+    qgis::qgis_dissolve(FIELD = c("strand", "to_tile_id")) %>% 
     st_as_sf() %>%
     st_set_crs(st_crs(region))
     # 
@@ -85,7 +85,7 @@ weave_layer <- function(weave_unit, region, angle = 0,
 }
 
 
-write_weave_layers <- function(weave, region, fname, var = "id") {
+write_weave_layers <- function(weave, region, fname, var = "strand") {
   st_write(region, fname, "basemap", delete_dsn = TRUE)
   lyrs <- split(weave, weave[[var]])
   for (label in names(lyrs)) {

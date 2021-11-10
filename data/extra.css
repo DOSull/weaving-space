@@ -10,3 +10,10 @@
     left: 0;
     width: 200px;
 }
+.menu ul li {
+    list-style: none;
+    padding: 0px 0 0px 0px;
+    font-size: 15px;
+    font-weight: normal;
+    cursor: pointer;
+}
