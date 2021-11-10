@@ -50,7 +50,7 @@ plain_tile <- get_biaxial_weave_unit(spacing = 5000, margin = 100,
 cube_tile2 <- get_triaxial_weave_unit(spacing = 8000, type = "cube",
                                       ids = "a|b|c", crs = 2193)
 
-# anthrome_weave <- weave_layer(cube_tile2, anthromes_dgg, angle = 45)
+anthrome_weave <- weave_layer(cube_tile2, anthromes_dgg, angle = 45)
 anthrome_layers <- split(anthrome_weave, anthrome_weave$id)
 
 tmap_mode("view")

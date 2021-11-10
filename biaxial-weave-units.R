@@ -344,7 +344,9 @@ make_polygons_from_matrix <- function(ww, spacing, aspect, margin,
     st_buffer(-margin) %>%
     st_crop(bb) %>%
     st_set_crs(crs)
-  return(polys)
+  
+  return(list(weave_unit = polys,
+              tile = bb))
 }
 
 
@@ -387,9 +389,10 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1,
       warp_threads, weft_threads, crs = crs)
   return(
     list(
-      primitive = cell,
+      primitive = cell$weave_unit,
       transform = wk_affine_identity(),
       ids = unique(cell$id),
+      tile = cell$tile,
       type = type
     )
   )

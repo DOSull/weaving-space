@@ -26,6 +26,7 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
       primitive = pc$cell,
       transform = pc$transform,
       ids = pc$ids,
+      tile = pc$tile,
       type = type
     )
   )
@@ -128,6 +129,7 @@ getHexPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
       st_as_sf() %>%
       st_set_crs(crs), 
     transform = wk_affine_identity(), # no transform needed
+    tile = tile,
     ids = unique(ids)
   ))
 }
@@ -168,6 +170,7 @@ getCubePrimitiveCell <- function(spacing = 500, margin = 0,
       st_as_sf() %>%
       st_set_crs(crs),
     transform = wk_affine_identity(),
+    tile = tile,
     ids = unique(ids)
   ))
 }
@@ -276,6 +279,7 @@ getDiamondPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
     # the transform required to make this rectangular tile-able
     transform = wk_affine_invert(
       affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2)),
+    tile = tile,
     ids = unique(ids)
   ))
 }

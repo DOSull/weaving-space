@@ -26,6 +26,7 @@ source("weave-map.R")
 library(sf)        # vector spatial data
 library(tmap)      # thematic maps
 library(dplyr)     # data wrangling
+library(anthromes)
 
 library(ggplot2)   # plotting
 library(tricolore) # trivariate choropleths
@@ -59,21 +60,10 @@ plot(region)
 
 
 ## Bivariate choropleths 
-A crude approach uses alpha values for each attribute, e.g., in `tmap`.
-
-```{r}
-tm_shape(region) + 
-  tm_polygons(col = "dose2_uptake", palette = "-Reds", alpha = 0.65, 
-              title = "Dose 2 per thousand ") + 
-  tm_shape(region) + 
-  tm_polygons(col = "pAsian", palette = "Blues", alpha = 0.35,
-              title = "% Asian") +
-  tm_layout(legend.outside = TRUE)
-```
-
-Or, use something like [Jan Caha's QGIS plugin](https://jancaha.github.io/qgis-plugin-bivariate-renderer/) which implements the approach described by Joshua Stevens in [this post](https://www.joshuastevens.net/cartography/make-a-bivariate-choropleth-map/)
+E.g., using [Jan Caha's QGIS plugin](https://jancaha.github.io/qgis-plugin-bivariate-renderer/) which implements an approach described by Joshua Stevens in [this post](https://www.joshuastevens.net/cartography/make-a-bivariate-choropleth-map/)
 
 ![Bivariate choropleth made in QGIS](images/bivariate-choropleth-stevens-qgis.png)
+
 
 ## Trivariate choropleths
 
@@ -93,15 +83,16 @@ ggplot(region) +
     xmin = 1.7465e6, xmax = 1.7535e6, ymin = 5.9075e6, ymax = 5.9125e6)
 ```
 
+
 ## Symbols over choropleths
 
 ![Choropleth with symbols made in QGIS](images/choropleth-with-symbols-qgis.png)
+
 
 ## Multivariate symbols
 The classic example is Dorling's Chernoff faces map of the UK 1987 election.
 
 ![Figure 8.10 Dorling D. 2012. [_The visualisation of spatial social structure_](). Chichester, England: John Wiley & Sons.](images/dorling-chernoff-faces.jpg)
-
 
 ## Multi-element patterns
 There are many variations on this idea, but perhaps the most common is a categorical dot map.
@@ -110,9 +101,10 @@ This example made using `tmap` and data preparation code from [James Smythe's cu
 
 ![dot map of ethnic composition](images/dot-map.png)
 
+
 # A woven map
 
-```{r warning = FALSE, message = FALSE}
+```{r warning = FALSE, message = FALSE, results = FALSE, eval = FALSE}
 weave_unit <- get_biaxial_weave_unit(spacing = 200, type = "twill", n = 3, 
                                      aspect = 0.6, ids = "ab|cd", 
                                      crs = st_crs(region))
@@ -120,6 +112,7 @@ fabric <- weave_layer(weave_unit, region, angle = 30)
 ```
 
 ```{r echo = FALSE, message = FALSE, warning = FALSE, results = FALSE}
+fabric <- st_read("data/fabric-raw.gpkg")
 tmap_mode("view")
 tmap_options(check.and.fix = TRUE)
 ```
@@ -139,16 +132,16 @@ tm_shape(region, name = "Dose 2 uptake") +
           title = "Dose 2 per 1000", id = "SA22018_V1_00_NAME") +
   tm_shape(layers$a, name = "Pākehā") +
   tm_fill(col = "pEuropean", palette = "Greys", title = "% Pākehā", n = 3, 
-          id = "SA22018_V1_00_NAME") +
+          id = "SA22018_V1_00_NAME", popup.vars = c("pEuropean")) +
   tm_shape(layers$b, name = "Māori") +
   tm_fill(col = "pMaori", palette = "Reds", title = "% Māori", n = 3, 
-          id = "SA22018_V1_00_NAME") +
+          id = "SA22018_V1_00_NAME", popup.vars = c("pMaori")) +
   tm_shape(layers$c, name = "Pasifika") +
   tm_fill(col = "pPacific", palette = "Purples", title = "% Pasifika", n = 3, 
-          id = "SA22018_V1_00_NAME") +
+          id = "SA22018_V1_00_NAME", popup.vars = c("pPacific")) +
   tm_shape(layers$d, name = "Asian") +
   tm_fill(col = "pAsian", palette = "Greens", title = "% Asian", n = 3, 
-          id = "SA22018_V1_00_NAME")
+          id = "SA22018_V1_00_NAME", popup.vars = c("pAsian"))
 ```
 
 [Online full screen version](example-map-1.html)
@@ -170,6 +163,7 @@ Anyway... we have proof-of-concept _R_ tools to make weave patterns:
 2. [Tile the map area with the weave unit](#weave-a-map)
 3. [Export to a multi-layer GPKG](#write-the-weave-layers)
 4. Symbolise the weave elements as desired in _any_ tool
+
 
 # Weave units (or fundamental blocks)
 ## Biaxial weaves
@@ -199,7 +193,7 @@ This is highly customisable:
 
 ```{r warning = FALSE}
 rect32_unit <-
-  get_biaxial_weave_unit(spacing = 150, aspect = sqrt(0.5), 
+  get_biaxial_weave_unit(spacing = 300, aspect = sqrt(0.5), 
                     ids = "abc|de", crs = st_crs(region))
 rect32_unit$primitive %>% plot(border = NA, main = "Plain weave, 3 warp and 2 weft colours")
 ```
@@ -209,7 +203,7 @@ We can even leave gaps or duplicate threads
 
 ```{r warning = FALSE}
 rect34_unit <-   ## plain weave example
-  get_biaxial_weave_unit(spacing = 300, aspect = 0.8,
+  get_biaxial_weave_unit(spacing = 150, aspect = 0.8,
                     ids = "ab-|cc-d", crs = st_crs(region))
 rect34_unit$primitive %>% plot(border = NA, main = "Complex plain weave with missing strands")
 ```
@@ -218,14 +212,14 @@ rect34_unit$primitive %>% plot(border = NA, main = "Complex plain weave with mis
 
 ```{r warning = FALSE}
 twill_unit <- 
-  get_biaxial_weave_unit(spacing = 200, type = "twill", n = c(2, 2), 
+  get_biaxial_weave_unit(spacing = 150, type = "twill", n = c(2, 2), 
                          aspect = 0.7, ids = "a|b", crs = st_crs(region))
 twill_unit$primitive %>% plot(border = NA, main = "2 over 2 under twill weave")
 ```
 
 ```{r warning = FALSE}
 basket_unit <- 
-  get_biaxial_weave_unit(spacing = 200, type = "basket", n = 2, 
+  get_biaxial_weave_unit(spacing = 150, type = "basket", n = 2, 
                          aspect = 0.7, ids = "a|b", crs = st_crs(region))
 basket_unit$primitive %>% plot(border = NA, main = "2 over 2 under basket weave")
 ```
@@ -235,10 +229,11 @@ We can generate any biaxial weavable pattern, even crazy ones!
 
 ```{r warning = FALSE}
 this_unit <- 
-  get_biaxial_weave_unit(spacing = 200, type = "this", ids = ids,
+  get_biaxial_weave_unit(spacing = 37.5, type = "this", ids = ids,
                         crs = st_crs(region))
 this_unit$primitive %>% plot(border = NA, main = "Pattern from Glassner 2002")
 ```
+
 
 ## Triaxial weave units
 ### Hexagonal
@@ -248,7 +243,9 @@ We can also make weaves with threads running in 3 directions. This example is ba
 hex_unit <- ## hex example
   get_triaxial_weave_unit(spacing = 600, margin = 2,
                           ids = "a|bc|def", type = "hex", crs = st_crs(region))
-hex_unit$primitive %>% plot(border = NA, main = "Hex-based triangular weave")
+hex_unit$tile %>% plot(col = "white", border = "black", 
+                       main = "Hex-based triangular weave")
+hex_unit$primitive %>% plot(border = NA, add = TRUE)
 ```
 
 A cube is another option, although this produces some odd 3D effects when tiled
@@ -261,48 +258,73 @@ cube_unit$primitive %>% plot(border = NA,
                              main = "Mad weave (so called) with two colours in each direction")
 ```
 
-### Diamond
-An alternative way to produce a triangular weave is with a diamond repeating unit with angles 60&deg; and 120&deg;
+<!-- ### Diamond -->
+<!-- An alternative way to produce a triangular weave is with a diamond repeating unit with angles 60&deg; and 120&deg; -->
 
-```{r warning = FALSE}
-diamond_unit <-   ## diamond example
-  get_triaxial_weave_unit(spacing = 600, margin = 2,
-                          ids = "a|b|c", type = "diamond", crs = st_crs(region))
-diamond_unit$primitive %>% plot(border = NA, 
-                                main = "Triangular weave with a diamond fundamental block")
-```
+<!-- ```{r warning = FALSE} -->
+<!-- diamond_unit <-   ## diamond example -->
+<!--   get_triaxial_weave_unit(spacing = 600, margin = 2, -->
+<!--                           ids = "a|b|c", type = "diamond", crs = st_crs(region)) -->
+<!-- diamond_unit$tile %>% plot(col = NA, border = "black",  -->
+<!--                            main = "Triangular weave with a diamond fundamental block") -->
+<!-- diamond_unit$primitive %>% plot(border = NA, add = TRUE) -->
+<!-- ``` -->
 
 
 # Weave a map
+As another example here are some data from Ellis et al. 2021, which aim to show change over 1000s of years in human-affected landcover globally. 
 
-```{r warning = FALSE, message = FALSE}
-tri_unit <-   get_triaxial_weave_unit(spacing = 550, margin = 5, 
-                          ids = "a|b|c", type = "hex", crs = st_crs(region))
-fabric2 <- weave_layer(tri_unit, region, angle = 45)
+```{r warning = FALSE, message = FALSE, results = FALSE}
+anthromes <- st_read("data/nz-anthromes-dgg.gpkg")
+tmap_mode("plot")
+tm_shape(anthromes) + 
+  tm_fill(col = paste("class", seq(2000, 1800, -100), sep = ""), 
+          palette = anthrome_colors(), title = "Anthrome") +
+  tm_layout(panel.labels = c("2000", "1900", "1800"), 
+            legend.outside = TRUE)
+```
+
+We make a weave unit and tile it so we can put the three snapshots in a single map.
+
+```{r message = FALSE, warning = FALSE, results = FALSE, eval = FALSE}
+tri_unit <- get_triaxial_weave_unit(spacing = 8000, ids = "a|b|c", type = "hex", 
+                                    crs = st_crs(anthromes))
+fabric2 <- weave_layer(tri_unit, anthromes, angle = 15)
+```
+
+Some tidying up needed for the web map hover labelling
+
+```{r message = FALSE, warning = FALSE, results = FALSE}
+fabric2 <- st_read("data/fabric2-raw.gpkg") %>%
+  mutate(label = if_else(id == "a", 
+                         paste("1800", class1800),               # make labels that include
+                         ifelse(id == "b",                       # year and anthrome class
+                                paste("2000", class2000), 
+                                paste("1900", class1900)))) %>% 
+  select(21, 1:19)                                               # and put them in 1st column
 layers2 <- fabric2 %>% split(as.factor(fabric2$id))
+
+tmap_mode("view")
 ```
 
 ```{r warning = FALSE, message = FALSE}
-tmap_mode("view")
-tm_shape(region, name = "Dose 2 uptake") +
-  tm_fill(col = "dose2_uptake", palette = "-Greys", style = "cont", 
-          title = "Dose 2 per 1000") +
-  tm_shape(layers2$a, name = "Māori") +
-  tm_fill(col = "pMaori", palette = "Reds", title = "% Māori", n = 5) +
-  tm_shape(layers2$b, name = "Pasifika") +
-  tm_fill(col = "pPacific", palette = "Purples", title = "% Pasifika", n = 5) +
-  tm_shape(layers2$c, name = "Asian") +
-  tm_fill(col = "pAsian", palette = "Greens", title = "% Asian", n = 5)
+tm_shape(layers2$a, name = "1800") +
+  tm_fill(col = "class1800", palette = anthrome_colors(), legend.show = FALSE) +
+  tm_shape(layers2$c, name = "1900") +
+  tm_fill(col = "class1900", palette = anthrome_colors(), legend.show = FALSE) +
+  tm_shape(layers2$b, name = "2000") +
+  tm_fill(col = "class2000", palette = anthrome_colors(), title = "Anthrome")
 ```
 
-[Online full screen version](example-map-2.html)
+[Online full screen version](example-map-3.html) and an [alternate map using the cube weave](example-map-2.html)
+
 
 # Write the weave layers
 We can save out to a multi-layer GPKG for use in any tool
 
 ```{r eval = FALSE}
 write_weave_layers(fabric, region, "data/fabric.gpkg")
-write_weave_layers(fabric2, region, "data/fabric2.gpkg")
+write_weave_layers(fabric2, anthromes, "data/fabric2.gpkg")
 ```
 
 
@@ -318,24 +340,31 @@ There is lots to do (at least potentially!)
 + Consider the use of 'gaps' in a weave pattern
 + Ultimately an exploration of pattern and texture as visual variables
 
+
 # Acknowledgments
 
 + Thanks to co-conspirator [Luke Bergmann (UBC)](https://geog.ubc.ca/profile/luke-bergmann/)
 + You'll find code at [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
 
+
 ## References
-Glassner A. 2002. [_Digital weaving 1_](https://dx.doi.org/10.1109/MCG.2002.1046635). IEEE Computer Graphics and Applications 22 (6):108–118.
+Ellis EC, N Gauthier, K Klein Goldewijk, R Bliege Bird, N Boivin, S Díaz, DQ Fuller, JL Gill, JO Kaplan, N Kingston, H Locke, CNH McMichael, D Ranco, TC Rick, MR Shaw, L Stephens, J-C Svenning and JEM Watson. 2021. [People have shaped most of terrestrial nature for at least 12,000 years](https://doi.org/10.1073/pnas.2023483118). _Proceedings of the National Academy of Sciences_ **118**(17):e2023483118.
 
-Glassner A. 2003a. [_Digital weaving 2_](https://dx.doi.org/10.1109/MCG.2003.1159616). IEEE Computer Graphics and Applications 23 (1):77–90.
+Gauthier N, E Ellis and K Klein Goldewijk. 2021. [Anthromes 12K DGG (V1) Full Dataset](https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/E3H3AK). (last accessed 10 November 2021).
 
-Glassner A. 2003b. [_Digital weaving 3_](https://dx.doi.org/10.1109/MCG.2003.1185583). IEEE Computer Graphics and Applications 23 (2):80–83.
+Glassner A. 2002. [_Digital weaving 1_](https://dx.doi.org/10.1109/MCG.2002.1046635). IEEE Computer Graphics and Applications **22**(6):108–118.
+
+Glassner A. 2003a. [_Digital weaving 2_](https://dx.doi.org/10.1109/MCG.2003.1159616). IEEE Computer Graphics and Applications **23**(1):77–90.
+
+Glassner A. 2003b. [_Digital weaving 3_](https://dx.doi.org/10.1109/MCG.2003.1185583). IEEE Computer Graphics and Applications **23**(2):80–83.
 
 Griswold R. 2006 (unpublished manuscript). [Mathematical and Computational Topics in Weaving](https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf) (last accessed 29 October 2021).
 
-Grünbaum B and GC Shephard. 1985. [_A catologue of isonemal fabrics_](https://dx.doi.org/10.1111/j.1749-6632.1985.tb14560.x). Annals of the New York Academy of Sciences 440 (1 Discrete Geom):279–298.
+Grünbaum B and GC Shephard. 1985. [_A catologue of isonemal fabrics_](https://dx.doi.org/10.1111/j.1749-6632.1985.tb14560.x). _Annals of the New York Academy of Sciences_ **440**(1 Discrete Geom):279–298.
 
-Grünbaum B and GC Shephard. 1986. [_An extension to the catalogue of isonemal fabrics_](https://dx.doi.org/10.1016/0012-365X(86)90010-5). Discrete Mathematics 60:155–192.
+Grünbaum B and GC Shephard. 1986. [_An extension to the catalogue of isonemal fabrics_](https://dx.doi.org/10.1016/0012-365X(86)90010-5). Discrete Mathematics **60**:155–192.
 
 And this video by Lea Albaugh provided a nice way in to the topic for us: ["It's Just Matrix Multiplication": Notation for Weaving](https://www.youtube.com/watch?v=oMOSiag3dxg), presented at the Strange Loop conference, St Louis, 27-28 Sept, 2018. 
+
 
 ## Questions?
