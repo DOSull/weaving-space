@@ -46,7 +46,8 @@ weave_layer <- function(weave_unit, region, angle = 0,
   to_tile <- region  %>%
     sf_transform(wk_affine_invert(transform)) %>% 
     sf_rotate(-angle, cx, cy) %>%
-    sf_transform(weave_unit$transform)
+    sf_transform(weave_unit$transform) %>%
+    dplyr::mutate(to_tile_id = row_number())
   
   the_tile <- weave_unit$primitive %>%
     sf_transform(weave_unit$transform)
@@ -62,10 +63,16 @@ weave_layer <- function(weave_unit, region, angle = 0,
   tiling <- lapply(pts, sf_shift, shapes = the_tile) %>% 
     bind_rows() %>% 
     st_set_crs(st_crs(region)) %>%
-    st_cast() %>%            # this avoids issues with odd geometry types
-    group_by(id) %>%         # dissolve on the id attribute
-    summarise() %>%
-    st_intersection(to_tile) # and intersect with the region
+    st_intersection(to_tile) %>% 
+    qgis::qgis_dissolve(FIELD = c("id", "to_tile_id")) %>% 
+    st_as_sf() %>%
+    st_set_crs(st_crs(region))
+    # 
+    # st_set_crs(st_crs(region)) %>%
+    # st_cast() %>%            # this avoids issues with odd geometry types
+    # group_by(id) %>%         # dissolve on the id attribute
+    # summarise() %>%
+    # st_intersection(to_tile) # and intersect with the region
   
   # undo the transformations in reverse order
   # if (weave_unit$type == "diamond") {
