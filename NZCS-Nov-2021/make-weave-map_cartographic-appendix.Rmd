@@ -74,12 +74,16 @@ plot_anthromes <- function(curr_sf,
               main.title = main.title) + 
     tm_view(set.view=c(174.6716,-41.2834,9))
 }
+```
 
-print("A map where data boundaries can cross strands")
+### A map where data boundaries can cross strands
+
+```{r message = FALSE, echo = FALSE, warning = FALSE}
 plot_anthromes(fabric2,col_a="class1800",col_b="class1900",col_c="class2000")
-print("")
-print("A map generalized so that strands have a single colour")
+```
+
+### A map generalized so that strands have a single colour
+
+```{r message = FALSE, echo = FALSE, warning = FALSE}
 plot_anthromes(fabric2,col_a="class1800_by_strand",col_b="class1900_by_strand",col_c="class2000_by_strand")
-
-
 ```
