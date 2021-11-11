@@ -11,6 +11,4 @@ Some older abortive work in python is in the `python-stuff` folder.
 
 Some sketches figuring things out are in `sketches`.
 
-An overview of the concepts can be found on [this webpage](https://dosull.github.io/weaving-space/make-weave-map.html).
-
-And here is a [larger version of the main map in that presentation](https://dosull.github.io/weaving-space/example-map-1.html) here.
+An overview of the concepts can be found on [this webpage](https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html).
