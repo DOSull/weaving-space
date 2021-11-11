@@ -28,7 +28,7 @@ source("weave-map.R")
 # 
 # st_write(anthromes_dgg, "nz-anthromes-dgg.gpkg")
 
-anthromes_dgg <- st_read("nz-anthromes-dgg.gpkg")
+anthromes_dgg <- st_read("data/nz-anthromes-dgg.gpkg")
 
 library(tmap)
 tmap_mode("plot")
@@ -40,18 +40,20 @@ tm_shape(anthromes_dgg) +
             legend.outside = TRUE)
 
 
-st_write(anthrome_weave, "anthromes/anthrome-weave-cube.gpkg")
+
 
 twill_tile <- get_biaxial_weave_unit(spacing = 5000, margin = 100, 
                                      aspect = 0.8, type = "twill", n = 2,
-                                     ids = "a|b", crs = 2193)
+                                     strands = "a|b", crs = 2193)
 plain_tile <- get_biaxial_weave_unit(spacing = 5000, margin = 100, 
-                                     aspect = 0.65, ids = "a|b", crs = 2193)
+                                     aspect = 0.65, strands = "a|b", crs = 2193)
 cube_tile2 <- get_triaxial_weave_unit(spacing = 8000, type = "cube",
-                                      ids = "a|b|c", crs = 2193)
+                                      strands = "a|b|c", crs = 2193)
 
 anthrome_weave <- weave_layer(cube_tile2, anthromes_dgg, angle = 45)
-anthrome_layers <- split(anthrome_weave, anthrome_weave$id)
+st_write(anthrome_weave, "anthromes/anthrome-weave-cube.gpkg",append=FALSE)
+
+anthrome_layers <- split(anthrome_weave, anthrome_weave$strand)
 
 tmap_mode("view")
 tmap_options(check.and.fix = TRUE)
