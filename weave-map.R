@@ -37,7 +37,19 @@ sf_shift <- function(pt, shapes) {
 
 
 weave_layer <- function(weave_unit, region, angle = 0, 
-                        transform = wk_affine_identity()) {
+                        transform = wk_affine_identity(),
+                        merge_map_polys_within_data_polys = TRUE, # helps with leaflet, but caution
+                        region_data_cols_to_summarize_by_strand = c()
+                        ) {
+  
+  if (merge_map_polys_within_data_polys &&
+      (length(region_data_cols_to_summarize_by_strand)>0)) {
+    warning(str_c(
+      'Merging map polygons within data polygons not supported when\n',
+      '   adding data columns that summarize values across the strand unit.\n',
+      'Here, summarizing data while NOT merging map polygons as requested.'))
+    merge_map_polys_within_data_polys = FALSE
+  }
   
   cntrd <- region %>% sf_get_centroid()
   cx <- cntrd[1] 
@@ -62,11 +74,37 @@ weave_layer <- function(weave_unit, region, angle = 0,
   
   tiling <- lapply(pts, sf_shift, shapes = the_tile) %>% 
     bind_rows() %>% 
+    mutate(strand_id = row_number()) %>%
     st_set_crs(st_crs(region)) %>%
-    st_intersection(to_tile) %>% 
-    qgis::qgis_dissolve(FIELD = c("strand", "to_tile_id")) %>% 
-    st_as_sf() %>%
-    st_set_crs(st_crs(region))
+    st_intersection(to_tile)
+
+  if (length(region_data_cols_to_summarize_by_strand)>0) {
+
+    to_count_up <- tiling %>%
+      mutate(area=st_area(.)) %>%
+      st_drop_geometry() %>%
+      as_tibble() %>%
+      group_by(strand_id)
+
+    for (col_to_summarize in region_data_cols_to_summarize_by_strand) {
+      tiling <- tiling %>% 
+        left_join(
+          to_count_up %>%
+            count(!!as.name(col_to_summarize), wt = area, sort=TRUE) %>%
+            top_n(1, n) %>%
+            select(-n) %>%
+            rename(!!str_c(col_to_summarize,"_by_strand"):=!!col_to_summarize),
+          by='strand_id'
+        )
+    }
+  }
+  
+  if (merge_map_polys_within_data_polys) {
+    tiling <- tiling %>% 
+      qgis::qgis_dissolve(FIELD = c("strand", "to_tile_id")) %>% 
+      st_as_sf() %>%
+      st_set_crs(st_crs(region))
+  }
     # 
     # st_set_crs(st_crs(region)) %>%
     # st_cast() %>%            # this avoids issues with odd geometry types

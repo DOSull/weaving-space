@@ -19,7 +19,10 @@ editor_options:
   chunk_output_type: console
 ---
 ```{r, setup, include=FALSE}
-knitr::opts_knit$set(root.dir = "~/Documents/code/weaving-space")
+knitr::opts_knit$set(root.dir = 
+                       "~/weaving-space"
+                       #"~/Documents/code/weaving-space"
+                       )
 ```
 
 ```{r message = FALSE, echo = FALSE, warning = FALSE, results = FALSE}
@@ -365,7 +368,9 @@ tm_shape(layers2$a, name = "1800") +
   tm_fill(col = "class2000", palette = anthrome_colors(), title = "Anthrome")
 ```
 
-Also see: [online full screen version of the above map](example-map-3.html) and an [alternate map using the cube weave](example-map-2.html)
+Also see: [online full screen version of the above map](example-map-3.html)
+
+Also see: [A comparison of cube weaves for this data](make-weave-map_cartographic-appendix.html)--experimenting with whether to have strand segments only have a single colour of the data that has the most area within each segment or leaving strands coloured, as above, with data boundaries visibly breaking up strands. 
 
 
 # Write the weave layers

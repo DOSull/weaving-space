@@ -1,0 +1,85 @@
+---
+title: "Weaving maps of multivariate data - Cartographic Appendix"
+author: 
+  - David O'Sullivan, VUW
+  - Luke R Bergmann, UBC
+date: 12 November 2021
+output:
+  rmdformats::readthedown:
+    lightbox: true
+    thumbnails: true
+    gallery: true
+    code_folding: hide
+    downcute_theme: "chaos"
+    embed_fonts: true
+    self_contained: false
+    toc_depth: 3
+    css: "data/extra.css" # to override the sidebar width
+editor_options: 
+  chunk_output_type: console
+---
+```{r, setup, include=FALSE}
+knitr::opts_knit$set(root.dir = 
+                       "~/weaving-space"
+                       #"~/Documents/code/weaving-space"
+                       )
+```
+
+```{r message = FALSE, echo = FALSE, warning = FALSE}
+source("weaving-space-utils.R")
+source("biaxial-weave-units.R")
+source("triaxial-weave-units.R")
+source("weave-map.R")
+
+library(sf)        # vector spatial data
+library(tmap)      # thematic maps
+library(dplyr)     # data wrangling
+library(anthromes)
+
+
+anthromes <- st_read("data/nz-anthromes-dgg.gpkg")
+cube_tile2 <- get_triaxial_weave_unit(type = "cube", spacing = 8000, crs = st_crs(anthromes))
+fabric2 <- weave_layer(cube_tile2, anthromes,
+                       merge_map_polys_within_data_polys = FALSE,
+                       region_data_cols_to_summarize_by_strand = c('class1800','class1900','class2000')
+                       )
+
+fabric2 <- fabric2 %>%   
+  mutate(label = if_else(strand == "a", 
+                         paste("1800", class1800),               # make labels including
+                         ifelse(strand == "b",                       # year and anthrome
+                                paste("2000", class2000), 
+                                paste("1900", class1900)))) %>% 
+  relocate(label) # put them in 1st column
+
+tmap_mode("view")
+tmap_options(check.and.fix = TRUE)
+
+
+plot_anthromes <- function(curr_sf,
+                           col_a="class1800",col_b="class1900",col_c="class2000",
+                           main.title="Transitions from 1800 to 2000") {
+  #print(curr_sf)
+  anthrome_layers <- split(curr_sf, curr_sf$strand)
+  tm_shape(anthrome_layers$a) + 
+    tm_fill(col = col_a, palette = anthrome_colors(), 
+            legend.show = FALSE) + 
+    tm_shape(anthrome_layers$b) + 
+    tm_fill(col = col_b, palette = anthrome_colors(), 
+            legend.show = FALSE) + 
+    tm_shape(anthrome_layers$c) + 
+    tm_fill(col = col_c, palette = anthrome_colors(), 
+            title = "Anthrome") + 
+    tm_layout(legend.outside = TRUE, 
+              main.title = main.title) + 
+    tm_view(set.view=c(174.6716,-41.2834,9))
+}
+
+print("A map where data boundaries can cross strands")
+plot_anthromes(fabric2,col_a="class1800",col_b="class1900",col_c="class2000")
+print("")
+print("A map generalized so that strands have a single colour")
+plot_anthromes(fabric2,col_a="class1800_by_strand",col_b="class1900_by_strand",col_c="class2000_by_strand")
+
+
+```
