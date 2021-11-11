@@ -1,6 +1,8 @@
 ---
 title: "Weaving maps of multivariate data"
-author: "David O'Sullivan"
+author: 
+  - David O'Sullivan, VUW
+  - Luke R Bergmann, UBC
 date: 12 November 2021
 output:
   rmdformats::readthedown:
