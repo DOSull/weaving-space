@@ -39,7 +39,7 @@ sf_rotate <- function(shapes, angle, cx = 0, cy = 0) {
 #
 #      0.5,S3/2
 #      /\
-# 0,0 /  \1,0
+#  0,0/  \1,0
 #     \  /
 #      \/
 #      0.5,S3/2
@@ -111,15 +111,15 @@ affine_abcd <- function(a, b, c, d) {
 # parses an ids string "ab|c|de" (for example) by splitting at '|'s
 # i.e. to c("ab", "c", "de")
 parse_labels <- function(ids) {
-  lbls <- strsplit(ids, "|", fixed = TRUE)
+  lbls <- strsplit(ids, split = "|", fixed = TRUE)[[1]]
   labels_1 <- lbls[[1]][1] 
-  if (length(lbls[[1]]) > 1) {
-    labels_2 <- lbls[[1]][2]
+  if (length(lbls) > 1) {
+    labels_2 <- lbls[2]
   } else {
     labels_2 <- "-"
   }
-  if (length(lbls[[1]]) > 2) {
-    labels_3 <- lbls[[1]][3]
+  if (length(lbls) > 2) {
+    labels_3 <- lbls[3]
   } else {
     labels_3 <- "-"
   }
