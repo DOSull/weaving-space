@@ -81,7 +81,7 @@ weave_layer <- function(weave_unit, region, angle = 0,
   if (length(region_data_cols_to_summarize_by_strand)>0) {
 
     to_count_up <- tiling %>%
-      mutate(area=st_area(.)) %>%
+      mutate(area = st_area(.)) %>%
       st_drop_geometry() %>%
       as_tibble() %>%
       group_by(strand_id)
@@ -93,7 +93,7 @@ weave_layer <- function(weave_unit, region, angle = 0,
             count(!!as.name(col_to_summarize), wt = area, sort=TRUE) %>%
             top_n(1, n) %>%
             select(-n) %>%
-            rename(!!str_c(col_to_summarize,"_by_strand"):=!!col_to_summarize),
+            rename(!!str_c(col_to_summarize, "_by_strand"):=!!col_to_summarize),
           by='strand_id'
         )
     }

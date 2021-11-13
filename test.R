@@ -12,13 +12,13 @@ region <- st_read("data/vax-auckland-20211006.gpkg")
 tu <- matrix(c(0, 1, 1, 0, 1, 1,
                1, 1, 0, 1, 0, 1,
                1, 0, 1, 0, 1, 0,
-               0, 1, 0, 0, 0, 1,
+               0, 1, 0, 1, 0, 1,
                1, 0, 1, 0, 1, 0,
                1, 1, 0, 1, 0, 1), 6, 6, byrow = TRUE)
 
 unit1 <- get_biaxial_weave_unit(type = "this", tie_up = tu, 
-                                spacing = 100, aspect = 0.75,
-                                strands = "a|c")
+                                spacing = 200, aspect = 0.75,
+                                strands = "aaacaa|bbbdbb")
 
 weave1 <- weave_layer(unit1, region)
 
