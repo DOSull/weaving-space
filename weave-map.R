@@ -1,6 +1,7 @@
 require(dplyr)
 require(sf)
 require(wk)
+require(rmapshaper)
 
 hex_types <- c("hex", "cube")
 
@@ -101,7 +102,12 @@ weave_layer <- function(weave_unit, region, angle = 0,
   
   if (merge_map_polys_within_data_polys) {
     tiling <- tiling %>% 
-      qgis::qgis_dissolve(FIELD = c("strand", "to_tile_id")) %>% 
+      #
+      # These two commented out lines use rmapshaper::ms_dissolve
+      # qgis::qgis_dissolve preferred for now
+      # dplyr::mutate(combined_id = str_c(as.character(strand), as.character(to_tile_id))) %>%
+      # ms_dissolve(field = "combined_id", copy_fields = names(.), snap = FALSE) %>%
+      qgis::qgis_dissolve(FIELD = c("strand", "to_tile_id")) %>%
       st_as_sf() %>%
       st_set_crs(st_crs(region))
   }
