@@ -131,3 +131,29 @@ string_to_chars <- function(s) {
   return(substring(s, 1:nchar(s), 1:nchar(s)))
 }
 
+parse_strand_label <- function(s) {
+  clean_s <- gsub("[(]+", "(", s)
+  clean_s <- gsub("[)]+", ")", clean_s)
+  result <- c()
+  combo <- FALSE
+  current <- ""
+  for (i in 1:nchar(clean_s)) {
+    nextChar <- substr(clean_s, i, i)
+    if (combo) {
+      if (nextChar == ")") {
+        result <- c(result, current)
+        current <- ""
+        combo <- FALSE
+      } else {
+        current <- paste(current, nextChar, sep = "")
+      }
+    } else {
+      if (nextChar == "(") {
+        combo <- TRUE
+      } else {
+        result <- c(result, nextChar)
+      }
+    }
+  }
+  return(result)
+}

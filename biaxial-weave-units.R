@@ -45,7 +45,8 @@ get_weave_pattern_matrix <- function (type = "plain", n = 2,
                                       warp = letters[1:2], 
                                       weft = letters[3:4], 
                                       tie_up = this_tu,
-                                      th = this_th, tr = this_tr) {
+                                      th = diag(ncol(tie_up)), 
+                                      tr = diag(nrow(tie_up))) {
   # make a sequence of ints from the warp/weft, 
   # substituting -1 for any "-"
   idxs <- 1:(length(c(warp, weft)))
@@ -66,7 +67,7 @@ get_weave_pattern_matrix <- function (type = "plain", n = 2,
     "basket" = make_basket_pattern(n = n, 
                                    warp_n = width, weft_n = height),
     
-    "this" = make_this_pattern(tie_up = tie_up, th = th, tr = tr, 
+    "this" = make_this_pattern(tie_up = tie_up, th = th, tr = tr,⎄
                                warp_n = width, weft_n = height)
   )
   nc <- ncol(p)
@@ -243,8 +244,8 @@ make_basket_matrix <- function(n) {
 # ncol(tie_up) == nrow(threading) 
 # but unsure what would be an appropriate way to do this...
 make_this_pattern <- function(tie_up = this_tu, 
-                              threading = this_th, 
-                              treadling = this_tr,
+                              threading = diag(ncol(tie_up)), 
+                              treadling = diag(nrow(tie_up)),
                               warp_n = 2, weft_n = 2) {
   return(get_pattern(tie_up, treadling, threading, warp_n, weft_n))
 }
@@ -371,7 +372,8 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1,
                                    n = c(2, 2), # used by twill
                                    strands = "ab|cd", crs = 3857,
                                    tie_up = this_tu, 
-                                   tr = this_tr, th = this_th) {
+                                   tr = diag(nrow(tie_up)), 
+                                   th = diag(ncol(tie_up))) {
   
   parsed_labels = strands %>% parse_labels() %>% lapply(string_to_chars)
   warp_threads = parsed_labels[[1]]
@@ -411,7 +413,5 @@ this_tu <- matrix(c(0,0,0,0,1,1,1,1,
                     1,1,0,1,0,1,0,0,
                     1,1,1,0,1,0,0,0,
                     1,1,1,1,0,0,0,0), 8, 8, byrow = TRUE)
-this_tr <- diag(8)
-this_th <- diag(8)
 ids <- "aaaaaaaabbbbbbbb|aaaaaaaacccccccc"
 
