@@ -67,7 +67,7 @@ get_weave_pattern_matrix <- function (type = "plain", n = 2,
     "basket" = make_basket_pattern(n = n, 
                                    warp_n = width, weft_n = height),
     
-    "this" = make_this_pattern(tie_up = tie_up, th = th, tr = tr,⎄
+    "this" = make_this_pattern(tie_up = tie_up, th = th, tr = tr,
                                warp_n = width, weft_n = height)
   )
   nc <- ncol(p)
