@@ -88,6 +88,14 @@ augment <- function(mat, x = 1) {
   return(result[1:(rc[1] + x), 1:(rc[2] + x)])
 }
 
+augment_with_values <- function(mat, n = 1, values = 0) {
+  rc <- dim(mat) 
+  result <- repmat(mat, 2)
+  result[, (rc[2] + 1):(rc[2] + n)] <- values
+  result[(rc[1] + 1):(rc[1] + n), ] <- values
+  return(result[1:(rc[1] + n), 1:(rc[2] + n)])
+}
+
 # returns the lowest common multiple of v1 and v2 divided by each 
 # used to determine how many repetitions of v1 and v2 required to 
 # make matched length vectors
@@ -123,7 +131,7 @@ get_pattern <- function(tie_up, treadling, threading,
 # missing threads
 # pattern : matrix of 1 = warp on top 2 = weft on top 
 # warp    : column matrix of ints where -1 is a missing thread
-# weft    : row matrix of ints where -1 is a missing thread
+# weft    : row matrix of ints where -1 hhis a missing thread
 modify_pattern_for_missing_threads <- function(pattern, warp, weft) {
   # threads missing in a direction mean the other direction 
   # should be on top
