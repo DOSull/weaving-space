@@ -24,7 +24,17 @@ unit <- get_biaxial_weave_unit(type = "this", tie_up = m, strands = "abcd--|efgh
 unit$primitive %>% plot(border = NA)
 ```
 
-# 2 x 2 basket weave with gaps
+Make the gap bigger - any time you add more rows/columns of 0s with `augment_with_values` you need to add dashes to the `strands` parameter.
+
+```{r}
+m <- make_twill_matrix(1) %>%
+  repmat(2) %>%
+  augment_with_values(3, 0)
+unit <- get_biaxial_weave_unit(type = "this", tie_up = m, strands = "abcd---|efgh---")
+unit$primitive %>% plot(border = NA)
+```
+
+# 2 over 2 under basket weave with gaps
 
 ```{r}
 m <- make_basket_matrix(2) %>% 
@@ -33,11 +43,19 @@ unit <- get_biaxial_weave_unit(type = "this", tie_up = m, strands = "abcd--|efgh
 unit$primitive %>% plot(border = NA)
 ```
 
-# 6 x 6 basket weave
-Note that the missing threads mean we don't need rows and columns of 0s added to the matrix
+This can be augmented similarly
 
 ```{r}
-m <- make_basket_matrix(6)
-unit <- get_biaxial_weave_unit(type = "this", tie_up = m, strands = "abcd--|efgh--")
+m <- make_basket_matrix(2) %>% 
+  augment_with_values(3, 0)
+unit <- get_biaxial_weave_unit(type = "this", tie_up = m, strands = "abcd---|efgh---")
+unit$primitive %>% plot(border = NA)
+```
+
+If you wanted to have spaces 4x4 then since the 2 over 2 under basket fits that exactly, you don't need to augment the matrix, and can just add the missing strands:
+
+```{r}
+m <- make_basket_matrix(2)
+unit <- get_biaxial_weave_unit(type = "this", tie_up = m, strands = "abcd----|efgh----")
 unit$primitive %>% plot(border = NA)
 ```
