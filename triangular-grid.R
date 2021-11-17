@@ -10,9 +10,9 @@ get_coord <- function(a, b, c, dstep, c0 = 0) {
 
 # See: Nagy, B. N. 2003. Shortest Paths in Triangular Grids with Neighbourhood 
 # Sequences. Journal of Computing and Information Technology 11 (2):111.
-get_triangle_grid <- function(L = 10000, tilt = 1, n = 5) {
+get_triangle_grid <- function(L = 10000, n = 5) {
   # Unit vectors in each axial direction
-  angles <- (tilt + c(0, 8, 4)) * pi / 6
+  angles <- c(1, 9, 5) * pi / 6
   dx <- L * cos(angles)
   dy <- L * sin(angles)
   abc <- expand.grid(a = -(2*n):(2*n + 1), b = -n:n, c = -n:n) %>% 
@@ -32,7 +32,7 @@ plot_triangle_grid <- function(g) {
     geom_point(aes(x = xc, y = yc, 
                    shape = as.factor(parity), 
                    colour = as.factor(parity)), size = 5) +
-    scale_shape_manual(values = c(2, 6)) +
+    scale_shape_manual(values = c(2, 6)) + # up and down triangles
     geom_text(aes(x = xc, y = yc, label = label), size = 2, vjust = -1) +
     coord_equal() +
     theme_minimal()
@@ -51,23 +51,25 @@ get_triangle_from_centre <- Vectorize(
 )
 
 
-tg <- get_triangle_grid(n = 1) 
-plot_triangle_grid(tg)
+tg <- get_triangle_grid(n = 3) 
+
+# plot_triangle_grid(tg)
+
 triangles <- get_triangle_from_centre(tg$xc, tg$yc, tg$parity == 1) %>%
   lapply(st_multipoint) %>%
   lapply(st_cast, to = "POLYGON") %>%
   st_sfc()
+
 sf_triangles <- st_sf(tg, geometry = triangles, crs = 3857)
 sf_triangles %>% plot(lwd = 0.2)
 
+
 # A = array(0, dim = rep(11, 3))
-# A[cbind(abc$a, abc$b, abc$c)] <- 1
-
-
+# A[cbind(tg$a, tg$b, tg$c)] <- 1
 
 # It's a slice through a 3D matrix
 # library(plotly)
-# plot_ly(data = abc, x = ~a, y = ~b, z = ~c, size = I(30), marker = list(colorscale = "RdBu"),
+# plot_ly(data = tg, x = ~a, y = ~b, z = ~c, size = I(30), marker = list(colorscale = "RdBu"),
 #         color = ~parity, type = "scatter3d", mode = "markers")
 
 
