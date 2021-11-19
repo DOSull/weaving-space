@@ -296,7 +296,7 @@ translate_poly <- function(pt, poly) {
 # with length L, width W, orientation determined from
 # wow == 1 --> horizontal, wow == 2 --> vertical, and with
 # rectangles sliced lengthwise if required based on the supplied 
-# warp or weft id (e.g. "ab" with produces to narrower rectangles)
+# warp or weft id (e.g. "ab" produces two narrower rectangles)
 make_polys <- function(L, W, wow, dx, dy, warp_id, weft_id) {
   orientations <- c("vertical", "horizontal")
   n_slices <- c(nchar(warp_id), nchar(weft_id))
