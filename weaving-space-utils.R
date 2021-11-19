@@ -28,7 +28,7 @@ get_base_rect <- function(L, W, orientation = "horizontal", n_split = 1) {
                                          nrow = 2) %*% base)) + c(offsets[i], 0)
     }
   }
-  return(rects)
+  return(rects %>% st_as_sfc())
 }
 
 
