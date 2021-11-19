@@ -316,41 +316,47 @@ make_polygons_from_matrix <- function(ww = matrix(c(1, 2, 1, 2, 1, 2, 1, 2, 1), 
                                       spacing = 10000, aspect = 0.6, margin = 0, 
                                       warp = letters[1:2], weft = letters[3:4],
                                       crs = 3857) {
+  # set height, width, length and width of thread elements, and bounding box
   h <- nrow(ww)
   w <- ncol(ww)
   L <- 2 * spacing / (1 + aspect)
   W <- L * aspect
   bb <- c(xmin = 0, ymin = 0, xmax = spacing * (w - 1), ymax = spacing * (h - 1))
+  # extend the lists of thread IDs in case we need to run over
   weft_ids <- rep(weft, ceiling(h / length(weft)))
   warp_ids <- rep(warp, ceiling(w / length(warp)))
+  # empty list for the polygons and vector for the strand ids
   polys <- list()
-  out_ids <- c()
+  strand_ids <- c()
   for(row in 1:h) {
     for(col in 1:w) {
+      # get the next set of polygons
       next_polys <- make_polys(L, W, ww[row, col],
                                spacing * (col - 1), spacing * (row - 1),
                                warp_ids[col], weft_ids[row])
+      # get number of ids in strand on top
       thread_ids <- c(warp_ids[col], weft_ids[row])
-      n_over <- nchar(thread_ids)[ww[row, col]]
+      n_on_top <- nchar(thread_ids)[ww[row, col]]
       for (i in 1:length(next_polys)) {
+        # add to the list of polygons
         polys <- append(polys, list(next_polys[[i]]))
-        id <- ifelse(i <= n_over, thread_ids[ww[row, col]] %>% substr(i, i),
-                     thread_ids[3 - ww[row, col]] %>% substr(i - n_over, i - n_over))
-        out_ids <- c(out_ids, id)
+        # strand id is from the spec on top, or not
+        id <- ifelse(i <= n_on_top, thread_ids[ww[row, col]] %>% substr(i, i),
+                     thread_ids[3 - ww[row, col]] %>% substr(i - n_on_top, i - n_on_top))
+        strand_ids <- c(strand_ids, id)
       }
     }
   }
   polys <- polys %>%
-    st_as_sfc() %>% st_sf() %>%
-    # add in the id attribute and dissolve
-    mutate(strand = out_ids) %>%    # the indices into the thread names
+    st_as_sfc() %>% st_sf() %>%     # make into an sf
+    mutate(strand = strand_ids) %>% # the indices into the thread names
     filter(strand != "-") %>%       # throw away the missing ones coded -1
-    st_crop(bb) %>%
+    st_crop(bb) %>%                 # crop to bounding box and remove any slivers
     filter(st_geometry_type(.) %in% c("POLYGON", "MULTIPOLYGON")) %>%
-    group_by(strand) %>%            # dissolve
+    group_by(strand) %>%            # dissolve on the strand
     summarise() %>%
-    st_buffer(-margin) %>%
-    st_set_crs(crs)
+    st_buffer(-margin) %>%          # do the margin inset
+    st_set_crs(crs)                 # set the CRS    
   
   return(list(weave_unit = polys,
               tile = bb))
