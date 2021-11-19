@@ -293,21 +293,34 @@ translate_poly <- function(pt, poly) {
 }
 
 # makes polygons
-make_polys <- function(L, W, wow, dx, dy) {
-  orientations <- c("vertical", "horizontal")
+make_polys <- function(L, W, wow, dx, dy, warp_id, weft_id) {
+  orientation <- ifelse(wow == 1, "vertical", "horizontal")
+  id <- ifelse(wow == 1, warp_id, weft_id)
   polys <- list()
-  polys[[1]] <- get_base_rect(L, W, orientations[wow]) + c(dx, dy)
+  n_poly <- 1
+  p <- get_base_rect(L, W, orientation, nchar(id))
+  for (i in 1:length(p)) {
+    polys[[n_poly]] <- p[[i]] + c(dx, dy)
+    n_poly <- n_poly + 1
+  }
   if (L == W) {
     return(polys)
   }
   gap <- (L - W) / 2
   ddx <- ifelse(wow == 2, 0, (W + gap) / 2)
   ddy <- ifelse(wow == 2, (W + gap) / 2, 0)
-  orientation <- orientations[3 - wow]
-  polys[[2]] <- get_base_rect(gap, W, orientation) + 
-    c(dx - ddx, dy - ddy)
-  polys[[3]] <- get_base_rect(gap, W, orientation) + 
-    c(dx + ddx, dy + ddy)
+  orientation <- ifelse(wow == 2, "vertical", "horizontal")
+  id <- ifelse(wow == 2, warp_id, weft_id)
+  p <- get_base_rect(gap, W, orientation, nchar(id))
+  for (i in 1:length(p)) {
+    polys[[n_poly]] <- p[[i]] + c(dx - ddx, dy - ddy)
+    n_poly <- n_poly + 1
+  }
+  p <- get_base_rect(gap, W, orientation, nchar(id))
+  for (i in 1:length(p)) {
+    polys[[n_poly]] <- p[[i]] + c(dx + ddx, dy + ddy)
+    n_poly <- n_poly + 1
+  }
   return(polys)
 }
 
@@ -325,55 +338,53 @@ make_polygons_from_matrix <- function(ww, spacing, aspect, margin,
   polys <- list()
   out_ids <- c()
   n <- 1
-  for (k in 1:(dim(rc)[1])) { #c(mats$ids))) {
+  for (k in 1:(dim(rc)[1])) {
     row <- rc$row[k]
     col <- rc$col[k]
+    wow <- ww[row, col] == 1
     next_polys <- make_polys(L, W, ww[row, col], 
-                              spacing * (col - 1), spacing * (row - 1))
-    polys[[n]] <- next_polys[[1]]
-    out_ids <- append(out_ids, ifelse(ww[row, col] == 1, 
-                                      warp_ids[col], weft_ids[row]))
-    n <- n + 1
-    if (length(next_polys) > 1) {
-      polys[[n]] <- next_polys[[2]]
-      polys[[n + 1]] <- next_polys[[3]]
-      out_ids <- append(out_ids, 
-                        rep(ifelse(ww[row, col] == 1, 
-                                   weft_ids[row], warp_ids[col]), 2))
-      n <- n + 2
+                             spacing * (col - 1), spacing * (row - 1),
+                             warp_ids[col], weft_ids[row])
+    n_main <- ifelse(wow, nchar(warp_ids[col]), nchar(weft_ids[row]))
+    n_cross <- ifelse(wow, nchar(weft_ids[row]), nchar(warp_ids[col]))
+    for (i in 1:n_main) {
+      polys[[n]] <- next_polys[[i]]
+      ids <- ifelse(wow, warp_ids[col], weft_ids[row])
+      out_ids <- append(out_ids, substr(ids, i, i))
+      n <- n + 1
+    }
+    if (L != W) {
+      for (i in 1:n_cross) {
+        polys[[n]] <- next_polys[[n_main + i]]
+        ids <- ifelse(wow, weft_ids[row], warp_ids[col])
+        out_ids <- append(out_ids, substr(ids, i, i))
+        n <- n + 1
+      }
+      for (i in 1:n_cross) {
+        polys[[n]] <- next_polys[[n_main + n_cross + i]]
+        ids <- ifelse(wow, weft_ids[row], warp_ids[col])
+        out_ids <- append(out_ids, substr(ids, i, i))
+        n <- n + 1
+      }
     }
   }
   polys <- polys %>%
-    st_as_sfc() %>% st_sf() %>%
+    st_as_sfc() %>% 
+    st_sf() %>%
     # add in the id attribute and dissolve
     mutate(strand = out_ids) %>%    # the indices into the thread names
     filter(strand != "-") %>%       # throw away the missing ones coded -1
+    st_crop(bb) %>%
+    filter(st_geometry_type(.) == "POLYGON") %>%
     group_by(strand) %>%            # dissolve
     summarise() %>%
     st_buffer(-margin) %>%
-    st_crop(bb) %>%
     st_set_crs(crs)
   
   return(list(weave_unit = polys,
               tile = bb))
 }
 
-
-
-# hard-coded defaults for the arbitrary weave
-this_tr <- matrix(c(1, 0, 0, 0,
-                    0, 1, 0, 0, 
-                    0, 0, 1, 0,
-                    0, 0, 0, 1,
-                    0, 0, 1, 0,
-                    0, 1, 0, 0), 6, 4, byrow = TRUE)
-this_tu <- matrix(c(0, 0, 1, 
-                    0, 1, 0,
-                    1, 1, 0, 
-                    1, 0, 0), 4, 3, byrow = TRUE)
-this_th <- matrix(c(0, 0, 1,
-                    0, 1, 0, 
-                    1, 0, 0), 3, 3, byrow = TRUE)
 
 get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, 
                                    margin = 0, type = "plain", 
@@ -383,9 +394,11 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1,
                                    tr = diag(nrow(tie_up)), 
                                    th = diag(ncol(tie_up))) {
   
-  parsed_labels = strands %>% parse_labels() %>% lapply(string_to_chars)
-  warp_threads = parsed_labels[[1]]
-  weft_threads = parsed_labels[[2]]
+  parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"
+    parse_labels() %>%          # c("a(bc)", "ef-", "-")
+    lapply(parse_strand_label)  # list(c("a", "bc"), c("e", "f", "-"), c("-"))
+  warp_threads <- parsed_labels[[1]]
+  weft_threads <- parsed_labels[[2]]
   
   if (type == "basket") {
     n = n[1]
