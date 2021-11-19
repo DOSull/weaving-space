@@ -12,13 +12,13 @@ get_polygon <- function(pts) {
   return(st_polygon(list(mpts)))
 }
 
-# base rectangle with length, width, and specified orientation
-# centred on the origin
+# base rectangles with length, width, and specified orientation
+# centred on the origin, and sliced lengthwise into n_split elements
 get_base_rect <- function(L, W, orientation = "horizontal", n_split = 1) {
   # coords of a unit square centred on origin
   base <- 0.5 * matrix(c(-1, -1, 1, -1, 1, 1, -1, 1), nrow = 2)
   rects <- list()
-  offsets <- seq(1, (n_split - 1) * 2 + 1, 2) / n_split / 2 * W - W / 2
+  offsets <- seq(1, 2 * n_split - 1, 2) / n_split / 2 * W - W / 2
   for (i in 1:n_split) {
     if (orientation == "horizontal") {
       rects[[i]] <- get_polygon(c(matrix(c(L, 0, 0, W / n_split), 
@@ -31,18 +31,7 @@ get_base_rect <- function(L, W, orientation = "horizontal", n_split = 1) {
   return(rects)
 }
 
-# # base rectangle with length, width, and specified orientation
-# # centred on the origin
-# get_base_rect <- function(L, W, orientation = "horizontal") {
-#   # coords of a unit square centred on origin
-#   base <- 0.5 * matrix(c(-1, -1, 1, -1, 1, 1, -1, 1), nrow = 2)
-#   if (orientation == "horizontal") {
-#     return(get_polygon(c(matrix(c(L, 0, 0, W), nrow = 2) %*% base)))
-#   } else {
-#     return(get_polygon(c(matrix(c(W, 0, 0, L), nrow = 2) %*% base)))
-#   }
-# }
-# 
+
 # translates and returns the supplied sf shapes by the offsets dx and dy
 sf_translate <- function(shapes, dx = 0, dy = 0) {
   return(shapes %>% sf_transform(wk_affine_translate(dx, dy)))
