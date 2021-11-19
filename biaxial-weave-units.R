@@ -300,17 +300,15 @@ translate_poly <- function(pt, poly) {
 make_polys <- function(L, W, wow, dx, dy, warp_id, weft_id) {
   orientations <- c("vertical", "horizontal")
   n_slices <- c(nchar(warp_id), nchar(weft_id))
-  main_polys <- list()
-  n_poly <- 1
-  main_polys <- get_base_rect(L, W, orientations[wow], 
+  over_polys <- get_base_rect(L, W, orientations[wow], 
                               n_slices[wow]) + c(dx, dy)
   if (L == W) { # no gaps for the cross (under) strand to show
-    return(main_polys)
+    return(over_polys)
   }
-  cross_polys <- (get_base_rect(L, W, orientations[3 - wow], 
+  under_polys <- (get_base_rect(L, W, orientations[3 - wow], 
                                 n_slices[3 - wow]) + c(dx, dy)) %>% 
-    st_difference(st_union(main_polys))
-  return(c(main_polys, cross_polys))
+    st_difference(st_union(over_polys))
+  return(c(over_polys, under_polys))
 }
 
 
