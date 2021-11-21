@@ -1,0 +1,295 @@
+```{r}
+library(dplyr)
+library(sf)
+library(pracma)
+library(tmap)
+```
+
+# Grid generator 
+Returns a function that given coordinates in a space with `n` axes returns coordinates in x,y space
+
+```{r}
+grid_generator <- function(n = 2, L = 1) {
+  if (n == 2) {
+    angles <- 0:1 * pi / 2
+    dx <- L * cos(angles)
+    dy <- L * sin(angles)
+  }
+  if (n == 3) {
+    angles <- seq(3, 11, 4) * pi / 6
+    dx <- L * cos(angles) * 2 / 3
+    dy <- L * sin(angles) * 2 / 3
+  }
+  basis <- matrix(c(dx, dy), nrow = 2, ncol = n, byrow = TRUE)
+  return(function(coords) {
+    return(t(basis %*% coords) %>% c)
+  })
+}
+```
+
+# Simple rotation about a centre and translation function for sf shapes
+
+```{r}
+rotate_shape <- function(shape, angle, centre = c(0, 0)) {
+  a <- angle * pi / 180
+  m <- t(matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2))
+  return((shape - centre) * m + centre)
+}
+
+translate_shape <- function(shape, dxdy = c(0, 0)) {
+  return(shape + dxdy)
+}
+```
+
+# Cell basis polygon
+Returns a cell with `n` sides, and distance between faces `L`. For a triangle this is the height of the cell. The 'first' edge of the cell will be horizontal. Centroid at (0, 0).
+
+```{r}
+get_cell_poly <- function(L = 1, n = 4) {
+  # Radii to the corners of the polygon are either
+  # n even:      or, n odd:
+  #   \  /            |
+  # ___\/___       ___|___   
+  #    /\            / \
+  #   /  \          /   \
+  # face to face distance L is either 
+  # n even: L = 2Rcos(pi/n), or
+  # n odd:  L = R(1 + cos(pi/n)
+  # where R is the radius of the circumcircle
+  if (n %% 2 == 0) {
+    R <- L / (2 * cos(pi / n))
+  } else {
+    R <- L / (1 + cos(pi / n))
+  }
+  angles <- (2 * pi) * ((0:n / n) + (3 * n + 2) / (4 * n))
+  pts <- R * c(cos(angles), sin(angles)) %>%
+    matrix(nrow = n + 1, ncol = 2) %>%
+    round(10) # apparently required to ensure first and last points coincident
+  return((pts %>% list() %>% st_polygon()))
+}
+```
+
+Test this...
+
+```{r}
+get_cell_poly(n = 3) %>% plot(xlim = c(-0.6, 0.6), ylim = c(-0.55, 0.7))
+get_cell_poly(n = 4) %>% plot(add = TRUE)
+get_cell_poly(n = 5) %>% plot(add = TRUE, border = "grey") # because we can
+get_cell_poly(n = 6) %>% plot(add = TRUE)
+```
+
+# Slices that can cut a cell along its 'length'
+
+```{r}
+get_slices <- function(L = 1, W = 1, n_slices = 1, offset = c(0, 0)) {
+  odd_numbers <- 0:(n_slices-1) * 2 + 1
+  slice_offsets <- W * odd_numbers / (n_slices * 2) - W / 2
+  sL <- L * 2 # make slices longer so they reach corners at the base
+  sW <- W / n_slices
+  slices <- list()
+  for (i in 1:length(slice_offsets)) {
+    slices[[i]] <- (matrix(0.5 * c(-sL, -sW, sL, -sW, sL, sW, -sL, sW, -sL, -sW), 
+                           5, 2, byrow = TRUE) %>%
+                      list() %>%
+                      st_polygon()) + c(0, slice_offsets[i]) + offset
+  }
+  return((slices %>% st_sfc()))
+}
+```
+
+Test this...
+
+```{r}
+cell <- get_cell_poly(n = 3)
+bb <- st_bbox(cell)
+offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
+cell %>% 
+  plot(col = rgb(1, 0, 0, 0.5))
+get_slices(n = 2, W = 0.5, offset = offset) %>% 
+  plot(col = rgb(0, 0, 1, 0.5), add = TRUE)
+```
+
+# Get strand polygons
+In theory this works by making a cell polygon, then overlaying with slices
+
+```{r}
+get_cell_strands <- function(n = 4, S = 1, aspect = 1, orientation = 0, n_slices = 1) {
+  L <- ifelse(n %% 2 == 0, (2 * S) / (1 + aspect), S / sqrt(aspect))  
+  W <- aspect * L
+  cell <- get_cell_poly(L = L, n = n)
+  bb <- st_bbox(cell)
+  # offset of centre from 0,0
+  centre_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
+  return(get_slices(L, W, n_slices, offset = centre_offset) %>%
+           st_intersection(cell) %>% 
+           translate_shape(-centre_offset / 2) %>%
+           rotate_shape(orientation))
+}
+```
+
+Test this...
+
+```{r}
+get_cell_poly(n = 3) %>% rotate_shape(0) %>%
+  plot()
+get_cell_strands(n = 3, aspect = 0.35, orientation = 0) %>% 
+  plot(col = rgb(0, 0, 0, 0.5), add = TRUE)
+```
+
+```{r}
+get_cell_poly(n = 3) %>% rotate_shape(180) %>%
+  plot()
+get_cell_strands(n = 3, aspect = 0.35, orientation = 180) %>% 
+  plot(col = rgb(0, 0, 0, 0.5), add = TRUE)
+```
+
+
+
+
+```{r}
+trigrid <- grid_generator(n = 3)
+abc <- expand.grid(a = -3:4, b = -3:4, c = -4:3)
+# only coordinates that sum to 0 or 1 are part of triangular grid 
+abc <- abc[which(rowSums(abc) %in% 0:1), ]
+# orientation of triangles is based on even/odd of the coordinate sum
+parity <- rowSums(abc) %>% t() %>% c()
+centres <- apply(abc, 1, trigrid) %>% t()
+abc <- as.data.frame(abc) %>% 
+  mutate(parity = parity)
+```
+
+
+Not quite
+
+```{r}
+trigridcells <- list()
+for (i in 1:nrow(centres)) {
+  trigridcells[[i]] <- 
+    get_cell_strands(n = 3, S = 1, aspect = 0.5, n_slices = 1,
+                     orientation = ifelse(abc$parity[i] == 1, 0, 180)) + # + sample(0:2 * 120, 1)) + 
+    centres[i, ]
+}
+trigridcells <- trigridcells %>%
+  sapply("[") %>% c() %>%
+  st_as_sfc()
+tgc <- abc %>% 
+  st_sf(trigridcells)
+tm_shape(tgc) +
+  tm_polygons(col = "blue", alpha = 0.5, style = "cat", 
+              palette = "viridis", border.col = "white") +
+  tm_grid()
+```
+
+# Biaxial grid
+
+```{r}
+bigrid <- grid_generator()
+ab <- expand.grid(-5:5, -5:5)
+centres <- apply(ab, 1, bigrid) %>% t()
+bigridcells <- list() 
+for (i in 1:nrow(centres)) {
+  orientation <- ifelse(sum(round(centres[i, ], 0)) %% 2 == 0, 0, 90)
+  bigridcells[[i]] <- get_cell_strands(S = 1, aspect = 0.4, n_slices = 2,
+                                       orientation = orientation) + 
+    centres[i, ]
+}
+bigridcells <- bigridcells %>%
+  sapply("[") %>% c() %>%
+  st_as_sfc()
+tm_shape(bigridcells) +
+  tm_polygons() + 
+  tm_grid()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- get_base_cell <- function(L = 100, W = 100, orientation = 0,  -->
+<!--                           n_slices = 1, grid_type = "SQUARE") { -->
+<!--   switch(grid_type, -->
+
+<!--          "SQUARE" = return(get_square_cell(L, W, orientation, n_slices)), -->
+
+<!--          "TRIANGULAR" = return(get_triangle_cell(L, W, orientation, n_slices)) -->
+<!--   ) -->
+<!-- } -->
+
+
+
+
+
+
+<!-- make_cell <- function(L, W, wow, dx, dy, warp_id, weft_id) { -->
+<!--   orientations <- c("vertical", "horizontal") -->
+<!--   n_slices <- c(nchar(warp_id), nchar(weft_id)) -->
+<!--   over_polys <- get_base_rect(L, W, orientations[wow],  -->
+<!--                               n_slices[wow]) + c(dx, dy) -->
+<!--   if (L == W) { # no gaps for the cross (under) strand to show -->
+<!--     return(over_polys) -->
+<!--   } -->
+<!--   under_polys <- (get_base_cell(L, W, orientations[3 - wow],  -->
+<!--                                 n_slices[3 - wow]) + c(dx, dy)) %>%  -->
+<!--     st_difference(st_union(over_polys)) -->
+<!--   return(c(over_polys, under_polys)) -->
+<!-- } -->
+
+
+<!-- make_polygons_from_matrix <- function(ww = matrix(c(1, 2, 1, 2, 1, 2, 1, 2, 1), 3, 3),  -->
+<!--                                       spacing = 10000, aspect = 0.6, margin = 0,  -->
+<!--                                       warp = letters[1:2], weft = letters[3:4], -->
+<!--                                       crs = 3857) { -->
+<!--   # set height, width, length and width of thread elements, and bounding box -->
+<!--   h <- nrow(ww) -->
+<!--   w <- ncol(ww) -->
+<!--   L <- 2 * spacing / (1 + aspect) -->
+<!--   W <- L * aspect -->
+<!--   bb <- c(xmin = 0, ymin = 0, xmax = spacing * (w - 1), ymax = spacing * (h - 1)) -->
+<!--   # extend the lists of thread IDs in case we need to run over -->
+<!--   weft_ids <- rep(weft, ceiling(h / length(weft))) -->
+<!--   warp_ids <- rep(warp, ceiling(w / length(warp))) -->
+<!--   # empty list for the polygons and vector for the strand ids -->
+<!--   polys <- list() -->
+<!--   strand_ids <- c() -->
+<!--   for(row in 1:h) { -->
+<!--     for(col in 1:w) { -->
+<!--       # get the next set of polygons -->
+<!--       next_polys <- make_polys(L, W, ww[row, col], -->
+<!--                                spacing * (col - 1), spacing * (row - 1), -->
+<!--                                warp_ids[col], weft_ids[row]) -->
+<!--       # get number of ids in strand on top -->
+<!--       thread_ids <- c(warp_ids[col], weft_ids[row]) -->
+<!--       n_on_top <- nchar(thread_ids)[ww[row, col]] -->
+<!--       for (i in 1:length(next_polys)) { -->
+<!--         # add to the list of polygons -->
+<!--         polys <- append(polys, list(next_polys[[i]])) -->
+<!--         # strand id is from the spec on top, or not -->
+<!--         id <- ifelse(i <= n_on_top, thread_ids[ww[row, col]] %>% substr(i, i), -->
+<!--                      thread_ids[3 - ww[row, col]] %>% substr(i - n_on_top, i - n_on_top)) -->
+<!--         strand_ids <- c(strand_ids, id) -->
+<!--       } -->
+<!--     } -->
+<!--   } -->
+<!--   polys <- polys %>% -->
+<!--     st_as_sfc() %>% st_sf() %>%     # make into an sf -->
+<!--     mutate(strand = strand_ids) %>% # the indices into the thread names -->
+<!--     filter(strand != "-") %>%       # throw away the missing ones coded -1 -->
+<!--     st_crop(bb) %>%                 # crop to bounding box and remove any slivers -->
+<!--     filter(st_geometry_type(.) %in% c("POLYGON", "MULTIPOLYGON")) %>% -->
+<!--     group_by(strand) %>%            # dissolve on the strand -->
+<!--     summarise() %>% -->
+<!--     st_buffer(-margin) %>%          # do the margin inset -->
+<!--     st_set_crs(crs)                 # set the CRS     -->
+
+<!--   return(list(weave_unit = polys, -->
+<!--               tile = bb)) -->
+<!-- } -->
