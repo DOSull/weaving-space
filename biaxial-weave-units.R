@@ -319,8 +319,8 @@ make_polygons_from_matrix <- function(ww = matrix(c(1, 2, 1, 2, 1, 2, 1, 2, 1), 
   # set height, width, length and width of thread elements, and bounding box
   h <- nrow(ww)
   w <- ncol(ww)
-  L <- 2 * spacing / (1 + aspect)
-  W <- L * aspect
+  L <- spacing + spacing * (1 - aspect) #2 * spacing / (1 + aspect)
+  W <- spacing * aspect
   bb <- c(xmin = 0, ymin = 0, xmax = spacing * (w - 1), ymax = spacing * (h - 1))
   # extend the lists of thread IDs in case we need to run over
   weft_ids <- rep(weft, ceiling(h / length(weft)))
@@ -331,7 +331,7 @@ make_polygons_from_matrix <- function(ww = matrix(c(1, 2, 1, 2, 1, 2, 1, 2, 1), 
   for(row in 1:h) {
     for(col in 1:w) {
       # get the next set of polygons
-      next_polys <- make_polys(L, W, ww[row, col],
+      next_polys <- make_polys(spacing, W, ww[row, col],
                                spacing * (col - 1), spacing * (row - 1),
                                warp_ids[col], weft_ids[row])
       # get number of ids in strand on top
