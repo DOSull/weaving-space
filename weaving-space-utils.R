@@ -1,6 +1,7 @@
 require(dplyr)
 require(sf)
 require(wk)
+require(stringr)
 
 S3 <- sqrt(3)
 
@@ -136,24 +137,25 @@ parse_labels <- function(ids) {
 
 # converts a string to a vector of characters
 string_to_chars <- function(s) {
-  return(substring(s, 1:nchar(s), 1:nchar(s)))
+  return(str_sub(s, 1:str_length(s), 1:str_length(s)))
 }
 
 parse_strand_label <- function(s) {
-  clean_s <- gsub("[(]+", "(", s)
-  clean_s <- gsub("[)]+", ")", clean_s)
+  clean_s <- s %>% 
+    str_replace("[(]+", "(") %>%
+    str_replace("[)]+", ")")
   result <- c()
   combo <- FALSE
   current <- ""
-  for (i in 1:nchar(clean_s)) {
-    nextChar <- substr(clean_s, i, i)
+  for (i in 1:str_length(clean_s)) {
+    nextChar <- str_sub(clean_s, i, i)
     if (combo) {
       if (nextChar == ")") {
         result <- c(result, current)
         current <- ""
         combo <- FALSE
       } else {
-        current <- paste(current, nextChar, sep = "")
+        current <- str_c(current, nextChar, sep = "")
       }
     } else {
       if (nextChar == "(") {

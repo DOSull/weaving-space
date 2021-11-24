@@ -299,7 +299,7 @@ translate_poly <- function(pt, poly) {
 # warp or weft id (e.g. "ab" produces two narrower rectangles)
 make_polys <- function(L, W, wow, dx, dy, warp_id, weft_id) {
   orientations <- c("vertical", "horizontal")
-  n_slices <- c(nchar(warp_id), nchar(weft_id))
+  n_slices <- c(str_length(warp_id), str_length(weft_id))
   over_polys <- get_base_rect(L, W, orientations[wow], 
                               n_slices[wow]) + c(dx, dy)
   if (L == W) { # no gaps for the cross (under) strand to show
@@ -336,8 +336,8 @@ make_polygons_from_matrix <- function(ww = matrix(c(1, 2, 1, 2, 1, 2, 1, 2, 1), 
                                warp_ids[col], weft_ids[row])
       # get number of ids in strand on top
       thread_ids <- c(warp_ids[col], weft_ids[row])
-      n_on_top <- nchar(thread_ids)[ww[row, col]]
-      for (i in 1:length(next_polys)) {
+      n_on_top <- str_length(thread_ids)[ww[row, col]]
+      for (i in seq_along(next_polys)) {
         # add to the list of polygons
         polys <- append(polys, list(next_polys[[i]]))
         # strand id is from the spec on top, or not
@@ -354,7 +354,7 @@ make_polygons_from_matrix <- function(ww = matrix(c(1, 2, 1, 2, 1, 2, 1, 2, 1), 
     st_crop(bb) %>%                 # crop to bounding box and remove any slivers
     filter(st_geometry_type(.) %in% c("POLYGON", "MULTIPOLYGON")) %>%
     group_by(strand) %>%            # dissolve on the strand
-    summarise() %>%
+    dplyr::summarise() %>%
     st_buffer(-margin) %>%          # do the margin inset
     st_set_crs(crs)                 # set the CRS    
   

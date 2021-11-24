@@ -115,7 +115,7 @@ weave_layer <- function(weave_unit, region, angle = 0,
     # st_set_crs(st_crs(region)) %>%
     # st_cast() %>%            # this avoids issues with odd geometry types
     # group_by(id) %>%         # dissolve on the id attribute
-    # summarise() %>%
+    # dplyr::summarise() %>%
     # st_intersection(to_tile) # and intersect with the region
   
   # undo the transformations in reverse order
