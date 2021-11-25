@@ -12,3 +12,8 @@ Some older abortive work in python is in the `python-stuff` folder.
 Some sketches figuring things out are in `sketches`.
 
 An overview of the concepts can be found on [this webpage](https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html).
+
+## Notes
+The follow documents describe aspects of the project
+
++ [Notes on biaxial weave implementation](https://dosull.github.io/weaving-space/notes-on-biaxial-weave-implementation.html) as at [25 Nov 2021](https://github.com/DOSull/weaving-space/commit/735c6a828f682c52afd0fddf3570ce5fa4badaf3)

@@ -9,7 +9,7 @@ output:
 ---
 
 # Introduction
-This document aims to explain how biaxial weaves have been implemented in [`biaxial_weave_units.R`](biaxial-weave-units.R) including references to source literature, example code snippets etc. References to code are accurate at time of writing, but the code is subject (even likely) to change.
+This document aims to explain how biaxial weaves have been implemented in [`biaxial_weave_units.R`](biaxial-weave-units.R) including references to source literature, example code snippets etc. References to code are [accurate at time of writing](https://github.com/DOSull/weaving-space/commit/735c6a828f682c52afd0fddf3570ce5fa4badaf3), but the code is subject (even likely) to change.
 
 ```{r warning = FALSE, message = FALSE, results = FALSE}
 source("biaxial-weave-units.R")
