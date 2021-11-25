@@ -1,5 +1,5 @@
 ---
-title: "Biaxial weaving implementation notes"
+title: "Triaxial weaving implementation notes"
 author: David O'Sullivan
 date: 25 November
 output: 
@@ -9,15 +9,15 @@ output:
 ---
 
 # Introduction
-This document aims to explain how biaxial weaves have been implemented in [`biaxial_weave_units.R`](biaxial-weave-units.R) including references to source literature, example code snippets etc. References to code are [accurate at time of writing](https://github.com/DOSull/weaving-space/commit/735c6a828f682c52afd0fddf3570ce5fa4badaf3), but the code is subject (even likely) to change.
+This document aims to explain how triaxial weaves have been implemented in [`triaxial_weave_units.R`](triaxial-weave-units.R) including references to source literature, example code snippets etc. References to code are [accurate at time of writing](https://github.com/DOSull/weaving-space/commit/735c6a828f682c52afd0fddf3570ce5fa4badaf3), but the code is subject (even likely) to change.
 
 ```{r warning = FALSE, message = FALSE, results = FALSE}
-source("biaxial-weave-units.R")
+source("triaxial-weave-units.R")
 source("weaving-space-utils.R") # for parsing strand specification strings
 ```
 
-# Interface to the biaxial weave functions
-The main external function is `get_biaxial_weave_unit()` which returns a `list` with elements, describing the _fundamental block_ (term from somewhere in Grünbaum and Shephard's work) of the weave. The elements in the `list` are
+# Interface to the triaxial weave functions
+The main external function is `get_triaxial_weave_unit()` which returns a `list` with elements, describing the _fundamental block_ (term from somewhere in Grünbaum and Shephard's work) of the weave. The elements in the `list` are
 
 - `primitive` a `sf` dataset of polygons, which should be tileable to produce a weave pattern
 - `transform` a `wk` affine transform matrix required to tile the `primitive` - this will always be the identity matrix for biaxial units
@@ -28,8 +28,8 @@ The main external function is `get_biaxial_weave_unit()` which returns a `list` 
 For example
 
 ```{r warning = FALSE}
-unit <- get_biaxial_weave_unit(spacing = 100, aspect = 0.75, margin = 0, 
-                               type = "twill", n = 2, strands = "(ab)c|de", crs = 2193)
+unit <- get_triaxial_weave_unit(spacing = 100, aspect = 0.75, margin = 0, 
+                               type = "hex", strands = "abc|de", crs = 2193)
 unit
 ```
 
@@ -44,72 +44,26 @@ unit$primitive %>% plot(border = NA)
 # Internal operation
 The steps required to generate the fundamental block or _weave unit_ are 
 
-1. Determine the type of unit requested -- one of `plain`, `twill`, `basket`, or `this`
-2. Assemble and calculate the weave pattern matrix for the requested weave. This is delegated to `make_weave_pattern_matrix()`
-3. Based on the pattern matrix and the specification of the strands in each direction `make_polygons_from_matrix() creates the `sf` of the weave unit.
+1. Determine the type of unit requested -- one of `"hex"`, `"cube"` or `"diamond"`
+2. Build the unit from polygons in a bespoke manner
 
-## Operation of `make_weave_pattern_matrix()`
-### Matrix multiplication and weaving
-After initially implementing biaxial weaving by assembling, rotating and translating polygons (see `getPlainPrimitiveCell()` in [primitive-cells.R](code-junkyard/primitive-cells.R)), a matrix multiplication approach was adopted for the flexibility it provides. This was pieced together from the following sources:
+The creation of each of these different weave patterns is effectively bespoke, in functions `getHexPrimitiveCell()`, `getCubePrimitiveCell()` and `getDiamondPrimitiveCell()`.
 
-- ["It's just matrix multiplication": Notation for weaving](https://www.youtube.com/watch?v=oMOSiag3dxg) conference presentation at Strange Loop 2018 by [Lea Albaugh](http://lea.zone/)
+In each case, the steps are similar and set out below for the `"hex"` case
 
-and
+1. Create a base polygon
+2. Create translated copies of the base polygon
+3. Create rotated copies of all the polygons
+4. Form an appropriate tile unit and cookie-cut the polygons
 
-- Glassner, A. 2002. [Digital weaving. 1](https://dx.doi.org/10.1109/MCG.2002.1046635). _IEEE Computer Graphics and Applications_ **22**(6) 108–118.
+This process is shown below for the `"hex"` style
 
-Three matrices are involved 
+![steps to make the "hex" weave unit](hex-weave-unit-steps.png)
 
-1. The _tie up_ matrix, **T**, which is the basic pattern of warp threads over weft threads
-2. The _treadling_ matrix, **S**, which encapsulates the treadling sequence a weaver follows
-3. The _threading_ matrix, **U**, which encapsulates which warp threads are associated with each treadle
+One additional wrinkle is that the base polygon may actually consist of several polygons arranged in 'slices' along the length of the polygons. Note that this is the only support the triaxial weaves provide for multiple strands along each axis, meaning
 
-The matrix multiplication central to weaving is 
+(i) The full diversity of possible triaxial weaves is not supported
+(ii) The strand specification for triaxial weaves does not support 'bracketing'
+ together of strand IDs, and will instead produce additional strands with names such as "(" and ")"
 
-$$\mathbf{S}\cdot\mathbf{T}\cdot\mathbf{U}$$
-A simple example might clarify. Generally, in our cases, the treadling and threading matrices are the identity matrix of appropriate dimension, so we focus on the tie up matrix. For example, an over-2 under-2 basket weave this has the form
-
-$$\mathbf{T}=\left[\begin{array}{cccc}
-1 & 1 & 0 & 0 \\
-0 & 1 & 1 & 0 \\
-0 & 0 & 1 & 1 \\
-1 & 0 & 0 & 1
-\end{array}\right]$$
-
-Each row of this matrix tells which warp threads will be on top of the pattern. With identity treadling and threading matrices this translates directly into the weave pattern. 
-
-**[More to follow on varying the treadling and threading... perhaps]**
-
-## Implementation of matrix multiplication
-A function `get_pattern()` implements the above multiplication directly, with the modification that the returned matrix pattern is replicated as required to accommodate the number of distinct strands in the warp and weft directions. For example a 4x4 tie up matrix if supplied with 3 warp strands and 2 weft strands will return a 4x12 matrix, i.e., 3 repetitions of the pattern in the horizontal direction (across the warp strands) as this is minimum size required for repetitions in the strands and repertitions in the pattern to align correctly.
-
-The tie up matrix supplied to `get_pattern()` is determined by helper functions `make_plain_pattern()`, `make_twill_pattern()`, `make_basket_pattern()`, `make_random_pattern()`, and `make_this_pattern()`, which return the result from `get_pattern()` to the main `make_weave_pattern_matrix()` function. For example
-
-```{r}
-make_twill_pattern(2) 
-```
-
-This pattern is further altered in two ways.
-
-First `modify_pattern_for_missing_threads()` reverses the matrix value anywhere a strand is specified as missing in either direction. If a thread is missing in both directions at a particular row-column position it doesn't matter which value is retained since any shape drawn in that location will be removed.  
-
-Second the matrix is augmented by a row and column using the `augment()` helper function, so that a pattern of polygons one larger is produced that can be 'cookie-cut' to a tileable unit.
-
-## Operation of `make_polygons_from_matrix()`
-The basic pattern matrix produced in the previous steps is converted to a set of `sf` poiygons by `make_polygons_from_matrix()` in conjunction with helper functions `make_polys()` and `get_base_rects()` in `weaving-space-utils.R`.
-
-An array of location offsets is generated by `expand.grid()` using the weave spacing, and the number of rows and columns in the pattern matrix. The strand specification lists of names in each direction are doubled in length to ensure they have enough values for the augmented pattern.
-
-Iteration over the rows and columns of the matrix calls `make_polys()` which returns two polygons overlaid of appropriate length and width and orientation based on the pattern matrix value at that row and column. The order of overlay determines that one will be differenced so that only the ends of the strand underneath are showing. As an example the code below produces a unit with a warp thread on top split lengthwise in two ("ab") and a weft thread underneath split lengthwise in three ("cde").
-
-```{r}
-make_polys(100, 65, TRUE, 0, 0, "ab", "cde") %>% plot()
-```
-
-Such units are produced at all the needed offset locations based on the size of the pattern matrix, and assembled into the tileable weave unit `sf`. The above might be part of a specification such as, where the parentheses in the strand specification bracket together more than one label which slices the corresponding strand along its length.
-
-```{r}
-get_biaxial_weave_unit(type = "twill", aspect = 0.75, 
-                       strands = "(ab)c|(def)g")$primitive %>% 
-  plot(border = NA)
-```
+There is not much to say further about the triaxial patterns in this implementation. The relative inflexibility of the approach has led to [attempts to develop a matrix approach to triaxial weaves](towards-triaxial-weaves-using-matrices.html), similar to the [biaxial approach](notes-on-biaxial-weave-implementation.html).
