@@ -91,7 +91,7 @@ pts <- apply(coords[, c("a", "b", "c")], 1, trigrid) %>% t() %>%
   rename(x= X1, y = X2) %>%
   bind_cols(coords) %>% 
   mutate(parity = as.factor(parity),
-         label = str_c(a, b, c, sep = ","))
+         label = paste(a, b, c, sep = ","))
 
 ggplot(pts) + 
   geom_point(aes(x = x, y = y, colour = parity, shape = parity), size = 10) +

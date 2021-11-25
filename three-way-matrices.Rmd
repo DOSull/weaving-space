@@ -17,171 +17,137 @@ For a triangular grid only coordinate combinations that sum to two consecutive v
 
 ```{r}
 trigrid <- grid_generator(n_axes = 3)
-coords3 <- expand.grid(a = 1:5, b = 1:5, c = 1:5) # mean sum of a pair is 6, plus 0/1
-coords3 <- coords3 %>%
-  mutate(parity = a + b + c) %>% 
-  filter(parity %in% 6:7) 
-# %>% # in triaxial grid only these combos exist Nagy 2003
-#   filter((a %in% 1:3 & b %in% 1:3) | (b %in% 1:3 & c %in% 1:3) | (c %in% 1:3 & a %in% 1:3))
-
-centres3 <- apply(coords3[, letters[1:3]], 1, trigrid) %>% t()
-
-cells <- list()
-for (i in 1:nrow(centres3)) {
-  o = ifelse(coords3$parity[i] %% 2 == 1, 0, 180)
-  cells <- append(cells, list(get_cell_strands(n = 3, orientation = o) + centres3[i, ])) 
-}
-cells <- cells %>% sapply("[") %>% st_sfc() # this madness again...
-cells %>% plot()
 ```
+
 ## Conversion of biaxial strand coordinates to triaxial
 The biaxial pattern between each pair of layers A+B, B+C, C+A, produces a n x m matrix
 of warp/weft 1/0 values.
 
-Each single value at a row-column position in each of these matrices has to be assigned to two positions in an output _triangular_ grid. The weft (y) coordinate is unaffected. The warp (x) coordinate
+Each single value at a row-column position in each of these matrices has to be assigned to two positions in an output _triangular_ grid.
 
 ```{r}
-transform_xy_to_tri <- function(x, y, x0 = 1, y0 = 1, a0 = 1, b0 = 1, axis = 1) {
-  a <- switch(axis,
-              a0 -(x - x0) + (y - y0) - 0:1,
-              a0 -(x - x0) + (y - y0) - 0:1,
-              a0 -(x - x0) + (y - y0) - 0:1)
-  b <- switch(axis,
-              b0 + (y - y0), 
-              b0 + (y - y0), 
-              b0 + (y - y0)) 
-  m <- switch(axis,
-              matrix(c(a, rep(b, 2)), nrow = 2, ncol = 2),
-              matrix(c(a, rep(b, 2)), nrow = 2, ncol = 2),
-              matrix(c(a, rep(b, 2)), nrow = 2, ncol = 2))
-  return(m)
-}
-
-assign_xy_matrix_to_ab_matrix <- function(m, axis = 1) {
-  coords <- matrix(0, 0, 2)
-  values <- c()
-  for (row in 1:nrow(m)) {
-    for (col in 1:ncol(m)) {
-       coords <- rbind(coords, transform_xy_to_tri(x = col, y = row, 
-                                                   a0 = 4, axis = axis))
-       values <- c(values, rep(m[row, col], 2))
-    }
-  }
-  m_out <- matrix(-1, nrow = max(coords[, 1]), max(coords[, 2]))
-  m_out[as.matrix(coords)] <- values
-  return(m_out)
+transform_ab_to_abc <- function(i, j, parity = 0, axis = 1) {
+  ac <- switch(axis, i, c(parity + 1 - i - j, parity - i -j), j)
+  bc <- switch(axis, j, i, c(parity + 1 - i - j, parity - i -j))
+  cc <- switch(axis, c(parity + 1 - i - j, parity - i -j), j, i)
+  result <- switch(
+    axis,
+    matrix(c(ac, bc, cc[1], ac, bc, cc[2]), nrow = 2, ncol = 3, byrow = TRUE),
+    matrix(c(ac[1], bc, cc, ac[2], bc, cc), nrow = 2, ncol = 3, byrow = TRUE),
+    matrix(c(ac, bc[1], cc, ac, bc[2], cc), nrow = 2, ncol = 3, byrow = TRUE))
+  return(result)
 }
 ```
-
 
 
 Now to try to do the triaxial weave with matrices...
 
 ```{r}
 # three tie-up matrices - no idea if these are right
-tu_AB <- ones(3) - diag(3)
-tu_BC <- ones(3) - diag(3)
-tu_CA <- ones(3) - diag(3)
-th <- diag(3)
-tr <- diag(3)
+tu_AB <- diag(3) %>% repmat(2)
+tu_BC <- diag(3) %>% repmat(2)
+tu_CA <- diag(3) %>% repmat(2)
 
-# three weave-patterns 1 for the warp on top 0 for the weft
-pat_AB <- (((tr %*% tu_AB %*% th) > 0) * 1) %>% 
-  assign_xy_matrix_to_ab_matrix(axis = 1)
-pat_BC <- (((tr %*% tu_BC %*% th) > 0) * 1) %>% 
-  assign_xy_matrix_to_ab_matrix(axis = 2)
-pat_CA <- (((tr %*% tu_CA %*% th) > 0) * 1) %>% 
-  assign_xy_matrix_to_ab_matrix(axis = 3)
-
-pat_AB
-pat_BC
-pat_CA
+th <- diag(6)
+tr <- diag(6)
 ```
 
 ```{r}
 # thread patterns, these are coded 1 for a thread, -1 for missing
-weft <- matrix(c(1, -1, -1), 3, 1) %>% repmat(n = 1, m = 3)
+weft <- matrix(c(1, 1, 1), 3, 3) %>% repmat(2)
 warp <- t(weft)
 
-AB_A <- weft
-AB_B <- warp * 2
-BC_B <- weft * 2 
-BC_C <- warp * 3
-CA_C <- weft * 3
-CA_A <- warp
+AB_A <- warp
+AB_B <- weft * 2
+BC_B <- warp * 2 
+BC_C <- weft * 3
+CA_C <- warp * 3
+CA_A <- weft
 
 # for example
 AB_A
-AB_B
-BC_B
-BC_C
-CA_C
-CA_A
 ```
 
-
-
 ```{r}
-assign_xy_matrix_to_ab_matrix(matrix(1:9, 3, 3))
+# three weave-patterns 1 for the warp on top 0 for the weft
+pat_AB <- (((tr %*% tu_AB %*% th) > 0) * 1) 
+pat_BC <- (((tr %*% tu_BC %*% th) > 0) * 1)
+pat_CA <- (((tr %*% tu_CA %*% th) > 0) * 1)
+
+pat_AB
 ```
 
 
 ```{r}
-trigridcells <- list()
-permutations <- pracma::perms(1:3) # all possible orderings
-orientations <- c()   # we save these for colouring
-strands <- c()        
-for (i in 1:nrow(centres3)) {
-  # permutation would eventually be determined by some function based on user input
-  permutation <- 1:3
-  o <- ifelse(coords3$parity[i] == 1, 0, 180) +          # which way up is it
-    c(0, 120, 240)[permutation]                          # rotation depending on the permutation
-  n <- 1
-  strands <- c(strands, rep(letters[1:3][permutation], n) %>%
-                 matrix(n, 3, byrow = TRUE) %>% c())   # record the strand
-  next_strands <- get_all_cell_strands(n = 3, width = 1, n_slices = rep(n, length(o)),
-                                       orientations = o) + centres3[i, ]
-  for (p in next_strands) {
-    trigridcells <- append(trigridcells, list(p))
+add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
+  for (col in 1:ncol(M)) {
+    for (row in 1:nrow(M)) {
+      abc <- transform_ab_to_abc(col, row, parity = parity, axis = axis)
+      for (par in 1:2) {
+        key <- abc[par, ] %>% str_c(collapse = ",")
+        if (is.null(tri[[key]])) { # && axis == 1) {
+          tri[[key]] <- c(M[row, col])
+        } else {
+          tri[[key]] <- c(tri[[key]], M[row, col] )
+        }
+      }
+    }
   }
+  return(tri)
 }
-trigridcells <- trigridcells %>%
-  st_sfc()
 ```
 
-Now make into an `sf` and plot
-
 ```{r}
-tgc <- data.frame(strand = strands) %>%
-  st_sf(geometry = trigridcells)
-tm_shape(tgc) +
-  tm_polygons(col = "strand", palette = "Set1", border.col = "grey") + 
-  tm_layout(main.title = "Note: not a weavable pattern")
-```
-
-# Biaxial grid
-This is similar, but simpler...
-
-```{r}
-bigrid <- grid_generator(S = 100)
-ab <- expand.grid(-5:5, -5:5)
-centres2 <- apply(ab, 1, bigrid) %>% t()
-bigridcells <- list()
-for (i in 1:nrow(centres2)) {
-  if (i %% 2 == 0) {
-    o <- c(0, 90)
-  } else {
-    o <- c(90, 0)
+pat_to_order <- function(x) {
+  # if (sum(x) == 3 || sum(x) == 0) {return(NA)}
+  if (x[1] == 1) {
+    if (x[2] == 1) { return(1:3) }          # 110 -> ABC
+    else {
+      if (x[3] == 0) { return(c(1, 3, 2)) } # 100 -> ACB
+      else { return(c(3, 1, 2)) }           # 101 -> CAB
+    }
   }
-  next_strands <- get_all_cell_strands(S = 100, width = 0.75, 
-                                      orientations = o, n_slices = c(1, 1)) + centres2[i, ]
-  for(p in next_strands) {
-    bigridcells <- append(bigridcells, list(p))
+  if (x[2] == 1) {
+    if (x[3] == 1) { return(c(2, 3, 1)) }   # 011 -> BCA
+    else { return(c(2, 1, 3)) }             # 010 -> BAC
   }
+  return(3:1)                               # 001 -> CBA
 }
-bigridcells <- bigridcells %>%
-  st_sfc()
-tm_shape(bigridcells) +
-  tm_polygons()
 ```
+
+
+```{r}
+loom <- list() %>%
+  add_biaxial_to_triaxial(pat_AB, axis = 1, parity = 10) %>% 
+  add_biaxial_to_triaxial(pat_BC, axis = 2, parity = 10) %>% 
+  add_biaxial_to_triaxial(pat_CA, axis = 3, parity = 10)
+loom <- loom[which(lengths(loom) == 3)]
+loom <- lapply(loom, pat_to_order)
+loom <- loom[which(!is.na(loom))]
+```
+
+
+```{r}
+weave <- list()
+colours <- c()
+for (key in names(loom)) {
+  coords <- str_split(key, ",")[[1]] %>% as.numeric()
+  xy <- trigrid(coords)
+  permutation <- loom[[key]] %>% rev()
+  o <- ifelse(sum(coords) %% 2 == 0, 180, 0) + (permutation - 1) * 120
+  weave <- append(weave, 
+                  list(get_all_cell_strands(n = 3, width = 0.75, orientations = o) + xy))
+  colours <- c(colours, permutation)
+}
+tris <- weave %>% sapply("[") %>% 
+  c() %>% st_sfc()
+
+weave <- st_sf(data.frame(colours = as.factor(colours)), geometry = tris)
+
+weave %>% plot(border = NA)
+```
+
+
+
+
 

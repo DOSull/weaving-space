@@ -321,7 +321,7 @@ f(\mathbf{M}_{ab}(P,Q),\mathbf{M}_{bc}(B,C),\mathbf{M}_{ca}(C,A))=\mathrm{M}_{ab
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">x=</span> X1, <span class="at">y =</span> X2) <span class="sc">%&gt;%</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(coords) <span class="sc">%&gt;%</span> </span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">parity =</span> <span class="fu">as.factor</span>(parity),</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">label =</span> <span class="fu">str_c</span>(a, b, c, <span class="at">sep =</span> <span class="st">&quot;,&quot;</span>))</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">label =</span> <span class="fu">paste</span>(a, b, c, <span class="at">sep =</span> <span class="st">&quot;,&quot;</span>))</span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pts) <span class="sc">+</span> </span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">colour =</span> parity, <span class="at">shape =</span> parity), <span class="at">size =</span> <span class="dv">10</span>) <span class="sc">+</span></span>
