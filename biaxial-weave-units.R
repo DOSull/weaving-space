@@ -118,7 +118,7 @@ reps_needed <- function(v1, v2) {
 # needed to make this match
 get_pattern <- function(tie_up, treadling, threading, 
                         warp_n, weft_n, rep = 1) {
-  pat <- ((treadling %*% tie_up %*% threading) > 0) + 1
+  pat <- ((treadling %*% tie_up %*% threading) > 0) + 0
   # now determine repetitions needed to match warp_n and weft_n
   rep_warp <- reps_needed(warp_n, ncol(pat))
   rep_weft <- reps_needed(weft_n, nrow(pat))
@@ -129,13 +129,13 @@ get_pattern <- function(tie_up, treadling, threading,
 
 # given warp weft pattern and column and row matrices, handles 
 # missing threads
-# pattern : matrix of 1 = warp on top 2 = weft on top 
+# pattern : matrix of 1 = warp on top 0 = weft on top 
 # warp    : column matrix of ints where -1 is a missing thread
 # weft    : row matrix of ints where -1 hhis a missing thread
 modify_pattern_for_missing_threads <- function(pattern, warp, weft) {
   # threads missing in a direction mean the other direction 
   # should be on top
-  pattern[which(warp < 0)] <- 2
+  pattern[which(warp < 0)] <- 0
   pattern[which(weft < 0)] <- 1
   return(pattern)
 }
@@ -147,17 +147,17 @@ modify_pattern_for_missing_threads <- function(pattern, warp, weft) {
 #
 # returns an int matrix picking from the warp and weft based on the 
 # values in the pattern matrix
-# pattern : matrix of 1/2 encoding warp/weft on top
+# pattern : matrix of 1/0 encoding warp/weft on top
 # warp    : matrix of int columns encoding distinct colours
 # weft    : matrix of int rows encoding distinct colours
 assign_indexes <- function(pattern, warp, weft) {
   # stack the warp and weft matrices into a 2 layer array
-  loom <- abind(list(warp, weft), along = 3)
+  loom <- abind(list(weft, warp), along = 3)
   nr <- nrow(pattern)
   nc <- ncol(pattern)
   ij <- expand.grid(1:nr, 1:nc)
   # use values in the pattern to select from either layer 1 or layer 2
-  return(loom[cbind(ij[, 1], ij[, 2], c(pattern))] %>%
+  return(loom[cbind(ij[, 1], ij[, 2], c(pattern) + 1)] %>%
            matrix(nr, nc))
 }
 
@@ -294,25 +294,26 @@ translate_poly <- function(pt, poly) {
 
 # makes polygons at a particular spot in a weave unit (dx, dy)
 # with length L, width W, orientation determined from
-# wow == 1 --> horizontal, wow == 2 --> vertical, and with
+# warp TRUE --> vertical, warp FALSE --> horizontal, and with
 # rectangles sliced lengthwise if required based on the supplied 
 # warp or weft id (e.g. "ab" produces two narrower rectangles)
-make_polys <- function(L, W, wow, dx, dy, warp_id, weft_id) {
-  orientations <- c("vertical", "horizontal")
-  n_slices <- c(str_length(warp_id), str_length(weft_id))
-  over_polys <- get_base_rect(L, W, orientations[wow], 
-                              n_slices[wow]) + c(dx, dy)
+make_polys <- function(L, W, warp, dx, dy, warp_id, weft_id) {
+  o_over <- ifelse(warp, "vertical", "horizontal")
+  o_under <- ifelse(warp, "horizontal", "vertical")
+  n_over <- ifelse(warp, str_length(warp_id), str_length(weft_id))
+  n_under <- ifelse(warp, str_length(weft_id), str_length(warp_id))
+  # n_slices <- c(str_length(warp_id), str_length(weft_id))
+  over_polys <- get_base_rect(L, W, o_over, n_over) + c(dx, dy)
   if (L == W) { # no gaps for the cross (under) strand to show
     return(over_polys)
   }
-  under_polys <- (get_base_rect(L, W, orientations[3 - wow], 
-                                n_slices[3 - wow]) + c(dx, dy)) %>% 
+  under_polys <- (get_base_rect(L, W, o_under, n_under) + c(dx, dy)) %>% 
     st_difference(st_union(over_polys))
   return(c(over_polys, under_polys))
 }
 
 
-make_polygons_from_matrix <- function(ww = matrix(c(1, 2, 1, 2, 1, 2, 1, 2, 1), 3, 3), 
+make_polygons_from_matrix <- function(ww = matrix(c(1, 0, 1, 0, 1, 0, 1, 0, 1), 3, 3), 
                                       spacing = 10000, aspect = 0.6, margin = 0, 
                                       warp = letters[1:2], weft = letters[3:4],
                                       crs = 3857) {
@@ -330,19 +331,23 @@ make_polygons_from_matrix <- function(ww = matrix(c(1, 2, 1, 2, 1, 2, 1, 2, 1), 
   strand_ids <- c()
   for(row in 1:h) {
     for(col in 1:w) {
+      warp_on_top <- ww[row, col] == 1
+      warp_lbls <- warp_ids[col]
+      weft_lbls <- weft_ids[row]
       # get the next set of polygons
-      next_polys <- make_polys(spacing, W, ww[row, col],
+      next_polys <- make_polys(spacing, W, warp_on_top,
                                spacing * (col - 1), spacing * (row - 1),
-                               warp_ids[col], weft_ids[row])
+                               warp_lbls, weft_lbls)
       # get number of ids in strand on top
-      thread_ids <- c(warp_ids[col], weft_ids[row])
-      n_on_top <- str_length(thread_ids)[ww[row, col]]
+      n_on_top <- ifelse(warp_on_top, str_length(warp_lbls), str_length(weft_lbls))
       for (i in seq_along(next_polys)) {
         # add to the list of polygons
         polys <- append(polys, list(next_polys[[i]]))
         # strand id is from the spec on top, or not
-        id <- ifelse(i <= n_on_top, thread_ids[ww[row, col]] %>% substr(i, i),
-                     thread_ids[3 - ww[row, col]] %>% substr(i - n_on_top, i - n_on_top))
+        id <- ifelse(i <= n_on_top, # still doing the one on top
+                     ifelse(warp_on_top, warp_lbls, weft_lbls) %>% substr(i, i),
+                     ifelse(warp_on_top, weft_lbls, warp_lbls) %>% 
+                       substr(i - n_on_top, i - n_on_top))
         strand_ids <- c(strand_ids, id)
       }
     }
@@ -385,7 +390,7 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0,
     list(
       primitive = cell$weave_unit,
       transform = wk_affine_identity(),
-      strands = unique(cell$strand),
+      strands = unique(cell$weave_unit$strand),
       tile = cell$tile,
       type = type
     )

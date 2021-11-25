@@ -122,7 +122,7 @@ get_cell_strands <- function(n = 4, S = 1, width = 1,
   # determine its x-y centre (which may not be where its centroid is)
   bb <- st_bbox(cell)
   cell_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
-  return(get_grid_cell_slices(L = S, W = S * width, 
+  return(get_grid_cell_slices(L = bb$xmax - bb$xmin + 0.1, W = S * width, 
                               n_slices = n_slices, offset = cell_offset) %>%
            st_intersection(cell) %>%   # intersect with the grid cell
            translate_shape() %>%       # probably never needed

@@ -1,0 +1,187 @@
+```{r}
+library(dplyr)
+library(sf)
+library(pracma)
+library(tmap)
+
+source("weave-grids.R")
+source("biaxial-weave-units.R")
+```
+
+# Very very very much a work in progress...
+## Using `weave-grids.R` to make weave drawings
+The approach is to make a grid generator, then a set of coordinates, then apply positional offsets from the coordinates returned by the generator to the base cell strands.
+
+For a triangular grid only coordinate combinations that sum to two consecutive values exist, and the parity of the sum determines the facing (up or down) of the triangular cell.
+
+
+```{r}
+trigrid <- grid_generator(n_axes = 3)
+coords3 <- expand.grid(a = 1:5, b = 1:5, c = 1:5) # mean sum of a pair is 6, plus 0/1
+coords3 <- coords3 %>%
+  mutate(parity = a + b + c) %>% 
+  filter(parity %in% 6:7) 
+# %>% # in triaxial grid only these combos exist Nagy 2003
+#   filter((a %in% 1:3 & b %in% 1:3) | (b %in% 1:3 & c %in% 1:3) | (c %in% 1:3 & a %in% 1:3))
+
+centres3 <- apply(coords3[, letters[1:3]], 1, trigrid) %>% t()
+
+cells <- list()
+for (i in 1:nrow(centres3)) {
+  o = ifelse(coords3$parity[i] %% 2 == 1, 0, 180)
+  cells <- append(cells, list(get_cell_strands(n = 3, orientation = o) + centres3[i, ])) 
+}
+cells <- cells %>% sapply("[") %>% st_sfc() # this madness again...
+cells %>% plot()
+```
+## Conversion of biaxial strand coordinates to triaxial
+The biaxial pattern between each pair of layers A+B, B+C, C+A, produces a n x m matrix
+of warp/weft 1/0 values.
+
+Each single value at a row-column position in each of these matrices has to be assigned to two positions in an output _triangular_ grid. The weft (y) coordinate is unaffected. The warp (x) coordinate
+
+```{r}
+transform_xy_to_tri <- function(x, y, x0 = 1, y0 = 1, a0 = 1, b0 = 1, axis = 1) {
+  a <- switch(axis,
+              a0 -(x - x0) + (y - y0) - 0:1,
+              a0 -(x - x0) + (y - y0) - 0:1,
+              a0 -(x - x0) + (y - y0) - 0:1)
+  b <- switch(axis,
+              b0 + (y - y0), 
+              b0 + (y - y0), 
+              b0 + (y - y0)) 
+  m <- switch(axis,
+              matrix(c(a, rep(b, 2)), nrow = 2, ncol = 2),
+              matrix(c(a, rep(b, 2)), nrow = 2, ncol = 2),
+              matrix(c(a, rep(b, 2)), nrow = 2, ncol = 2))
+  return(m)
+}
+
+assign_xy_matrix_to_ab_matrix <- function(m, axis = 1) {
+  coords <- matrix(0, 0, 2)
+  values <- c()
+  for (row in 1:nrow(m)) {
+    for (col in 1:ncol(m)) {
+       coords <- rbind(coords, transform_xy_to_tri(x = col, y = row, 
+                                                   a0 = 4, axis = axis))
+       values <- c(values, rep(m[row, col], 2))
+    }
+  }
+  m_out <- matrix(-1, nrow = max(coords[, 1]), max(coords[, 2]))
+  m_out[as.matrix(coords)] <- values
+  return(m_out)
+}
+```
+
+
+
+Now to try to do the triaxial weave with matrices...
+
+```{r}
+# three tie-up matrices - no idea if these are right
+tu_AB <- ones(3) - diag(3)
+tu_BC <- ones(3) - diag(3)
+tu_CA <- ones(3) - diag(3)
+th <- diag(3)
+tr <- diag(3)
+
+# three weave-patterns 1 for the warp on top 0 for the weft
+pat_AB <- (((tr %*% tu_AB %*% th) > 0) * 1) %>% 
+  assign_xy_matrix_to_ab_matrix(axis = 1)
+pat_BC <- (((tr %*% tu_BC %*% th) > 0) * 1) %>% 
+  assign_xy_matrix_to_ab_matrix(axis = 2)
+pat_CA <- (((tr %*% tu_CA %*% th) > 0) * 1) %>% 
+  assign_xy_matrix_to_ab_matrix(axis = 3)
+
+pat_AB
+pat_BC
+pat_CA
+```
+
+```{r}
+# thread patterns, these are coded 1 for a thread, -1 for missing
+weft <- matrix(c(1, -1, -1), 3, 1) %>% repmat(n = 1, m = 3)
+warp <- t(weft)
+
+AB_A <- weft
+AB_B <- warp * 2
+BC_B <- weft * 2 
+BC_C <- warp * 3
+CA_C <- weft * 3
+CA_A <- warp
+
+# for example
+AB_A
+AB_B
+BC_B
+BC_C
+CA_C
+CA_A
+```
+
+
+
+```{r}
+assign_xy_matrix_to_ab_matrix(matrix(1:9, 3, 3))
+```
+
+
+```{r}
+trigridcells <- list()
+permutations <- pracma::perms(1:3) # all possible orderings
+orientations <- c()   # we save these for colouring
+strands <- c()        
+for (i in 1:nrow(centres3)) {
+  # permutation would eventually be determined by some function based on user input
+  permutation <- 1:3
+  o <- ifelse(coords3$parity[i] == 1, 0, 180) +          # which way up is it
+    c(0, 120, 240)[permutation]                          # rotation depending on the permutation
+  n <- 1
+  strands <- c(strands, rep(letters[1:3][permutation], n) %>%
+                 matrix(n, 3, byrow = TRUE) %>% c())   # record the strand
+  next_strands <- get_all_cell_strands(n = 3, width = 1, n_slices = rep(n, length(o)),
+                                       orientations = o) + centres3[i, ]
+  for (p in next_strands) {
+    trigridcells <- append(trigridcells, list(p))
+  }
+}
+trigridcells <- trigridcells %>%
+  st_sfc()
+```
+
+Now make into an `sf` and plot
+
+```{r}
+tgc <- data.frame(strand = strands) %>%
+  st_sf(geometry = trigridcells)
+tm_shape(tgc) +
+  tm_polygons(col = "strand", palette = "Set1", border.col = "grey") + 
+  tm_layout(main.title = "Note: not a weavable pattern")
+```
+
+# Biaxial grid
+This is similar, but simpler...
+
+```{r}
+bigrid <- grid_generator(S = 100)
+ab <- expand.grid(-5:5, -5:5)
+centres2 <- apply(ab, 1, bigrid) %>% t()
+bigridcells <- list()
+for (i in 1:nrow(centres2)) {
+  if (i %% 2 == 0) {
+    o <- c(0, 90)
+  } else {
+    o <- c(90, 0)
+  }
+  next_strands <- get_all_cell_strands(S = 100, width = 0.75, 
+                                      orientations = o, n_slices = c(1, 1)) + centres2[i, ]
+  for(p in next_strands) {
+    bigridcells <- append(bigridcells, list(p))
+  }
+}
+bigridcells <- bigridcells %>%
+  st_sfc()
+tm_shape(bigridcells) +
+  tm_polygons()
+```
+
