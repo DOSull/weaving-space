@@ -1,60 +1,153 @@
-```{r}
+---
+title: Making a triaxial weave from three biaxial weaves
+author: David O'Sullivan
+date: 26 November, 2021
+output:
+  rmdformats::readthedown:
+    toc_depth: 3
+    css: extra.css
+---
+A triaxial weave can be composed for three independent biaxial weaves. This notebook shows how...
+
+It uses functions already written in `weave-grids.R`. It should eventually also use functions from `biaxial-weave-units.R` to make up the component biaxial weave patterns.
+
+```{r warning = FALSE, results = FALSE, message = FALSE}
 library(dplyr)
 library(sf)
 library(pracma)
 library(tmap)
+library(stringr)
 
 source("weave-grids.R")
-source("biaxial-weave-units.R")
 ```
 
-# Very very very much a work in progress...
-## Using `weave-grids.R` to make weave drawings
-The approach is to make a grid generator, then a set of coordinates, then apply positional offsets from the coordinates returned by the generator to the base cell strands.
-
-For a triangular grid only coordinate combinations that sum to two consecutive values exist, and the parity of the sum determines the facing (up or down) of the triangular cell.
-
+# A triangular grid
+Central to the approach is a triangular grid. `grid_generaor()` returns a function, that given three integer coordinates returns x-y coordinates of the centroids of the corresponding triangular grid cell. 
 
 ```{r}
 trigrid <- grid_generator(n_axes = 3)
 ```
 
-## Conversion of biaxial strand coordinates to triaxial
-The biaxial pattern between each pair of layers A+B, B+C, C+A, produces a n x m matrix
-of warp/weft 1/0 values.
+The thing to understand about this grid coordinate system is that every triple of coordinates must sum to one of two consecutive integer values. By 'default' this would be 0 or 1, but any consecutive pair of integers will work (this flexibility is important later, when we want to match input biaxial coordinates to an output triaxial space). 
 
-Each single value at a row-column position in each of these matrices has to be assigned to two positions in an output _triangular_ grid.
+We're calling the lower of the two integer values the _parity_ of the grid. 
+
+Note that the `grid_generator` function does no checking with regard to parity. If coordinates with different parity are supplied they are valid, but will return x-y coordinates coincident with the results of other coordinate inputs. This is because the unit vectors of the grid are non-orthogonal and the sum of any two is the inverse of the third. 
+
+## Conversion of biaxial coordinates to triaxial
+This constraint on coordinate sums means that given two coordinates and the desired parity, we can determine the missing coordinate (provided we know which one is missing). That is the basis for the following function which is used as a helper when populating an output combined triaxial grid with values from input biaxial grids.
+
+Axis here is taken to mean: 1: layer A and B; 2: layers B and C; 3: layers C and A. The ordering of the biaxial combinations is important (cyclic).
 
 ```{r}
-transform_ab_to_abc <- function(i, j, parity = 0, axis = 1) {
-  ac <- switch(axis, i, c(parity + 1 - i - j, parity - i -j), j)
-  bc <- switch(axis, j, i, c(parity + 1 - i - j, parity - i -j))
-  cc <- switch(axis, c(parity + 1 - i - j, parity - i -j), j, i)
-  result <- switch(
-    axis,
-    matrix(c(ac, bc, cc[1], ac, bc, cc[2]), nrow = 2, ncol = 3, byrow = TRUE),
-    matrix(c(ac[1], bc, cc, ac[2], bc, cc), nrow = 2, ncol = 3, byrow = TRUE),
-    matrix(c(ac, bc[1], cc, ac, bc[2], cc), nrow = 2, ncol = 3, byrow = TRUE))
+# function to supply missing third coordinate in a triangular grid given two
+# other coordinates, the parity, and the axis. The axis tells us which is missing:
+# axis = 1 --> 3rd, axis = 2 --> 1st, axis = 3 --> 2nd
+transform_ab_to_abc <- function(z1, z2, parity = 0, axis = 1) {
+  # comments on first case, others are cyclic shifts - most easily read down the code
+  # when axis = 1 a_coord and b_coord are preserved, c_coord is the paired residual values
+  a_coord <- switch(axis, z1, c(parity + 1 - z1 - z2, parity - z1 - z2), z2)
+  b_coord <- switch(axis, z2, z1, c(parity + 1 - z1 - z2, parity - z1 - z2))
+  c_coord <- switch(axis, c(parity + 1 - z1 - z2, parity - z1 - z2), z2, z1)
+  result <- switch( 
+    axis, # return two triples that differ in the missing coordinate
+    matrix(c(a_coord, b_coord, c_coord[1], 
+             a_coord, b_coord, c_coord[2]), nrow = 2, ncol = 3, byrow = TRUE),
+    matrix(c(a_coord[1], b_coord, c_coord, 
+             a_coord[2], b_coord, c_coord), nrow = 2, ncol = 3, byrow = TRUE),
+    matrix(c(a_coord, b_coord[1], c_coord, 
+             a_coord, b_coord[2], c_coord), nrow = 2, ncol = 3, byrow = TRUE))
   return(result)
 }
 ```
 
+## Helper functions to assemble the triaxial grid
+### Adding biaxial matrices to a triaxial grid at the right locations
+First a function to take values from a biaxial pattern matrix and add them to a triaxial grid.
 
-Now to try to do the triaxial weave with matrices...
+```{r}
+# function to add values to a supplied list tri, from a supplied matrix M, where
+# values in the list will be indexed by triangular coordinates (converted to a
+# string). This will be called 3 times, once for each axis. The calling context 
+# should determine the parity, based on the sizes of the three matrices
+add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
+  for (col in 1:ncol(M)) {
+    for (row in 1:nrow(M)) {
+      # get the target grid coordinates (there will be two)
+      abc <- transform_ab_to_abc(col, row, parity = parity, axis = axis)
+      for (par in 1:2) {
+        # make a key (string) from each pair
+        key <- abc[par, ] %>% str_c(collapse = ",")
+        # if it is not in the target list, add a new value. Note that matrices 
+        # should be added in axis order, and if there is nothing there from 
+        # axis 1, then no new record should be added
+        if (is.null(tri[[key]]) && axis == 1) {
+          tri[[key]] <- c(M[row, col])
+        } else { # if there is something there, then append the value
+          tri[[key]] <- c(tri[[key]], M[row, col] )
+        }
+      }
+    }
+  }
+  return(tri)
+}
+```
+
+### Determining the layering order based on input layer orders
+Each biaxial is coded `TRUE` (`==1`) where the warp is on top. So we have three truth values. These are combined by the function below to produce a permutation order on
+the layers.
+
+```{r}
+# determines the permutation order based on three T/F values for pairs of layers
+# the truth table is. Values provided as integers, but listed below as boolean
+#
+# 1 > 2 | 2 > 3 | 3 > 1 | permutation
+# ------|-------|-------|-------------
+# TRUE  | TRUE  | FALSE | (1, 2, 3)
+# TRUE  | FALSE | FALSE | (1, 3, 2)
+# FALSE | TRUE  | FALSE | (2, 1, 3)
+# FALSE | TRUE  | TRUE  | (2, 3, 1)
+# TRUE  | FALSE | TRUE  | (3, 1, 2)
+# FALSE | FALSE | TRUE  | (3, 2, 1)
+#
+# Note that TTT and FFF are invalid (no checking done at present...)
+pat_to_order <- function(x) {
+  # if (sum(x) == 3 || sum(x) == 0) {return(NA)}
+  if (x[1]) {
+    if (x[2]) { return(1:3) }           # 110 -> 123
+    else {
+      if (!x[3]) { return(c(1, 3, 2)) } # 100 -> 132
+      else { return(c(3, 1, 2)) }       # 101 -> 312
+    }
+  }
+  if (x[2]) {
+    if (x[3]) { return(c(2, 3, 1)) }    # 011 -> 231
+    else { return(c(2, 1, 3)) }         # 010 -> 213
+  }
+  return(3:1)                           # 001 -> 321
+}
+```
+
+## Doing the weave...
+### Make up the paired biaxial weaves
+Setup three tie-up matrices... and for now just use **I** for the treadling and threading matrices. Note that we have a cyclic arrangement of biaxial pairs A > B > C > A, so we treat the first of these as the 'warp' in each pairing.
 
 ```{r}
 # three tie-up matrices - no idea if these are right
-tu_AB <- diag(3) %>% repmat(2)
-tu_BC <- diag(3) %>% repmat(2)
-tu_CA <- diag(3) %>% repmat(2)
+k <- 2
+tu_AB <- diag(3) %>% repmat(k)
+tu_BC <- diag(3) %>% repmat(k)
+tu_CA <- diag(3) %>% repmat(k)
 
-th <- diag(6)
-tr <- diag(6)
+th <- diag(nrow(tu_AB))
+tr <- diag(nrow(tu_AB))
 ```
+
+Make up strand matrices... later these can include more than one colour... for now we're just getting it to work. (See `modify_for_missing_threads()` in `biaxial_weave_units.R`)
 
 ```{r}
 # thread patterns, these are coded 1 for a thread, -1 for missing
-weft <- matrix(c(1, 1, 1), 3, 3) %>% repmat(2)
+weft <- ones(3) %>% repmat(k)
 warp <- t(weft)
 
 AB_A <- warp
@@ -68,6 +161,8 @@ CA_A <- weft
 AB_A
 ```
 
+Do the matrix multiplication
+
 ```{r}
 # three weave-patterns 1 for the warp on top 0 for the weft
 pat_AB <- (((tr %*% tu_AB %*% th) > 0) * 1) 
@@ -77,66 +172,50 @@ pat_CA <- (((tr %*% tu_CA %*% th) > 0) * 1)
 pat_AB
 ```
 
+### Combine the biaxial weaves into a triaxial 'loom'
+Now combine the results into a single loom. This _could_ be a 4D array (3 x 3D arrays), but it would be very sparse, so it's more convenient to use a list keyed by coordinate triples as strings. This might be slower than a 4D array, but the code is likely clearer this way, and we are not dealing with very large grids (a few hundred sites at most).
+
+The parity calculation here makes a triangular grid that accomodates the weft strands (rows) in all three matrices. We need to consider how to handle unequal sized matrices. At present two should work: 
+
+- All three matrices same size will yield a hexagonal unit. Note that even-sized matrices are _probably_ required, else the parity value will be odd and this means the orientation of cells is reversed
+- If one matrix is twice as large as the (equal-sized) other two, then we will get a diamond
+
+Other combinations likely (untested) make skewed hexagons, and it's not clear what to do with those (for now).
+
+This operation should probably be wrapped in a function.
 
 ```{r}
-add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
-  for (col in 1:ncol(M)) {
-    for (row in 1:nrow(M)) {
-      abc <- transform_ab_to_abc(col, row, parity = parity, axis = axis)
-      for (par in 1:2) {
-        key <- abc[par, ] %>% str_c(collapse = ",")
-        if (is.null(tri[[key]])) { # && axis == 1) {
-          tri[[key]] <- c(M[row, col])
-        } else {
-          tri[[key]] <- c(tri[[key]], M[row, col] )
-        }
-      }
-    }
-  }
-  return(tri)
-}
-```
-
-```{r}
-pat_to_order <- function(x) {
-  # if (sum(x) == 3 || sum(x) == 0) {return(NA)}
-  if (x[1] == 1) {
-    if (x[2] == 1) { return(1:3) }          # 110 -> ABC
-    else {
-      if (x[3] == 0) { return(c(1, 3, 2)) } # 100 -> ACB
-      else { return(c(3, 1, 2)) }           # 101 -> CAB
-    }
-  }
-  if (x[2] == 1) {
-    if (x[3] == 1) { return(c(2, 3, 1)) }   # 011 -> BCA
-    else { return(c(2, 1, 3)) }             # 010 -> BAC
-  }
-  return(3:1)                               # 001 -> CBA
-}
-```
-
-
-```{r}
+par <- (3 + nrow(pat_AB) + nrow(pat_BC) + nrow(pat_CA)) %/% 2
+par <- ifelse(par %% 2 == 0, par, par + 1)
 loom <- list() %>%
-  add_biaxial_to_triaxial(pat_AB, axis = 1, parity = 10) %>% 
-  add_biaxial_to_triaxial(pat_BC, axis = 2, parity = 10) %>% 
-  add_biaxial_to_triaxial(pat_CA, axis = 3, parity = 10)
+  add_biaxial_to_triaxial(pat_AB, axis = 1, parity = par) %>% 
+  add_biaxial_to_triaxial(pat_BC, axis = 2, parity = par) %>% 
+  add_biaxial_to_triaxial(pat_CA, axis = 3, parity = par)
 loom <- loom[which(lengths(loom) == 3)]
 loom <- lapply(loom, pat_to_order)
 loom <- loom[which(!is.na(loom))]
 ```
 
+## Drawing the weave...
+
+This uses `get_all_cell_strands()` from `weave-grids.R`. The weave appearance here is produced simply by overdrawing in the appropriate order. That will need to be changed to 
+draw only the visible portions of strands, but differencing the shapes in the correct sequence.
 
 ```{r}
 weave <- list()
 colours <- c()
 for (key in names(loom)) {
+  # recover the coordinates from the key string, and get the x-y offset
   coords <- str_split(key, ",")[[1]] %>% as.numeric()
   xy <- trigrid(coords)
+  # determine the permutation (i.e. draw order) - note the reversal
   permutation <- loom[[key]] %>% rev()
+  # assign appropriate orientations composed from 
+  # the coordinate parity and the strand axis
   o <- ifelse(sum(coords) %% 2 == 0, 180, 0) + (permutation - 1) * 120
   weave <- append(weave, 
-                  list(get_all_cell_strands(n = 3, width = 0.75, orientations = o) + xy))
+                  list(get_all_cell_strands(n = 3, width = 5/6, 
+                                            orientations = o) + xy))
   colours <- c(colours, permutation)
 }
 tris <- weave %>% sapply("[") %>% 
