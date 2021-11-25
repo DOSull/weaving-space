@@ -14,7 +14,7 @@ Some sketches figuring things out are in `sketches`.
 An overview of the concepts can be found on [this webpage](https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html).
 
 # Triaxial weaves as combinations of biaxials
-This [work-in-progress](ttps://dosull.github.io/weaving-space/three-way-matrices.html) summarises progress on this topic.
+This [work-in-progress](https://dosull.github.io/weaving-space/three-way-matrices.html) summarises progress on this topic.
 
 ## Notes
 The follow documents describe aspects of the project
