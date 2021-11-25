@@ -128,8 +128,8 @@ pat_to_order <- function(x) {
 }
 ```
 
-## Doing the weave...
-### Make up the paired biaxial weaves
+# Doing the weave...
+## Make up the paired biaxial weaves
 Setup three tie-up matrices... and for now just use **I** for the treadling and threading matrices. Note that we have a cyclic arrangement of biaxial pairs A > B > C > A, so we treat the first of these as the 'warp' in each pairing.
 
 ```{r}
@@ -172,7 +172,7 @@ pat_CA <- (((tr %*% tu_CA %*% th) > 0) * 1)
 pat_AB
 ```
 
-### Combine the biaxial weaves into a triaxial 'loom'
+## Combine the biaxial weaves into a triaxial 'loom'
 Now combine the results into a single loom. This _could_ be a 4D array (3 x 3D arrays), but it would be very sparse, so it's more convenient to use a list keyed by coordinate triples as strings. This might be slower than a 4D array, but the code is likely clearer this way, and we are not dealing with very large grids (a few hundred sites at most).
 
 The parity calculation here makes a triangular grid that accomodates the weft strands (rows) in all three matrices. We need to consider how to handle unequal sized matrices. At present two should work: 
@@ -196,7 +196,7 @@ loom <- lapply(loom, pat_to_order)
 loom <- loom[which(!is.na(loom))]
 ```
 
-## Drawing the weave...
+# Drawing the weave...
 
 This uses `get_all_cell_strands()` from `weave-grids.R`. The weave appearance here is produced simply by overdrawing in the appropriate order. That will need to be changed to 
 draw only the visible portions of strands, but differencing the shapes in the correct sequence.
