@@ -128,7 +128,8 @@ get_pattern <- function(tie_up, treadling, threading,
 
 
 # given warp weft pattern and column and row matrices, handles 
-# missing threads
+# missing threads by flipping case where one is missing and setting 
+# to -1 locations where both are missing
 # pattern : matrix of 1 = warp on top 0 = weft on top 
 # warp    : column matrix of ints where -1 is a missing thread
 # weft    : row matrix of ints where -1 hhis a missing thread
@@ -137,6 +138,7 @@ modify_pattern_for_missing_threads <- function(pattern, warp, weft) {
   # should be on top
   pattern[which(warp < 0)] <- 0
   pattern[which(weft < 0)] <- 1
+  pattern[which(weft < 0 & warp < 0)] <- -1
   return(pattern)
 }
 
@@ -297,11 +299,12 @@ translate_poly <- function(pt, poly) {
 # warp TRUE --> vertical, warp FALSE --> horizontal, and with
 # rectangles sliced lengthwise if required based on the supplied 
 # warp or weft id (e.g. "ab" produces two narrower rectangles)
-make_polys <- function(L, W, warp, dx, dy, warp_id, weft_id) {
-  o_over <- ifelse(warp, "vertical", "horizontal")
-  o_under <- ifelse(warp, "horizontal", "vertical")
-  n_over <- ifelse(warp, str_length(warp_id), str_length(weft_id))
-  n_under <- ifelse(warp, str_length(weft_id), str_length(warp_id))
+make_polys <- function(L = 100, W = 50, warp = "warp", 
+                       dx = 0, dy = 0, warp_id = "a", weft_id = "bc") {
+  o_over <- ifelse(warp == "warp", "vertical", "horizontal")
+  o_under <- ifelse(warp == "warp", "horizontal", "vertical")
+  n_over <- ifelse(warp == "warp", str_length(warp_id), str_length(weft_id))
+  n_under <- ifelse(warp == "warp", str_length(weft_id), str_length(warp_id))
   # n_slices <- c(str_length(warp_id), str_length(weft_id))
   over_polys <- get_base_rect(L, W, o_over, n_over) + c(dx, dy)
   if (L == W) { # no gaps for the cross (under) strand to show
@@ -331,22 +334,25 @@ make_polygons_from_matrix <- function(ww = matrix(c(1, 0, 1, 0, 1, 0, 1, 0, 1), 
   strand_ids <- c()
   for(row in 1:h) {
     for(col in 1:w) {
-      warp_on_top <- ww[row, col] == 1
+      on_top <- ifelse(ww[row, col] == 1, "warp", "weft")
       warp_lbls <- warp_ids[col]
       weft_lbls <- weft_ids[row]
       # get the next set of polygons
-      next_polys <- make_polys(spacing, W, warp_on_top,
+      next_polys <- make_polys(spacing, W, on_top,
                                spacing * (col - 1), spacing * (row - 1),
                                warp_lbls, weft_lbls)
       # get number of ids in strand on top
-      n_on_top <- ifelse(warp_on_top, str_length(warp_lbls), str_length(weft_lbls))
+      n_on_top <- ifelse(on_top == "warp", 
+                         str_length(warp_lbls), 
+                         str_length(weft_lbls))
       for (i in seq_along(next_polys)) {
         # add to the list of polygons
         polys <- append(polys, list(next_polys[[i]]))
         # strand id is from the spec on top, or not
         id <- ifelse(i <= n_on_top, # still doing the one on top
-                     ifelse(warp_on_top, warp_lbls, weft_lbls) %>% substr(i, i),
-                     ifelse(warp_on_top, weft_lbls, warp_lbls) %>% 
+                     ifelse(on_top == "warp", warp_lbls, weft_lbls) %>% 
+                       substr(i, i),
+                     ifelse(on_top == "warp", weft_lbls, warp_lbls) %>% 
                        substr(i - n_on_top, i - n_on_top))
         strand_ids <- c(strand_ids, id)
       }
