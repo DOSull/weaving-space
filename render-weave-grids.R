@@ -1,7 +1,6 @@
 library(dplyr)
 library(sf)
 library(pracma)
-library(rgeos)
 
 
 # Returns a function that will generate the x-y coordinates for
@@ -156,61 +155,29 @@ get_all_cell_strands <- function(n = 4, S = 1, width = 1,
 }
 
 
-get_visible_cell_strands <- function(n = 4, S = 1, width = 1, order = 1:(6-n),
-                                 orientations = (0:(n-1)) * 360/n , 
-                                 n_slices = rep(1, length(order))) {
+get_visible_cell_strands <- function(n = 4, S = 1, width = 1, 
+                                     strand_order = 1:(6-n),
+                                     orientations = (0:(n-1)) * 360/n , 
+                                     n_slices = rep(1, length(orientations))) {
   all_polys <- list()
-  for (i in seq_along(order)) {
+  for (i in seq_along(strand_order)) {
     next_polys <- get_cell_strands(n = n, S = S, width = width,
-                                   orientation = orientations[order[i]], 
-                                   n_slices = n_slices[order[i]])
+                                   orientation = orientations[strand_order[i]], 
+                                   n_slices = n_slices[strand_order[i]])
     if (i == 1) {
       all_polys <- add_shapes_to_list(all_polys, next_polys)
-      print("here")
       mask_poly <- next_polys %>% 
-        as("Spatial") %>%
-        rgeos::gUnaryUnion() %>%
-        st_as_sfc()
+        st_set_precision(1e10) %>% 
+        st_union()
     } else {
       all_polys <- add_shapes_to_list(all_polys, next_polys %>% 
                                         st_snap(mask_poly, 1e-6) %>%
                                         st_difference(mask_poly))
       mask_poly <- mask_poly %>%
         st_union(next_polys %>% 
-                   st_snap(mask_poly, 1e-6) %>%
-                   as("Spatial") %>%
-                   rgeos::gUnaryUnion() %>%
-                   st_as_sfc())
-      # %>%
-      #   remove_slivers()
+                   st_set_precision(1e10) %>%
+                   st_union())
     }
   }
   return(all_polys %>% st_sfc())
 }
-
-## POSSIBLY NOT NEEDED
-remove_slivers <- function(shape_collection, min_frac = 0.01) {
-  result <- list()
-  for (shape in shape_collection) {
-    if (st_geometry_type(shape) == "MULTIPOLYGON") {
-      shapes <- shape %>% 
-        st_sfc() %>% 
-        st_cast("POLYGON")
-      areas <- shapes %>% st_area()
-      total_area <- sum(areas)
-      props_area <- areas / total_area
-      large_areas <- which(props_area > min_frac)
-      if (length(large_areas) > 1) {
-        result <- append(result, list(shapes[large_areas] %>% 
-                                        st_cast("MULTIPOLYGON")))
-      } else {
-        result <- append(result, list(shapes[large_areas] %>% 
-                                        st_cast("POLYGON")))
-      }
-    } else {
-      result <- append(result, list(shape %>% st_sfc()))
-    }
-  }
-  return(result %>% sapply("[") %>% st_sfc())
-}
-

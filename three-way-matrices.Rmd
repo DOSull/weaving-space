@@ -18,8 +18,7 @@ library(pracma)
 library(tmap)
 library(stringr)
 
-source("weave-grids.R")
-source("biaxial-weave-units.R")
+source("render-weave-grids.R")
 ```
 
 # A triangular grid
@@ -64,7 +63,7 @@ transform_ab_to_abc <- function(z1, z2, parity = 0, axis = 1) {
 
 ## Helper functions to assemble the triaxial grid
 ### Adding biaxial matrices to a triaxial grid at the right locations
-First a function to take values from a biaxial pattern matrix and add them to a triaxial grid.
+First a function to take data from a biaxial pattern matrix and add them to a triaxial grid at the right location.
 
 ```{r}
 # function to add values to a supplied list tri, from a supplied matrix M, where
@@ -79,13 +78,12 @@ add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
       for (par in 1:2) {
         # make a key (string) from each pair
         key <- abc[par, ] %>% str_c(collapse = ",")
-        # if it is not in the target list, add a new value. Note that matrices 
-        # should be added in axis order, and if there is nothing there from 
-        # axis 1, then no new record should be added
-        if (is.null(tri[[key]]) && axis == 1) {
-          tri[[key]] <- c(M[row, col])
+        # if it is not in the target list, add a new thread order 
+        if (is.null(tri[[key]])) {
+          tri[[key]] <- list(decode_biaxial_to_order(M[row, col], axis = axis)) # c(M[row, col])
         } else { # if there is something there, then append the value
-          tri[[key]] <- c(tri[[key]], M[row, col] )
+          tri[[key]] <- append(tri[[key]], list(decode_biaxial_to_order(M[row, col], axis = axis)))
+          # tri[[key]] <- c(tri[[key]], M[row, col] )
         }
       }
     }
@@ -94,6 +92,190 @@ add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
 }
 ```
 
+### Encoding the state at each location in a biaxial weave
+This function encodes the state at each site in a raw biaxial weave pattern, based on the pattern matrix and the warp and weft thread matrices. These are decoded by `decode_biaxial_to_order()` to axis-appropriate sequences of thread numbers.
+
+```{r}
+encode_biaxial_weave <- function(pattern, warp, weft) {
+  pattern[which(pattern == 1)] <- 5        # warp present and on top
+  pattern[which(pattern == 0)] <- 4        # weft present and on top
+  pattern[which(warp < 0)] <- 1            # warp absent
+  pattern[which(weft < 0)] <- 2            # weft absent
+  pattern[which(weft < 0 & warp < 0)] <- 3 # both absent
+  return(pattern)
+}
+```
+
+### Converting biaxial encoding to a strand order
+The data it adds are strand orderings at each location, where a pair of values indicate that the first strand is on top of the second, a single value indicates only that strand is present in the biaxial weave at that location, and a `NULL` means no strand is present from the biaxial at that location. Which strands are which depends on the `axis`.
+
+```{r}
+decode_biaxial_to_order <- function(code, axis = 1) {
+  if (axis == 1) {
+    return(switch(
+      code, 2, 1, NULL, 2:1, 1:2
+    ))
+  }
+  if (axis == 2) {
+    return(switch(
+      code, 3, 2, NULL, 3:2, 2:3
+    ))
+  }
+  if (axis == 3) {
+    return(switch(
+      code, 1, 3, NULL, c(1,3), c(3,1)
+    ))
+  }
+}
+```
+
+### Combining orderings from biaxial weaves
+This function takes a list of orderings on the values 1:n, and combines them into a single consistent ordering. If a value is not present in any of the members of the orderings list it will not appear in the output. If all the orderings are empty, `NULL` is returned.
+
+```{r}
+# combines a set of orderings on the values
+# the orderings are a list of vectors (which may be empty)
+# for example list(c(1, 2), c(2, 3), c(1, 3))
+combine_orderings <- function(orderings, values = 1:3, verbose = FALSE) {
+  # assemble a matrix of the positions of entries
+  # in each ordering among the values
+  ranks <- matrix(0, length(orderings), length(values))
+  for (i in seq_along(orderings)) {
+    ranks[i, ] <- match(values, orderings[[i]])
+  }
+  # replace any missing matches with a high score
+  ranks[which(is.na(ranks))] <- 100
+  # sum the ranks of each value
+  scores <- colSums(ranks)
+  max_score <- length(orderings) * 100
+  number_present <- sum(scores < max_score)
+  if (number_present == 0) {
+    result <- NULL
+  } else {
+    result <- values[order(scores)[1:number_present]]
+  }
+  if (verbose) {
+    return(list(result = result, ranks = ranks, scores = scores)) 
+  } else {
+    return(result)
+  }
+}
+```
+
+
+# Doing the weave...
+## Make up the paired biaxial weaves
+Setup three tie-up matrices... and for now just use **I** for the treadling and threading matrices. Note that we have a cyclic arrangement of biaxial pairs A > B > C > A, so we treat the first of these as the 'warp' in each pairing.
+
+```{r}
+# three tie-up matrices - no idea if these are right
+# cube weave
+k <- 2
+tu_AB <- diag(3) %>% repmat(k)
+tu_BC <- diag(3) %>% repmat(k)
+tu_CA <- diag(3) %>% repmat(k)
+
+# open hex basic weave
+tu_AB <- ones(3) %>% repmat(k)
+tu_BC <- ones(3) %>% repmat(k)
+tu_CA <- ones(3) %>% repmat(k)
+
+th <- diag(nrow(tu_AB))
+tr <- diag(nrow(tu_AB))
+```
+
+Make up strand matrices... later these can include more than one colour... for now we're just getting it to work. (See `modify_for_missing_threads()` in `biaxial_weave_units.R`)
+
+```{r}
+# thread patterns, these would be coded x > 0 for a thread, -1 for missing
+# cube weave
+AB_A <- ones(3) %>% repmat(k) # matrix(c(1, -1, -1, 1, -1, -1), 6, 6, byrow = TRUE) #
+AB_B <- t(AB_A)
+BC_B <- ones(3) %>% repmat(k) # matrix(c(2, -2, -1, 2, -2, -1), 6, 6, byrow = TRUE) # 
+BC_C <- t(BC_B)
+CA_C <- ones(3) %>% repmat(k) # matrix(c(3, -3, -1, 3, -3, -1), 6, 6, byrow = TRUE) # 
+CA_A <- t(CA_C)
+
+#open hex basic weave
+AB_A <- matrix(c(-1, -1, 1), 6, 6, byrow = TRUE)
+AB_B <- t(AB_A)
+BC_B <- matrix(c(-1, -1, 1), 6, 6, byrow = TRUE)
+BC_C <- t(BC_B)
+CA_C <- matrix(c(-1, -1, 1), 6, 6, byrow = TRUE)
+CA_A <- t(CA_C)
+# for example
+AB_A
+```
+
+Do the matrix multiplication
+
+```{r}
+# three weave-patterns 1 for the warp on top 0 for the weft
+pat_AB <- (((tr %*% tu_AB %*% th) > 0) * 1) %>%
+  encode_biaxial_weave(AB_A, AB_B)
+pat_BC <- (((tr %*% tu_BC %*% th) > 0) * 1) %>%
+  encode_biaxial_weave(BC_B, BC_C)
+pat_CA <- (((tr %*% tu_CA %*% th) > 0) * 1) %>%
+  encode_biaxial_weave(CA_C, CA_A)
+
+pat_AB
+```
+
+## Combine biaxial weaves into a triaxial 'loom'
+Now combine the results into a single loom. This _could_ be a 4D array (3 x 3D arrays), but it would be very sparse, so it's more convenient to use a list keyed by coordinate triples as strings. This might be slower than a 4D array, but the code is likely clearer this way, and we are not dealing with very large grids (a few hundred sites at most).
+
+The parity calculation here makes a triangular grid that accomodates the weft strands (rows) in all three matrices. We need to consider how to handle unequal sized matrices. At present two should work: 
+
+- All three matrices same size will yield a hexagonal unit. Note that even-sized matrices are _probably_ required, else the parity value will be odd and this means the orientation of cells is reversed
+- If one matrix is twice as large as the (equal-sized) other two, then we will get a diamond
+
+Other combinations likely (untested) make skewed hexagons, and it's not clear what to do with those (for now).
+
+This operation should probably be wrapped in a function.
+
+```{r}
+par <- (3 + nrow(pat_AB) + nrow(pat_BC) + nrow(pat_CA)) %/% 2
+par <- ifelse(par %% 2 == 0, par, par + 1)
+loom <- list() %>%
+  add_biaxial_to_triaxial(pat_AB, axis = 1, parity = par) %>% 
+  add_biaxial_to_triaxial(pat_BC, axis = 2, parity = par) %>% 
+  add_biaxial_to_triaxial(pat_CA, axis = 3, parity = par)
+
+# only locations where we have complete information should be used
+loom <- loom[which(lengths(loom) == 3)] 
+loom <- lapply(loom, combine_orderings)
+```
+
+# Drawing the weave...
+
+This uses `get_all_cell_strands()` from `render-weave-grids.R`. The weave appearance here is produced simply by overdrawing in the appropriate order. That will need to be changed to 
+draw only the visible portions of strands, but differencing the shapes in the correct sequence.
+
+```{r}
+weave <- list()
+colours <- c()
+for (key in names(loom)) {
+  # recover the coordinates from the key string, and get the x-y offset
+  coords <- str_split(key, ",")[[1]] %>% as.numeric()
+  xy <- trigrid(coords)
+  # get the strand order
+  strand_order <- loom[[key]]
+  if (is.null(strand_order)) { next }
+  # orientations from the coordinate parity and the strand axis
+  o <- ifelse(sum(coords) %% 2 == 0, 180, 0) + 0:2 * 120
+  weave <- add_shapes_to_list(weave, get_visible_cell_strands(n = 3, width = 0.8, 
+                                                strand_order = strand_order,
+                                                orientations = o) + xy)
+  colours <- c(colours, strand_order)
+}
+tris <- weave %>% st_sfc()
+unit <- st_sf(data.frame(strand = as.factor(colours)), geometry = tris)
+unit %>% plot(border = NA)
+```
+
+
+
+## Superceded code
 ### Determining the layering order based on input layer orders
 Each biaxial is coded `TRUE` (`==1`) where the warp is on top. So we have three truth values. These are combined by the function below to produce a permutation order on
 the layers.
@@ -128,106 +310,6 @@ pat_to_order <- function(x) {
   return(3:1)                           # 001 -> 321
 }
 ```
-
-# Doing the weave...
-## Make up the paired biaxial weaves
-Setup three tie-up matrices... and for now just use **I** for the treadling and threading matrices. Note that we have a cyclic arrangement of biaxial pairs A > B > C > A, so we treat the first of these as the 'warp' in each pairing.
-
-```{r}
-# three tie-up matrices - no idea if these are right
-k <- 2
-tu_AB <- diag(3) %>% repmat(k)
-tu_BC <- diag(3) %>% repmat(k)
-tu_CA <- diag(3) %>% repmat(k)
-
-th <- diag(nrow(tu_AB))
-tr <- diag(nrow(tu_AB))
-```
-
-Make up strand matrices... later these can include more than one colour... for now we're just getting it to work. (See `modify_for_missing_threads()` in `biaxial_weave_units.R`)
-
-```{r}
-# thread patterns, these would be coded x > 0 for a thread, -1 for missing
-AB_A <- ones(3) %>% repmat(k) # matrix(c(1, -1, -1, 1, -1, -1), 6, 6, byrow = TRUE) #
-AB_B <- t(AB_A)
-BC_B <- ones(3) %>% repmat(k) # matrix(c(2, -2, -1, 2, -2, -1), 6, 6, byrow = TRUE) # 
-BC_C <- t(BC_B)
-CA_C <- ones(3) %>% repmat(k) # matrix(c(3, -3, -1, 3, -3, -1), 6, 6, byrow = TRUE) # 
-CA_A <- t(CA_C)
-
-# for example
-AB_A
-```
-
-Do the matrix multiplication
-
-```{r}
-# three weave-patterns 1 for the warp on top 0 for the weft
-pat_AB <- (((tr %*% tu_AB %*% th) > 0) * 1) %>%
-  modify_pattern_for_missing_threads(AB_A, AB_B)
-pat_BC <- (((tr %*% tu_BC %*% th) > 0) * 1) %>%
-  modify_pattern_for_missing_threads(BC_B, BC_C)
-pat_CA <- (((tr %*% tu_CA %*% th) > 0) * 1) %>%
-  modify_pattern_for_missing_threads(CA_C, CA_A)
-
-pat_AB
-```
-
-## Combine the biaxial weaves into a triaxial 'loom'
-Now combine the results into a single loom. This _could_ be a 4D array (3 x 3D arrays), but it would be very sparse, so it's more convenient to use a list keyed by coordinate triples as strings. This might be slower than a 4D array, but the code is likely clearer this way, and we are not dealing with very large grids (a few hundred sites at most).
-
-The parity calculation here makes a triangular grid that accomodates the weft strands (rows) in all three matrices. We need to consider how to handle unequal sized matrices. At present two should work: 
-
-- All three matrices same size will yield a hexagonal unit. Note that even-sized matrices are _probably_ required, else the parity value will be odd and this means the orientation of cells is reversed
-- If one matrix is twice as large as the (equal-sized) other two, then we will get a diamond
-
-Other combinations likely (untested) make skewed hexagons, and it's not clear what to do with those (for now).
-
-This operation should probably be wrapped in a function.
-
-```{r}
-par <- (3 + nrow(pat_AB) + nrow(pat_BC) + nrow(pat_CA)) %/% 2
-par <- ifelse(par %% 2 == 0, par, par + 1)
-loom <- list() %>%
-  add_biaxial_to_triaxial(pat_AB, axis = 1, parity = par) %>% 
-  add_biaxial_to_triaxial(pat_BC, axis = 2, parity = par) %>% 
-  add_biaxial_to_triaxial(pat_CA, axis = 3, parity = par)
-loom <- loom[which(lengths(loom) == 3)]
-loom <- lapply(loom, pat_to_order)
-loom <- loom[which(!is.na(loom))]
-```
-
-# Drawing the weave...
-
-This uses `get_all_cell_strands()` from `weave-grids.R`. The weave appearance here is produced simply by overdrawing in the appropriate order. That will need to be changed to 
-draw only the visible portions of strands, but differencing the shapes in the correct sequence.
-
-```{r}
-weave <- list()
-colours <- c()
-for (key in names(loom)) {
-  # recover the coordinates from the key string, and get the x-y offset
-  coords <- str_split(key, ",")[[1]] %>% as.numeric()
-  xy <- trigrid(coords)
-  # determine the permutation (i.e. draw order) - note the reversal
-  permutation <- loom[[key]] %>% rev()
-  # assign appropriate orientations composed from 
-  # the coordinate parity and the strand axis
-  o <- ifelse(sum(coords) %% 2 == 0, 180, 0) + (permutation - 1) * 120
-  weave <- append(weave, 
-                  list(get_all_cell_strands(n = 3, width = 2/3, 
-                                            orientations = o) + xy))
-  colours <- c(colours, permutation)
-}
-tris <- weave %>% sapply("[") %>% 
-  c() %>% st_sfc()
-
-weave <- st_sf(data.frame(colours = as.factor(colours)), geometry = tris)
-
-weave %>% plot(border = NA)
-```
-
-
 
 
 
