@@ -188,6 +188,14 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
   return(all_polys %>% st_sfc())
 }
 
+sfc_from_bbox <- function(bb, crs) {
+  return(
+    st_polygon(list(matrix(c(bb$xmin, bb$ymin, bb$xmax, bb$ymin,
+                             bb$xmax, bb$ymax, bb$xmin, bb$ymax,
+                             bb$xmin, bb$ymin), 5, 2, byrow = TRUE))) %>%
+      st_sfc(crs = crs))
+}
+
 make_sf_from_coded_weave_matrix <- function(n_axes = 2, loom = diag(2) + 4, 
                                             spacing = 1, width = 1, margin = 0,
                                             axis1_threads = letters[1:2], 
@@ -222,6 +230,7 @@ make_sf_from_coded_weave_matrix <- function(n_axes = 2, loom = diag(2) + 4,
           strands <- c(strands, id)          
         }
       }
+      tile <- weave_polys %>% st_sfc() %>% st_bbox() %>% sfc_from_bbox(crs = crs)
     }
   } else {
     ## code for the triaxial case...
@@ -235,5 +244,6 @@ make_sf_from_coded_weave_matrix <- function(n_axes = 2, loom = diag(2) + 4,
     summarise() %>%
     st_buffer(-margin) %>%
     st_set_crs(crs)
-  return(list(weave_unit = weave_polys, tile = st_bbox(weave_polys)))
+  return(list(weave_unit = weave_polys, 
+              tile = tile))
 }
