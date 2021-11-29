@@ -6,6 +6,8 @@ output:
   rmdformats::readthedown:
     toc_depth: 3
     css: extra.css
+editor_options: 
+  chunk_output_type: inline
 ---
 A triaxial weave can be composed for three independent biaxial weaves. This notebook shows how...
 
@@ -19,6 +21,7 @@ library(tmap)
 library(stringr)
 
 source("render-weave-grids.R")
+source("biaxial-weave-units.R")
 ```
 
 # A triangular grid
@@ -164,24 +167,33 @@ combine_orderings <- function(orderings, values = 1:3, verbose = FALSE) {
 
 
 # Doing the weave...
+```{r}
+k <- 2
+type = "cube"
+```
+
 ## Make up the paired biaxial weaves
 Setup three tie-up matrices... and for now just use **I** for the treadling and threading matrices. Note that we have a cyclic arrangement of biaxial pairs A > B > C > A, so we treat the first of these as the 'warp' in each pairing.
 
 ```{r}
 # three tie-up matrices - no idea if these are right
 # cube weave
-k <- 2
-tu_AB <- diag(3) %>% repmat(k)
-tu_BC <- diag(3) %>% repmat(k)
-tu_CA <- diag(3) %>% repmat(k)
+tu_AB <- make_twill_matrix(c(1,2)) %>% repmat(k)
+tu_BC <- make_twill_matrix(c(1,2)) %>% repmat(k)
+tu_CA <- make_twill_matrix(c(1,2)) %>% repmat(k)
 
 # open hex basic weave
-tu_AB <- ones(3) %>% repmat(k)
-tu_BC <- ones(3) %>% repmat(k)
-tu_CA <- ones(3) %>% repmat(k)
-
-th <- diag(nrow(tu_AB))
-tr <- diag(nrow(tu_AB))
+if (type == "hex") {
+  tu_AB <- ones(3) %>% repmat(k)
+  tu_BC <- ones(3) %>% repmat(k)
+  tu_CA <- ones(3) %>% repmat(k)
+}
+tr_AB <- diag(nrow(tu_AB))
+th_AB <- diag(ncol(tu_AB))
+tr_BC <- diag(nrow(tu_BC))
+th_BC <- diag(ncol(tu_BC))
+tr_CA <- diag(nrow(tu_CA))
+th_CA <- diag(ncol(tu_CA))
 ```
 
 Make up strand matrices... later these can include more than one colour... for now we're just getting it to work. (See `modify_for_missing_threads()` in `biaxial_weave_units.R`)
@@ -189,33 +201,43 @@ Make up strand matrices... later these can include more than one colour... for n
 ```{r}
 # thread patterns, these would be coded x > 0 for a thread, -1 for missing
 # cube weave
-AB_A <- ones(3) %>% repmat(k) # matrix(c(1, -1, -1, 1, -1, -1), 6, 6, byrow = TRUE) #
+AB_A <- ones(3) %>% repmat(k)
 AB_B <- t(AB_A)
-BC_B <- ones(3) %>% repmat(k) # matrix(c(2, -2, -1, 2, -2, -1), 6, 6, byrow = TRUE) # 
+BC_B <- ones(3) %>% repmat(k) 
 BC_C <- t(BC_B)
-CA_C <- ones(3) %>% repmat(k) # matrix(c(3, -3, -1, 3, -3, -1), 6, 6, byrow = TRUE) # 
+CA_C <- ones(3) %>% repmat(k) 
 CA_A <- t(CA_C)
 
 #open hex basic weave
-AB_A <- matrix(c(-1, -1, 1), 6, 6, byrow = TRUE)
-AB_B <- t(AB_A)
-BC_B <- matrix(c(-1, -1, 1), 6, 6, byrow = TRUE)
-BC_C <- t(BC_B)
-CA_C <- matrix(c(-1, -1, 1), 6, 6, byrow = TRUE)
-CA_A <- t(CA_C)
+if (type == "hex") {
+  AB_A <- matrix(c(-1, -1, 1), 3, 3, byrow = TRUE) %>% repmat(k)
+  AB_B <- t(AB_A)
+  BC_B <- matrix(c(-1, -1, 1), 3, 3, byrow = TRUE) %>% repmat(k)
+  BC_C <- t(BC_B)
+  CA_C <- matrix(c(-1, -1, 1), 3, 3, byrow = TRUE) %>% repmat(k)
+  CA_A <- t(CA_C)
+}
 # for example
 AB_A
 ```
 
-Do the matrix multiplication
+Do the matrix multiplication and encode the outcome as follows depending on the state of the warp and weft thread matrices (here `AB_A`, `AB_B` etc.). The `encode_biaxial_weave()` function is in `biaxial-weave-units.R`.
+
+Pattern | Warp | Weft | Overall state | Code
+- |- | - | - | -
+1 | >0 | >0 | Warp on top, both present | 5
+0 | >0 | >0 | Weft on top, both present | 4
+* | <0 | <0 | Both absent | 3
+* | >0 | <0 | Weft absent, warp present | 2
+* | >0 | <0 | Warp absent, weft present | 2
 
 ```{r}
 # three weave-patterns 1 for the warp on top 0 for the weft
-pat_AB <- (((tr %*% tu_AB %*% th) > 0) * 1) %>%
+pat_AB <- (((tr_AB %*% tu_AB %*% th_AB) > 0) * 1) %>%
   encode_biaxial_weave(AB_A, AB_B)
-pat_BC <- (((tr %*% tu_BC %*% th) > 0) * 1) %>%
+pat_BC <- (((tr_BC %*% tu_BC %*% th_BC) > 0) * 1) %>%
   encode_biaxial_weave(BC_B, BC_C)
-pat_CA <- (((tr %*% tu_CA %*% th) > 0) * 1) %>%
+pat_CA <- (((tr_CA %*% tu_CA %*% th_CA) > 0) * 1) %>%
   encode_biaxial_weave(CA_C, CA_A)
 
 pat_AB
@@ -234,8 +256,8 @@ Other combinations likely (untested) make skewed hexagons, and it's not clear wh
 This operation should probably be wrapped in a function.
 
 ```{r}
-par <- (3 + nrow(pat_AB) + nrow(pat_BC) + nrow(pat_CA)) %/% 2
-par <- ifelse(par %% 2 == 0, par, par + 1)
+par <- (3 + ncol(pat_AB) + ncol(pat_BC) + ncol(pat_CA)) %/% 2
+# par <- ifelse(par %% 2 == 0, par, par + 1)
 loom <- list() %>%
   add_biaxial_to_triaxial(pat_AB, axis = 1, parity = par) %>% 
   add_biaxial_to_triaxial(pat_BC, axis = 2, parity = par) %>% 
@@ -262,16 +284,19 @@ for (key in names(loom)) {
   strand_order <- loom[[key]]
   if (is.null(strand_order)) { next }
   # orientations from the coordinate parity and the strand axis
-  o <- ifelse(sum(coords) %% 2 == 0, 180, 0) + 0:2 * 120
-  weave <- add_shapes_to_list(weave, get_visible_cell_strands(n = 3, width = 0.8, 
-                                                strand_order = strand_order,
-                                                orientations = o) + xy)
+  o <- 0:2 * 120
+  w <- 0.8
+  weave <- add_shapes_to_list(weave, 
+                              get_visible_cell_strands(n = 3, width = w,
+                              parity = sum(coords), strand_order = strand_order,
+                              orientations = o) + xy)
   colours <- c(colours, strand_order)
 }
 tris <- weave %>% st_sfc()
 unit <- st_sf(data.frame(strand = as.factor(colours)), geometry = tris)
 unit %>% plot(border = NA)
 ```
+
 
 
 

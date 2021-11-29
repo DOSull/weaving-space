@@ -20,8 +20,7 @@ editor_options:
 ---
 ```{r, setup, include=FALSE}
 knitr::opts_knit$set(root.dir = 
-                       "~/weaving-space"
-                       #"~/Documents/code/weaving-space"
+                       "~/Documents/code/weaving-space"
                        )
 ```
 
@@ -29,6 +28,7 @@ knitr::opts_knit$set(root.dir =
 source("weaving-space-utils.R")
 source("biaxial-weave-units.R")
 source("triaxial-weave-units.R")
+source("render-weave-grids.R")
 source("weave-map.R")
 
 library(sf)        # vector spatial data
