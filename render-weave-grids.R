@@ -54,7 +54,7 @@ matrices_as_loom <- function(...) {
 
 # Returns a function that will generate the x-y coordinates for
 # a supplied set of integer coordinates in a particular 'space'
-# n_axes = 2 is a conventional Cartesian grid with spacing S
+# n_axes = 2 is a Cartesian grid with spacing S and reverse x-y order
 # n_axes = 3 is a Nagy triangular grid with spacing S, and axes in 
 # vertical, down 120 SW and down 120 SE directions
 # See: Nagy, B. N. 2003. Shortest Paths in Triangular Grids with 
@@ -62,7 +62,8 @@ matrices_as_loom <- function(...) {
 #      Technology 11 (2):111.
 grid_generator <- function(n_axes = 2, S = 1) {
   if (n_axes == 2) {
-    angles <- 0:1 * pi / 2
+    ### NOTE that this reverse x-y coordinates (to match matrix convention)
+    angles <- 1:0 * pi / 2
     dx <- S * cos(angles)
     dy <- S * sin(angles)
   }
@@ -267,6 +268,9 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1, margin
   # them if required by the size of the grid relative to the number of ids
   ids1 <- rep(axis1_threads, loom$dimensions[1] / length(axis1_threads))
   ids2 <- rep(axis2_threads, loom$dimensions[2] / length(axis2_threads))
+  if (n_axes == 3) {
+    ids3 <- rep(axis3_threads, loom$dimensions[3] / length(axis3_threads))
+  }
   parity <- 1
   # setup empty lists and vectors for the outputs
   weave_polys <- list()
@@ -274,45 +278,30 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1, margin
   strands <- c()
   # step through the loom index coordinates
   for(i in 1:nrow(loom$indices)) {
-    if (n_axes == 2) { # biaxial case
-      # confusingly the row-column ordering of R means the index needs to be reversed
-      coords <- rev(loom$indices[i, ])    # note row,column, ie y,x or weft,warp
-      # list of strand labels at this location (again note coordinate reversal)
-      labels <- c(ids1[coords[2]], ids2[coords[1]])
-    } else { # triaxial
-      # there is an additional set of thread labels
-      ids3 <- rep(axis3_threads, loom$dimensions[3] / length(axis3_threads))
-      coords <- loom$indices[i, ]     # coordinates are in the correct order!
-      labels <- c(axis1[coords[1]], axis2[coords[2]], axis3[coords[3]]) # as are labels
-      # additional rotation required at alternate sites in triangular grid
+    coords <- loom$indices[i, ]
+    ids <- c(ids1[coords[1]], ids2[coords[2]])
+    if (n_axes == 3) { # triaxial - extra threads and also have to set parity
+      ids <- c(ids, ids3[coords[3]])
       parity <- (sum(coords) - loom$parity) %% 2 
     }
     # get the offset vector
     xy <- gg(coords)
-    # the strand order as a vector
-    strand_order <- loom$orderings[[i]]    # order in which strands appear
-    bb_polys <- append( # get a grid cell polygon at every site
-      bb_polys, list(get_grid_cell_polygon(face_to_face_distance = spacing,
-                                           n_sides = n_sides, parity = parity) + xy))
-    if (is.null(strand_order)) { next } # nothing here so move on
-    n_slices <- str_length(labels) # numbers of slices required in each direction
-    n <- cumsum(n_slices[strand_order]) # cumulative count of strands in each direction
-    # now get the polygons
-    next_polys <- get_visible_cell_strands(n = ifelse(n_axes == 2, 4, 3),
-      S = spacing, width = width, strand_order = strand_order,
-      parity = parity, orientations = loom$orientations, n_slices = n_slices) + xy
-    # add the polygons to the list we are assembling
-    # we do this one at a time because it simplifies later conversion to sfc
+    strand_order <- loom$orderings[[i]]  # order of strands from the top
+    bb_polys[[i]] <- get_grid_cell_polygon(face_to_face_distance = spacing,
+                                           n_sides = n_sides, parity = parity) + xy
+    if (is.null(strand_order)) { next }  # nothing here so move on
+    n_slices <- str_length(ids)          # number of slices required in each direction
+    next_polys <- get_visible_cell_strands(n = n_sides, S = spacing, width = width, 
+                                           strand_order = strand_order,
+                                           parity = parity, 
+                                           orientations = loom$orientations, 
+                                           n_slices = n_slices) + xy
+    # add polygons one at a time to simplify later conversion to sfc
+    # make up labels as a string in the order they'll be needed
+    labels <- ids[strand_order] %>% paste0(collapse = "")
     for (p in seq_along(next_polys)) {
       weave_polys <- append(weave_polys, list(next_polys[[p]]))
-      if (p <= n[1]) { # top layer
-        id <- labels[strand_order[1]] %>% str_sub(p, p)
-      } else if (p <= n[2]) { # middle layer (bottom layer if there are 2)
-        id <- labels[strand_order[2]] %>% str_sub(p - n[1], p - n[1])
-      } else { # bottom layer (if there are 3)
-        id <- labels[strand_order[3]] %>% str_sub(p - n[2], p - n[2])
-      }
-      strands <- c(strands, id)          
+      strands <- c(strands, str_sub(labels, p, p))
     }
   }
   return(list(weave_unit = weave_polys %>%

@@ -156,22 +156,22 @@ encode_biaxial_weave <- function(pattern, warp, weft) {
 }
 
 decode_biaxial_to_order <- function(code, axis = 0) {
-  if (axis == 0) {
+  if (axis == 0) { # biaxial
     return(switch(
       code, 1, 2, NULL, 1:2, 2:1
     ))
   }
-  if (axis == 1) {
+  if (axis == 1) { # A&B triaxial
     return(switch(
       code, 2, 1, NULL, 2:1, 1:2
     ))
   }
-  if (axis == 2) {
+  if (axis == 2) { # B&C triaxial
     return(switch(
       code, 3, 2, NULL, 3:2, 2:3
     ))
   }
-  if (axis == 3) {
+  if (axis == 3) { # C&A triaxial
     return(switch(
       code, 1, 3, NULL, c(1,3), c(3,1)
     ))
@@ -301,93 +301,7 @@ make_matrix_from_seq <- function(row_picks) {
   return(matrix(values, nrows, ncols))
 }
 
-## Rendering to sf polygons code, superseded by render-weave-grids.R
-## make_sf_from_coded_weave_matrix
 
-# # translate a polygon by the supplied (x, y). 
-# # The ordering of parameters facilitates use in an `lapply`.
-# translate_poly <- function(pt, poly) {
-#   return(poly + pt)
-# }
-# 
-# # makes polygons at a particular spot in a weave unit (dx, dy)
-# # with length L, width W, orientation determined from
-# # warp TRUE --> vertical, warp FALSE --> horizontal, and with
-# # rectangles sliced lengthwise if required based on the supplied 
-# # warp or weft id (e.g. "ab" produces two narrower rectangles)
-# make_polys <- function(L = 100, W = 50, warp = "warp", 
-#                        dx = 0, dy = 0, warp_id = "a", weft_id = "bc") {
-#   o_over <- ifelse(warp == "warp", "vertical", "horizontal")
-#   o_under <- ifelse(warp == "warp", "horizontal", "vertical")
-#   n_over <- ifelse(warp == "warp", str_length(warp_id), str_length(weft_id))
-#   n_under <- ifelse(warp == "warp", str_length(weft_id), str_length(warp_id))
-#   # n_slices <- c(str_length(warp_id), str_length(weft_id))
-#   over_polys <- get_base_rect(L, W, o_over, n_over) + c(dx, dy)
-#   if (L == W) { # no gaps for the cross (under) strand to show
-#     return(over_polys)
-#   }
-#   under_polys <- (get_base_rect(L, W, o_under, n_under) + c(dx, dy)) %>% 
-#     st_difference(st_union(over_polys))
-#   return(c(over_polys, under_polys))
-# }
-# 
-# 
-# make_polygons_from_matrix <- function(ww = matrix(c(1, 0, 1, 0, 1, 0, 1, 0, 1), 3, 3), 
-#                                       spacing = 10000, aspect = 0.6, margin = 0, 
-#                                       warp = letters[1:2], weft = letters[3:4],
-#                                       crs = 3857) {
-#   # set height, width, length and width of thread elements, and bounding box
-#   h <- nrow(ww)
-#   w <- ncol(ww)
-#   L <- spacing + spacing * (1 - aspect) #2 * spacing / (1 + aspect)
-#   W <- spacing * aspect
-#   bb <- c(xmin = 0, ymin = 0, xmax = spacing * (w - 1), ymax = spacing * (h - 1))
-#   # extend the lists of thread IDs in case we need to run over
-#   weft_ids <- rep(weft, ceiling(h / length(weft)))
-#   warp_ids <- rep(warp, ceiling(w / length(warp)))
-#   # empty list for the polygons and vector for the strand ids
-#   polys <- list()
-#   strand_ids <- c()
-#   for(row in 1:h) {
-#     for(col in 1:w) {
-#       on_top <- ifelse(ww[row, col] == 1, "warp", "weft")
-#       warp_lbls <- warp_ids[col]
-#       weft_lbls <- weft_ids[row]
-#       # get the next set of polygons
-#       next_polys <- make_polys(spacing, W, on_top,
-#                                spacing * (col - 1), spacing * (row - 1),
-#                                warp_lbls, weft_lbls)
-#       # get number of ids in strand on top
-#       n_on_top <- ifelse(on_top == "warp", 
-#                          str_length(warp_lbls), 
-#                          str_length(weft_lbls))
-#       for (i in seq_along(next_polys)) {
-#         # add to the list of polygons
-#         polys <- append(polys, list(next_polys[[i]]))
-#         # strand id is from the spec on top, or not
-#         id <- ifelse(i <= n_on_top, # still doing the one on top
-#                      ifelse(on_top == "warp", warp_lbls, weft_lbls) %>% 
-#                        substr(i, i),
-#                      ifelse(on_top == "warp", weft_lbls, warp_lbls) %>% 
-#                        substr(i - n_on_top, i - n_on_top))
-#         strand_ids <- c(strand_ids, id)
-#       }
-#     }
-#   }
-#   polys <- polys %>%
-#     st_as_sfc() %>% st_sf() %>%     # make into an sf
-#     mutate(strand = strand_ids) %>% # the indices into the thread names
-#     filter(strand != "-") %>%       # throw away the missing ones coded -1
-#     st_crop(bb) %>%                 # crop to bounding box and remove any slivers
-#     filter(st_geometry_type(.) %in% c("POLYGON", "MULTIPOLYGON")) %>%
-#     group_by(strand) %>%            # dissolve on the strand
-#     dplyr::summarise() %>%
-#     st_buffer(-margin) %>%          # do the margin inset
-#     st_set_crs(crs)                 # set the CRS    
-#   
-#   return(list(weave_unit = polys,
-#               tile = bb))
-# }
 
 ## ---- EXTERNAL API ----
 
@@ -411,8 +325,6 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0,
     make_sf_from_coded_weave_matrix(spacing = spacing, width = aspect, 
                                     margin = margin, axis1_threads = weft_threads,
                                     axis2_threads = warp_threads, crs = crs) 
-    # make_polygons_from_matrix(spacing = spacing, margin = margin, aspect = aspect,
-    #                           warp_threads, weft_threads, crs = crs)
   return(
     list(
       primitive = cell$weave_unit,
