@@ -13,7 +13,7 @@ get_centres <- function(region, tile, hexes) {
   h <- bb$ymax - bb$ymin
   region_b <- region %>% st_union() %>% st_buffer(max(w, h))
   if (hexes) {
-    pts <- region_b %>% st_make_grid(cellsize = w * 0.99, 
+    pts <- region_b %>% st_make_grid(cellsize = h, flat_topped = TRUE,
                                      what = "centers", square = FALSE)
   } else {
     pts <- region_b %>% st_make_grid(cellsize = c(w, h), 

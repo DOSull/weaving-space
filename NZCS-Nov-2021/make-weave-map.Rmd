@@ -27,7 +27,7 @@ knitr::opts_knit$set(root.dir =
 ```{r message = FALSE, echo = FALSE, warning = FALSE, results = FALSE}
 source("weaving-space-utils.R")
 source("biaxial-weave-units.R")
-source("triaxial-weave-units.R")
+source("triaxial-weave-units-geometric.R")
 source("render-weave-grids.R")
 source("weave-map.R")
 

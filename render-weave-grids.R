@@ -1,6 +1,52 @@
 library(dplyr)
 library(sf)
 library(pracma)
+library(stringr)
+
+# Returns a matrix of coordinates and a list of the orderings of axes at those sites
+matrices_as_loom <- function(...) {
+  matrices <- list(...)
+  if (length(matrices) == 1) {
+    M <- matrices[[1]]
+    indices <- expand.grid(weft = 1:nrow(M), warp = 1:ncol(M)) %>%
+      as.matrix()
+    orderings <- M[indices] %>% 
+      lapply(decode_biaxial_to_order, axis = 0)
+    parity <- NULL
+    dimensions <- c(nrow(M), ncol(M))
+  } else {
+    M1 <- matrices[[1]]
+    M2 <- matrices[[2]]
+    M3 <- matrices[[3]]
+    
+    nA <- max(ncol(M1), nrow(M3))
+    nB <- max(ncol(M2), nrow(M1))
+    nC <- max(ncol(M3), nrow(M2))
+    dimensions <- c(nA, nB, nC)
+    
+    M_AB <- M1 %>% repmat(n = Lcm(nrow(M1), nA) %/% nrow(M1),
+                          m = Lcm(ncol(M1), nA) %/% ncol(M1))
+    M_BC <- M2 %>% repmat(n = Lcm(nrow(M2), nB) %/% nrow(M2),
+                          m = Lcm(ncol(M2), nB) %/% ncol(M2))
+    M_CA <- M3 %>% repmat(n = Lcm(nrow(M3), nC) %/% nrow(M3),
+                          m = Lcm(ncol(M3), nC) %/% ncol(M3))
+    
+    parity <- (3 + nA + nB + nC) %/% 2
+    indices <- expand.grid(a = 1:nA, b = 1:nB, c = 1:nC) %>% 
+      filter((a + b + c) %in% parity:(parity + 1)) %>%
+      as.matrix()
+    orderings <- 
+      mapply(combine_orderings, 
+             M_AB[indices[, 2:1]] %>% lapply(decode_biaxial_to_order, axis = 1), 
+             M_BC[indices[, 3:2]] %>% lapply(decode_biaxial_to_order, axis = 2), 
+             M_CA[indices[, c(1, 3)]] %>% lapply(decode_biaxial_to_order, axis = 3), 
+             SIMPLIFY = FALSE)
+  }
+  return(list(indices = indices, 
+              orderings = orderings,
+              parity = parity,
+              dimensions = dimensions))
+}
 
 
 # Returns a function that will generate the x-y coordinates for
@@ -77,7 +123,7 @@ get_grid_cell_polygon <- function(face_to_face_distance = 1, n_sides = 4, parity
     matrix(nrow = n_sides + 1, ncol = 2) %>%
     round(10) # apparently required to ensure first and last points coincident
   polygon <- corners %>% list() %>% st_polygon()
-  if (parity %% 2 == 1) {
+  if (n_sides == 4 || parity %% 2 == 1) {
     return(polygon)
   } else {
     return(rotate_shape(polygon, 180))
@@ -159,7 +205,9 @@ get_all_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
   return(polys %>% st_sfc())
 }
 
-
+# Returns the visible parts of the strands in a grid, given the spacing S
+# strand width width, parity (for the triangular case), a vector of strand
+# orders and matching vectors of orientations and the desired number of slices
 get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
                                      strand_order = 1:(6-n),
                                      orientations = (0:(n-1)) * 360/n , 
@@ -171,6 +219,8 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
                                    n_slices = n_slices[strand_order[i]])
     if (i == 1) {
       all_polys <- add_shapes_to_list(all_polys, next_polys)
+      # mask poly progressively builds the union of all polygons 
+      # so far, to mask out invisible parts of those underneath
       mask_poly <- next_polys %>% 
         st_set_precision(1e10) %>% 
         st_union()
@@ -183,11 +233,13 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
                    st_set_precision(1e10) %>%
                    st_union())
     }
+    # if the width is 1 then no lower polygons are visible
     if (width == 1) {break} # for efficiency?
   }
   return(all_polys %>% st_sfc())
 }
 
+# returns a rectangular polygon matching a provided bounding box
 sfc_from_bbox <- function(bb, crs) {
   return(
     st_polygon(list(matrix(c(bb$xmin, bb$ymin, bb$xmax, bb$ymin,
@@ -196,54 +248,84 @@ sfc_from_bbox <- function(bb, crs) {
       st_sfc(crs = crs))
 }
 
-make_sf_from_coded_weave_matrix <- function(n_axes = 2, loom = diag(2) + 4, 
-                                            spacing = 1, width = 1, margin = 0,
+
+# builds the sf associate with a given weave supplied as 'loom' which is a list
+# containing the coordinates in an appropriate grid (Cartesian or triangular)
+# and the orderings of the strands at each coordinate location
+make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1, margin = 0,
                                             axis1_threads = letters[1:2], 
                                             axis2_threads = letters[3:4],
                                             axis3_threads = letters[5:6], crs = 3857) {
+  # we need the number of axes, which we can use to make a grid generator function 
+  n_axes <- length(loom$dimensions)
   gg <- grid_generator(n_axes = n_axes, S = spacing)
+  # the labels for axis1 and 2 are required in both cases and we repeat 
+  # them if required by the size of the grid relative to the number of ids
+  ids1 <- rep(axis1_threads, loom$dimensions[1] / length(axis1_threads))
+  ids2 <- rep(axis2_threads, loom$dimensions[2] / length(axis2_threads))
+  # setup empty lists and vectors for the outputs
   weave_polys <- list()
+  bb_polys <- list()
   strands <- c()
-  if (n_axes == 2) {
-    orientations <- c(90, 0)
-    warp <- rep(axis1_threads, ncol(loom) / length(axis1_threads))
-    weft <- rep(axis2_threads, nrow(loom) / length(axis2_threads))
-    for (warp_thread in 1:ncol(loom)) {
-      for (weft_thread in 1:nrow(loom)) {
-        xy <- gg(c(warp_thread - 1, weft_thread - 1))
-        warp_id <- warp[warp_thread]
-        weft_id <- weft[weft_thread]
-        strand_order <- decode_biaxial_to_order(loom[weft_thread, warp_thread])
-        n_slices <- c(str_length(warp_id), str_length(weft_id))
-        next_polys <- get_visible_cell_strands(S = spacing, width = width, 
-                                               strand_order = strand_order,
-                                               orientations = orientations, 
-                                               n_slices = n_slices) + xy
-        n_over <- n_slices[strand_order[1]]
-        for (i in seq_along(next_polys)) {
-          weave_polys <- append(weave_polys, list(next_polys[[i]]))
-          id <- ifelse(i <= n_over, # still doing the one on top
-                       ifelse(strand_order[1] == 1, warp_id, weft_id) %>% 
-                         substr(i, i),
-                       ifelse(strand_order[2] == 1, warp_id, weft_id) %>% 
-                         substr(i - n_over, i - n_over))
-          strands <- c(strands, id)          
-        }
-      }
-      tile <- weave_polys %>% st_sfc() %>% st_bbox() %>% sfc_from_bbox(crs = crs)
+  # step through the loom index coordinates
+  for(i in 1:nrow(loom$indices)) {
+    if (n_axes == 2) { # biaxial case
+      # confusingly the row-column ordering of R means the index needs to be reversed
+      orientations <- c(0, -90)           # warp axis 1 rotated -90, weft axis 2 at 0
+      coords <- rev(loom$indices[i, ])    # note row,column, ie y,x or weft,warp
+      # list of the strand labels at this location (again note coordinate reversal)
+      labels <- c(ids1[coords[2]], ids2[coords[1]])
+      parity <- 1 # this is the null value that will cause no rotation
+    } else { # triaxial
+      # there is an additional set of thread labels
+      ids3 <- rep(axis3_threads, loom$dimensions[3] / length(axis3_threads))
+      orientations <- c(0, 120, 240)  # a different set of orientations
+      coords <- loom$indices[i, ]     # coordinates are in the correct order!
+      labels <- c(axis1[coords[1]], axis2[coords[2]], axis3[coords[3]]) # as are labels
+      # additional rotation required at alternate sites in triangular grid
+      parity <- (sum(coords) - loom$parity) %% 2 
     }
-  } else {
-    ## code for the triaxial case...
+    # get the offset vector
+    xy <- gg(coords)
+    # the strand order as a vector
+    strand_order <- loom$orderings[[i]]    # order in which strands appear
+    bb_polys <- append( # get a grid cell polygon at every site
+      bb_polys, list(get_grid_cell_polygon(face_to_face_distance = spacing,
+                                           n_sides = ifelse(n_axes == 2, 4, 3),
+                                           parity = parity) + xy))
+    if (is.null(strand_order)) { next } # nothing here so move on
+    n_slices <- str_length(labels) # numbers of slices required in each direction
+    n <- cumsum(n_slices[strand_order]) # cumulative count of strands in each direction
+    # now get the polygons
+    next_polys <- get_visible_cell_strands(n = ifelse(n_axes == 2, 4, 3),
+      S = spacing, width = width, strand_order = strand_order,
+      parity = parity, orientations = orientations, n_slices = n_slices) + xy
+    # add the polygons to the list we are assembling
+    # we do this one at a time because it simplifies later conversion to sfc
+    for (p in seq_along(next_polys)) {
+      weave_polys <- append(weave_polys, list(next_polys[[p]]))
+      if (p <= n[1]) { # top layer
+        id <- labels[strand_order[1]] %>% str_sub(p, p)
+      } else if (p <= n[2]) { # middle layer (bottom layer if there are 2)
+        id <- labels[strand_order[2]] %>% str_sub(p - n[1], p - n[1])
+      } else { # bottom layer (if there are 3)
+        id <- labels[strand_order[3]] %>% str_sub(p - n[2], p - n[2])
+      }
+      strands <- c(strands, id)          
+    }
   }
-  weave_polys <- weave_polys %>%
-    st_as_sfc() %>%
-    st_set_precision(1e10) %>%
-    st_sf(strand = strands) %>%
-    filter(strand != "-") %>%
-    group_by(strand) %>%
-    summarise() %>%
-    st_buffer(-margin) %>%
-    st_set_crs(crs)
-  return(list(weave_unit = weave_polys, 
-              tile = tile))
+  return(list(weave_unit = weave_polys %>%
+                st_as_sfc() %>%                # convert to sfc
+                st_set_precision(1e10) %>%     # to ensure they dissolve nicely
+                st_sf(strand = strands) %>%    # add the strands information
+                filter(strand != "-") %>%      # remove any tagged missing
+                group_by(strand) %>%           # dissolve
+                summarise() %>%
+                st_buffer(-margin) %>%         # include a negative margin
+                st_set_crs(crs),               # set CRS
+              tile = bb_polys %>%
+                st_sfc() %>%                   # convert to sfc
+                st_set_precision(1e10) %>%     # to ensure clean dissolve
+                st_union() %>%                 # union   
+                st_set_crs(crs)))              # set CRS
 }

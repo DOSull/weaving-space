@@ -5,6 +5,8 @@ require(dplyr)
 require(sf)
 require(wk)
 
+## ---- UTILITY FUNCTIONS ----
+
 # Functions that can be used to generate sf data 'weave units' i.e. a 
 # tileable repeating element that when tiled gives the appearance of a 
 # biaxial woven surface composed of criss-crossing rectangular
@@ -49,10 +51,11 @@ get_weave_pattern_matrix <- function (type = "plain", n = 2,
                                       tr = diag(nrow(tie_up))) {
   # make a sequence of ints from the warp/weft, 
   # substituting -1 for any "-"
-  idxs <- 1:(length(c(warp, weft)))
-  missing <- c(which(warp == "-"), length(warp) + which(weft == "-"))
-  idxs[missing] <- -1
-
+  warps <- seq_along(warp)
+  wefts <- seq_along(weft)
+  warps[which(warp == "-")] <- -1
+  wefts[which(weft == "-")] <- -1
+  
   width <- length(warp)
   height <- length(weft)
   p <- switch(
@@ -73,8 +76,8 @@ get_weave_pattern_matrix <- function (type = "plain", n = 2,
   nc <- ncol(p)
   nr <- nrow(p)
   # make matrices of columns/rows for the warp and weft threads
-  warp_threads <- matrix(head(idxs, width), nr, nc, byrow = TRUE)
-  weft_threads <- matrix(tail(idxs, height), nr, nc)
+  warp_threads <- matrix(warps, nr, nc, byrow = TRUE)
+  weft_threads <- matrix(wefts, nr, nc)
   # encode to reflect missing threads
   return(p %>% encode_biaxial_weave(warp_threads, weft_threads))
 }
@@ -152,7 +155,12 @@ encode_biaxial_weave <- function(pattern, warp, weft) {
   return(pattern)
 }
 
-decode_biaxial_to_order <- function(code, axis = 1) {
+decode_biaxial_to_order <- function(code, axis = 0) {
+  if (axis == 0) {
+    return(switch(
+      code, 1, 2, NULL, 1:2, 2:1
+    ))
+  }
   if (axis == 1) {
     return(switch(
       code, 2, 1, NULL, 2:1, 1:2
@@ -381,6 +389,7 @@ make_matrix_from_seq <- function(row_picks) {
 #               tile = bb))
 # }
 
+## ---- EXTERNAL API ----
 
 get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0, 
                                    type = "plain", n = c(2, 2), # used by twill
@@ -398,9 +407,10 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0,
   }
   cell <- get_weave_pattern_matrix(type = type, n = n, warp_threads, weft_threads, 
                                    tie_up = tie_up, tr = tr, th = th) %>%
-    make_sf_from_coded_weave_matrix(loom = ., spacing = spacing, width = aspect, 
-                                    margin = margin, axis1_threads = warp_threads,
-                                    axis2_threads = weft_threads, crs = crs) 
+    matrices_as_loom() %>% 
+    make_sf_from_coded_weave_matrix(spacing = spacing, width = aspect, 
+                                    margin = margin, axis1_threads = weft_threads,
+                                    axis2_threads = warp_threads, crs = crs) 
     # make_polygons_from_matrix(spacing = spacing, margin = margin, aspect = aspect,
     #                           warp_threads, weft_threads, crs = crs)
   return(

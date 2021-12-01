@@ -3,198 +3,205 @@ require(wk)
 require(sf)
 require(stringr)
 
-# Functions to generate sf datasets that represent tileable to produce the 
-# appearance of a woven surface, with three directions of weaving thread. 
-# The methods used are geometric, i.e., there is not underlying mathematical
-# or computational representation of a weaving process, unlike in 
-# biaxial-weave-units.R.
+# Functions to generate sf datasets that are tileable to produce the
+# appearance of a woven surface, with three directions of weaving thread.
 
 
 # convenience storage of sqrt(3)
 S3 <- sqrt(3)
 
 
-get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0, 
-                                    strands = "a|b|c", type = "hex", crs = 3857) {
-  
-  pc <- get_primitive_cell(
-    spacing = spacing, aspect = aspect, margin = margin,
-    strands = strands, type = type, crs = crs)
-  
+get_triaxial_weave_pattern_matrices <- function(type = "hex",
+                                                strands_1 = c("a", "-", "-"),
+                                                strands_2 = c("b", "-", "-"),
+                                                strands_3 = c("c", "-", "-")) {
+
+  if (type == "hex") {
+    loom <- matrices_as_loom(
+      get_weave_pattern_matrix(type = "this", tie_up = ones(6),
+                               warp = strands_1, weft = strands_2),
+      get_weave_pattern_matrix(type = "this", tie_up = ones(6),
+                               warp = strands_2, weft = strands_3),
+      get_weave_pattern_matrix(type = "this", tie_up = ones(6),
+                               warp = strands_3, weft = strands_1))
+  }
+  if (type == "cube") {
+    loom <- matrices_as_loom(
+      get_weave_pattern_matrix(type = "twill", n = rep(1:2, 2),
+                               warp = strands_1, weft = strands_2),
+      get_weave_pattern_matrix(type = "twill", n = rep(1:2, 2),
+                               warp = strands_2, weft = strands_3),
+      get_weave_pattern_matrix(type = "twill", n = rep(1:2, 2),
+                               warp = strands_3, weft = strands_1))
+  }
+  return(loom)
+}
+
+
+
+get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
+                                    strands = "a--|b--|c--", type = "hex", crs = 3857) {
+
+  parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"
+    parse_labels() %>%          # c("a(bc)", "ef-", "-")
+    lapply(parse_strand_label)  # list(c("a", "bc"), c("e", "f", "-"), c("-"))
+
+  strands_1 <- parsed_labels[[1]]
+  strands_2 <- parsed_labels[[2]]
+  strands_3 <- parsed_labels[[3]]
+
+  cell <- get_triaxial_weave_pattern_matrices(type = type,
+                                              strands_1, strands_2, strands_3) %>%
+    make_sf_from_coded_weave_matrix(spacing = spacing,
+                                    width = aspect, margin = margin,
+                                    axis1_threads = strands_1,
+                                    axis2_threads = strands_2,
+                                    axis3_threads = strands_3, crs = crs)
+
   return(
     list(
-      primitive = pc$cell,
-      transform = pc$transform,
-      strands = pc$strands,
-      tile = pc$tile,
+      primitive = cell$weave_unit,
+      transform = wk_affine_identity(),
+      strands = unique(cell$weave_unit$strand),
+      tile = cell$tile,
       type = type
     )
   )
 }
 
-# Delegates creation of the tileable unit to an appropriate function
-# based on the supplied type "hex", "diamond" or "cube".
-get_primitive_cell <- function(spacing = 500, aspect = 1, margin = 0, 
-                               strands = "a|b|c", type = "hex", crs = 3857) {
-  # parse e.g. "a|bc|d" to list(c("a"), c("b", "c"), c("d"))
-  labels <- strands %>% 
-    parse_labels() %>%
-    lapply(string_to_chars)
+combine_biaxial_matrices <- function(list_of_matrices) {
+  M1 <- list_of_matrices[[1]]
+  M2 <- list_of_matrices[[2]]
+  M3 <- list_of_matrices[[3]]
 
-  cell <- switch(
-    type,
-    "diamond" = getDiamondPrimitiveCell(
-      spacing = spacing, aspect = aspect, margin = margin, 
-      labels_1 = labels[[1]], labels_2 = labels[[2]], labels_3 = labels[[3]],
-      crs = crs),
-    
-    "hex" = getHexPrimitiveCell(
-      spacing = spacing, aspect = aspect, margin = margin, 
-      labels_1 = labels[[1]], labels_2 = labels[[2]], labels_3 = labels[[3]],
-      crs = crs),
-    
-    "cube" = getCubePrimitiveCell(
-      spacing = spacing, margin = margin, 
-      labels_1 = labels[[1]], labels_2 = labels[[2]], labels_3 = labels[[3]],
-      crs = crs)
-  )
-  return(cell)
-}
+  nA <- max(ncol(M1), nrow(M3))
+  nB <- max(ncol(M2), nrow(M1))
+  nC <- max(ncol(M3), nrow(M2))
 
-## for local rotations of single geoms (around 0, 0), this is more convenient
-## than the wk affine transforms option
-get_rot_matrix <- function(angle) {
-  a <- angle * pi / 180
-  return(t(matrix(c(cos(a), sin(a), -sin(a), cos(a)), 
-                  2, 2, byrow = FALSE)))
+  M_AB <- M1 %>% repmat(n = Lcm(nrow(M1), nA) %/% nrow(M1),
+                        m = Lcm(ncol(M1), nA) %/% ncol(M1))
+  M_BC <- M2 %>% repmat(n = Lcm(nrow(M2), nB) %/% nrow(M2),
+                        m = Lcm(ncol(M2), nB) %/% ncol(M2))
+  M_CA <- M3 %>% repmat(n = Lcm(nrow(M3), nC) %/% nrow(M3),
+                        m = Lcm(ncol(M3), nC) %/% ncol(M3))
+
+  loom <- list()
+  parity <- (3 + nA + nB + nC) %/% 2
+  loom <- add_biaxial_to_triaxial(loom, M_AB, axis = 1, parity = parity)
+  loom <- add_biaxial_to_triaxial(loom, M_BC, axis = 2, parity = parity)
+  loom <- add_biaxial_to_triaxial(loom, M_CA, axis = 3, parity = parity)
+
+  loom <- loom[which(lengths(loom) == 3)]
+  return(list(loom = loom %>% lapply(combine_orderings),
+              dimensions = c(nA, nB, nC),
+              parity = parity,
+              M_AB = M_AB,
+              M_BC = M_BC,
+              M_CA = M_CA))
 }
 
 
-# Returns a hexagonally tileable unit that produces a triangular weave
-# optionally with more than one thread in any of the three directions. The
-# base tile is something like
-#
-#      /    /
-#     /    / \
-#  __/____/   \___
-#         \    \
-#  ________\    \_
-#           \    \
-#
-# where the tileable shape is the 'points up' hexagon enclosing this
-# spacing, is the repeat width of the hexagon, aspect is the (normal) width
-# of the weave strands relative to the spacing, margin is an inset
-# labels_1/2/3 are vectors of identifiers
-#
-# Note: although the "diamond" option produces the same weave unit by default
-# this function is more flexible, and preferred...
-getHexPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
-                                labels_1 = letters[1:2], labels_2 = letters[3:4],
-                                labels_3 = letters[5:6], crs = 3857) {
-  # aspect must be <= 1 / 2.S3
-  width <- min(aspect, 1 / 2 / S3) * spacing 
-  length <- spacing - width * 2 / S3
+combine_biaxial_matrices_2 <- function(list_of_matrices) {
+  M1 <- list_of_matrices[[1]]
+  M2 <- list_of_matrices[[2]]
+  M3 <- list_of_matrices[[3]]
   
-  # the lengths of the label vectors
-  ns <- c(length(labels_1), length(labels_2), length(labels_3))
-  angles <- 0:2 * 120
-  polys <- list()
-  i <- 1
-  for (dir in 1:3) {
-    rot <- get_rot_matrix(angles[dir]) # required rotation matrix
-    n <- ns[dir] # the number of lengthwise slices of the strand in this direction
-    for (p in 1:n) { 
-      # parallelogram in the bottom left quadrant
-      p1 <- get_parallelogram(c(width / S3, -width) * (p - 1) / n,
-                              length, width / n)
-      # and slid horizontally along by the spacing 
-      p2 <- p1 + c(spacing, 0)
-      # add them to the list rotated by the required amount
-      polys[[i]] <- p1 * rot
-      polys[[i + 1]] <- p2 * rot
-      i <- i + 2
+  nA <- max(ncol(M1), nrow(M3))
+  nB <- max(ncol(M2), nrow(M1))
+  nC <- max(ncol(M3), nrow(M2))
+  
+  M_AB <- M1 %>% repmat(n = Lcm(nrow(M1), nA) %/% nrow(M1),
+                        m = Lcm(ncol(M1), nA) %/% ncol(M1))
+  M_BC <- M2 %>% repmat(n = Lcm(nrow(M2), nB) %/% nrow(M2),
+                        m = Lcm(ncol(M2), nB) %/% ncol(M2))
+  M_CA <- M3 %>% repmat(n = Lcm(nrow(M3), nC) %/% nrow(M3),
+                        m = Lcm(ncol(M3), nC) %/% ncol(M3))
+
+  parity <- (3 + nA + nB + nC) %/% 2
+  indices <- expand.grid(1:nA, 1:nB, 1:nC) %>% 
+    filter((Var1 + Var2 + Var3) %in% parity:(parity + 1)) %>%
+    as.matrix()
+  iAB <- indices[, 1:2]
+  iBC <- indices[, 2:3]
+  iCA <- indices[, c(3, 1)]
+  values <- matrix(c(M_AB[iAB], M_BC[iBC], M_CA[iCA]), ncol = 3)
+  return(list(indices = indices, values = values))
+}
+
+# function to add values to a supplied list tri, from a supplied matrix M, where
+# values in the list will be indexed by triangular coordinates (converted to a
+# string). This will be called 3 times, once for each axis. The calling context
+# should determine the parity, based on the sizes of the three matrices
+add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
+  for (col in 1:ncol(M)) {
+    for (row in 1:nrow(M)) {
+      # get the target grid coordinates (there will be two)
+      abc <- transform_ab_to_abc(col, row, parity = parity, axis = axis)
+      for (par in 1:2) {
+        # make a key (string) from each pair
+        key <- abc[par, ] %>% str_c(collapse = ",")
+        # if it is not in the target list, add a new thread order
+        if (is.null(tri[[key]])) {
+          tri[[key]] <- list(decode_biaxial_to_order(M[row, col], axis = axis)) # c(M[row, col])
+        } else { # if there is something there, then append the value
+          tri[[key]] <- append(tri[[key]], list(decode_biaxial_to_order(M[row, col], axis = axis)))
+          # tri[[key]] <- c(tri[[key]], M[row, col] )
+        }
+      }
     }
   }
-  # make up a list of the labels
-  ids <- rep(c(labels_1, labels_2, labels_3), 2) %>%
-    matrix(sum(ns), 2) %>% t() %>% c()
-  # and a hexagonal tile
-  tile <- get_hexagon(spacing)
-  return(list(
-    cell = st_sf(strand = ids, geometry = st_as_sfc(polys)) %>%
-      st_buffer(-margin) %>%          # inset margin
-      group_by(strand) %>%                # dissolve by id
-      summarise() %>% 
-      st_intersection(tile) %>%       # hex
-      st_as_sf() %>%
-      st_set_crs(crs), 
-    transform = wk_affine_identity(), # no transform needed
-    tile = tile,
-    strands = unique(ids)
-  ))
+  return(tri)
 }
 
-# Returns a 'cube tile like this
-#    ____
-#   /   /\
-#  /___/  \
-#  \   \  /
-#   \___\/   but rotated 90 degrees!
-# 
-# and which doesn't really read as a weave!
-getCubePrimitiveCell <- function(spacing = 500, margin = 0,
-                                 labels_1 = letters[1:2], labels_2 = letters[3:4],
-                                 labels_3 = letters[5:6], crs = 3857) {
-  L <- spacing / S3
-  W <- spacing / 2
-  
-  ns <- c(length(labels_1), length(labels_2), length(labels_3))
-  angles <- c(30, 150, 270)
-  polys <- list()
-  i <- 1
-  for (dir in 1:3) {
-    rot <- get_rot_matrix(angles[dir])
-    n <- ns[dir]
-    for (p in 1:n) {
-      p1 <- get_parallelogram(c(-W / S3, W) * (p - 1) / n, L, W / n, "UR")
-      polys[[i]] <- p1 * rot
-      i <- i + 1
-    }
+# combines a set of orderings on the values
+# the orderings are a list of vectors (which may be empty)
+# for example list(c(1, 2), c(2, 3), c(1, 3))
+combine_orderings <- function(..., values = 1:3, verbose = FALSE) {
+  orderings <- list(...)
+  # assemble a matrix of the positions of entries
+  # in each ordering among the values
+  ranks <- matrix(0, length(orderings), length(values))
+  for (i in seq_along(orderings)) {
+    ranks[i, ] <- match(values, orderings[[i]])
   }
-  ids <- c(labels_1, labels_2, labels_3)
-  tile <- get_hexagon(spacing)
-  return(list(
-    cell = st_sf(strand = ids, geometry = st_as_sfc(polys)) %>%
-      st_intersection(tile) %>%
-      st_buffer(-margin) %>%
-      st_as_sf() %>%
-      st_set_crs(crs),
-    transform = wk_affine_identity(),
-    tile = tile,
-    strands = unique(ids)
-  ))
-}
-
-
-get_parallelogram <- function(origin, L, W, quadrant = "BL") {
-  top_edge <- c(-L, 0)
-  left_edge <- c(W / S3, -W)
-  bottom_edge <- -top_edge
-  right_edge <- -left_edge
-  if (quadrant == "BL") {
-    return(get_polygon(
-      c(origin, origin + top_edge, 
-        origin + top_edge + left_edge,
-        origin + top_edge + left_edge + bottom_edge)
-    ))
+  # replace any missing matches with a high score
+  ranks[which(is.na(ranks))] <- 100
+  # sum the ranks of each value
+  scores <- colSums(ranks)
+  max_score <- length(orderings) * 100
+  number_present <- sum(scores < max_score)
+  if (number_present == 0) {
+    result <- NULL
   } else {
-    return(get_polygon(
-      c(origin, origin + bottom_edge, 
-        origin + bottom_edge + right_edge,
-        origin + bottom_edge + right_edge + top_edge)
-    ))
+    result <- as.vector(values[order(scores)[1:number_present]])
+  }
+  if (verbose) {
+    return(list(result = result, ranks = ranks, scores = scores))
+  } else {
+    return(result)
   }
 }
+
+# function to supply missing third coordinate in a triangular grid given two
+# other coordinates, the parity, and the axis. The axis tells us which is missing:
+# axis = 1 --> 3rd, axis = 2 --> 1st, axis = 3 --> 2nd
+transform_ab_to_abc <- function(z1, z2, parity = 0, axis = 1) {
+  # comments on first case, others are cyclic shifts - most easily read down the code
+  # when axis = 1 a_coord and b_coord are preserved, c_coord is the paired residual values
+  a_coord <- switch(axis, z1, c(parity + 1 - z1 - z2, parity - z1 - z2), z2)
+  b_coord <- switch(axis, z2, z1, c(parity + 1 - z1 - z2, parity - z1 - z2))
+  c_coord <- switch(axis, c(parity + 1 - z1 - z2, parity - z1 - z2), z2, z1)
+  result <- switch( 
+    axis, # return two triples that differ in the missing coordinate
+    matrix(c(a_coord, b_coord, c_coord[1], 
+             a_coord, b_coord, c_coord[2]), nrow = 2, ncol = 3, byrow = TRUE),
+    matrix(c(a_coord[1], b_coord, c_coord, 
+             a_coord[2], b_coord, c_coord), nrow = 2, ncol = 3, byrow = TRUE),
+    matrix(c(a_coord, b_coord[1], c_coord, 
+             a_coord, b_coord[2], c_coord), nrow = 2, ncol = 3, byrow = TRUE))
+  return(result)
+}
+
 
 
 # returns hexagon of the specified width (face to face normal distance)
@@ -205,83 +212,6 @@ get_hexagon <- function(w, point_up = TRUE) {
   if (!point_up) {
     angles <- angles - pi / 6
   }
-  return(get_polygon(c(matrix(c(cos(angles), sin(angles)), 
+  return(get_polygon(c(matrix(c(cos(angles), sin(angles)),
                               ncol = 6, byrow = TRUE)) * r))
 }
-
-
-
-## NOTE because the diamond tile makes a triangular weave identical to the 
-## "hex" type, it's not deprecated exactly, but it's not really needed
-## It's why the 'transform' was added so historically important, but not
-## no longer required (a useful mutation...)
-
-# Returns a diamond weave primitive cell like
-# 
-#     /\
-#    /_/\
-#   /__\ \
-#   \/  \/
-#    \__/
-#     \/
-#
-# spacing is the total width of this diamond unit tile. If spacing is sqrt(3)
-# times the width it will be increased to this. Between ...
-# width is the normal width of the parallelograms (i.e. their height)
-# margin is an inset requested to create gaps between the elements.
-#
-# labels_1, 2, 3 are lists of (character) labels distinguishing the 
-# three directions -- general "a", "b", "c"
-getDiamondPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0, 
-                                    labels_1 = letters[1], labels_2 = letters[2],
-                                    labels_3 = letters[3], crs = 3857) {
-  
-  lbls <- c(labels_1, labels_2, labels_3)
-  
-  # width requested by aspect * spacing must be <= spacing / 2.S3
-  W <- min(aspect, 1 / 2 / S3 ) * spacing
-  L <- spacing - W * 2 / S3
-  
-  # make a parallelogram in upper-right quadrant of length L, 'height' W
-  base_p <- get_parallelogram(c(0, 0), L, W, "UR")
-  # replicate 3 times, rotated around 0, 0
-  base_polys <- list(base_p,                        # the base polygon
-                     base_p * get_rot_matrix(120),  # rotated 120
-                     base_p * get_rot_matrix(240))  # rotated 240
-  # 4 translations to the corners of the tile unit
-  translations <- c(0, 0,                           # in place
-                    spacing / 2, -spacing * S3 / 2, # down to the right
-                    spacing, 0,                     # across
-                    spacing / 2, spacing * S3 / 2)  # up to the right
-  tile <- get_polygon(translations)                 # the diamond tile
-  
-  # make up polygons, from the base polygons translated in all 4 directions
-  polys <- list(); item <- 1
-  for (p in base_polys) {
-    for (i in seq(1, 8, 2)) {
-      polys[[item]] <- p + translations[i:(i + 1)]
-      item <- item + 1
-    }
-  }
-  # and ids in the same order
-  ids <- c(rep(labels_1, 4), rep(labels_2, 4), rep(labels_3, 4))
-  # now make an sf and further process as needed
-  return(list( 
-    cell = st_sf(strand = ids, geometry = st_as_sfc(polys)) %>% 
-      st_buffer(-margin / 2) %>%  # inset margin
-      st_intersection(tile) %>%   # intersect to the tile
-      st_as_sf() %>%
-      # because polygon edges lie on edges of the tile, we get 
-      # 0 area slivers and non POLYGON geoms, so remove them
-      # this is why "hex" type may be preferable 
-      filter(st_geometry_type(.) == "POLYGON" & st_area(.) > 1e-10) %>%
-      st_set_crs(crs),
-    # the transform required to make this rectangular tile-able
-    transform = wk_affine_invert(
-      affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2)),
-    tile = tile,
-    strands = unique(ids)
-  ))
-}
-
-
