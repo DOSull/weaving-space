@@ -1,7 +1,4 @@
-require(tidyr)
-require(wk)
 require(sf)
-require(stringr)
 
 # Functions to generate sf datasets that are tileable to produce the
 # appearance of a woven surface, with three directions of weaving thread.
@@ -61,7 +58,7 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
   return(
     list(
       primitive = cell$weave_unit,
-      transform = wk_affine_identity(),
+      transform = wk::wk_affine_identity(),
       strands = unique(cell$weave_unit$strand),
       tile = cell$tile,
       type = type
@@ -69,64 +66,6 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
   )
 }
 
-combine_biaxial_matrices <- function(list_of_matrices) {
-  M1 <- list_of_matrices[[1]]
-  M2 <- list_of_matrices[[2]]
-  M3 <- list_of_matrices[[3]]
-
-  nA <- max(ncol(M1), nrow(M3))
-  nB <- max(ncol(M2), nrow(M1))
-  nC <- max(ncol(M3), nrow(M2))
-
-  M_AB <- M1 %>% repmat(n = Lcm(nrow(M1), nA) %/% nrow(M1),
-                        m = Lcm(ncol(M1), nA) %/% ncol(M1))
-  M_BC <- M2 %>% repmat(n = Lcm(nrow(M2), nB) %/% nrow(M2),
-                        m = Lcm(ncol(M2), nB) %/% ncol(M2))
-  M_CA <- M3 %>% repmat(n = Lcm(nrow(M3), nC) %/% nrow(M3),
-                        m = Lcm(ncol(M3), nC) %/% ncol(M3))
-
-  loom <- list()
-  parity <- (3 + nA + nB + nC) %/% 2
-  loom <- add_biaxial_to_triaxial(loom, M_AB, axis = 1, parity = parity)
-  loom <- add_biaxial_to_triaxial(loom, M_BC, axis = 2, parity = parity)
-  loom <- add_biaxial_to_triaxial(loom, M_CA, axis = 3, parity = parity)
-
-  loom <- loom[which(lengths(loom) == 3)]
-  return(list(loom = loom %>% lapply(combine_orderings),
-              dimensions = c(nA, nB, nC),
-              parity = parity,
-              M_AB = M_AB,
-              M_BC = M_BC,
-              M_CA = M_CA))
-}
-
-
-combine_biaxial_matrices_2 <- function(list_of_matrices) {
-  M1 <- list_of_matrices[[1]]
-  M2 <- list_of_matrices[[2]]
-  M3 <- list_of_matrices[[3]]
-  
-  nA <- max(ncol(M1), nrow(M3))
-  nB <- max(ncol(M2), nrow(M1))
-  nC <- max(ncol(M3), nrow(M2))
-  
-  M_AB <- M1 %>% repmat(n = Lcm(nrow(M1), nA) %/% nrow(M1),
-                        m = Lcm(ncol(M1), nA) %/% ncol(M1))
-  M_BC <- M2 %>% repmat(n = Lcm(nrow(M2), nB) %/% nrow(M2),
-                        m = Lcm(ncol(M2), nB) %/% ncol(M2))
-  M_CA <- M3 %>% repmat(n = Lcm(nrow(M3), nC) %/% nrow(M3),
-                        m = Lcm(ncol(M3), nC) %/% ncol(M3))
-
-  parity <- (3 + nA + nB + nC) %/% 2
-  indices <- expand.grid(1:nA, 1:nB, 1:nC) %>% 
-    filter((Var1 + Var2 + Var3) %in% parity:(parity + 1)) %>%
-    as.matrix()
-  iAB <- indices[, 1:2]
-  iBC <- indices[, 2:3]
-  iCA <- indices[, c(3, 1)]
-  values <- matrix(c(M_AB[iAB], M_BC[iBC], M_CA[iCA]), ncol = 3)
-  return(list(indices = indices, values = values))
-}
 
 # function to add values to a supplied list tri, from a supplied matrix M, where
 # values in the list will be indexed by triangular coordinates (converted to a
@@ -139,7 +78,7 @@ add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
       abc <- transform_ab_to_abc(col, row, parity = parity, axis = axis)
       for (par in 1:2) {
         # make a key (string) from each pair
-        key <- abc[par, ] %>% str_c(collapse = ",")
+        key <- abc[par, ] %>% stringr::str_c(collapse = ",")
         # if it is not in the target list, add a new thread order
         if (is.null(tri[[key]])) {
           tri[[key]] <- list(decode_biaxial_to_order(M[row, col], axis = axis)) # c(M[row, col])
@@ -191,13 +130,13 @@ transform_ab_to_abc <- function(z1, z2, parity = 0, axis = 1) {
   a_coord <- switch(axis, z1, c(parity + 1 - z1 - z2, parity - z1 - z2), z2)
   b_coord <- switch(axis, z2, z1, c(parity + 1 - z1 - z2, parity - z1 - z2))
   c_coord <- switch(axis, c(parity + 1 - z1 - z2, parity - z1 - z2), z2, z1)
-  result <- switch( 
+  result <- switch(
     axis, # return two triples that differ in the missing coordinate
-    matrix(c(a_coord, b_coord, c_coord[1], 
+    matrix(c(a_coord, b_coord, c_coord[1],
              a_coord, b_coord, c_coord[2]), nrow = 2, ncol = 3, byrow = TRUE),
-    matrix(c(a_coord[1], b_coord, c_coord, 
+    matrix(c(a_coord[1], b_coord, c_coord,
              a_coord[2], b_coord, c_coord), nrow = 2, ncol = 3, byrow = TRUE),
-    matrix(c(a_coord, b_coord[1], c_coord, 
+    matrix(c(a_coord, b_coord[1], c_coord,
              a_coord, b_coord[2], c_coord), nrow = 2, ncol = 3, byrow = TRUE))
   return(result)
 }

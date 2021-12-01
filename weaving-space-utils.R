@@ -1,7 +1,4 @@
-require(dplyr)
 require(sf)
-require(wk)
-require(stringr)
 
 S3 <- sqrt(3)
 
@@ -22,10 +19,10 @@ get_base_rect <- function(L, W, orientation = "horizontal", n_split = 1) {
   offsets <- seq(1, 2 * n_split - 1, 2) / n_split / 2 * W - W / 2
   for (i in 1:n_split) {
     if (orientation == "horizontal") {
-      rects[[i]] <- get_polygon(c(matrix(c(L, 0, 0, W / n_split), 
+      rects[[i]] <- get_polygon(c(matrix(c(L, 0, 0, W / n_split),
                                          nrow = 2) %*% base)) + c(0, offsets[i])
     } else {
-      rects[[i]] <- get_polygon(c(matrix(c(W / n_split, 0, 0, L), 
+      rects[[i]] <- get_polygon(c(matrix(c(W / n_split, 0, 0, L),
                                          nrow = 2) %*% base)) + c(offsets[i], 0)
     }
   }
@@ -35,7 +32,7 @@ get_base_rect <- function(L, W, orientation = "horizontal", n_split = 1) {
 
 # translates and returns the supplied sf shapes by the offsets dx and dy
 sf_translate <- function(shapes, dx = 0, dy = 0) {
-  return(shapes %>% sf_transform(wk_affine_translate(dx, dy)))
+  return(shapes %>% sf_transform(wk::wk_affine_translate(dx, dy)))
 }
 
 # rotates the supplied sf shapes by the specified angle in degrees, around
@@ -56,7 +53,7 @@ sf_rotate <- function(shapes, angle, cx = 0, cy = 0) {
 # is transformed to the unit square 0,0 1,0 1,1 0,1
 sf_diamond_to_square <- function(shapes) {
   return(shapes %>% sf_transform(
-    wk_affine_invert(
+    wk::wk_affine_invert(
       affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2)
     )
   ))
@@ -82,8 +79,8 @@ sf_get_centroid <- function(shapes) {
 geoms_transform <- function(geoms, transform) {
   return(
     geoms %>%
-      lapply(wk_collection) %>%
-      lapply(wk_transform, trans = transform) %>%
+      lapply(wk::wk_collection) %>%
+      lapply(wk::wk_transform, trans = transform) %>%
       sapply(st_as_sfc, simplify = TRUE) %>%
       st_as_sfc() %>%
       st_cast() %>%      ### I don't know why, but this is VITAL
@@ -100,10 +97,10 @@ sf_transform <- function(shapes, transform) {
 # returns the wk affine transform for the rotation by angle (in degrees)
 # around centre of rotation cx, cy
 affine_rotn_around_xy <- function(angle, cx, cy) {
-  return(wk_affine_compose(
-    wk_affine_translate(-cx, -cy),
-    wk_affine_rotate(angle),
-    wk_affine_translate(cx, cy)
+  return(wk::wk_affine_compose(
+    wk::wk_affine_translate(-cx, -cy),
+    wk::wk_affine_rotate(angle),
+    wk::wk_affine_translate(cx, cy)
   ))
 }
 
@@ -111,9 +108,9 @@ affine_rotn_around_xy <- function(angle, cx, cy) {
 # basis vectors 0,1 and 1,0 to a,b and c,d, while preserving area
 affine_abcd <- function(a, b, c, d) {
   areaScale = abs(a * d - b * c)
-  return(wk_affine_compose(
-    wk_trans_affine(matrix(c(a, b, 1, c, d, 1, 0, 0, 1), 3, 3)),
-    wk_affine_scale(1 / sqrt(areaScale), 1 / sqrt(areaScale))
+  return(wk::wk_affine_compose(
+    wk::wk_trans_affine(matrix(c(a, b, 1, c, d, 1, 0, 0, 1), 3, 3)),
+    wk::wk_affine_scale(1 / sqrt(areaScale), 1 / sqrt(areaScale))
   ))
 }
 
@@ -121,7 +118,7 @@ affine_abcd <- function(a, b, c, d) {
 # i.e. to c("ab", "c", "de")
 parse_labels <- function(ids) {
   lbls <- strsplit(ids, split = "|", fixed = TRUE)[[1]]
-  labels_1 <- lbls[[1]][1] 
+  labels_1 <- lbls[[1]][1]
   if (length(lbls) > 1) {
     labels_2 <- lbls[2]
   } else {
@@ -137,25 +134,25 @@ parse_labels <- function(ids) {
 
 # converts a string to a vector of characters
 string_to_chars <- function(s) {
-  return(str_sub(s, 1:str_length(s), 1:str_length(s)))
+  return(stringr::str_sub(s, 1:stringr::str_length(s), 1:stringr::str_length(s)))
 }
 
 parse_strand_label <- function(s) {
-  clean_s <- s %>% 
-    str_replace("[(]+", "(") %>%
-    str_replace("[)]+", ")")
+  clean_s <- s %>%
+    stringr::str_replace("[(]+", "(") %>%
+    stringr::str_replace("[)]+", ")")
   result <- c()
   combo <- FALSE
   current <- ""
-  for (i in 1:str_length(clean_s)) {
-    nextChar <- str_sub(clean_s, i, i)
+  for (i in 1:stringr::str_length(clean_s)) {
+    nextChar <- stringr::str_sub(clean_s, i, i)
     if (combo) {
       if (nextChar == ")") {
         result <- c(result, current)
         current <- ""
         combo <- FALSE
       } else {
-        current <- str_c(current, nextChar, sep = "")
+        current <- stringr::str_c(current, nextChar, sep = "")
       }
     } else {
       if (nextChar == "(") {

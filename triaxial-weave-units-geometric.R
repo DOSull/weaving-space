@@ -1,7 +1,4 @@
-require(tidyr)
-require(wk)
 require(sf)
-require(stringr)
 
 # THIS version stashed in case of a need for future use
 # The geometric approach to weave generation has likely application to the
@@ -132,7 +129,7 @@ getHexPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
       st_intersection(tile) %>%       # hex
       st_as_sf() %>%
       st_set_crs(crs),
-    transform = wk_affine_identity(), # no transform needed
+    transform = wk::wk_affine_identity(), # no transform needed
     tile = tile,
     strands = unique(ids)
   ))
@@ -173,7 +170,7 @@ getCubePrimitiveCell <- function(spacing = 500, margin = 0,
       st_buffer(-margin) %>%
       st_as_sf() %>%
       st_set_crs(crs),
-    transform = wk_affine_identity(),
+    transform = wk::wk_affine_identity(),
     tile = tile,
     strands = unique(ids)
   ))
@@ -281,7 +278,7 @@ getDiamondPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
       filter(st_geometry_type(.) == "POLYGON" & st_area(.) > 1e-10) %>%
       st_set_crs(crs),
     # the transform required to make this rectangular tile-able
-    transform = wk_affine_invert(
+    transform = wk::wk_affine_invert(
       affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2)),
     tile = tile,
     strands = unique(ids)

@@ -9,10 +9,10 @@ make_random_pattern <- function(warp = seq(1, 24, 6), weft = seq(27, 50, 6),
   mat <- matrix(sample(0:1, size, replace = TRUE), 4, 4)
   treadling <- matrix(sample(0:1, size, replace = TRUE), 
                       nrow = length(weft), ncol = length(warp)) %>%
-    repmat(m = repeat_weft, n = 1)
+    pracma::repmat(m = repeat_weft, n = 1)
   threading <- matrix(sample(0:1, size, replace = TRUE), 
                       nrow = length(weft), ncol = length(warp)) %>%
-    repmat(m = 1, n = repeat_warp)
+    pracma::repmat(m = 1, n = repeat_warp)
   ww <- threading %*% mat %*% treadling > 0
   fabric <- matrix(0, nrow = nrow(ww), ncol = ncol(ww))
   for (i in seq_along(weft)) {

@@ -1,3 +1,5 @@
+library(tmap)
+
 source("biaxial-weave-units.R")
 source("triaxial-weave-units.R")
 source("weaving-space-utils.R")

@@ -50,7 +50,7 @@ get_primitive_cell <- function(width, spacing, margin, ids, type,
 }
 
 ## for local rotations of single geoms, this is more convenient
-## than the wk_ affine transforms option
+## than the wk::wk_ affine transforms option
 get_rot_matrix <- function(angle) {
   a <- angle * pi / 180
   return(t(matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2, byrow = FALSE)))
@@ -145,7 +145,7 @@ getPlainPrimitiveCell <- function(width, spacing, aspect, margin,
     cell = all_tiles %>% 
       st_crop(bb) %>% 
       st_set_crs(crs),
-    transform = wk_affine_identity(),
+    transform = wk::wk_affine_identity(),
     ids = unique(all_tiles$id)
   ))
 }
@@ -157,7 +157,7 @@ getDiamondPrimitiveCell <- function(width, spacing, margin,
                                     labels_1, labels_2, labels_3, crs) {
 
   lbls <- c(labels_1, labels_2, labels_3)
-  spacings <- sapply(lbls, str_length)
+  spacings <- sapply(lbls, stringr::str_length)
   s_mult <- max(spacings)
 
   spacing_x <- s_mult * max(2 * S3, ceiling(spacing / width)) * width
@@ -188,7 +188,7 @@ getDiamondPrimitiveCell <- function(width, spacing, margin,
       filter(st_geometry_type(.) == "POLYGON" & st_area(.) > 1e-10) %>%
       st_set_crs(crs),
     # the transform required to make this rectangular tile-able
-    transform = wk_affine_invert(
+    transform = wk::wk_affine_invert(
       affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2)),
     ids = unique(ids)
   ))
@@ -223,7 +223,7 @@ getHexPrimitiveCell <- function(width = 200, spacing = 300, margin = 0,
       st_as_sf() %>%
       filter(st_geometry_type(.) == "POLYGON" & st_area(.) > 1e-10) %>%
       st_set_crs(crs),
-    transform = wk_affine_identity(),
+    transform = wk::wk_affine_identity(),
     ids = unique(ids)
   ))
 }

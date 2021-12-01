@@ -25,7 +25,7 @@ get_base_rect <- function(L, W, M, orientation = "horizontal") {
 }
 
 sf_translate <- function(shapes, dx = 0, dy = 0) {
-  return(shapes %>% sf_transform(wk_affine_translate(dx, dy)))
+  return(shapes %>% sf_transform(wk::wk_affine_translate(dx, dy)))
 }
 
 sf_rotate <- function(shapes, angle, cx = 0, cy = 0) {
@@ -34,7 +34,7 @@ sf_rotate <- function(shapes, angle, cx = 0, cy = 0) {
 
 sf_diamond_to_square <- function(shapes) {
   return(shapes %>% sf_transform(
-    wk_affine_invert(
+    wk::wk_affine_invert(
       affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2)
     )
   ))
@@ -57,8 +57,8 @@ sf_get_centroid <- function(shapes) {
 geoms_transform <- function(geoms, transform) {
   return(
     geoms %>%
-      lapply(wk_collection) %>%
-      lapply(wk_transform, trans = transform) %>%
+      lapply(wk::wk_collection) %>%
+      lapply(wk::wk_transform, trans = transform) %>%
       sapply(st_as_sfc, simplify = TRUE) %>%
       st_as_sfc() %>%
       st_cast() %>%      ### I don't know why, but this is VITAL
@@ -72,18 +72,18 @@ sf_transform <- function(shapes, transform) {
 }
 
 affine_rotn_around_xy <- function(angle, cx, cy) {
-  return(wk_affine_compose(
-    wk_affine_translate(-cx, -cy),
-    wk_affine_rotate(angle),
-    wk_affine_translate(cx, cy)
+  return(wk::wk_affine_compose(
+    wk::wk_affine_translate(-cx, -cy),
+    wk::wk_affine_rotate(angle),
+    wk::wk_affine_translate(cx, cy)
   ))
 }
 
 affine_abcd <- function(a, b, c, d) {
   areaScale = abs(a * d - b * c)
-  return(wk_affine_compose(
-    wk_trans_affine(matrix(c(a, b, 1, c, d, 1, 0, 0, 1), 3, 3)),
-    wk_affine_scale(1 / sqrt(areaScale), 1 / sqrt(areaScale))
+  return(wk::wk_affine_compose(
+    wk::wk_trans_affine(matrix(c(a, b, 1, c, d, 1, 0, 0, 1), 3, 3)),
+    wk::wk_affine_scale(1 / sqrt(areaScale), 1 / sqrt(areaScale))
   ))
 }
 

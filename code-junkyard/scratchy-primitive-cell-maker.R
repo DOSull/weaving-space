@@ -10,10 +10,10 @@ unit_square <- get_polygon(c(0, 0, 1, 0, 1, 1, 0, 1))
 bp <- unit_square * t(matrix(c(2, 0, 0.5, s60), 2, 2)) - c(0.5, s60)
 plot(bp)
 
-base_trs <- sapply(seq(0, 240, 120), wk_affine_rotate)
+base_trs <- sapply(seq(0, 240, 120), wk::wk_affine_rotate)
 base_trs
 
-bps <- lapply(base_trs, FUN = wk_transform, handleable = bp) %>%
+bps <- lapply(base_trs, FUN = wk::wk_transform, handleable = bp) %>%
   sapply(st_as_sfc) %>%
   st_sfc()
 
