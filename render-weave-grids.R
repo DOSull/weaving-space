@@ -13,6 +13,7 @@ matrices_as_loom <- function(...) {
     orderings <- M[indices] %>% 
       lapply(decode_biaxial_to_order, axis = 0)
     parity <- NULL
+    orientations <- c(0, -90)
     dimensions <- c(nrow(M), ncol(M))
   } else {
     M1 <- matrices[[1]]
@@ -32,6 +33,7 @@ matrices_as_loom <- function(...) {
                           m = Lcm(ncol(M3), nC) %/% ncol(M3))
     
     parity <- (3 + nA + nB + nC) %/% 2
+    orientations <- c(0, 120, 240)
     indices <- expand.grid(a = 1:nA, b = 1:nB, c = 1:nC) %>% 
       filter((a + b + c) %in% parity:(parity + 1)) %>%
       as.matrix()
@@ -45,6 +47,7 @@ matrices_as_loom <- function(...) {
   return(list(indices = indices, 
               orderings = orderings,
               parity = parity,
+              orientations = orientations,
               dimensions = dimensions))
 }
 
@@ -258,11 +261,13 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1, margin
                                             axis3_threads = letters[5:6], crs = 3857) {
   # we need the number of axes, which we can use to make a grid generator function 
   n_axes <- length(loom$dimensions)
+  n_sides <- if_else(n_axes == 2, 4, 3)
   gg <- grid_generator(n_axes = n_axes, S = spacing)
   # the labels for axis1 and 2 are required in both cases and we repeat 
   # them if required by the size of the grid relative to the number of ids
   ids1 <- rep(axis1_threads, loom$dimensions[1] / length(axis1_threads))
   ids2 <- rep(axis2_threads, loom$dimensions[2] / length(axis2_threads))
+  parity <- 1
   # setup empty lists and vectors for the outputs
   weave_polys <- list()
   bb_polys <- list()
@@ -271,15 +276,12 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1, margin
   for(i in 1:nrow(loom$indices)) {
     if (n_axes == 2) { # biaxial case
       # confusingly the row-column ordering of R means the index needs to be reversed
-      orientations <- c(0, -90)           # warp axis 1 rotated -90, weft axis 2 at 0
       coords <- rev(loom$indices[i, ])    # note row,column, ie y,x or weft,warp
-      # list of the strand labels at this location (again note coordinate reversal)
+      # list of strand labels at this location (again note coordinate reversal)
       labels <- c(ids1[coords[2]], ids2[coords[1]])
-      parity <- 1 # this is the null value that will cause no rotation
     } else { # triaxial
       # there is an additional set of thread labels
       ids3 <- rep(axis3_threads, loom$dimensions[3] / length(axis3_threads))
-      orientations <- c(0, 120, 240)  # a different set of orientations
       coords <- loom$indices[i, ]     # coordinates are in the correct order!
       labels <- c(axis1[coords[1]], axis2[coords[2]], axis3[coords[3]]) # as are labels
       # additional rotation required at alternate sites in triangular grid
@@ -291,15 +293,14 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1, margin
     strand_order <- loom$orderings[[i]]    # order in which strands appear
     bb_polys <- append( # get a grid cell polygon at every site
       bb_polys, list(get_grid_cell_polygon(face_to_face_distance = spacing,
-                                           n_sides = ifelse(n_axes == 2, 4, 3),
-                                           parity = parity) + xy))
+                                           n_sides = n_sides, parity = parity) + xy))
     if (is.null(strand_order)) { next } # nothing here so move on
     n_slices <- str_length(labels) # numbers of slices required in each direction
     n <- cumsum(n_slices[strand_order]) # cumulative count of strands in each direction
     # now get the polygons
     next_polys <- get_visible_cell_strands(n = ifelse(n_axes == 2, 4, 3),
       S = spacing, width = width, strand_order = strand_order,
-      parity = parity, orientations = orientations, n_slices = n_slices) + xy
+      parity = parity, orientations = loom$orientations, n_slices = n_slices) + xy
     # add the polygons to the list we are assembling
     # we do this one at a time because it simplifies later conversion to sfc
     for (p in seq_along(next_polys)) {
