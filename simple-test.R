@@ -6,16 +6,30 @@ source("weave-map.R")
 
 ak <- st_read("data/vax-auckland-20211006.gpkg")
 
-bi_weave <- get_biaxial_weave_unit(spacing = 250, aspect = 0.8, crs = 2193)
-w1 <- weave_layer(bi_weave, ak, angle = 30)
+get_biaxial_weave_unit(spacing = 250, aspect = 0.8)$primitive %>% 
+  plot(border = NA)
+get_biaxial_weave_unit(spacing = 250, aspect = 0.8, strands = "abc|de")$primitive %>% 
+  plot(border = NA)
+get_biaxial_weave_unit(spacing = 250, aspect = 0.8, strands = "a-(bc)|d-e")$primitive %>% 
+  plot(border = NA)
+get_biaxial_weave_unit(spacing = 250, aspect = 0.8, 
+                       type = "twill", strands = "a-b|c-d")$primitive %>% 
+  plot(border = NA)
+get_biaxial_weave_unit(spacing = 250, aspect = 0.8, 
+                       type = "basket", strands = "ab|cd")$primitive %>% 
+  plot(border = NA)
 
-tmap_options(check.and.fix = TRUE)
-tm_shape(w1) + 
-  tm_fill(col = "strand", palette = "Set1")
 
-
-tri_weave <- get_triaxial_weave_unit(spacing = 100, type = "cube", strands = "ab-|cd-|ef-",
+tmap_mode("plot")
+tri_weave <- get_triaxial_weave_unit(spacing = 100, type = "cube", strands = "a-b|c-d|e-f",
                                      aspect = 1, crs = 2193)
+tm_shape(tri_weave$primitive) +
+  tm_fill(col = "strand") +
+  tm_shape(tri_weave$tile) +
+  tm_borders(col = "red")
+
+tri_weave$tile %>% plot(add = TRUE)
+
 w2 <- weave_layer(tri_weave, ak, angle = 15)
 tm_shape(w2) + 
   tm_fill(col = "strand", style = "cat")
