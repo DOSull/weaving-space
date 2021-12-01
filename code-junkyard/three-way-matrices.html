@@ -194,6 +194,7 @@
     <h2><a href="#content">Making a triaxial weave from three biaxial weaves</a></h2>
     <div id="toc">
       <ul>
+      <li><a href="#preamble">Preamble</a></li>
       <li><a href="#a-triangular-grid">A triangular grid</a>
       <ul>
       <li><a href="#conversion-of-biaxial-coordinates-to-triaxial">Conversion of biaxial coordinates to triaxial</a></li>
@@ -231,7 +232,10 @@
    
 <!-- Don't indent these lines or it will mess pre blocks indentation --> 
 <div id="main">
-<p>A triaxial weave can be composed for three independent biaxial weaves. This notebook shows how…</p>
+<p>This notebook documents the path to implementation of triaxial weaves as the composition of three biaxial weaves generated using matrices. The functions in this notebook are early versions of those that are now implemented in <code>triaxial-weave-units.R</code>, <code>biaxial-weave-units.R</code> and <code>render-weave-grids.R</code> in the main ‘branch’.</p>
+<div id="preamble" class="section level1">
+<h1>Preamble</h1>
+<p>A triaxial weave can be composed from three independent biaxial weaves. This notebook shows how…</p>
 <p>It uses functions already written in <code>weave-grids.R</code>. It should eventually also use functions from <code>biaxial-weave-units.R</code> to make up the component biaxial weave patterns.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
@@ -239,11 +243,12 @@
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tmap)</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;render-weave-grids.R&quot;</span>)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;biaxial-weave-units.R&quot;</span>)</span></code></pre></div>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;../render-weave-grids.R&quot;</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;../biaxial-weave-units.R&quot;</span>)</span></code></pre></div>
+</div>
 <div id="a-triangular-grid" class="section level1">
 <h1>A triangular grid</h1>
-<p>Central to the approach is a triangular grid. <code>grid_generaor()</code> returns a function, that given three integer coordinates returns x-y coordinates of the centroids of the corresponding triangular grid cell.</p>
+<p>Central to the approach is a triangular grid. <code>grid_generator()</code> returns a function, that given three integer coordinates returns x-y coordinates of the centroids of the corresponding triangular grid cell.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>trigrid <span class="ot">&lt;-</span> <span class="fu">grid_generator</span>(<span class="at">n_axes =</span> <span class="dv">3</span>)</span></code></pre></div>
 <p>The thing to understand about this grid coordinate system is that every triple of coordinates must sum to one of two consecutive integer values. By ‘default’ this would be 0 or 1, but any consecutive pair of integers will work (this flexibility is important later, when we want to match input biaxial coordinates to an output triaxial space).</p>
 <p>We’re calling the lower of the two integer values the <em>parity</em> of the grid.</p>
@@ -466,7 +471,7 @@
 <td>&gt;0</td>
 <td>&lt;0</td>
 <td>Warp absent, weft present</td>
-<td>2</td>
+<td>1</td>
 </tr>
 </tbody>
 </table>

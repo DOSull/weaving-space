@@ -16,13 +16,14 @@ get_centres <- function(region, tile, hexes) {
     pts <- region_b %>% st_make_grid(cellsize = c(w, h),
                                      what = "centers")
   }
-  return(pts %>% st_as_sf() %>%
-           st_filter(region_b) %>%
-           st_coordinates() %>%
-           ## next steps make a list of pairs so we can lapply for speed
-           t() %>%
-           as.data.frame() %>%
-           as.list())
+  pts %>% 
+    st_as_sf() %>%
+    st_filter(region_b) %>%
+    st_coordinates() %>%
+    ## next steps make a list of pairs so we can lapply for speed
+    t() %>%
+    as.data.frame() %>%
+    as.list()
 }
 
 ## could use sf_transform for this, but just adding
@@ -30,7 +31,7 @@ get_centres <- function(region, tile, hexes) {
 ## with lapply approach to the tiling
 sf_shift <- function(pt, shapes) {
   st_geometry(shapes) <- st_geometry(shapes) + pt
-  return(shapes)
+  shapes
 }
 
 
@@ -99,7 +100,6 @@ weave_layer <- function(weave_unit, region, angle = 0,
 
   if (merge_map_polys_within_data_polys) {
     tiling <- tiling %>%
-      #
       # These two commented out lines use rmapshaper::ms_dissolve
       # qgis::qgis_dissolve preferred for now
       # dplyr::mutate(combined_id = stringr::str_c(as.character(strand), as.character(to_tile_id))) %>%
@@ -108,21 +108,11 @@ weave_layer <- function(weave_unit, region, angle = 0,
       st_as_sf() %>%
       st_set_crs(st_crs(region))
   }
-    #
-    # st_set_crs(st_crs(region)) %>%
-    # st_cast() %>%            # this avoids issues with odd geometry types
-    # group_by(id) %>%         # dissolve on the id attribute
-    # dplyr::summarise() %>%
-    # st_intersection(to_tile) # and intersect with the region
 
-  # undo the transformations in reverse order
-  # if (weave_unit$type == "diamond") {
-  #   tiling <- tiling %>% sf_square_to_diamond()
-  # }
-  return(tiling %>%
-           sf_transform(wk::wk_affine_invert(weave_unit$transform)) %>%
-           sf_rotate(angle, cx, cy) %>%
-           sf_transform(transform))
+  tiling %>%
+    sf_transform(wk::wk_affine_invert(weave_unit$transform)) %>%
+    sf_rotate(angle, cx, cy) %>%
+    sf_transform(transform)
 }
 
 
@@ -132,4 +122,5 @@ write_weave_layers <- function(weave, region, fname, var = "strand") {
   for (label in names(lyrs)) {
     lyrs[[label]] %>% st_write(fname, label, append = TRUE)
   }
+  return(weave)
 }

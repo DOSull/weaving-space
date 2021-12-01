@@ -75,14 +75,14 @@ get_weave_pattern_matrix <- function (type = "plain", n = 2,
   warp_threads <- matrix(warps, nr, nc, byrow = TRUE)
   weft_threads <- matrix(wefts, nr, nc)
   # encode to reflect missing threads
-  return(p %>% encode_biaxial_weave(warp_threads, weft_threads))
+  p %>% encode_biaxial_weave(warp_threads, weft_threads)
 }
 
 # add a row and a column to a matrix by copying the first to the last
 augment <- function(mat, x = 1) {
   rc <- dim(mat)
   result <- pracma::repmat(mat, 2)
-  return(result[1:(rc[1] + x), 1:(rc[2] + x)])
+  result[1:(rc[1] + x), 1:(rc[2] + x)]
 }
 
 augment_with_values <- function(mat, n = 1, values = 0) {
@@ -90,7 +90,7 @@ augment_with_values <- function(mat, n = 1, values = 0) {
   result <- pracma::repmat(mat, 2)
   result[, (rc[2] + 1):(rc[2] + n)] <- values
   result[(rc[1] + 1):(rc[1] + n), ] <- values
-  return(result[1:(rc[1] + n), 1:(rc[2] + n)])
+  result[1:(rc[1] + n), 1:(rc[2] + n)]
 }
 
 # returns the lowest common multiple of v1 and v2 divided by each
@@ -100,7 +100,7 @@ augment_with_values <- function(mat, n = 1, values = 0) {
 # and item 2 the required repeats of v2
 reps_needed <- function(v1, v2) {
   n <- pracma::Lcm(v1, v2)
-  return(c(n / v1, n / v2))
+  c(n / v1, n / v2)
 }
 
 # Returns a 1/2 encoded weave matrix given tie_up, treadling and
@@ -119,7 +119,7 @@ get_pattern <- function(tie_up, treadling, threading,
   # now determine repetitions needed to match warp_n and weft_n
   rep_warp <- reps_needed(warp_n, ncol(pat))
   rep_weft <- reps_needed(weft_n, nrow(pat))
-  return(pracma::repmat(pat, n = rep_weft[2] * rep, m = rep_warp[2] * rep))
+  pracma::repmat(pat, n = rep_weft[2] * rep, m = rep_warp[2] * rep)
 }
 
 
@@ -132,7 +132,7 @@ encode_biaxial_weave <- function(pattern, warp, weft) {
   pattern[which(warp < 0)] <- 1            # warp absent
   pattern[which(weft < 0)] <- 2            # weft absent
   pattern[which(weft < 0 & warp < 0)] <- 3 # both absent
-  return(pattern)
+  pattern
 }
 
 decode_biaxial_to_order <- function(code, axis = 0) {
@@ -162,7 +162,7 @@ decode_biaxial_to_order <- function(code, axis = 0) {
 
 # simple over-under weave
 make_plain_pattern <- function(warp_n = 1, weft_n = 1) {
-  return(make_twill_pattern(n = 1, warp_n = warp_n, weft_n = weft_n))
+  make_twill_pattern(n = 1, warp_n = warp_n, weft_n = weft_n)
 }
 
 # twill weave with n the number of over-unders
@@ -175,7 +175,7 @@ make_twill_pattern <- function(n = 2, warp_n = 2, weft_n = 2) {
   tie_up <- make_twill_matrix(ou)
   threading <- diag(nrow(tie_up))
   treadling <- diag(ncol(tie_up))
-  return(get_pattern(tie_up, treadling, threading, warp_n, weft_n))
+  get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 }
 
 # returns a vector of runs of 1s and 0s per the supplied vector.
@@ -195,14 +195,14 @@ make_over_under_row <- function(n) {
     row <- c(row, rep(x, y))
     x <- 1 - x
   }
-  return(row)
+  row
 }
 
 # wraps a vector
 # by : the number of positions to shift the row
 # r  : the row
 wrap_row <- function(by, r) {
-  return(c(tail(r, by), head(r, length(r) - by)))
+  c(tail(r, by), head(r, length(r) - by))
 }
 
 # makes a matrix like
@@ -219,14 +219,14 @@ make_twill_matrix <- function(over_under) {
     row <- wrap_row(1, row)
     out <- c(out, row)
   }
-  return(matrix(out, d, d, byrow = TRUE))
+  matrix(out, d, d, byrow = TRUE)
 }
 
 make_basket_pattern <- function(n = 2, warp_n = 2, weft_n = 2) {
   tie_up <- make_basket_matrix(n)
   threading <- diag(nrow(tie_up))
   treadling <- diag(ncol(tie_up))
-  return(get_pattern(tie_up, treadling, threading, warp_n, weft_n))
+  get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 }
 
 # makes a matrix like
@@ -236,10 +236,9 @@ make_basket_pattern <- function(n = 2, warp_n = 2, weft_n = 2) {
 # 0 0 1 1
 # where the repeat runs in each row are length n
 make_basket_matrix <- function(n) {
-  return(
-    matrix(
-      c(rep(make_over_under_row(n), n),
-        rep(rev(make_over_under_row(n)), n)), n * 2, n * 2))
+  matrix(c(rep(make_over_under_row(n), n),
+           rep(rev(make_over_under_row(n)), n)), 
+         n * 2, n * 2)
 }
 
 # this is just a pass through function
@@ -250,7 +249,7 @@ make_this_pattern <- function(tie_up = this_tu,
                               threading = diag(ncol(tie_up)),
                               treadling = diag(nrow(tie_up)),
                               warp_n = 2, weft_n = 2) {
-  return(get_pattern(tie_up, treadling, threading, warp_n, weft_n))
+  get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 }
 
 # This function makes a random pattern (as a matrix of values)
@@ -263,22 +262,21 @@ make_random_pattern <- function(n = 4, warp_n = 1, weft_n = 1) {
                    height, width)
   treadling <- make_matrix_from_seq(sample(1:height, width))
   threading <- make_matrix_from_seq(sample(1:width, height))
-  return(
-    get_pattern(tie_up, treadling, threading, warp_n, weft_n)
-  )
+  
+  get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 }
 
 zeros_with_a_one <- function(idx, n) {
   z <- rep(0, n)
   z[idx] <- 1
-  return(z)
+  z
 }
 
 make_matrix_from_seq <- function(row_picks) {
   nrows <- max(row_picks)
   ncols <- length(row_picks)
   values <- sapply(row_picks, zeros_with_a_one, n = nrows)
-  return(matrix(values, nrows, ncols))
+  matrix(values, nrows, ncols)
 }
 
 
@@ -305,14 +303,12 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0,
     make_sf_from_coded_weave_matrix(spacing = spacing, width = aspect,
                                     margin = margin, axis1_threads = weft_threads,
                                     axis2_threads = warp_threads, crs = crs)
-  return(
-    list(
-      primitive = cell$weave_unit,
-      transform = wk::wk_affine_identity(),
-      strands = unique(cell$weave_unit$strand),
-      tile = cell$tile,
-      type = type
-    )
+  list(
+    primitive = cell$weave_unit,
+    transform = wk::wk_affine_identity(),
+    strands = unique(cell$weave_unit$strand),
+    tile = cell$tile,
+    type = type
   )
 }
 

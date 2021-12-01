@@ -31,7 +31,7 @@ get_triaxial_weave_pattern_matrices <- function(type = "hex",
       get_weave_pattern_matrix(type = "twill", n = rep(1:2, 2),
                                warp = strands_3, weft = strands_1))
   }
-  return(loom)
+  loom
 }
 
 
@@ -55,14 +55,12 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
                                     axis2_threads = strands_2,
                                     axis3_threads = strands_3, crs = crs)
 
-  return(
-    list(
-      primitive = cell$weave_unit,
-      transform = wk::wk_affine_identity(),
-      strands = unique(cell$weave_unit$strand),
-      tile = cell$tile,
-      type = type
-    )
+  list(
+    primitive = cell$weave_unit,
+    transform = wk::wk_affine_identity(),
+    strands = unique(cell$weave_unit$strand),
+    tile = cell$tile,
+    type = type
   )
 }
 
@@ -89,7 +87,7 @@ add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
       }
     }
   }
-  return(tri)
+  tri
 }
 
 # combines a set of orderings on the values
@@ -138,7 +136,7 @@ transform_ab_to_abc <- function(z1, z2, parity = 0, axis = 1) {
              a_coord[2], b_coord, c_coord), nrow = 2, ncol = 3, byrow = TRUE),
     matrix(c(a_coord, b_coord[1], c_coord,
              a_coord, b_coord[2], c_coord), nrow = 2, ncol = 3, byrow = TRUE))
-  return(result)
+  result
 }
 
 
@@ -151,6 +149,6 @@ get_hexagon <- function(w, point_up = TRUE) {
   if (!point_up) {
     angles <- angles - pi / 6
   }
-  return(get_polygon(c(matrix(c(cos(angles), sin(angles)),
-                              ncol = 6, byrow = TRUE)) * r))
+  get_polygon(c(matrix(c(cos(angles), sin(angles)), 
+                       ncol = 6, byrow = TRUE)) * r)
 }

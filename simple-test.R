@@ -30,8 +30,6 @@ tm_shape(tri_weave$primitive) +
   tm_shape(tri_weave$tile) +
   tm_borders(col = "red")
 
-tri_weave$tile %>% plot(add = TRUE)
-
 w2 <- weave_layer(tri_weave, ak, angle = 15)
 tm_shape(w2) + 
   tm_fill(col = "strand", style = "cat")

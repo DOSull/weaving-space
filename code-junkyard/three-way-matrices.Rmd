@@ -5,11 +5,16 @@ date: 26 November, 2021
 output:
   rmdformats::readthedown:
     toc_depth: 3
-    css: extra.css
+    css: "../extra.css"
 editor_options: 
   chunk_output_type: inline
 ---
-A triaxial weave can be composed for three independent biaxial weaves. This notebook shows how...
+
+This notebook documents the path to implementation of triaxial weaves as the composition of three biaxial weaves generated using matrices. The functions in this notebook are early versions of those that are now implemented in `triaxial-weave-units.R`, `biaxial-weave-units.R` and `render-weave-grids.R` in the main 'branch'.
+
+# Preamble
+ 
+A triaxial weave can be composed from three independent biaxial weaves. This notebook shows how...
 
 It uses functions already written in `weave-grids.R`. It should eventually also use functions from `biaxial-weave-units.R` to make up the component biaxial weave patterns.
 
@@ -20,12 +25,12 @@ library(pracma)
 library(tmap)
 library(stringr)
 
-source("render-weave-grids.R")
-source("biaxial-weave-units.R")
+source("../render-weave-grids.R")
+source("../biaxial-weave-units.R")
 ```
 
 # A triangular grid
-Central to the approach is a triangular grid. `grid_generaor()` returns a function, that given three integer coordinates returns x-y coordinates of the centroids of the corresponding triangular grid cell. 
+Central to the approach is a triangular grid. `grid_generator()` returns a function, that given three integer coordinates returns x-y coordinates of the centroids of the corresponding triangular grid cell. 
 
 ```{r}
 trigrid <- grid_generator(n_axes = 3)
@@ -229,7 +234,7 @@ Pattern | Warp | Weft | Overall state | Code
 0 | >0 | >0 | Weft on top, both present | 4
 * | <0 | <0 | Both absent | 3
 * | >0 | <0 | Weft absent, warp present | 2
-* | >0 | <0 | Warp absent, weft present | 2
+* | >0 | <0 | Warp absent, weft present | 1
 
 ```{r}
 # three weave-patterns 1 for the warp on top 0 for the weft

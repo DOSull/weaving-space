@@ -22,14 +22,12 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
     spacing = spacing, aspect = aspect, margin = margin,
     strands = strands, type = type, crs = crs)
 
-  return(
-    list(
-      primitive = pc$cell,
-      transform = pc$transform,
-      strands = pc$strands,
-      tile = pc$tile,
-      type = type
-    )
+  list(
+    primitive = pc$cell,
+    transform = pc$transform,
+    strands = pc$strands,
+    tile = pc$tile,
+    type = type
   )
 }
 
@@ -59,15 +57,14 @@ get_primitive_cell <- function(spacing = 500, aspect = 1, margin = 0,
       labels_1 = labels[[1]], labels_2 = labels[[2]], labels_3 = labels[[3]],
       crs = crs)
   )
-  return(cell)
+  cell
 }
 
 ## for local rotations of single geoms (around 0, 0), this is more convenient
 ## than the wk affine transforms option
 get_rot_matrix <- function(angle) {
   a <- angle * pi / 180
-  return(t(matrix(c(cos(a), sin(a), -sin(a), cos(a)),
-                  2, 2, byrow = FALSE)))
+  t(matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2, byrow = FALSE))
 }
 
 
@@ -121,7 +118,7 @@ getHexPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
     matrix(sum(ns), 2) %>% t() %>% c()
   # and a hexagonal tile
   tile <- get_hexagon(spacing)
-  return(list(
+  list(
     cell = st_sf(strand = ids, geometry = st_as_sfc(polys)) %>%
       st_buffer(-margin) %>%          # inset margin
       group_by(strand) %>%                # dissolve by id
@@ -132,7 +129,7 @@ getHexPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
     transform = wk::wk_affine_identity(), # no transform needed
     tile = tile,
     strands = unique(ids)
-  ))
+  )
 }
 
 # Returns a 'cube tile like this
@@ -206,8 +203,7 @@ get_hexagon <- function(w, point_up = TRUE) {
   if (!point_up) {
     angles <- angles - pi / 6
   }
-  return(get_polygon(c(matrix(c(cos(angles), sin(angles)),
-                              ncol = 6, byrow = TRUE)) * r))
+  get_polygon(c(matrix(c(cos(angles), sin(angles)), ncol = 6, byrow = TRUE)) * r)
 }
 
 
@@ -267,7 +263,7 @@ getDiamondPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
   # and ids in the same order
   ids <- c(rep(labels_1, 4), rep(labels_2, 4), rep(labels_3, 4))
   # now make an sf and further process as needed
-  return(list(
+  list(
     cell = st_sf(strand = ids, geometry = st_as_sfc(polys)) %>%
       st_buffer(-margin / 2) %>%  # inset margin
       st_intersection(tile) %>%   # intersect to the tile
@@ -282,5 +278,5 @@ getDiamondPrimitiveCell <- function(spacing = 500, aspect = 1, margin = 0,
       affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2)),
     tile = tile,
     strands = unique(ids)
-  ))
+  )
 }

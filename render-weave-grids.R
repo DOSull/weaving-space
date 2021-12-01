@@ -42,11 +42,12 @@ matrices_as_loom <- function(...) {
              M_CA[indices[, c(1, 3)]] %>% lapply(decode_biaxial_to_order, axis = 3),
              SIMPLIFY = FALSE)
   }
-  return(list(indices = indices,
-              orderings = orderings,
-              parity = parity,
-              orientations = orientations,
-              dimensions = dimensions))
+  list(
+    indices = indices,
+    orderings = orderings,
+    parity = parity,
+    orientations = orientations,
+    dimensions = dimensions)
 }
 
 
@@ -71,9 +72,9 @@ grid_generator <- function(n_axes = 2, S = 1) {
     dy <- S * sin(angles) * 2 / 3
   }
   basis <- matrix(c(dx, dy), nrow = 2, ncol = n_axes, byrow = TRUE)
-  return(function(coords) {
+  function(coords) {
     return(t(basis %*% coords) %>% c())
-  })
+  }
 }
 
 # utility function to rotate sf shape through angle in degrees
@@ -81,13 +82,13 @@ grid_generator <- function(n_axes = 2, S = 1) {
 rotate_shape <- function(shape, angle, centre = c(0, 0)) {
   a <- angle * pi / 180
   m <- t(matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2))
-  return((shape - centre) * m + centre)
+  (shape - centre) * m + centre
 }
 
 # utility function to translate an sf shape by the
 # supplied displacement vector
 translate_shape <- function(shape, dxdy = c(0, 0)) {
-  return(shape + dxdy)
+  shape + dxdy
 }
 
 # Returns a grid cell polygon centred at (0, 0) with
@@ -162,7 +163,7 @@ get_grid_cell_slices <- function(L = 1, W = 1, n_slices = 1, offset = c(0, 0)) {
       c(0, slice_offsets[i]) +                      # offset depending on number of slices
       offset                                        # offset to centre on the cell
   }
-  return((slices %>% st_sfc()))
+  slices %>% st_sfc()
 }
 
 # Gets the cross grid cell strands running across a cell in the x direction
@@ -175,11 +176,12 @@ get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
   # determine its x-y centre (which may not be where its centroid is)
   bb <- st_bbox(cell)
   cell_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
-  return(get_grid_cell_slices(L = bb$xmax - bb$xmin + 0.1, W = S * width,
-                              n_slices = n_slices, offset = cell_offset) %>%
-           st_intersection(cell) %>%   # intersect with the grid cell
-           translate_shape() %>%       # probably never needed
-           rotate_shape(orientation))  # rotate as requested
+  
+  get_grid_cell_slices(L = bb$xmax - bb$xmin + 0.1, W = S * width,
+                       n_slices = n_slices, offset = cell_offset) %>%
+    st_intersection(cell) %>%  # intersect with the grid cell
+    translate_shape() %>%      # probably never needed
+    rotate_shape(orientation)  # rotate as requested
 }
 
 
@@ -187,7 +189,7 @@ add_shapes_to_list <- function(lst, shapes) {
   for (s in shapes) {
     lst <- append(lst, list(s))
   }
-  return(lst)
+  lst
 }
 
 
@@ -204,7 +206,7 @@ get_all_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
 
     polys <- add_shapes_to_list(polys, next_strands)
   }
-  return(polys %>% st_sfc())
+  polys %>% st_sfc()
 }
 
 # Returns the visible parts of the strands in a grid, given the spacing S
@@ -238,16 +240,15 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
     # if the width is 1 then no lower polygons are visible
     if (width == 1) {break} # for efficiency?
   }
-  return(all_polys %>% st_sfc())
+  all_polys %>% st_sfc()
 }
 
 # returns a rectangular polygon matching a provided bounding box
 sfc_from_bbox <- function(bb, crs) {
-  return(
-    st_polygon(list(matrix(c(bb$xmin, bb$ymin, bb$xmax, bb$ymin,
-                             bb$xmax, bb$ymax, bb$xmin, bb$ymax,
-                             bb$xmin, bb$ymin), 5, 2, byrow = TRUE))) %>%
-      st_sfc(crs = crs))
+  st_polygon(
+    list(matrix(c(bb$xmin, bb$ymin, bb$xmax, bb$ymin, bb$xmax, bb$ymax, 
+                  bb$xmin, bb$ymax, bb$xmin, bb$ymin), 5, 2, byrow = TRUE))) %>%
+    st_sfc(crs = crs)
 }
 
 
@@ -302,18 +303,20 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1, margin
       strands <- c(strands, stringr::str_sub(labels, p, p))
     }
   }
-  return(list(weave_unit = weave_polys %>%
-                st_as_sfc() %>%                # convert to sfc
-                st_set_precision(1e10) %>%     # to ensure they dissolve nicely
-                st_sf(strand = strands) %>%    # add the strands information
-                filter(strand != "-") %>%      # remove any tagged missing
-                group_by(strand) %>%           # dissolve
-                summarise() %>%
-                st_buffer(-margin) %>%         # include a negative margin
-                st_set_crs(crs),               # set CRS
-              tile = bb_polys %>%
-                st_sfc() %>%                   # convert to sfc
-                st_set_precision(1e10) %>%     # to ensure clean dissolve
-                st_union() %>%                 # union
-                st_set_crs(crs)))              # set CRS
+  list(
+    weave_unit = weave_polys %>%
+      st_as_sfc() %>%                # convert to sfc
+      st_set_precision(1e10) %>%     # to ensure they dissolve nicely
+      st_sf(strand = strands) %>%    # add the strands information
+      filter(strand != "-") %>%      # remove any tagged missing
+      group_by(strand) %>%           # dissolve
+      summarise() %>%
+      st_buffer(-margin) %>%         # include a negative margin
+      st_set_crs(crs),               # set CRS
+    tile = bb_polys %>%
+      st_sfc() %>%                   # convert to sfc
+      st_set_precision(1e10) %>%     # to ensure clean dissolve
+      st_union() %>%                 # union
+      st_set_crs(crs)                # set CRS
+  )
 }

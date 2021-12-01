@@ -4,9 +4,11 @@ author: David O'Sullivan
 date: 25 November
 output: 
   rmdformats::readthedown:
-    css: extra.css
+    css: "../extra.css"
     toc_depth: 3
 ---
+
+**NOTE: the ideas in this notebook have now been implemented in the main codebase**
 
 # Introduction
 This document outlines progress towards and thinking about (re)implementing triaxial weaves using a matrix approach.
@@ -62,12 +64,12 @@ implements an approach described in
 Here it is in action
 
 ```{r warning = FALSE, message = FALSE, results = FALSE}
-source("weave-grids.R")
+source("../render-weave-grids.R")
 library(ggplot2)
 library(stringr)
 ```
 
-First make a grid generator with the requested number of axes (3 or 4) and spacing (this also supports a conventional orthogonal grid). This returns a function that will determine the x,y coordinates of a point based on its integer coordinates in the grid space.
+First make a grid generator with the requested number of axes (2 or 3) and spacing (this also supports a conventional orthogonal grid). This returns a function that will determine the x,y coordinates of a point based on its integer coordinates in the grid space.
 
 ```{r}
 trigrid <- grid_generator(n_axes = 3, S = 100)
@@ -82,6 +84,7 @@ coords <- expand.grid(a = -4:4, b = -4:4, c = -4:4) %>%
   filter(parity %in% 0:1) # only these coordinates exist in the grid 
 plot(coords[, 1:3], asp = 1)
 ```
+
 Now make x, y coordinate space centres for each triangular grid cell. We can also show the coordinates as a label, and symbolise with a triangle.
 
 ```{r}

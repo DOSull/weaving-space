@@ -21,4 +21,4 @@ The follow documents describe aspects of the project
 + [Towards triaxial weaves using matrices](https://dosull.github.io/weaving-space/notes/towards-triaxial-weaves-using-matrices.html) as at [25 Nov 2021](https://github.com/DOSull/weaving-space/commit/735c6a828f682c52afd0fddf3570ce5fa4badaf3)
 
 ## Triaxial weaves as combinations of biaxials
-This [work-in-progress](https://dosull.github.io/weaving-space/code-junkyard/three-way-matrices.html) summarises progress on this topic before it was completed around 28 Nov 2021.
+This [work-in-progress](https://dosull.github.io/weaving-space/code-junkyard/three-way-matrices.html) summarises conceptual progress on this topic before it was completed around 28 Nov 2021.
