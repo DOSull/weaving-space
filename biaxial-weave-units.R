@@ -39,12 +39,12 @@ require(sf)
 # warp, weft : a vector of distinct values (ints or chars) where each
 #              indicates a different thread colour; repeats are allowed,
 #              and "-" indicates that a thread should be skipped
-get_weave_pattern_matrix <- function (type = "plain", n = 2,
-                                      warp = letters[1:2],
-                                      weft = letters[3:4],
-                                      tie_up = this_tu,
-                                      th = diag(ncol(tie_up)),
-                                      tr = diag(nrow(tie_up))) {
+get_weave_pattern_matrix <- function(type = "plain", n = 2,
+                                     warp = letters[1:2],
+                                     weft = letters[3:4],
+                                     tie_up = this_tu,
+                                     th = diag(ncol(tie_up)),
+                                     tr = diag(nrow(tie_up))) {
   # make a sequence of ints from the warp/weft,
   # substituting -1 for any "-"
   warps <- seq_along(warp)
@@ -106,8 +106,6 @@ reps_needed <- function(v1, v2) {
 # Returns a 1/2 encoded weave matrix given tie_up, treadling and
 # threading matrices. The following conditions must be satisfied to
 # avoid non-conformable matrix error:
-# ncol(treadling) == nrow(tie_up)
-# ncol(tie_ip) == nrow(threading)
 # The "twill", "random", "basket" and "plain" options should guarantee
 # this, but the "this" option requires the user to make this happen
 # If the warp_n and weft_n values are not factors of nrow(treadling) and
@@ -123,9 +121,9 @@ get_pattern <- function(tie_up, treadling, threading,
 }
 
 
-# Note that as currently written this function requires the warp and weft matrices
-# to be the same size, which get_weave_pattern_matrix will ensure, but which may
-# not be the case if called from elsewhere
+# Note that as currently written this function requires the warp and weft
+# matrices to be the same size, which get_weave_pattern_matrix will ensure, b
+# but which may not be the case if called from elsewhere
 encode_biaxial_weave <- function(pattern, warp, weft) {
   pattern[which(pattern == 1)] <- 5        # warp present and on top
   pattern[which(pattern == 0)] <- 4        # weft present and on top
@@ -153,7 +151,7 @@ decode_biaxial_to_order <- function(code, axis = 0) {
   }
   if (axis == 3) { # C&A triaxial
     return(switch(
-      code, 1, 3, NULL, c(1,3), c(3,1)
+      code, 1, 3, NULL, c(1, 3), c(3, 1)
     ))
   }
 }
@@ -237,13 +235,12 @@ make_basket_pattern <- function(n = 2, warp_n = 2, weft_n = 2) {
 # where the repeat runs in each row are length n
 make_basket_matrix <- function(n) {
   matrix(c(rep(make_over_under_row(n), n),
-           rep(rev(make_over_under_row(n)), n)), 
+           rep(rev(make_over_under_row(n)), n)),
          n * 2, n * 2)
 }
 
-# this is just a pass through function
-# could try to enforce ncol(treadling) == nrow(tie_up) and
-# ncol(tie_up) == nrow(threading)
+# This is just a pass through function. Could try to enforce
+#   ncol(treadling) == nrow(tie_up) and ncol(tie_up) == nrow(threading)
 # but unsure what would be an appropriate way to do this...
 make_this_pattern <- function(tie_up = this_tu,
                               threading = diag(ncol(tie_up)),
@@ -285,8 +282,9 @@ make_matrix_from_seq <- function(row_picks) {
 
 get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0,
                                    type = "plain", n = c(2, 2), # used by twill
-                                   strands = "ab|cd", crs = 3857, tie_up = this_tu,
-                                   tr = diag(nrow(tie_up)), th = diag(ncol(tie_up))) {
+                                   strands = "ab|cd", crs = 3857,
+                                   tie_up = this_tu, tr = diag(nrow(tie_up)),
+                                   th = diag(ncol(tie_up))) {
 
   parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"
     parse_labels() %>%          # c("a(bc)", "ef-", "-")
@@ -295,13 +293,15 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0,
   weft_threads <- parsed_labels[[2]]
 
   if (type == "basket") {
-    n = n[1]
+    n <- n[1]
   }
-  cell <- get_weave_pattern_matrix(type = type, n = n, warp_threads, weft_threads,
+  cell <- get_weave_pattern_matrix(type = type, n = n,
+                                   warp_threads, weft_threads,
                                    tie_up = tie_up, tr = tr, th = th) %>%
     matrices_as_loom() %>%
     make_sf_from_coded_weave_matrix(spacing = spacing, width = aspect,
-                                    margin = margin, axis1_threads = weft_threads,
+                                    margin = margin,
+                                    axis1_threads = weft_threads,
                                     axis2_threads = warp_threads, crs = crs)
   list(
     primitive = cell$weave_unit,
@@ -316,13 +316,12 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0,
 ############ TRY THESE!
 # the below options make the pattern give or take an offset in the colours)
 # from Figure 22 of Glassner 2002
-# type <- "this"
-this_tu <- matrix(c(0,0,0,0,1,1,1,1,
-                    0,0,0,1,0,1,1,1,
-                    0,0,1,0,1,0,1,1,
-                    0,1,0,1,0,1,0,1,
-                    1,0,1,0,1,0,1,0,
-                    1,1,0,1,0,1,0,0,
-                    1,1,1,0,1,0,0,0,
-                    1,1,1,1,0,0,0,0), 8, 8, byrow = TRUE)
+this_tu <- matrix(c(0, 0, 0, 0, 1, 1, 1, 1,
+                    0, 0, 0, 1, 0, 1, 1, 1,
+                    0, 0, 1, 0, 1, 0, 1, 1,
+                    0, 1, 0, 1, 0, 1, 0, 1,
+                    1, 0, 1, 0, 1, 0, 1, 0,
+                    1, 1, 0, 1, 0, 1, 0, 0,
+                    1, 1, 1, 0, 1, 0, 0, 0,
+                    1, 1, 1, 1, 0, 0, 0, 0), 8, 8, byrow = TRUE)
 ids <- "aaaaaaaabbbbbbbb|aaaaaaaacccccccc"

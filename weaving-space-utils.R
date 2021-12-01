@@ -62,7 +62,7 @@ sf_square_to_diamond <- function(shapes) {
   shapes %>% sf_transform(affine_abcd(0.5, -S3 / 2, 0.5, S3 / 2))
 }
 
-# returns coordinates of the centroid of the bounding box of the supplied sf shapes
+# returns coordinates of the centroid of the bounding box of supplied sf shapes
 sf_get_centroid <- function(shapes) {
   shapes %>%
     st_bbox() %>%
@@ -101,10 +101,10 @@ affine_rotn_around_xy <- function(angle, cx, cy) {
 # returns the wk affine transform that will transform the unit square
 # basis vectors 0,1 and 1,0 to a,b and c,d, while preserving area
 affine_abcd <- function(a, b, c, d) {
-  areaScale = abs(a * d - b * c)
+  area_scale <- abs(a * d - b * c)
   wk::wk_affine_compose(
     wk::wk_trans_affine(matrix(c(a, b, 1, c, d, 1, 0, 0, 1), 3, 3)),
-    wk::wk_affine_scale(1 / sqrt(areaScale), 1 / sqrt(areaScale))
+    wk::wk_affine_scale(1 / sqrt(area_scale), 1 / sqrt(area_scale))
   )
 }
 
@@ -139,20 +139,20 @@ parse_strand_label <- function(s) {
   combo <- FALSE
   current <- ""
   for (i in 1:stringr::str_length(clean_s)) {
-    nextChar <- stringr::str_sub(clean_s, i, i)
+    next_char <- stringr::str_sub(clean_s, i, i)
     if (combo) {
-      if (nextChar == ")") {
+      if (next_char == ")") {
         result <- c(result, current)
         current <- ""
         combo <- FALSE
       } else {
-        current <- stringr::str_c(current, nextChar, sep = "")
+        current <- stringr::str_c(current, next_char, sep = "")
       }
     } else {
-      if (nextChar == "(") {
+      if (next_char == "(") {
         combo <- TRUE
       } else {
-        result <- c(result, nextChar)
+        result <- c(result, next_char)
       }
     }
   }

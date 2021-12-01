@@ -8,10 +8,10 @@ require(sf)
 S3 <- sqrt(3)
 
 
-get_triaxial_weave_pattern_matrices <- function(type = "hex",
-                                                strands_1 = c("a", "-", "-"),
-                                                strands_2 = c("b", "-", "-"),
-                                                strands_3 = c("c", "-", "-")) {
+get_triaxial_weave_matrices <- function(type = "hex",
+                                        strands_1 = c("a", "-", "-"),
+                                        strands_2 = c("b", "-", "-"),
+                                        strands_3 = c("c", "-", "-")) {
 
   if (type == "hex") {
     loom <- matrices_as_loom(
@@ -37,7 +37,8 @@ get_triaxial_weave_pattern_matrices <- function(type = "hex",
 
 
 get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
-                                    strands = "a--|b--|c--", type = "hex", crs = 3857) {
+                                    strands = "a--|b--|c--", type = "hex",
+                                    crs = 3857) {
 
   parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"
     parse_labels() %>%          # c("a(bc)", "ef-", "-")
@@ -47,8 +48,8 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
   strands_2 <- parsed_labels[[2]]
   strands_3 <- parsed_labels[[3]]
 
-  cell <- get_triaxial_weave_pattern_matrices(type = type,
-                                              strands_1, strands_2, strands_3) %>%
+  cell <- get_triaxial_weave_matrices(type = type,
+                                      strands_1, strands_2, strands_3) %>%
     make_sf_from_coded_weave_matrix(spacing = spacing,
                                     width = aspect, margin = margin,
                                     axis1_threads = strands_1,
@@ -70,8 +71,8 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
 # string). This will be called 3 times, once for each axis. The calling context
 # should determine the parity, based on the sizes of the three matrices
 add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
-  for (col in 1:ncol(M)) {
-    for (row in 1:nrow(M)) {
+  for (col in 1:seq_len(ncol(M))) {
+    for (row in 1:seq_len(nrow(M))) {
       # get the target grid coordinates (there will be two)
       abc <- transform_ab_to_abc(col, row, parity = parity, axis = axis)
       for (par in 1:2) {
@@ -79,10 +80,11 @@ add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
         key <- abc[par, ] %>% stringr::str_c(collapse = ",")
         # if it is not in the target list, add a new thread order
         if (is.null(tri[[key]])) {
-          tri[[key]] <- list(decode_biaxial_to_order(M[row, col], axis = axis)) # c(M[row, col])
+          tri[[key]] <- list(decode_biaxial_to_order(M[row, col], axis = axis))
         } else { # if there is something there, then append the value
-          tri[[key]] <- append(tri[[key]], list(decode_biaxial_to_order(M[row, col], axis = axis)))
-          # tri[[key]] <- c(tri[[key]], M[row, col] )
+          tri[[key]] <- append(
+            tri[[key]], list(decode_biaxial_to_order(M[row, col], axis = axis))
+          )
         }
       }
     }
@@ -120,11 +122,12 @@ combine_orderings <- function(..., values = 1:3, verbose = FALSE) {
 }
 
 # function to supply missing third coordinate in a triangular grid given two
-# other coordinates, the parity, and the axis. The axis tells us which is missing:
+# other coordinates, the parity and the axis. axis tells us which is missing:
 # axis = 1 --> 3rd, axis = 2 --> 1st, axis = 3 --> 2nd
 transform_ab_to_abc <- function(z1, z2, parity = 0, axis = 1) {
-  # comments on first case, others are cyclic shifts - most easily read down the code
-  # when axis = 1 a_coord and b_coord are preserved, c_coord is the paired residual values
+  # comments on first case, others are cyclic shifts - read down the code
+  # when axis = 1 then
+  # a_coord and b_coord are preserved, c_coord is the paired residual values
   a_coord <- switch(axis, z1, c(parity + 1 - z1 - z2, parity - z1 - z2), z2)
   b_coord <- switch(axis, z2, z1, c(parity + 1 - z1 - z2, parity - z1 - z2))
   c_coord <- switch(axis, c(parity + 1 - z1 - z2, parity - z1 - z2), z2, z1)
@@ -149,6 +152,6 @@ get_hexagon <- function(w, point_up = TRUE) {
   if (!point_up) {
     angles <- angles - pi / 6
   }
-  get_polygon(c(matrix(c(cos(angles), sin(angles)), 
+  get_polygon(c(matrix(c(cos(angles), sin(angles)),
                        ncol = 6, byrow = TRUE)) * r)
 }
