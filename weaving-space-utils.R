@@ -159,7 +159,7 @@ parse_strand_label <- function(s) {
   result
 }
 
-plot_unit <- function(unit, bg = white) {
+plot_unit <- function(unit, bg = "white") {
   if (any(unit$primitive$strand == "NA")) {
     main <- "Red areas are unresolved"
   } else {
@@ -177,3 +177,23 @@ plot_unit <- function(unit, bg = white) {
   invisible(unit)
 }
 
+margin_messages <- function(margin, max_margin) {
+  if (margin > max_margin) {
+    warning(strwrap(
+      paste("The largest margin that won't show gaps at tile boundaries with",
+        " this spacing and aspect is around ", signif(max_margin, 3),
+        ". Instead, consider setting margin to that value or less, or set it",
+        " to 0, and apply a negative buffer to the final woven",
+        " map elements.", sep = ""), prefix = " ", initial = ""))
+  } 
+  if (margin < 0) {
+    warning(strwrap(
+      paste("Negative margin settings are unlikely to produce patterns that",
+            " read as weaves. They also probably contain overlapping shapes.",
+            " And they may even cause topology exceptions, which is a fail.",
+            " The tiles look cool plotted with tmap and alpha values < 1!",
+            " Knock yourself out, it's all good.",
+            sep = ""), prefix = " ", initial = ""))
+  } 
+  invisible(margin)
+}

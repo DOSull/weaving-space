@@ -39,7 +39,8 @@ get_triaxial_weave_matrices <- function(type = "cube",
 get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
                                     strands = "a|b|c", type = "cube",
                                     crs = 3857) {
-
+  max_margin <- (1 - aspect) / 2 * spacing * sqrt(3) / 2
+  margin_messages(margin, max_margin)
   parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"
     parse_labels() %>%          # c("a(bc)", "ef-", "-")
     lapply(parse_strand_label)  # list(c("a", "bc"), c("e", "f", "-"), c("-"))
@@ -86,7 +87,7 @@ combine_orderings <- function(..., values = 1:3, verbose = FALSE) {
   if (number_present == 0) {
     result <- NULL
   } else if (length(unique(scores)) != length(scores) && number_present != 1) {
-    print(paste0("Unable to determine a unique ordering on (",
+    warning(paste0("Unable to determine a unique ordering on (",
                  paste0(orderings, collapse = ") ("), ")", collapse = ""))
     result <- NA
   } else {
