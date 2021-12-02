@@ -197,3 +197,24 @@ margin_messages <- function(margin, max_margin) {
   } 
   invisible(margin)
 }
+
+aspect_messages <- function(aspect) {
+  if (aspect == 0) {
+    stop(strwrap(
+      paste("We have to divide things by the aspect setting sometimes, so",
+            " setting aspect to 0 is not allowed. Feel free to try values",
+            " outside the range 0 to 1. They won't look like weaves, but they",
+            " might be fun anyway.", sep = ""), prefix = " ", initial = ""))
+  } 
+  if (aspect < 0 || aspect > 1) {
+    warning(strwrap(
+      paste("Here be dragons! Setting aspect to negative values or to values",
+            " greater than 1 is unlikely to produce tiles that yield woven",
+            " patterns. At extreme values you'll probably get topology errors,",
+            " but between -1 and 2 you get interesting effects, especially if",
+            " combined with negative margin settings. Not a bad idea to save",
+            " your work as unexpected crashes are also a possibility :-)",
+            sep = ""), prefix = " ", initial = ""))
+  }
+  invisible(aspect)
+}

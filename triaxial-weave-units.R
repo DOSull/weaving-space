@@ -39,6 +39,7 @@ get_triaxial_weave_matrices <- function(type = "cube",
 get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
                                     strands = "a|b|c", type = "cube",
                                     crs = 3857) {
+  aspect_messages(aspect)
   max_margin <- (1 - aspect) / 2 * spacing * sqrt(3) / 2
   margin_messages(margin, max_margin)
   parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"
