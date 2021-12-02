@@ -303,6 +303,16 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     bb_polys[[i]] <- get_grid_cell_polygon(
       face_to_face_distance = spacing, n_sides = n_sides, parity = parity) + xy
     if (is.null(strand_order)) next        # nothing here so move on
+    if (anyNA(strand_order)) {
+      weave_polys <- append(weave_polys, 
+                            list(get_grid_cell_polygon(
+                              face_to_face_distance = spacing, 
+                              n_sides = n_sides, parity = parity) + xy))
+      strands <- c(strands, "NA")
+      print(paste("Impossible to determine strand order at:", 
+                   paste(coords, collapse = ","), collapse = " "))
+      next
+    }
     n_slices <- stringr::str_length(ids)   # number of slices in each direction
     next_polys <- get_visible_cell_strands(n = n_sides, S = spacing,
                                            width = width,

@@ -15,11 +15,11 @@ get_triaxial_weave_matrices <- function(type = "hex",
 
   if (type == "hex") {
     loom <- matrices_as_loom(
-      get_weave_pattern_matrix(type = "this", tie_up = ones(6),
+      get_weave_pattern_matrix(type = "this", tie_up = pracma::ones(6),
                                warp = strands_1, weft = strands_2),
-      get_weave_pattern_matrix(type = "this", tie_up = ones(6),
+      get_weave_pattern_matrix(type = "this", tie_up = pracma::ones(6),
                                warp = strands_2, weft = strands_3),
-      get_weave_pattern_matrix(type = "this", tie_up = ones(6),
+      get_weave_pattern_matrix(type = "this", tie_up = pracma::ones(6),
                                warp = strands_3, weft = strands_1))
   }
   if (type == "cube") {
@@ -66,32 +66,6 @@ get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
 }
 
 
-# function to add values to a supplied list tri, from a supplied matrix M, where
-# values in the list will be indexed by triangular coordinates (converted to a
-# string). This will be called 3 times, once for each axis. The calling context
-# should determine the parity, based on the sizes of the three matrices
-add_biaxial_to_triaxial <- function(tri, M, axis = 1, parity = 0) {
-  for (col in 1:seq_len(ncol(M))) {
-    for (row in 1:seq_len(nrow(M))) {
-      # get the target grid coordinates (there will be two)
-      abc <- transform_ab_to_abc(col, row, parity = parity, axis = axis)
-      for (par in 1:2) {
-        # make a key (string) from each pair
-        key <- abc[par, ] %>% stringr::str_c(collapse = ",")
-        # if it is not in the target list, add a new thread order
-        if (is.null(tri[[key]])) {
-          tri[[key]] <- list(decode_biaxial_to_order(M[row, col], axis = axis))
-        } else { # if there is something there, then append the value
-          tri[[key]] <- append(
-            tri[[key]], list(decode_biaxial_to_order(M[row, col], axis = axis))
-          )
-        }
-      }
-    }
-  }
-  tri
-}
-
 # combines a set of orderings on the values
 # the orderings are a list of vectors (which may be empty)
 # for example list(c(1, 2), c(2, 3), c(1, 3))
@@ -111,6 +85,10 @@ combine_orderings <- function(..., values = 1:3, verbose = FALSE) {
   number_present <- sum(scores < max_score)
   if (number_present == 0) {
     result <- NULL
+  } else if (length(unique(scores)) != length(scores) && number_present != 1) {
+    print(paste0("Unable to determine a unique ordering on (",
+                 paste0(orderings, collapse = ") ("), ")", collapse = ""))
+    result <- NA
   } else {
     result <- as.vector(values[order(scores)[1:number_present]])
   }
@@ -119,39 +97,4 @@ combine_orderings <- function(..., values = 1:3, verbose = FALSE) {
   } else {
     return(result)
   }
-}
-
-# function to supply missing third coordinate in a triangular grid given two
-# other coordinates, the parity and the axis. axis tells us which is missing:
-# axis = 1 --> 3rd, axis = 2 --> 1st, axis = 3 --> 2nd
-transform_ab_to_abc <- function(z1, z2, parity = 0, axis = 1) {
-  # comments on first case, others are cyclic shifts - read down the code
-  # when axis = 1 then
-  # a_coord and b_coord are preserved, c_coord is the paired residual values
-  a_coord <- switch(axis, z1, c(parity + 1 - z1 - z2, parity - z1 - z2), z2)
-  b_coord <- switch(axis, z2, z1, c(parity + 1 - z1 - z2, parity - z1 - z2))
-  c_coord <- switch(axis, c(parity + 1 - z1 - z2, parity - z1 - z2), z2, z1)
-  result <- switch(
-    axis, # return two triples that differ in the missing coordinate
-    matrix(c(a_coord, b_coord, c_coord[1],
-             a_coord, b_coord, c_coord[2]), nrow = 2, ncol = 3, byrow = TRUE),
-    matrix(c(a_coord[1], b_coord, c_coord,
-             a_coord[2], b_coord, c_coord), nrow = 2, ncol = 3, byrow = TRUE),
-    matrix(c(a_coord, b_coord[1], c_coord,
-             a_coord, b_coord[2], c_coord), nrow = 2, ncol = 3, byrow = TRUE))
-  result
-}
-
-
-
-# returns hexagon of the specified width (face to face normal distance)
-# if point_up then point up orientation, else points left/right
-get_hexagon <- function(w, point_up = TRUE) {
-  r <- w / S3
-  angles <- seq(1, 12, 2) / 6 * pi
-  if (!point_up) {
-    angles <- angles - pi / 6
-  }
-  get_polygon(c(matrix(c(cos(angles), sin(angles)),
-                       ncol = 6, byrow = TRUE)) * r)
 }
