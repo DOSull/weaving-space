@@ -159,7 +159,7 @@ parse_strand_label <- function(s) {
   result
 }
 
-plot_unit <- function(unit) {
+plot_unit <- function(unit, bg = white) {
   if (any(unit$primitive$strand == "NA")) {
     main <- "Red areas are unresolved"
   } else {
@@ -167,9 +167,10 @@ plot_unit <- function(unit) {
   }
   unit$primitive %>% 
     filter(strand != "NA") %>% 
-    plot(border = NA, extent = unit$tile, reset = FALSE, main = main)
+    plot(border = NA, extent = unit$tile, bg = bg,
+         reset = FALSE, main = main)
   unit$tile %>%
-    plot(add = TRUE, border = "black", col = rgb(0, 0, 0, 0,5))
+    plot(add = TRUE, border = "red", col = rgb(0, 0, 0, 0,5), lwd = 2, lty = 2)
   unit$primitive %>% 
     filter(strand == "NA") %>%
     plot(add = TRUE, border = "black", col = rgb(1, 0, 0, 0.75))

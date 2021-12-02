@@ -181,18 +181,23 @@ get_grid_cell_slices <- function(L = 1, W = 1, n_slices = 1, offset = c(0, 0)) {
 # width width (as a fraction of S), sliced into n_slices along its length
 get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
                              orientation = 0, n_slices = 1) {
-  # get the base grid cell polygon
+  # make an expanded cell that will reach to the 
+  W <- width * S
+  L <- ifelse(n == 4, S + S * (1 - width), S + 2 * S * (1 - width))
+  expanded_cell <- get_grid_cell_polygon(face_to_face_distance = L, 
+                                         n = n, parity = parity)
+  bb <- st_bbox(expanded_cell)
+  strand_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
   cell <- get_grid_cell_polygon(face_to_face_distance = S,
                                 n = n, parity = parity)
   # determine its x-y centre (which may not be where its centroid is)
   bb <- st_bbox(cell)
   cell_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
-  
-  get_grid_cell_slices(L = bb$xmax - bb$xmin + 0.1, W = S * width,
-                       n_slices = n_slices, offset = cell_offset) %>%
-    st_intersection(cell) %>%  # intersect with the grid cell
-    translate_shape() %>%      # probably never needed
-    rotate_shape(orientation)  # rotate as requested
+  get_grid_cell_slices(L = L * 2 / sqrt(3), W = W, n_slices = n_slices, 
+                       offset = strand_offset) %>%
+    st_intersection(expanded_cell) %>%                # intersect with grid cell
+    translate_shape(-strand_offset + cell_offset) %>% # put back in place
+    rotate_shape(orientation)                         # rotate as requested
 }
 
 
@@ -328,6 +333,11 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       strands <- c(strands, stringr::str_sub(labels, p, p))
     }
   }
+  tile <- bb_polys %>%
+    st_sfc() %>%                     # convert to sfc
+    st_set_precision(1e10) %>%       # to ensure clean dissolve
+    st_union() %>%                   # union
+    st_set_crs(crs)                  # set CRS
   list(
     weave_unit = weave_polys %>%
       st_as_sfc() %>%                # convert to sfc
@@ -337,11 +347,8 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       group_by(strand) %>%           # dissolve
       summarise() %>%
       st_buffer(-margin) %>%         # include a negative margin
-      st_set_crs(crs),               # set CRS
-    tile = bb_polys %>%
-      st_sfc() %>%                   # convert to sfc
-      st_set_precision(1e10) %>%     # to ensure clean dissolve
-      st_union() %>%                 # union
-      st_set_crs(crs)                # set CRS
+      st_set_crs(crs) %>%            # set CRS
+      st_intersection(tile),         # cookie cut to tile
+    tile = tile
   )
 }
