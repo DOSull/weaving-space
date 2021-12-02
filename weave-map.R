@@ -113,5 +113,5 @@ write_weave_layers <- function(weave, region, fname, var = "strand") {
   for (label in names(lyrs)) {
     lyrs[[label]] %>% st_write(fname, label, append = TRUE)
   }
-  return(weave)
+  invisible(weave)
 }

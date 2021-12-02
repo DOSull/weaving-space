@@ -8,10 +8,10 @@ require(sf)
 S3 <- sqrt(3)
 
 
-get_triaxial_weave_matrices <- function(type = "hex",
-                                        strands_1 = c("a", "-", "-"),
-                                        strands_2 = c("b", "-", "-"),
-                                        strands_3 = c("c", "-", "-")) {
+get_triaxial_weave_matrices <- function(type = "cube", 
+                                        strands_1 = c("a"),
+                                        strands_2 = c("b"),
+                                        strands_3 = c("c")) {
 
   if (type == "hex") {
     loom <- matrices_as_loom(
@@ -37,7 +37,7 @@ get_triaxial_weave_matrices <- function(type = "hex",
 
 
 get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
-                                    strands = "a--|b--|c--", type = "hex",
+                                    strands = "a|b|c", type = "cube",
                                     crs = 3857) {
 
   parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"

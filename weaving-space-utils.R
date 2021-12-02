@@ -158,3 +158,21 @@ parse_strand_label <- function(s) {
   }
   result
 }
+
+plot_unit <- function(unit) {
+  if (any(unit$primitive$strand == "NA")) {
+    main <- "Red areas are unresolved"
+  } else {
+    main <- "Different colours can be split on the strand variable"
+  }
+  unit$primitive %>% 
+    filter(strand != "NA") %>% 
+    plot(border = NA, extent = unit$tile, reset = FALSE, main = main)
+  unit$tile %>%
+    plot(add = TRUE, border = "black", col = rgb(0, 0, 0, 0,5))
+  unit$primitive %>% 
+    filter(strand == "NA") %>%
+    plot(add = TRUE, border = "black", col = rgb(1, 0, 0, 0.75))
+  invisible(unit)
+}
+
