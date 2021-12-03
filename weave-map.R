@@ -4,8 +4,8 @@ hex_types <- c("hex", "cube")
 
 # delegates creation of tile offsets filling the region to
 # sf::st_make_grid
-get_centres <- function(region, tile, bb, hexes) {
-  bb <- st_bbox(bb)
+get_centres <- function(region, tile, hexes) {
+  bb <- st_bbox(tile)
   w <- bb$xmax - bb$xmin
   h <- bb$ymax - bb$ymin
   region_b <- region %>% st_union() %>% st_buffer(max(w, h))
@@ -36,7 +36,7 @@ sf_shift <- function(pt, shapes) {
 
 
 weave_layer <- function(
-    weave_unit, region, angle = 0,
+    weave_unit, region, angle = 0, tile = weave_unit$tile,
     transform = wk::wk_affine_identity(),
     merge_map_polys_in_data_polys = TRUE, # helps with leaflet, but caution
     region_cols_to_summarize_by_strand = c()) {
@@ -60,15 +60,15 @@ weave_layer <- function(
     sf_transform(weave_unit$transform) %>%
     dplyr::mutate(to_tile_id = row_number())
 
-  the_tile <- weave_unit$primitive %>%
+  the_unit <- weave_unit$primitive %>%
     sf_transform(weave_unit$transform)
-  the_bb <- weave_unit$tile %>% 
+  the_tile <- tile %>% 
     sf_transform(weave_unit$transform)
 
-  pts <- get_centres(to_tile, the_tile, the_bb,
+  pts <- get_centres(to_tile, tile = the_tile,
                      hex = weave_unit$type %in% hex_types)
 
-  tiling <- lapply(pts, sf_shift, shapes = the_tile) %>%
+  tiling <- lapply(pts, sf_shift, shapes = the_unit) %>%
     bind_rows() %>%
     mutate(strand_id = row_number()) %>%
     st_set_crs(st_crs(region)) %>%

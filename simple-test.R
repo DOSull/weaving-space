@@ -22,19 +22,27 @@ get_biaxial_weave_unit(spacing = 250, aspect = 0.8,
   plot(border = NA)
 
 # weird not weave weave
-bi_weave <- get_biaxial_weave_unit(spacing = 150, aspect = 1.5, margin = -0.2, crs = 2193)
-w1 <- weave_layer(bi_weave, ak)
+bi_weave <- get_biaxial_weave_unit(type = "basket", 
+                                   spacing = 100, aspect = 0.875, margin = -0.25, 
+                                   crs = 2193)
+bi_weave$primitive %>% tm_shape() + tm_fill(col = "strand")
+w1 <- weave_layer(bi_weave, ak, angle = 30)
 
 layers <- w1 %>% split(as.factor(w1$strand))
 tmap_mode("view")
+tmap_options(check.and.fix = TRUE)
 tm_shape(layers$a, name = "Pākehā") +
-  tm_fill(col = "pEuropean", palette = "Greys", title = "%Pākehā") +
+  tm_fill(col = "pEuropean", palette = "Greys", style = "cont", 
+          title = "%Pākehā", alpha = 0.65) +
   tm_shape(layers$b, name = "Māori") + 
-  tm_fill(col = "pMaori", palette = "Reds", title = "%Māori") +
+  tm_fill(col = "pMaori", palette = "YlOrRd", style = "cont",
+          title = "%Māori", alpha = 0.65) +
   tm_shape(layers$c, name = "Pasifika") +
-  tm_fill(col = "pPacific", palette = "Purples", title = "%Pasifika") +
+  tm_fill(col = "pPacific", palette = "RdPu", style = "cont",
+          title = "%Pasifika", alpha = 0.65) +
   tm_shape(layers$d, name = "Asian") +
-  tm_fill(col = "pAsian", palette = "Greens", title = "%Asian")
+  tm_fill(col = "pAsian", palette = "YlGnBu", style = "cont",
+          title = "%Asian", alpha = 0.65)
   
 
 tmap_mode("plot")
