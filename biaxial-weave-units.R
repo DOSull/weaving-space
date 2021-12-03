@@ -286,7 +286,7 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0,
                                    tie_up = this_tu, tr = diag(nrow(tie_up)),
                                    th = diag(ncol(tie_up))) {
   aspect_messages(aspect)
-  max_margin <- (1 - aspect) / 2 * spacing
+  max_margin <- (1 - aspect) / 2
   margin_messages(margin, max_margin)
   parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"
     parse_labels() %>%          # c("a(bc)", "ef-", "-")

@@ -167,8 +167,7 @@ plot_unit <- function(unit, bg = "white") {
   }
   unit$primitive %>% 
     filter(strand != "NA") %>% 
-    plot(border = NA, extent = unit$tile, bg = bg,
-         reset = FALSE, main = main)
+    plot(border = NA, extent = unit$tile, bg = bg, reset = FALSE, main = main)
   unit$tile %>%
     plot(add = TRUE, border = "red", col = rgb(0, 0, 0, 0,5), lwd = 2, lty = 2)
   unit$primitive %>% 

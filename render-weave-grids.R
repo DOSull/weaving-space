@@ -335,22 +335,22 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     }
   }
   tile <- bb_polys %>%
-    st_sfc() %>%                     # convert to sfc
-    st_set_precision(1e10) %>%       # to ensure clean dissolve
-    st_union() %>%                   # union
-    st_set_crs(crs)                  # set CRS
+    st_sfc() %>%                       # convert to sfc
+    st_set_precision(1e10) %>%         # to ensure clean dissolve
+    st_union() %>%                     # union
+    st_set_crs(crs)                    # set CRS
   list(
     weave_unit = weave_polys %>%
-      st_as_sfc() %>%                # convert to sfc
-      st_set_precision(1e10) %>%     # to ensure they dissolve nicely
-      st_sf(strand = strands) %>%    # add the strands information
-      filter(strand != "-") %>%      # remove any tagged missing
-      group_by(strand) %>%           # dissolve
+      st_as_sfc() %>%                  # convert to sfc
+      st_set_precision(1e10) %>%       # to ensure they dissolve nicely
+      st_sf(strand = strands) %>%      # add the strands information
+      filter(strand != "-") %>%        # remove any tagged missing
+      group_by(strand) %>%             # dissolve
       summarise() %>%
-      st_buffer(-margin) %>%         # include a negative margin
-      st_set_crs(crs) %>%            # set CRS
-      st_intersection(tile),         # cookie cut to tile
-      # st_set_crs(crs),               # set CRS
+      st_buffer(-margin * spacing) %>% # include a negative margin
+      st_set_crs(crs) %>%              # set CRS
+      st_intersection(tile),           # cookie cut to tile
+      # st_set_crs(crs),                 # set CRS
     tile = tile
   )
 }
