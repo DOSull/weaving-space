@@ -4,8 +4,8 @@ hex_types <- c("hex", "cube")
 
 # delegates creation of tile offsets filling the region to
 # sf::st_make_grid
-get_centres <- function(region, tile, hexes) {
-  bb <- st_bbox(tile)
+get_centres <- function(region, tile, bb, hexes) {
+  bb <- st_bbox(bb)
   w <- bb$xmax - bb$xmin
   h <- bb$ymax - bb$ymin
   region_b <- region %>% st_union() %>% st_buffer(max(w, h))
@@ -62,8 +62,10 @@ weave_layer <- function(
 
   the_tile <- weave_unit$primitive %>%
     sf_transform(weave_unit$transform)
+  the_bb <- weave_unit$tile %>% 
+    sf_transform(weave_unit$transform)
 
-  pts <- get_centres(to_tile, the_tile,
+  pts <- get_centres(to_tile, the_tile, the_bb,
                      hex = weave_unit$type %in% hex_types)
 
   tiling <- lapply(pts, sf_shift, shapes = the_tile) %>%

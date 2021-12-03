@@ -338,6 +338,7 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     st_sfc() %>%                       # convert to sfc
     st_set_precision(1e10) %>%         # to ensure clean dissolve
     st_union() %>%                     # union
+    st_sf() %>%
     st_set_crs(crs)                    # set CRS
   list(
     weave_unit = weave_polys %>%

@@ -21,6 +21,21 @@ get_biaxial_weave_unit(spacing = 250, aspect = 0.8,
                        type = "basket", strands = "ab|cd")$primitive %>% 
   plot(border = NA)
 
+# weird not weave weave
+bi_weave <- get_biaxial_weave_unit(spacing = 150, aspect = 1.5, margin = -0.2, crs = 2193)
+w1 <- weave_layer(bi_weave, ak)
+
+layers <- w1 %>% split(as.factor(w1$strand))
+tmap_mode("view")
+tm_shape(layers$a, name = "Pākehā") +
+  tm_fill(col = "pEuropean", palette = "Greys", title = "%Pākehā") +
+  tm_shape(layers$b, name = "Māori") + 
+  tm_fill(col = "pMaori", palette = "Reds", title = "%Māori") +
+  tm_shape(layers$c, name = "Pasifika") +
+  tm_fill(col = "pPacific", palette = "Purples", title = "%Pasifika") +
+  tm_shape(layers$d, name = "Asian") +
+  tm_fill(col = "pAsian", palette = "Greens", title = "%Asian")
+  
 
 tmap_mode("plot")
 tri_weave <- get_triaxial_weave_unit(spacing = 100, type = "cube", strands = "a-b|c-d|e-f",
