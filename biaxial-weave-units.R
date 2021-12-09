@@ -285,45 +285,27 @@ get_biaxial_weave_unit <- function(spacing = 10000, aspect = 1, margin = 0,
                                    strands = "ab|cd", crs = 3857,
                                    tie_up = this_tu, tr = diag(nrow(tie_up)),
                                    th = diag(ncol(tie_up))) {
-  aspect_messages(aspect)
-  max_margin <- (1 - aspect) / 2
-  margin_messages(margin, max_margin)
-  parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"
-    parse_labels() %>%          # c("a(bc)", "ef-", "-")
-    lapply(parse_strand_label)  # list(c("a", "bc"), c("e", "f", "-"), c("-"))
-  warp_threads <- parsed_labels[[1]]
-  weft_threads <- parsed_labels[[2]]
+  margin_messages(margin, (1 - aspect) / 2)
+  strand_ids <- get_strand_ids(strands)  
+  warp_threads <- strand_ids[[1]]
+  weft_threads <- strand_ids[[2]]
 
   if (type == "basket") {
     n <- n[1]
   }
-  cell <- get_weave_pattern_matrix(type = type, n = n,
-                                   warp_threads, weft_threads,
-                                   tie_up = tie_up, tr = tr, th = th) %>%
+  get_weave_pattern_matrix(type = type, n = n,
+                           warp_threads, weft_threads,
+                           tie_up = tie_up, tr = tr, th = th) %>%
     matrices_as_loom() %>%
     make_sf_from_coded_weave_matrix(spacing = spacing, width = aspect,
                                     margin = margin,
                                     axis1_threads = weft_threads,
                                     axis2_threads = warp_threads, crs = crs)
-  list(
-    primitive = cell$weave_unit,
-    transform = wk::wk_affine_identity(),
-    strands = unique(cell$weave_unit$strand),
-    tile = cell$tile,
-    type = type
-  )
+  # list(
+  #   primitive = cell$weave_unit,
+  #   transform = wk::wk_affine_identity(),
+  #   strands = unique(cell$weave_unit$strand),
+  #   tile = cell$tile,
+  #   type = type
+  # )
 }
-
-
-############ TRY THESE!
-# the below options make the pattern give or take an offset in the colours)
-# from Figure 22 of Glassner 2002
-this_tu <- matrix(c(0, 0, 0, 0, 1, 1, 1, 1,
-                    0, 0, 0, 1, 0, 1, 1, 1,
-                    0, 0, 1, 0, 1, 0, 1, 1,
-                    0, 1, 0, 1, 0, 1, 0, 1,
-                    1, 0, 1, 0, 1, 0, 1, 0,
-                    1, 1, 0, 1, 0, 1, 0, 0,
-                    1, 1, 1, 0, 1, 0, 0, 0,
-                    1, 1, 1, 1, 0, 0, 0, 0), 8, 8, byrow = TRUE)
-ids <- "aaaaaaaabbbbbbbb|aaaaaaaacccccccc"

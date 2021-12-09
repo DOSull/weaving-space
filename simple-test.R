@@ -22,10 +22,11 @@ get_biaxial_weave_unit(spacing = 250, aspect = 0.8,
   plot(border = NA)
 
 # weird not weave weave
-bi_weave <- get_biaxial_weave_unit(type = "basket", 
-                                   spacing = 100, aspect = 0.875, margin = -0.25, 
+bi_weave <- get_biaxial_weave_unit(strands = "(ab)|(cd)",
+                                   spacing = 100, aspect = 0.7, margin = -0.2, 
                                    crs = 2193)
-bi_weave$primitive %>% tm_shape() + tm_fill(col = "strand")
+tmap_mode("plot")
+bi_weave$primitive %>% tm_shape() + tm_fill(col = "strand", alpha = 0.75)
 w1 <- weave_layer(bi_weave, ak, angle = 30)
 
 layers <- w1 %>% split(as.factor(w1$strand))

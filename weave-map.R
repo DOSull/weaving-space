@@ -60,7 +60,7 @@ weave_layer <- function(
     sf_transform(weave_unit$transform) %>%
     dplyr::mutate(to_tile_id = row_number())
 
-  the_unit <- weave_unit$primitive %>%
+  the_unit <- weave_unit$weave_unit %>%
     sf_transform(weave_unit$transform)
   the_tile <- tile %>% 
     sf_transform(weave_unit$transform)

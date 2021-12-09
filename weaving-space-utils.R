@@ -2,6 +2,33 @@ require(sf)
 
 S3 <- sqrt(3)
 
+get_weave_unit <- function(type = "plain", spacing = 100, aspect = 1, 
+                           margin = 0, n = c(2, 2), strands = "a|b|c",
+                           tie_up = this_tu, tr = diag(nrow(tie_up)),
+                           th = diag(ncol(tie_up)), crs = 3857) {
+  aspect_messages(aspect)
+  margin_messages(margin, max_margin = (1 - aspect) / 2)
+
+  if (type %in% c("hex", "cube")) {
+    unit <- get_triaxial_weave_unit(spacing = spacing, aspect = aspect, 
+                                    margin = margin, type = type,
+                                    strands = strands, crs = crs)
+  } else {
+    unit <- get_biaxial_weave_unit(spacing = spacing, aspect = aspect,
+                                   margin = margin, type = type, n = n, 
+                                   strands = strands, crs = crs,
+                                   tie_up = tie_up, tr = tr, th = th)
+  }
+  list(
+    weave_unit = unit$weave_unit,
+    transform = wk::wk_affine_identity(),
+    strands = unique(unit$weave_unit$strand),
+    tile = unit$tile,
+    type = type
+  )
+}
+
+
 # convenience function to make a sfc POLYGON from a vector
 # of points as c(x0,y0,x1,y1,...xn,yn) - note not closed
 # this function will close it
@@ -159,18 +186,25 @@ parse_strand_label <- function(s) {
   result
 }
 
+get_strand_ids <- function(strands_spec) {
+  strands_spec %>%              # e.g. "a(bc)|ef-"
+    parse_labels() %>%          # c("a(bc)", "ef-", "-")
+    lapply(parse_strand_label)  # list(c("a", "bc"), c("e", "f", "-"), c("-"))
+}
+
+
 plot_unit <- function(unit, bg = "white") {
-  if (any(unit$primitive$strand == "NA")) {
+  if (any(unit$weave_unit$strand == "NA")) {
     main <- "Red areas are unresolved"
   } else {
     main <- "Different colours can be split on the strand variable"
   }
-  unit$primitive %>% 
+  unit$weave_unit %>% 
     filter(strand != "NA") %>% 
     plot(border = NA, extent = unit$tile, bg = bg, reset = FALSE, main = main)
   unit$tile %>%
     plot(add = TRUE, border = "red", col = rgb(0, 0, 0, 0,5), lwd = 2, lty = 2)
-  unit$primitive %>% 
+  unit$weave_unit %>% 
     filter(strand == "NA") %>%
     plot(add = TRUE, border = "black", col = rgb(1, 0, 0, 0.75))
   invisible(unit)
@@ -217,3 +251,18 @@ aspect_messages <- function(aspect) {
   }
   invisible(aspect)
 }
+
+
+
+############ TRY THESE!
+# the below options make the pattern give or take an offset in the colours)
+# from Figure 22 of Glassner 2002
+this_tu <- matrix(c(0, 0, 0, 0, 1, 1, 1, 1,
+                    0, 0, 0, 1, 0, 1, 1, 1,
+                    0, 0, 1, 0, 1, 0, 1, 1,
+                    0, 1, 0, 1, 0, 1, 0, 1,
+                    1, 0, 1, 0, 1, 0, 1, 0,
+                    1, 1, 0, 1, 0, 1, 0, 0,
+                    1, 1, 1, 0, 1, 0, 0, 0,
+                    1, 1, 1, 1, 0, 0, 0, 0), 8, 8, byrow = TRUE)
+ids <- "aaaaaaaabbbbbbbb|aaaaaaaacccccccc"

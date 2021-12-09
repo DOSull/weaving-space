@@ -135,9 +135,9 @@ get_grid_cell_polygon <- function(face_to_face_distance = 1,
     round(10) # apparently required to ensure first and last points coincident
   polygon <- corners %>% list() %>% st_polygon()
   if (n_sides == 4 || parity %% 2 == 1) {
-    return(polygon)
+    return(polygon %>% st_sfc(precision = 1e8))
   } else {
-    return(rotate_shape(polygon, 180))
+    return(rotate_shape(polygon, 180) %>% st_sfc(precision = 1e8))
   }
 }
 
@@ -173,7 +173,7 @@ get_grid_cell_slices <- function(L = 1, W = 1, n_slices = 1, offset = c(0, 0)) {
       c(0, slice_offsets[i]) +         # offset depending on number of slices
       offset                           # offset to centre on the cell
   }
-  slices %>% st_sfc()
+  slices %>% st_sfc(precision = 1e8)
 }
 
 # Gets the cross grid cell strands running across a cell in the x direction
@@ -183,8 +183,9 @@ get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
                              orientation = 0, n_slices = 1) {
   W <- width * S
   # make expanded cell that reaches to the strands in neighbours 
-  big_s <- ifelse(n == 4, S + S * (1 - width), S * (5 - 3 * width) / 2)
-  big_l <- ifelse(n == 4, big_s, S * 2 / sqrt(3) * (3 - width) / 2)
+  big_s <- ifelse(n == 4, 
+                  S + S * (1 - width), 
+                  S * (5 - 3 * width) / 2)
   expanded_cell <- get_grid_cell_polygon(face_to_face_distance = big_s, 
                                          n = n, parity = parity)
   bb <- st_bbox(expanded_cell)
@@ -194,10 +195,15 @@ get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
   # determine its x-y centre (which may not be where its centroid is)
   bb <- st_bbox(cell)
   cell_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
+  big_l <- ifelse(n == 4, 
+                  big_s, 
+                  big_s * 2 / sqrt(3)) # * (3 - width) / 2)
   get_grid_cell_slices(L = big_l, W = W, n_slices = n_slices, 
                        offset = strand_offset) %>%
-    st_intersection(expanded_cell) %>%                # intersect with grid cell
     translate_shape(-strand_offset + cell_offset) %>% # put back in place
+    # st_snap(cell, 1e-3) %>%
+    st_intersection(cell) %>%                         # intersect with grid cell
+    st_set_precision(1e8) %>% 
     rotate_shape(orientation)                         # rotate as requested
 }
 
@@ -224,7 +230,7 @@ get_all_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
 
     polys <- add_shapes_to_list(polys, next_strands)
   }
-  polys %>% st_sfc()
+  polys %>% st_sfc(precision = 1e8)
 }
 
 # Returns the visible parts of the strands in a grid, given the spacing S
@@ -244,21 +250,21 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
       # mask poly progressively builds the union of all polygons
       # so far, to mask out invisible parts of those underneath
       mask_poly <- next_polys %>%
-        st_set_precision(1e10) %>%
-        st_union()
+        st_set_precision(1e8) %>%
+        st_union() %>% st_buffer(0)
     } else {
       all_polys <- add_shapes_to_list(all_polys, next_polys %>%
-                                        st_snap(mask_poly, 1e-6) %>%
+                                        # st_snap(mask_poly, 1e-8) %>%
                                         st_difference(mask_poly))
       mask_poly <- mask_poly %>%
         st_union(next_polys %>%
-                   st_set_precision(1e10) %>%
-                   st_union())
+                   st_set_precision(1e8) %>%
+                   st_union() %>% st_buffer(0))
     }
     # if the width is 1 then no lower polygons are visible
     if (width == 1) break # for efficiency?
   }
-  all_polys %>% st_sfc()
+  all_polys %>% st_sfc(precision = 1e8)
 }
 
 # returns a rectangular polygon matching a provided bounding box
@@ -266,7 +272,7 @@ sfc_from_bbox <- function(bb, crs) {
   st_polygon(
     list(matrix(c(bb$xmin, bb$ymin, bb$xmax, bb$ymin, bb$xmax, bb$ymax,
                   bb$xmin, bb$ymax, bb$xmin, bb$ymin), 5, 2, byrow = TRUE))) %>%
-    st_sfc(crs = crs)
+    st_sfc(crs = crs, precision = 1e8)
 }
 
 
@@ -275,9 +281,9 @@ sfc_from_bbox <- function(bb, crs) {
 # and the orderings of the strands at each coordin_Ate location
 make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
                                             margin = 0,
-                                            axis1_threads = letters[1:2],
-                                            axis2_threads = letters[3:4],
-                                            axis3_threads = letters[5:6],
+                                            axis1_threads = letters[1],
+                                            axis2_threads = letters[2],
+                                            axis3_threads = letters[3],
                                             crs = 3857) {
   # we need number of axes to make a grid generator function
   n_axes <- length(loom$dimensions)
@@ -334,24 +340,23 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       strands <- c(strands, stringr::str_sub(labels, p, p))
     }
   }
-  tile <- bb_polys %>%
-    st_sfc() %>%                       # convert to sfc
-    st_set_precision(1e10) %>%         # to ensure clean dissolve
+  tile <- bb_polys %>% sapply("[") %>%
+    st_sfc(precision = 1e8) %>%        # convert to sfc
     st_union() %>%                     # union
     st_sf() %>%
     st_set_crs(crs)                    # set CRS
   list(
     weave_unit = weave_polys %>%
       st_as_sfc() %>%                  # convert to sfc
-      st_set_precision(1e10) %>%       # to ensure they dissolve nicely
-      st_sf(strand = strands) %>%      # add the strands information
+      st_sf(precision = 1e8, 
+            strand = strands) %>%      # add the strands information
+      # filter(st_geometry_type(.) %in% c("POLYGON", "MULTIPOLYGON")) %>%
       filter(strand != "-") %>%        # remove any tagged missing
       group_by(strand) %>%             # dissolve
       summarise() %>%
       st_buffer(-margin * spacing) %>% # include a negative margin
       st_set_crs(crs) %>%              # set CRS
       st_intersection(tile),           # cookie cut to tile
-      # st_set_crs(crs),                 # set CRS
     tile = tile
   )
 }

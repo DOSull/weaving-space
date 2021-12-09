@@ -39,32 +39,27 @@ get_triaxial_weave_matrices <- function(type = "cube",
 get_triaxial_weave_unit <- function(spacing = 500, aspect = 1, margin = 0,
                                     strands = "a|b|c", type = "cube",
                                     crs = 3857) {
-  aspect_messages(aspect)
-  max_margin <- (1 - aspect) / 2 * sqrt(3) / 2
-  margin_messages(margin, max_margin)
-  parsed_labels <- strands %>%  # e.g. "a(bc)|ef-"
-    parse_labels() %>%          # c("a(bc)", "ef-", "-")
-    lapply(parse_strand_label)  # list(c("a", "bc"), c("e", "f", "-"), c("-"))
+  margin_messages(margin, (1 - aspect) / 2 * sqrt(3) / 2)
+  strand_ids <- get_strand_ids(strands)  
+  strands_1 <- strand_ids[[1]]
+  strands_2 <- strand_ids[[2]]
+  strands_3 <- strand_ids[[3]]
 
-  strands_1 <- parsed_labels[[1]]
-  strands_2 <- parsed_labels[[2]]
-  strands_3 <- parsed_labels[[3]]
-
-  cell <- get_triaxial_weave_matrices(type = type,
-                                      strands_1, strands_2, strands_3) %>%
+  get_triaxial_weave_matrices(type = type,
+                              strands_1, strands_2, strands_3) %>%
     make_sf_from_coded_weave_matrix(spacing = spacing,
                                     width = aspect, margin = margin,
                                     axis1_threads = strands_1,
                                     axis2_threads = strands_2,
                                     axis3_threads = strands_3, crs = crs)
 
-  list(
-    primitive = cell$weave_unit,
-    transform = wk::wk_affine_identity(),
-    strands = unique(cell$weave_unit$strand),
-    tile = cell$tile,
-    type = type
-  )
+  # list(
+  #   primitive = cell$weave_unit,
+  #   transform = wk::wk_affine_identity(),
+  #   strands = unique(cell$weave_unit$strand),
+  #   tile = cell$tile,
+  #   type = type
+  # )
 }
 
 
