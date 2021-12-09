@@ -7,6 +7,7 @@ apply_precision <- function(x, p = PRECISION) {
   round(x * PRECISION) / PRECISION
 }
 
+
 # Returns a matrix of coordin_Ates and a list of the orderings
 # of axes at those sites
 matrices_as_loom <- function(...) {
@@ -86,7 +87,7 @@ grid_generator <- function(n_axes = 2, S = 1) {
   }
   basis <- matrix(c(dx, dy), nrow = 2, ncol = n_axes, byrow = TRUE)
   function(coords) {
-    return(t(basis %*% coords) %>% c() %>% apply_precision())
+    t(basis %*% coords) %>% c()
   }
 }
 
@@ -95,7 +96,8 @@ grid_generator <- function(n_axes = 2, S = 1) {
 rotate_shape <- function(shape, angle, centre = c(0, 0)) {
   a <- angle * pi / 180
   m <- t(matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2))
-  (shape - centre) * m + centre
+  ((shape %>% translate_shape(-centre)) * m) %>%
+    translate_shape(centre)
 }
 
 # utility function to translate an sf shape by the
@@ -135,10 +137,10 @@ get_grid_cell_polygon <- function(face_to_face_distance = 1,
   # determine angles
   # we start at 6 o'clock (3pi/2), then add (pi/n), then add n more 2pi/n steps
   angles <- (3 * pi / 2) + (pi / n_sides) + (0:n_sides / n_sides) * 2 * pi
+  angles[length(angles)] <- angles[1]
   # the corners are the cos and sin of these angles
   corners <- R * c(cos(angles), sin(angles)) %>%
-    matrix(nrow = n_sides + 1, ncol = 2) %>%
-    round(10) # apparently required to ensure first and last points coincident
+    matrix(nrow = n_sides + 1, ncol = 2)
   polygon <- corners %>% list() %>% st_polygon()
   if (n_sides == 4 || parity %% 2 == 1) {
     return(polygon %>% st_sfc(precision = PRECISION))
@@ -175,12 +177,13 @@ get_grid_cell_slices <- function(L = 1, W = 1, n_slices = 1, offset = c(0, 0)) {
     slices[[i]] <- (matrix(0.5 * c(-L, -sW, L, -sW, L, sW, -L, sW, -L, -sW),
                            5, 2, byrow = TRUE) %>%
                       list() %>%
-                      st_polygon()) +  # made into a polygon
-      c(0, slice_offsets[i]) +         # offset depending on number of slices
-      offset                           # offset to centre on the cell
+                      st_polygon()) %>%
+      translate_shape(c(0, slice_offsets[i])) %>%
+      translate_shape(offset)
   }
   slices %>% st_sfc(precision = PRECISION)
 }
+
 
 # Gets the cross grid cell strands running across a cell in the x direction
 # optionally rotated by orientation for a grid cell spacing S, total strand
@@ -201,15 +204,15 @@ get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
   # determine its x-y centre (which may not be where its centroid is)
   bb <- st_bbox(cell)
   cell_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
-  big_l <- ifelse(n == 4, 
-                  big_s, 
-                  big_s * 2 / sqrt(3) * 1.1) # * (3 - width) / 2)
+  big_l <- ifelse(n == 4, big_s, 
+                  big_s * 2 / sqrt(3) * (3 - width) / 2)
   get_grid_cell_slices(L = big_l, W = W, n_slices = n_slices, 
                        offset = strand_offset) %>%
-    translate_shape(-strand_offset + cell_offset) %>% # put back in place
-    st_intersection(cell) %>%                         # intersect with grid cell
-    st_set_precision(PRECISION) %>% 
-    rotate_shape(orientation)                         # rotate as requested
+    lapply(translate_shape, dxdy = -strand_offset + cell_offset) %>%
+    st_sfc(precision = PRECISION) %>% 
+    st_intersection(cell) %>%
+    lapply(rotate_shape, angle = orientation) %>%
+    st_sfc(precision = PRECISION)
 }
 
 
@@ -255,21 +258,21 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
       # mask poly progressively builds the union of all polygons
       # so far, to mask out invisible parts of those underneath
       mask_poly <- next_polys %>%
-        st_set_precision(PRECISION) %>%
-        st_union() %>% st_buffer(0)
+        st_sf(precision = PRECISION) %>% 
+        st_union()
     } else {
       all_polys <- add_shapes_to_list(all_polys, next_polys %>%
                                         st_snap(mask_poly, 1 / PRECISION) %>%
                                         st_difference(mask_poly))
       mask_poly <- mask_poly %>%
         st_union(next_polys %>%
-                   st_set_precision(PRECISION) %>%
-                   st_union() %>% st_buffer(0))
+                   st_sf(precision = PRECISION) %>%
+                   st_union())
     }
     # if the width is 1 then no lower polygons are visible
     if (width == 1) break # for efficiency?
   }
-  all_polys %>% st_sfc(precision = PRECISION) %>% remove_slivers()
+  all_polys %>% st_sfc(precision = PRECISION) # %>% remove_slivers()
 }
 
 # returns a rectangular polygon matching a provided bounding box
@@ -317,14 +320,17 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     # get the offset vector
     xy <- gg(coords)
     strand_order <- loom$orderings[[i]]    # order of strands from the top
-    bb_polys[[i]] <- get_grid_cell_polygon(
-      face_to_face_distance = spacing, n_sides = n_sides, parity = parity) + xy
+    bb_polys[[i]] <- 
+      get_grid_cell_polygon(face_to_face_distance = spacing, 
+                            n_sides = n_sides, parity = parity) %>%
+      translate_shape(xy)
     if (is.null(strand_order)) next        # nothing here so move on
     if (anyNA(strand_order)) {
       weave_polys <- append(weave_polys, 
                             list(get_grid_cell_polygon(
                               face_to_face_distance = spacing, 
-                              n_sides = n_sides, parity = parity) + xy))
+                              n_sides = n_sides, parity = parity) %>%
+                                translate_shape(xy)))
       strands <- c(strands, "NA")
       warning(paste("Impossible to determine strand order at:", 
                    paste(coords, collapse = ","), collapse = " "))
@@ -336,17 +342,21 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
                                            strand_order = strand_order,
                                            parity = parity,
                                            orientations = loom$orientations,
-                                           n_slices = n_slices) + xy
+                                           n_slices = n_slices)
     # add polygons one at a time to simplify later conversion to sfc
     # make up labels as a string in the order they'll be needed
+    # TODO: this isn't working right just yet - when n_slices > 1 it gets
+    # the segments that show in the lower layers wrong quite often - presumably
+    # get_visible_cell_strands() does not guarantee the returned order
     labels <- ids[strand_order] %>% paste0(collapse = "")
     for (p in seq_along(next_polys)) {
-      weave_polys <- append(weave_polys, list(next_polys[[p]]))
+      weave_polys <- append(weave_polys, 
+                            list(next_polys[[p]] %>% translate_shape(xy)))
       strands <- c(strands, stringr::str_sub(labels, p, p))
     }
   }
   tile <- bb_polys %>% sapply("[") %>%
-    st_sfc(precision = PRECISION) %>%        # convert to sfc
+    st_sfc(precision = PRECISION) %>%  # convert to sfc
     st_union() %>%                     # union
     st_sf() %>%
     st_set_crs(crs)                    # set CRS
@@ -361,6 +371,7 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       summarise() %>%
       st_buffer(-margin * spacing) %>% # include a negative margin
       st_set_crs(crs) %>%              # set CRS
+      st_snap(tile, 1 / PRECISION) %>%
       st_intersection(tile),           # cookie cut to tile
     tile = tile
   )
@@ -369,6 +380,7 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
 
 
 ## POSSIBLY NOT NEEDED
+## And almost certainly not reliable!
 remove_slivers <- function(shape_collection, min_frac = 0.01) {
   result <- list()
   for (shape in shape_collection) {
@@ -391,5 +403,7 @@ remove_slivers <- function(shape_collection, min_frac = 0.01) {
       result <- append(result, list(shape %>% st_sfc()))
     }
   }
-  return(result %>% sapply("[") %>% st_sfc(precision = PRECISION))
+  result %>% 
+    sapply("[") %>%
+    st_sfc(precision = PRECISION)
 }
