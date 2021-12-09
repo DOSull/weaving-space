@@ -1,6 +1,12 @@
 library(dplyr)
 library(sf)
 
+PRECISION <- 1e8
+
+apply_precision <- function(x, p = PRECISION) {
+  round(x * PRECISION) / PRECISION
+}
+
 # Returns a matrix of coordin_Ates and a list of the orderings
 # of axes at those sites
 matrices_as_loom <- function(...) {
@@ -80,7 +86,7 @@ grid_generator <- function(n_axes = 2, S = 1) {
   }
   basis <- matrix(c(dx, dy), nrow = 2, ncol = n_axes, byrow = TRUE)
   function(coords) {
-    return(t(basis %*% coords) %>% c())
+    return(t(basis %*% coords) %>% c() %>% apply_precision())
   }
 }
 
@@ -135,9 +141,9 @@ get_grid_cell_polygon <- function(face_to_face_distance = 1,
     round(10) # apparently required to ensure first and last points coincident
   polygon <- corners %>% list() %>% st_polygon()
   if (n_sides == 4 || parity %% 2 == 1) {
-    return(polygon %>% st_sfc(precision = 1e8))
+    return(polygon %>% st_sfc(precision = PRECISION))
   } else {
-    return(rotate_shape(polygon, 180) %>% st_sfc(precision = 1e8))
+    return(rotate_shape(polygon, 180) %>% st_sfc(precision = PRECISION))
   }
 }
 
@@ -173,7 +179,7 @@ get_grid_cell_slices <- function(L = 1, W = 1, n_slices = 1, offset = c(0, 0)) {
       c(0, slice_offsets[i]) +         # offset depending on number of slices
       offset                           # offset to centre on the cell
   }
-  slices %>% st_sfc(precision = 1e8)
+  slices %>% st_sfc(precision = PRECISION)
 }
 
 # Gets the cross grid cell strands running across a cell in the x direction
@@ -197,13 +203,12 @@ get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
   cell_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
   big_l <- ifelse(n == 4, 
                   big_s, 
-                  big_s * 2 / sqrt(3)) # * (3 - width) / 2)
+                  big_s * 2 / sqrt(3) * 1.1) # * (3 - width) / 2)
   get_grid_cell_slices(L = big_l, W = W, n_slices = n_slices, 
                        offset = strand_offset) %>%
     translate_shape(-strand_offset + cell_offset) %>% # put back in place
-    # st_snap(cell, 1e-3) %>%
     st_intersection(cell) %>%                         # intersect with grid cell
-    st_set_precision(1e8) %>% 
+    st_set_precision(PRECISION) %>% 
     rotate_shape(orientation)                         # rotate as requested
 }
 
@@ -230,7 +235,7 @@ get_all_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
 
     polys <- add_shapes_to_list(polys, next_strands)
   }
-  polys %>% st_sfc(precision = 1e8)
+  polys %>% st_sfc(precision = PRECISION)
 }
 
 # Returns the visible parts of the strands in a grid, given the spacing S
@@ -250,21 +255,21 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
       # mask poly progressively builds the union of all polygons
       # so far, to mask out invisible parts of those underneath
       mask_poly <- next_polys %>%
-        st_set_precision(1e8) %>%
+        st_set_precision(PRECISION) %>%
         st_union() %>% st_buffer(0)
     } else {
       all_polys <- add_shapes_to_list(all_polys, next_polys %>%
-                                        # st_snap(mask_poly, 1e-8) %>%
+                                        st_snap(mask_poly, 1 / PRECISION) %>%
                                         st_difference(mask_poly))
       mask_poly <- mask_poly %>%
         st_union(next_polys %>%
-                   st_set_precision(1e8) %>%
+                   st_set_precision(PRECISION) %>%
                    st_union() %>% st_buffer(0))
     }
     # if the width is 1 then no lower polygons are visible
     if (width == 1) break # for efficiency?
   }
-  all_polys %>% st_sfc(precision = 1e8)
+  all_polys %>% st_sfc(precision = PRECISION) %>% remove_slivers()
 }
 
 # returns a rectangular polygon matching a provided bounding box
@@ -272,7 +277,7 @@ sfc_from_bbox <- function(bb, crs) {
   st_polygon(
     list(matrix(c(bb$xmin, bb$ymin, bb$xmax, bb$ymin, bb$xmax, bb$ymax,
                   bb$xmin, bb$ymax, bb$xmin, bb$ymin), 5, 2, byrow = TRUE))) %>%
-    st_sfc(crs = crs, precision = 1e8)
+    st_sfc(crs = crs, precision = PRECISION)
 }
 
 
@@ -341,14 +346,14 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     }
   }
   tile <- bb_polys %>% sapply("[") %>%
-    st_sfc(precision = 1e8) %>%        # convert to sfc
+    st_sfc(precision = PRECISION) %>%        # convert to sfc
     st_union() %>%                     # union
     st_sf() %>%
     st_set_crs(crs)                    # set CRS
   list(
     weave_unit = weave_polys %>%
       st_as_sfc() %>%                  # convert to sfc
-      st_sf(precision = 1e8, 
+      st_sf(precision = PRECISION, 
             strand = strands) %>%      # add the strands information
       # filter(st_geometry_type(.) %in% c("POLYGON", "MULTIPOLYGON")) %>%
       filter(strand != "-") %>%        # remove any tagged missing
@@ -359,4 +364,32 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       st_intersection(tile),           # cookie cut to tile
     tile = tile
   )
+}
+
+
+
+## POSSIBLY NOT NEEDED
+remove_slivers <- function(shape_collection, min_frac = 0.01) {
+  result <- list()
+  for (shape in shape_collection) {
+    if (st_geometry_type(shape) == "MULTIPOLYGON") {
+      shapes <- shape %>% 
+        st_sfc() %>% 
+        st_cast("POLYGON")
+      areas <- shapes %>% st_area()
+      total_area <- sum(areas)
+      props_area <- areas / total_area
+      large_areas <- which(props_area > min_frac)
+      if (length(large_areas) > 1) {
+        result <- append(result, list(shapes[large_areas] %>% 
+                                        st_cast("MULTIPOLYGON")))
+      } else {
+        result <- append(result, list(shapes[large_areas] %>% 
+                                        st_cast("POLYGON")))
+      }
+    } else if (st_geometry_type(shape) == "POLYGON") {
+      result <- append(result, list(shape %>% st_sfc()))
+    }
+  }
+  return(result %>% sapply("[") %>% st_sfc(precision = PRECISION))
 }
