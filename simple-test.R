@@ -8,25 +8,18 @@ source("weave-map.R")
 
 ak <- st_read("data/vax-auckland-20211006.gpkg")
 
-get_biaxial_weave_unit(spacing = 250, aspect = 0.8)$primitive %>% 
-  plot(border = NA)
-get_biaxial_weave_unit(spacing = 250, aspect = 0.8, strands = "abc|de")$primitive %>% 
-  plot(border = NA)
-get_biaxial_weave_unit(spacing = 250, aspect = 0.8, strands = "a-(bc)|d-e")$primitive %>% 
-  plot(border = NA)
-get_biaxial_weave_unit(spacing = 250, aspect = 0.8, 
-                       type = "twill", strands = "a-b|c-d")$primitive %>% 
-  plot(border = NA)
-get_biaxial_weave_unit(spacing = 250, aspect = 0.8, 
-                       type = "basket", strands = "ab|cd")$primitive %>% 
-  plot(border = NA)
+get_weave_unit(spacing = 250, aspect = 0.8) %>% plot_unit()
+get_weave_unit(spacing = 250, aspect = 0.8, strands = "abc|de") %>% plot_unit()
+get_weave_unit(spacing = 250, aspect = 0.8, strands = "a-(bc)|d-e") %>% plot_unit()
+get_weave_unit(spacing = 250, aspect = 0.8, type = "twill", strands = "a-b|c-d") %>% plot_unit()
+get_weave_unit(spacing = 250, aspect = 0.8, type = "basket", strands = "ab|cd") %>% plot_unit()
 
 # weird not weave weave
-bi_weave <- get_biaxial_weave_unit(strands = "(ab)|(cd)",
-                                   spacing = 100, aspect = 0.7, margin = -0.2, 
-                                   crs = 2193)
+bi_weave <- get_weave_unit(strands = "(ab)|(cd)",
+                           spacing = 200, aspect = 0.7, margin = -0.2, 
+                           crs = 2193)
 tmap_mode("plot")
-bi_weave$primitive %>% tm_shape() + tm_fill(col = "strand", alpha = 0.75)
+bi_weave$weave_unit %>% tm_shape() + tm_fill(col = "strand", alpha = 0.75)
 w1 <- weave_layer(bi_weave, ak, angle = 30)
 
 layers <- w1 %>% split(as.factor(w1$strand))
@@ -47,9 +40,9 @@ tm_shape(layers$a, name = "Pākehā") +
   
 
 tmap_mode("plot")
-tri_weave <- get_triaxial_weave_unit(spacing = 100, type = "cube", strands = "a-b|c-d|e-f",
-                                     aspect = 1, crs = 2193)
-tm_shape(tri_weave$primitive) +
+tri_weave <- get_weave_unit(spacing = 100, type = "cube", strands = "a-b|c-d|e-f",
+                            aspect = 0.8, crs = 2193)
+tm_shape(tri_weave$weave_unit) +
   tm_fill(col = "strand") +
   tm_shape(tri_weave$tile) +
   tm_borders(col = "red")

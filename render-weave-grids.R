@@ -1,7 +1,7 @@
 library(dplyr)
 library(sf)
 
-PRECISION <- 1e8
+PRECISION <- 1e7
 
 apply_precision <- function(x, p = PRECISION) {
   round(x * PRECISION) / PRECISION
@@ -87,7 +87,7 @@ grid_generator <- function(n_axes = 2, S = 1) {
   }
   basis <- matrix(c(dx, dy), nrow = 2, ncol = n_axes, byrow = TRUE)
   function(coords) {
-    t(basis %*% coords) %>% c()
+    t(basis %*% coords) %>% c() %>% apply_precision()
   }
 }
 
@@ -210,7 +210,7 @@ get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
                        offset = strand_offset) %>%
     lapply(translate_shape, dxdy = -strand_offset + cell_offset) %>%
     st_sfc(precision = PRECISION) %>% 
-    st_intersection(cell) %>%
+    st_intersection(expanded_cell) %>%
     lapply(rotate_shape, angle = orientation) %>%
     st_sfc(precision = PRECISION)
 }
@@ -272,7 +272,7 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
     # if the width is 1 then no lower polygons are visible
     if (width == 1) break # for efficiency?
   }
-  all_polys %>% st_sfc(precision = PRECISION) # %>% remove_slivers()
+  all_polys %>% st_sfc(precision = PRECISION)
 }
 
 # returns a rectangular polygon matching a provided bounding box
@@ -363,15 +363,14 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
   list(
     weave_unit = weave_polys %>%
       st_as_sfc() %>%                  # convert to sfc
-      st_sf(precision = PRECISION, 
-            strand = strands) %>%      # add the strands information
-      # filter(st_geometry_type(.) %in% c("POLYGON", "MULTIPOLYGON")) %>%
+      st_sf(precision = PRECISION) %>% 
+      mutate(strand = strands) %>%    # add the strands information
+      # filter(st_geometry_type(geometry) %in% c("POLYGON", "MULTIPOLYGON")) %>%
       filter(strand != "-") %>%        # remove any tagged missing
       group_by(strand) %>%             # dissolve
       summarise() %>%
       st_buffer(-margin * spacing) %>% # include a negative margin
       st_set_crs(crs) %>%              # set CRS
-      st_snap(tile, 1 / PRECISION) %>%
       st_intersection(tile),           # cookie cut to tile
     tile = tile
   )
@@ -380,30 +379,30 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
 
 
 ## POSSIBLY NOT NEEDED
-## And almost certainly not reliable!
+## And almost certainly not reliable and needs to be rewritten
 remove_slivers <- function(shape_collection, min_frac = 0.01) {
   result <- list()
   for (shape in shape_collection) {
     if (st_geometry_type(shape) == "MULTIPOLYGON") {
-      shapes <- shape %>% 
-        st_sfc() %>% 
+      shapes <- shape %>%
+        st_sfc() %>%
         st_cast("POLYGON")
       areas <- shapes %>% st_area()
       total_area <- sum(areas)
       props_area <- areas / total_area
       large_areas <- which(props_area > min_frac)
       if (length(large_areas) > 1) {
-        result <- append(result, list(shapes[large_areas] %>% 
+        result <- append(result, list(shapes[large_areas] %>%
                                         st_cast("MULTIPOLYGON")))
       } else {
-        result <- append(result, list(shapes[large_areas] %>% 
+        result <- append(result, list(shapes[large_areas] %>%
                                         st_cast("POLYGON")))
       }
     } else if (st_geometry_type(shape) == "POLYGON") {
       result <- append(result, list(shape %>% st_sfc()))
     }
   }
-  result %>% 
+  result %>%
     sapply("[") %>%
     st_sfc(precision = PRECISION)
 }
