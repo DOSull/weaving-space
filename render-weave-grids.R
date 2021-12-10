@@ -361,8 +361,7 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     as("Spatial") %>%                          # ms_dissolve - because sf 
     rmapshaper::ms_dissolve() %>%              # group_by sucks 
     st_as_sf() %>%                             # back to sf
-    st_set_precision(PRECISION) %>%            # precision
-    st_set_crs(crs)                            # set CRS
+    st_set_precision(PRECISION)
   list(
     weave_unit = weave_polys %>%
       st_as_sfc() %>%                          # convert to sfc
@@ -373,10 +372,11 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       rmapshaper::ms_dissolve(field = "strand") %>%
       st_as_sf() %>%                           # back to sf
       st_buffer(-margin * spacing) %>%         # include a negative margin
-      st_set_crs(crs) %>%                      # set CRS
       st_intersection(tile) %>%                # cookie cut to tile
-      st_set_precision(PRECISION),           
-    tile = tile
+      st_set_precision(PRECISION) %>%
+      st_set_crs(),                            # set CRS
+    tile = tile %>%
+      st_set_crs(crs)                          # set CRS
   )
 }
 
