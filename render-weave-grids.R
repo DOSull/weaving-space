@@ -1,14 +1,14 @@
 library(dplyr)
 library(sf)
 
-PRECISION <- 1e7
+PRECISION <- 1e8
 
 apply_precision <- function(x, p = PRECISION) {
   round(x * PRECISION) / PRECISION
 }
 
 
-# Returns a matrix of coordin_Ates and a list of the orderings
+# Returns a matrix of coordinates and a list of the orderings
 # of axes at those sites
 matrices_as_loom <- function(...) {
   matrices <- list(...)
@@ -87,7 +87,7 @@ grid_generator <- function(n_axes = 2, S = 1) {
   }
   basis <- matrix(c(dx, dy), nrow = 2, ncol = n_axes, byrow = TRUE)
   function(coords) {
-    t(basis %*% coords) %>% c() %>% apply_precision()
+    t(basis %*% coords) %>% c()
   }
 }
 
@@ -319,12 +319,12 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     }
     # get the offset vector
     xy <- gg(coords)
-    strand_order <- loom$orderings[[i]]    # order of strands from the top
+    strand_order <- loom$orderings[[i]]      # order of strands from the top
     bb_polys[[i]] <- 
       get_grid_cell_polygon(face_to_face_distance = spacing, 
                             n_sides = n_sides, parity = parity) %>%
       translate_shape(xy)
-    if (is.null(strand_order)) next        # nothing here so move on
+    if (is.null(strand_order)) next          # nothing here so move on
     if (anyNA(strand_order)) {
       weave_polys <- append(weave_polys, 
                             list(get_grid_cell_polygon(
@@ -355,54 +355,28 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       strands <- c(strands, stringr::str_sub(labels, p, p))
     }
   }
-  tile <- bb_polys %>% sapply("[") %>%
-    st_sfc(precision = PRECISION) %>%  # convert to sfc
-    st_union() %>%                     # union
-    st_sf() %>%
-    st_set_crs(crs)                    # set CRS
+  tile <- bb_polys %>% 
+    sapply("[") %>%                            # convert to sfc then to sp
+    st_sfc() %>%                               # so that we can use rmapshaper::  
+    as("Spatial") %>%                          # ms_dissolve - because sf 
+    rmapshaper::ms_dissolve() %>%              # group_by sucks 
+    st_as_sf() %>%                             # back to sf
+    st_set_precision(PRECISION) %>%            # precision
+    st_set_crs(crs)                            # set CRS
   list(
     weave_unit = weave_polys %>%
-      st_as_sfc() %>%                  # convert to sfc
-      st_sf(precision = PRECISION) %>% 
-      mutate(strand = strands) %>%    # add the strands information
-      # filter(st_geometry_type(geometry) %in% c("POLYGON", "MULTIPOLYGON")) %>%
-      filter(strand != "-") %>%        # remove any tagged missing
-      group_by(strand) %>%             # dissolve
-      summarise() %>%
-      st_buffer(-margin * spacing) %>% # include a negative margin
-      st_set_crs(crs) %>%              # set CRS
-      st_intersection(tile),           # cookie cut to tile
+      st_as_sfc() %>%                          # convert to sfc
+      st_sf() %>%
+      mutate(strand = strands) %>%             # add the strands information
+      filter(strand != "-") %>%                # remove any tagged missing
+      as("Spatial") %>%                        # convert to sp for rmapshaper 
+      rmapshaper::ms_dissolve(field = "strand") %>%
+      st_as_sf() %>%                           # back to sf
+      st_buffer(-margin * spacing) %>%         # include a negative margin
+      st_set_crs(crs) %>%                      # set CRS
+      st_intersection(tile) %>%                # cookie cut to tile
+      st_set_precision(PRECISION),           
     tile = tile
   )
 }
 
-
-
-## POSSIBLY NOT NEEDED
-## And almost certainly not reliable and needs to be rewritten
-remove_slivers <- function(shape_collection, min_frac = 0.01) {
-  result <- list()
-  for (shape in shape_collection) {
-    if (st_geometry_type(shape) == "MULTIPOLYGON") {
-      shapes <- shape %>%
-        st_sfc() %>%
-        st_cast("POLYGON")
-      areas <- shapes %>% st_area()
-      total_area <- sum(areas)
-      props_area <- areas / total_area
-      large_areas <- which(props_area > min_frac)
-      if (length(large_areas) > 1) {
-        result <- append(result, list(shapes[large_areas] %>%
-                                        st_cast("MULTIPOLYGON")))
-      } else {
-        result <- append(result, list(shapes[large_areas] %>%
-                                        st_cast("POLYGON")))
-      }
-    } else if (st_geometry_type(shape) == "POLYGON") {
-      result <- append(result, list(shape %>% st_sfc()))
-    }
-  }
-  result %>%
-    sapply("[") %>%
-    st_sfc(precision = PRECISION)
-}

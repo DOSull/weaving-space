@@ -40,14 +40,15 @@ tm_shape(layers$a, name = "Pākehā") +
   
 
 tmap_mode("plot")
-tri_weave <- get_weave_unit(spacing = 100, type = "cube", strands = "a-b|c-d|e-f",
+tri_weave <- get_weave_unit(spacing = 200, type = "cube", strands = "a-b|c-d|e-f",
                             aspect = 0.8, crs = 2193)
 tm_shape(tri_weave$weave_unit) +
   tm_fill(col = "strand") +
   tm_shape(tri_weave$tile) +
   tm_borders(col = "red")
 
-w2 <- weave_layer(tri_weave, ak, angle = 15)
+w2 <- weave_layer(tri_weave, ak, angle = 15) %>%
+  st_make_valid()
 tm_shape(w2) + 
   tm_fill(col = "strand", style = "cat")
 
