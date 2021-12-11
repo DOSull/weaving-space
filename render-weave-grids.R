@@ -374,7 +374,7 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       st_buffer(-margin * spacing) %>%         # include a negative margin
       st_intersection(tile) %>%                # cookie cut to tile
       st_set_precision(PRECISION) %>%
-      st_set_crs(),                            # set CRS
+      st_set_crs(crs),                            # set CRS
     tile = tile %>%
       st_set_crs(crs)                          # set CRS
   )
