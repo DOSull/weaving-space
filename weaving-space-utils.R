@@ -199,11 +199,12 @@ plot_unit <- function(unit, bg = "white") {
   } else {
     main <- "Different colours can be split on the strand variable"
   }
+  unit$tile %>%
+    plot(border = "red", col = rgb(0, 0, 0, 0,5), lwd = 3, lty = 2, 
+         reset = FALSE, main = main)
   unit$weave_unit %>% 
     filter(strand != "NA") %>% 
-    plot(lwd = 0.5, extent = unit$tile, bg = bg, reset = FALSE, main = main)
-  unit$tile %>%
-    plot(add = TRUE, border = "red", col = rgb(0, 0, 0, 0,5), lwd = 2, lty = 2)
+    plot(add = TRUE, lwd = 0.5, bg = bg)
   unit$weave_unit %>% 
     filter(strand == "NA") %>%
     plot(add = TRUE, border = "black", col = rgb(1, 0, 0, 0.75))

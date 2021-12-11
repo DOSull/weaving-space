@@ -325,12 +325,13 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
                             n_sides = n_sides, parity = parity) %>%
       translate_shape(xy)
     if (is.null(strand_order)) next          # nothing here so move on
-    if (anyNA(strand_order)) {
-      weave_polys <- append(weave_polys, 
-                            list(get_grid_cell_polygon(
-                              face_to_face_distance = spacing, 
-                              n_sides = n_sides, parity = parity) %>%
-                                translate_shape(xy)))
+    if (anyNA(strand_order)) {               # NA areas to add
+      weave_polys <- 
+        add_shapes_to_list(weave_polys, 
+                           get_grid_cell_polygon(
+                             face_to_face_distance = spacing, 
+                             n_sides = n_sides, parity = parity) %>% 
+                             translate_shape(xy))
       strands <- c(strands, "NA")
       warning(paste("Impossible to determine strand order at:", 
                    paste(coords, collapse = ","), collapse = " "))
