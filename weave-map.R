@@ -8,7 +8,8 @@ get_centres <- function(region, tile, hexes) {
   bb <- st_bbox(tile)
   w <- bb$xmax - bb$xmin
   h <- bb$ymax - bb$ymin
-  region_b <- region %>% st_union() %>% st_buffer(max(w, h))
+  diagonal <- sqrt(w^2 + h^2)
+  region_b <- region %>% st_union() %>% st_buffer(diagonal)
   if (hexes) {
     pts <- region_b %>% st_make_grid(cellsize = h, flat_topped = TRUE,
                                      what = "centers", square = FALSE)
