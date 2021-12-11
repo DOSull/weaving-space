@@ -73,6 +73,7 @@ weave_layer <- function(
     bind_rows() %>%
     mutate(strand_id = row_number()) %>%
     st_set_crs(st_crs(region)) %>%
+    rmapshaper::ms_clip(to_tile, remove_slivers = TRUE) %>%
     st_intersection(to_tile)
 
   if (length(region_cols_to_summarize_by_strand) > 0) {
