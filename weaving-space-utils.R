@@ -19,6 +19,7 @@ get_weave_unit <- function(type = "plain", spacing = 100, aspect = 1,
                                    strands = strands, crs = crs,
                                    tie_up = tie_up, tr = tr, th = th)
   }
+  # return(unit)
   list(
     weave_unit = unit$weave_unit,
     transform = wk::wk_affine_identity(),

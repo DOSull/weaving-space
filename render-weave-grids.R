@@ -283,6 +283,12 @@ sfc_from_bbox <- function(bb, crs) {
     st_sfc(crs = crs, precision = PRECISION)
 }
 
+# determines translation vector required to centre shape on centre
+centre_offset <- function(shape, centre = c(0, 0)) {
+  bb <- st_bbox(shape)
+  centre - c((bb$xmax + bb$xmin) / 2, (bb$ymax + bb$ymin) / 2)
+}
+
 
 # builds the sf associate with a given weave supplied as 'loom' which is a list
 # containing the coordin_Ates in an appropriate grid (Cartesian or triangular)
@@ -363,9 +369,14 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     rmapshaper::ms_dissolve() %>%              # group_by sucks 
     st_as_sf() %>%                             # back to sf
     st_set_precision(PRECISION)
+  tile_centre_offset <- centre_offset(tile)
+  tile <- wk::wk_transform(tile, wk::wk_affine_translate(tile_centre_offset[1],
+                                                         tile_centre_offset[2]))
   list(
     weave_unit = weave_polys %>%
       st_as_sfc() %>%                          # convert to sfc
+      wk::wk_transform(wk::wk_affine_translate(tile_centre_offset[1],
+                                               tile_centre_offset[2])) %>%
       st_sf() %>%
       mutate(strand = strands) %>%             # add the strands information
       filter(strand != "-") %>%                # remove any tagged missing
