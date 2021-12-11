@@ -1,6 +1,8 @@
 require(dplyr)
 require(sf)
 
+sf_use_s2(FALSE)
+
 ## ---- UTILITY FUNCTIONS ----
 
 # Functions that can be used to generate sf data 'weave units' i.e. a

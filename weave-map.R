@@ -1,5 +1,8 @@
 require(sf)
 
+sf_use_s2(FALSE)
+wPRECISION <- 1e8
+
 hex_types <- c("hex", "cube")
 
 # delegates creation of tile offsets filling the region to
@@ -58,13 +61,16 @@ weave_layer <- function(
   to_tile <- region  %>%
     sf_transform(wk::wk_affine_invert(transform)) %>%
     sf_rotate(-angle, cx, cy) %>%
-    sf_transform(weave_unit$transform) %>%
-    dplyr::mutate(to_tile_id = row_number())
+    # sf_transform(weave_unit$transform) %>%
+    dplyr::mutate(to_tile_id = row_number()) %>%
+    st_set_precision(wPRECISION)
 
-  the_unit <- weave_unit$weave_unit %>%
-    sf_transform(weave_unit$transform)
-  the_tile <- tile %>% 
-    sf_transform(weave_unit$transform)
+  the_unit <- weave_unit$weave_unit 
+  # %>%
+  #   sf_transform(weave_unit$transform)
+  the_tile <- tile 
+  # %>% 
+  #   sf_transform(weave_unit$transform)
 
   pts <- get_centres(to_tile, tile = the_tile,
                      hex = weave_unit$type %in% hex_types)
@@ -73,7 +79,9 @@ weave_layer <- function(
     bind_rows() %>%
     mutate(strand_id = row_number()) %>%
     st_set_crs(st_crs(region)) %>%
-    rmapshaper::ms_clip(to_tile, remove_slivers = TRUE) %>%
+    # rmapshaper::ms_clip(to_tile, remove_slivers = TRUE) %>%
+    # st_snap(to_tile, 10) %>%
+    st_set_precision(wPRECISION) %>%
     st_intersection(to_tile)
 
   if (length(region_cols_to_summarize_by_strand) > 0) {

@@ -1,5 +1,7 @@
 require(sf)
 
+sf_use_s2(FALSE)
+
 # Functions to generate sf datasets that are tileable to produce the
 # appearance of a woven surface, with three directions of weaving thread.
 

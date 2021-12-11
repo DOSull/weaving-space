@@ -1,5 +1,7 @@
 require(sf)
 
+sf_use_s2(FALSE)
+
 S3 <- sqrt(3)
 
 get_weave_unit <- function(type = "plain", spacing = 100, aspect = 1, 

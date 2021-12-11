@@ -6,6 +6,8 @@ source("weaving-space-utils.R")
 source("render-weave-grids.R")
 source("weave-map.R")
 
+sf_use_s2(FALSE)
+
 ak <- st_read("data/vax-auckland-20211006.gpkg")
 
 get_weave_unit(spacing = 250, aspect = 0.8) %>% plot_unit()
@@ -14,10 +16,8 @@ get_weave_unit(spacing = 250, aspect = 0.8, strands = "a-(bc)|d-e") %>% plot_uni
 get_weave_unit(spacing = 250, aspect = 0.8, type = "twill", strands = "a-b|c-d") %>% plot_unit()
 get_weave_unit(spacing = 250, aspect = 0.8, type = "basket", strands = "ab|cd") %>% plot_unit()
 
-# weird not weave weave
-bi_weave <- get_weave_unit(strands = "(ab)|(cd)",
-                           spacing = 200, aspect = 0.7, margin = -0.2, 
-                           crs = 2193)
+bi_weave <- get_weave_unit(strands = "(ab)|(cd)", spacing = 200, 
+                           aspect = 0.7, crs = 2193)
 tmap_mode("plot")
 bi_weave$weave_unit %>% tm_shape() + tm_fill(col = "strand", alpha = 0.75)
 w1 <- weave_layer(bi_weave, ak, angle = 30)
