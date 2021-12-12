@@ -146,43 +146,7 @@ get_grid_cell_polygon <- function(face_to_face_distance = 1,
   if (n_sides == 4 || parity %% 2 == 1) {
     return(polygon %>% st_sfc(precision = gPRECISION))
   } else {
-    return(rotate_shape(polygon, 180) %>% st_sfc(precision = gPRECISION))
-  }
-}
-
-# Returns 'slices' across a grid cell (i.e. horizontally) centered vertically
-# relative to the cell, ie
-#
-#            /\
-#           /  \
-#   +------------------+
-#   |     /      \     |
-#   +------------------+
-#   |   /          \   |
-#   +------------------+
-#     /              \
-#    /________________\
-#
-# Horizontal extent is given by L, total width of the strips is W, they are
-# 'sliced' horizontally in n_equal slices. An offset should be provided to
-# center the slices vertically on the vertical extent of the cell (not its)
-# centroid. This is supplied from get_cell_strands()
-get_grid_cell_slices <- function(L = 1, W = 1, n_slices = 1, offset = c(0, 0)) {
-  sW <- W / n_slices # slice widths
-  # odd numbers from 1 to 2n-1
-  odd_numbers <- seq(1, (2 * n_slices - 1), 2)
-  slice_offsets <-  sW * odd_numbers / 2 - W / 2
-  slices <- list()
-  for (i in seq_along(slice_offsets)) {
-    # L by W rectangle centred at 0,0
-    slices[[i]] <- (matrix(0.5 * c(-L, -sW, L, -sW, L, sW, -L, sW, -L, -sW),
-                           5, 2, byrow = TRUE) %>%
-                      list() %>%
-                      st_polygon()) %>%
-      translate_shape(c(0, slice_offsets[i])) %>%
-      translate_shape(offset)
-  }
-  slices %>% st_sfc(precision = gPRECISION)
+    return(rotate_shape(polygon, 180) # %>% st_sfc(precision = gPRECISION)
 }
 
 
@@ -210,10 +174,10 @@ get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
   get_grid_cell_slices(L = big_l, W = W, n_slices = n_slices, 
                        offset = strand_offset) %>%
     lapply(translate_shape, dxdy = -strand_offset + cell_offset) %>%
-    st_sfc(precision = gPRECISION) %>% 
+    st_sfc() %>% # precision = gPRECISION) %>%
     st_intersection(expanded_cell) %>%
     lapply(rotate_shape, angle = orientation) %>%
-    st_sfc(precision = gPRECISION)
+    st_sfc() # precision = gPRECISION)
 }
 
 
@@ -259,7 +223,7 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
       # mask poly progressively builds the union of all polygons
       # so far, to mask out invisible parts of those underneath
       mask_poly <- next_polys %>%
-        st_sf(precision = gPRECISION) %>% 
+        # st_sf(precision = gPRECISION) %>% 
         st_union()
     } else {
       all_polys <- add_shapes_to_list(all_polys, next_polys %>%
@@ -267,13 +231,13 @@ get_visible_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
                                         st_difference(mask_poly))
       mask_poly <- mask_poly %>%
         st_union(next_polys %>%
-                   st_sf(precision = gPRECISION) %>%
+                   # st_sf(precision = gPRECISION) %>%
                    st_union())
     }
     # if the width is 1 then no lower polygons are visible
     if (width == 1) break # for efficiency?
   }
-  all_polys %>% st_sfc(precision = gPRECISION)
+  all_polys # %>% st_sfc(precision = gPRECISION)
 }
 
 # returns a rectangular polygon matching a provided bounding box
@@ -368,8 +332,9 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     st_sfc() %>%                               # so that we can use rmapshaper::  
     as("Spatial") %>%                          # ms_dissolve - because sf 
     rmapshaper::ms_dissolve() %>%              # group_by sucks 
-    st_as_sf() %>%                             # back to sf
-    st_set_precision(gPRECISION)
+    st_as_sf() 
+  # %>%                             # back to sf
+  #   st_set_precision(gPRECISION)
   tile_centre_offset <- centre_offset(tile)
   tile <- wk::wk_transform(tile, wk::wk_affine_translate(tile_centre_offset[1],
                                                          tile_centre_offset[2]))
@@ -386,7 +351,7 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       st_as_sf() %>%                           # back to sf
       st_buffer(-margin * spacing) %>%         # include a negative margin
       st_intersection(tile) %>%                # cookie cut to tile
-      st_set_precision(gPRECISION) %>%
+      # st_set_precision(gPRECISION) %>%
       st_set_crs(crs),                            # set CRS
     tile = tile %>%
       st_set_crs(crs)                          # set CRS
