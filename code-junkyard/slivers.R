@@ -14,12 +14,14 @@ unit <- get_weave_unit(type = "twill",
                        crs = st_crs(bc))
 w_bc <- weave_layer(unit, bc, angle = 30)
 fabric <- w_bc %>% 
-  st_union() %>% 
+  st_union() %>%
   st_buffer(0.1) %>%
   st_buffer(-0.1)
-squares <- st_difference(bc, fabric) # this fails
+squares <- st_difference(st_combine(bc) %>% 
+                           st_buffer(-1), 
+                         fabric)
 
-st_write(w_bc, "data/weave_bc.gpkg", delete_dsn = TRUE)
+sst_write(w_bc, "data/weave_bc.gpkg", delete_dsn = TRUE)
 st_write(fabric, "data/fabric.gpkg", delete_dsn = TRUE)
 st_write(squares, "data/squares.gpkg", delete_dsn = TRUE)
 
