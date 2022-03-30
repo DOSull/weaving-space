@@ -4,8 +4,11 @@
 from types import new_class
 import numpy as np
 from dataclasses import dataclass
-import shapely.affinity
-import shapely.geometry
+
+from shapely.affinity import translate
+from shapely.affinity import rotate
+from shapely.geometry import Polygon
+from shapely.geometry import MultiPolygon
 
 def apply_precision(x, p):
   return np.round(x * p) / p
@@ -31,7 +34,8 @@ class Loom:
   
   def __init__(self, matrices):
     m = matrices[0]
-    self.indices = [(i, j) for i in range(m.shape[0]) for j in range(m.shape[1])]
+    self.indices = [(i, j) for i in range(m.shape[0]) \
+                           for j in range(m.shape[1])]
     self.orderings = [decode_biaxial_to_order(m[ij]) for ij in self.indices]
     self.parity = None
     self.orientations = (0, -90)
@@ -65,11 +69,11 @@ def grid_generator(n_axes = 2, spacing = 1):
 
 # wrappers for shapely transforms to help with refactor into python
 def rotate_shape(shape, angle, centre = (0, 0)):
-  return shapely.affinity.rotate(shape, angle, centre)
+  return rotate(shape, angle, origin = centre)
 
 
 def translate_shape(shape, dxdy = (0, 0)):
-  return shapely.affinity.translate(shape, dxdy[0], dxdy[1])
+  return translate(shape, dxdy[0], dxdy[1])
 
 
 # Returns a grid cell polygon centred at (0, 0) with
@@ -99,13 +103,14 @@ def get_grid_cell_polygon(face_to_face_distance = 1, n_sides = 4, parity = 0):
     R = face_to_face_distance / (1 + np.cos(np.pi / n_sides))
   # determine angles
   # we start at 6 o'clock (3pi/2), then add (pi/n), then add n more 2pi/n steps
-  angles = [3 * np.pi / 2 + np.pi / n_sides + i / n_sides * 2 * np.pi for i in range(n_sides)]
+  angles = [3 * np.pi / 2 + np.pi / n_sides + 
+                i / n_sides * 2 * np.pi for i in range(n_sides)]
   corners = [(R * np.cos(a), R * np.sin(a)) for a in angles]
-  polygon = shapely.geometry.Polygon(corners)
+  polygon = Polygon(corners)
   if n_sides == 4 or parity % 2 == 1:
     return polygon
   else:
-    return shapely.affinity.rotate(polygon, 180, (0, 0))
+    return rotate(polygon, 180, (0, 0))
 
 
 # Returns 'slices' across a grid cell (i.e. horizontally) centered vertically
@@ -130,11 +135,11 @@ def get_grid_cell_slices(L = 1, W = 1, n_slices = 1, offset = (0, 0)):
   odd_numbers = [x for x in range(1, 2 * n_slices, 2)]
   slice_offsets = [sW * o / 2 - W / 2 for o in odd_numbers]
   slices = []
-  for sO in slice_offsets:
-    slice = shapely.geometry.Polygon([(0, 0), (L, 0), (L, sW), (0, sW)])
-    slice = shapely.affinity.translate(slice, -L / 2, -sW / 2)
-    slice = shapely.affinity.translate(slice, 0, sO)
-    slice = shapely.affinity.translate(slice, offset[0], offset[1])
+  for o in slice_offsets:
+    slice = Polygon([(0, 0), (L, 0), (L, sW), (0, sW)])
+    slice = translate(slice, -L / 2, -sW / 2)
+    slice = translate(slice, 0, o)
+    slice = translate(slice, offset[0], offset[1])
     slices.append(slice)
   return slices
 
@@ -142,22 +147,23 @@ def get_grid_cell_slices(L = 1, W = 1, n_slices = 1, offset = (0, 0)):
 # Gets the cross grid cell strands running across a cell in the x direction
 # optionally rotated by orientation for a grid cell spacing S, total strand
 # width width (as a fraction of S), sliced into n_slices along its length
-def get_cell_strands(n = 4, S = 1, width = 1, parity = 0, orientation = 0, n_slices = 1):
-  W = width * S
+def get_cell_strands(n = 4, S = 1, width = 1, parity = 0, 
+                      orientation = 0, n_slices = 1):
+  slice_w = width * S
   # make expanded cell that reaches to the strands in neighbours
   big_s = S + S * (1 - width) if n == 4 else S * (5 - 3 * width) / 2
-  expanded_cell = get_grid_cell_polygon(face_to_face_distance = big_s, n_sides = n, parity = parity)
+  expanded_cell = get_grid_cell_polygon(big_s, n, parity)
   strand_offset = expanded_cell.envelope.centroid.coords[0]
-  cell = get_grid_cell_polygon(face_to_face_distance = S, n_sides = n, parity = parity)
+  cell = get_grid_cell_polygon(S, n, parity)
   cell_offset = cell.envelope.centroid.coords[0]
   big_l = big_s if n == 4 else big_s * 2 / np.sqrt(3) * (3 - width) / 2
-  strands = shapely.geometry.MultiPolygon(
-    get_grid_cell_slices(L = big_l, W = W, n_slices = n_slices, offset = strand_offset))
-  strands = shapely.affinity.translate(strands, -strand_offset[0], -strand_offset[1])
-  strands = shapely.affinity.translate(strands, cell_offset[0], cell_offset[1])
-  strands = shapely.geometry.MultiPolygon([s.intersection(expanded_cell) for s in strands.geoms])
-  strands = shapely.affinity.rotate(strands, orientation)
+  strands = MultiPolygon(get_grid_cell_slices(big_l, slice_w, n_slices, strand_offset))
+  strands = translate(strands, -strand_offset[0], -strand_offset[1])
+  strands = translate(strands, cell_offset[0], cell_offset[1])
+  strands = MultiPolygon([expanded_cell.intersection(s) for s in strands.geoms])
+  strands = rotate(strands, orientation, (0, 0))
   return strands.geoms
+
 
 # get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
 #                              orientation = 0, n_slices = 1) {
@@ -185,3 +191,30 @@ def get_cell_strands(n = 4, S = 1, width = 1, parity = 0, orientation = 0, n_sli
 #     lapply(rotate_shape, angle = orientation) %>%
 #     st_sfc() #precision = gPRECISION)
 # }
+
+
+
+# Essentially a wrapper for get_cell_strands that returns the strands in all
+# the requested cross directions
+def get_all_cell_strands(n = 4, S = 1, width = 1, parity = 0, 
+                          orientations = (0, -90), n_slices = (1, 1)):
+  polys = []
+  for o, ns in zip(orientations, n_slices):
+    next_polys = get_cell_strands(n, S, width, parity, o, ns)
+    polys.extend(next_polys)
+  return polys  
+
+# get_all_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
+#                                  orientations = c(0, 90),
+#                                  n_slices = rep(1, length(orientations))) {
+#   polys <- list()
+#   for (i in seq_along(orientations)) {
+#     next_strands <- get_cell_strands(n = n, S = S, width = width,
+#                                      parity = parity,
+#                                      orientation = orientations[i],
+#                                      n_slices = n_slices[i])
+#     polys <- add_shapes_to_list(polys, next_strands)
+#   }
+#   polys %>% st_sfc() #precision = gPRECISION)
+# }
+
