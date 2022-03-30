@@ -53,6 +53,7 @@ tm_shape(w2) +
   tm_fill(col = "strand", style = "cat")
 
 layers <- w2 %>% split(as.factor(w2$strand))
+tmap_mode("view")
 tm_shape(layers$a, name = "Pākehā") +
   tm_fill(col = "pEuropean", palette = "Greys", title = "%Pākehā") +
   tm_shape(layers$b, name = "Māori") + 

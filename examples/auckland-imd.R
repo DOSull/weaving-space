@@ -10,9 +10,9 @@ library(dplyr)     # data wrangling
 ak <- st_read("data/imd-auckland-2018.gpkg")
 ak %>% plot()
 
-weave_unit <- get_biaxial_weave_unit(spacing = 50, aspect = 0.8, type = "this", n = 3,
-                                     strands = "abc|defg", crs = 2193)
-weave_unit$primitive %>% plot()
+weave_unit <- get_weave_unit(spacing = 50, aspect = 0.8, type = "twill", n = 3,
+                             strands = "abc|defg", crs = 2193)
+weave_unit %>% plot_unit()
 
 weave <- weave_layer(weave_unit, ak, angle = 30)
 # weave[, 1] %>% plot()

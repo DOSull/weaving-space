@@ -292,8 +292,8 @@ centre_offset <- function(shape, centre = c(0, 0)) {
 
 
 # builds the sf associate with a given weave supplied as 'loom' which is a list
-# containing the coordin_Ates in an appropriate grid (Cartesian or triangular)
-# and the orderings of the strands at each coordin_Ate location
+# containing the coordinates in an appropriate grid (Cartesian or triangular)
+# and the orderings of the strands at each coordinate location
 make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
                                             margin = 0,
                                             axis1_threads = letters[1],
@@ -364,10 +364,10 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
     }
   }
   tile <- bb_polys %>% 
-    sapply("[") %>%                            # convert to sfc then to sp
-    st_sfc() %>%                               # so that we can use rmapshaper::  
-    as("Spatial") %>%                          # ms_dissolve - because sf 
-    rmapshaper::ms_dissolve() %>%              # group_by sucks 
+    sapply("[") %>%                 # convert to sfc then to sp
+    st_sfc() %>%                    # so that we can use rmapshaper::  
+    as("Spatial") %>%               # ms_dissolve - because sf 
+    rmapshaper::ms_dissolve() %>%   # group_by sucks 
     st_as_sf() 
   # %>%                             # back to sf
   #   st_set_precision(gPRECISION)
@@ -388,7 +388,7 @@ make_sf_from_coded_weave_matrix <- function(loom, spacing = 1, width = 1,
       st_buffer(-margin * spacing) %>%         # include a negative margin
       st_intersection(tile) %>%                # cookie cut to tile
       # st_set_precision(gPRECISION) %>%
-      st_set_crs(crs),                            # set CRS
+      st_set_crs(crs),                         # set CRS
     tile = tile %>%
       st_set_crs(crs)                          # set CRS
   )
