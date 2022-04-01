@@ -1,45 +1,28 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from types import new_class
+from itertools import chain
+
 import numpy as np
-from dataclasses import dataclass
 
 from shapely.affinity import translate
 from shapely.affinity import rotate
 from shapely.geometry import Polygon
 from shapely.geometry import MultiPolygon
+from shapely.ops import unary_union
+from shapely.wkt import dumps
+from shapely.wkt import loads
+import geopandas
+
+
+# hacky workaround to fix precision of a shape
+# hopefully in shapely 2.0 this won't be needed
+def gridify(shape, digits = 1):
+  return loads(dumps(shape, rounding_precision = digits))
+
 
 def apply_precision(x, p):
   return np.round(x * p) / p
-
-
-bi_to_tri = [
-    {1: 1, 2:2, 3:None, 4:(1,2), 5:(2,1)},
-    {1: 2, 2:1, 3:None, 4:(2,1), 5:(1,2)},
-    {1: 3, 2:2, 3:None, 4:(3,2), 5:(2,3)},
-    {1: 1, 2:3, 3:None, 4:(1,3), 5:(3,1)}
-]
-def decode_biaxial_to_order(code, axis = 0):
-    return bi_to_tri[axis][code]
-
-
-@dataclass
-class Loom:
-  indices: list[tuple]
-  orderings: list
-  parity: int
-  dimensions: tuple
-  orientations: tuple
-  
-  def __init__(self, matrices):
-    m = matrices[0]
-    self.indices = [(i, j) for i in range(m.shape[0]) \
-                           for j in range(m.shape[1])]
-    self.orderings = [decode_biaxial_to_order(m[ij]) for ij in self.indices]
-    self.parity = None
-    self.orientations = (0, -90)
-    self.dimensions = m.shape
 
 
 # Returns a function that will generate the x-y coordinates for
@@ -59,7 +42,7 @@ def grid_generator(n_axes = 2, spacing = 1):
     angles = [np.pi / 6 * x for x in range(3, 12, 4)]
     dx = [spacing * 2 / 3 * np.cos(a) for a in angles]
     dy = [spacing * 2 / 3 * np.sin(a) for a in angles]
-  basis = np.array(dx + dy).reshape(n_axes, 2)
+  basis = np.array(dx + dy).reshape(2, n_axes)
   
   def convert(coords):
     return basis @ coords
@@ -161,37 +144,8 @@ def get_cell_strands(n = 4, S = 1, width = 1, parity = 0,
   strands = translate(strands, -strand_offset[0], -strand_offset[1])
   strands = translate(strands, cell_offset[0], cell_offset[1])
   strands = MultiPolygon([expanded_cell.intersection(s) for s in strands.geoms])
-  strands = rotate(strands, orientation, (0, 0))
+  strands = gridify(rotate(strands, orientation, (0, 0)), 1)
   return strands.geoms
-
-
-# get_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
-#                              orientation = 0, n_slices = 1) {
-#   W <- width * S
-#   # make expanded cell that reaches to the strands in neighbours 
-#   big_s <- ifelse(n == 4, 
-#                   S + S * (1 - width), 
-#                   S * (5 - 3 * width) / 2)
-#   expanded_cell <- get_grid_cell_polygon(face_to_face_distance = big_s, 
-#                                          n = n, parity = parity)
-#   bb <- st_bbox(expanded_cell)
-#   strand_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
-#   cell <- get_grid_cell_polygon(face_to_face_distance = S,
-#                                 n = n, parity = parity)
-#   # determine its x-y centre (which may not be where its centroid is)
-#   bb <- st_bbox(cell)
-#   cell_offset <- c(bb$xmin + bb$xmax, bb$ymin + bb$ymax) / 2
-#   big_l <- ifelse(n == 4, big_s, 
-#                   big_s * 2 / sqrt(3) * (3 - width) / 2)
-#   get_grid_cell_slices(L = big_l, W = W, n_slices = n_slices, 
-#                        offset = strand_offset) %>%
-#     lapply(translate_shape, dxdy = -strand_offset + cell_offset) %>%
-#     st_sfc() %>% #precision = gPRECISION) %>% 
-#     st_intersection(expanded_cell) %>%
-#     lapply(rotate_shape, angle = orientation) %>%
-#     st_sfc() #precision = gPRECISION)
-# }
-
 
 
 # Essentially a wrapper for get_cell_strands that returns the strands in all
@@ -204,17 +158,92 @@ def get_all_cell_strands(n = 4, S = 1, width = 1, parity = 0,
     polys.extend(next_polys)
   return polys  
 
-# get_all_cell_strands <- function(n = 4, S = 1, width = 1, parity = 0,
-#                                  orientations = c(0, 90),
-#                                  n_slices = rep(1, length(orientations))) {
-#   polys <- list()
-#   for (i in seq_along(orientations)) {
-#     next_strands <- get_cell_strands(n = n, S = S, width = width,
-#                                      parity = parity,
-#                                      orientation = orientations[i],
-#                                      n_slices = n_slices[i])
-#     polys <- add_shapes_to_list(polys, next_strands)
-#   }
-#   polys %>% st_sfc() #precision = gPRECISION)
-# }
+
+# Returns the visible parts of the strands in a grid, given the spacing S
+# strand width width, parity (for the triangular case), a vector of strand
+# orders and matching vectors of orientations and the desired number of slices
+def get_visible_cell_strands(
+      n = 4, S = 1, width = 1, parity = 0, strand_order = (0, 1), 
+      orientations = (0, -90), n_slices = (1, 1)):
+
+  all_polys = []
+  for i, order in enumerate(strand_order):
+    next_polys = get_cell_strands(n, S, width, parity, 
+                                  orientations[order], n_slices[order])
+    if i == 0:
+      all_polys.extend(next_polys)
+      mask = unary_union(next_polys)
+    else:
+      all_polys.extend([p.difference(mask) for p in next_polys])
+      mask = mask.union(unary_union(next_polys))
+  return all_polys  
+
+
+def centre_offset(shape, centre = (0, 0)):
+  shape_c = shape.envelope.centroid.coords[0]
+  return (centre[0] - shape_c[0], centre[1] - shape_c[1])
+
+
+# builds the sf associate with a given weave supplied as 'loom' which is a list
+# containing the coordinates in an appropriate grid (Cartesian or triangular)
+# and the orderings of the strands at each coordinate location
+def make_shapes_from_coded_weave_matrix(
+      loom, spacing = 1, width = 1, margin = 0,
+      axis1_threads = "a", axis2_threads = "b", axis3_threads = "c", crs = 3857):
+  
+  n_sides = 4 if loom.n_axes == 2 else 3
+  gg = grid_generator(n_axes = loom.n_axes, spacing = spacing)
+  ids1 = axis1_threads * (loom.dimensions[0] // len(axis1_threads))
+  ids2 = axis2_threads * (loom.dimensions[1] // len(axis2_threads))
+  if loom.n_axes == 3:
+    ids3 = axis3_threads * (loom.dimensions[2] // len(axis3_threads))
+  parity = 1
+  weave_polys = []
+  bb_polys = []
+  strands = []
+  for coords, strand_order in zip(loom.indices, loom.orderings):
+    ids = [ids1[coords[0]], ids2[coords[1]]]
+    if loom.n_axes == 3:
+      ids.append(ids3[coords[2]])
+      parity = (sum(coords) - loom.parity) % 2
+    xy = gg(coords)
+    cell = gridify(
+            translate(
+            get_grid_cell_polygon(spacing, n_sides, parity), xy[0], xy[1]), 1)
+    bb_polys.append(cell)
+    # print(f"strand_order: {strand_order} ids: {ids}")
+    if strand_order is None: continue
+    if strand_order == "NA":
+      weave_polys.append(cell)
+      strands.append("NA")
+      continue
+    n_slices = [len(id) for id in ids]
+    next_polys = [translate(p, xy[0], xy[1]) for p in 
+                  get_visible_cell_strands(n_sides, spacing, width, 
+                            parity, strand_order, loom.orientations, n_slices)]
+    weave_polys.extend(next_polys)
+    labels = [list(ids[i]) for i in strand_order] # a list of lists
+    labels = list(chain(*labels))                 # flatten list of lists
+    # print(f"n: {len(next_polys)} labels: {labels}")
+    strands.extend(labels)
+  tile = unary_union(bb_polys)
+  shift = centre_offset(tile)
+  tile = translate(tile, shift[0], shift[1])
+  return { 
+    "weave_unit": make_weave_gdf(weave_polys, strands, tile, shift, margin, crs),
+    "tile": geopandas.GeoDataFrame(geometry = geopandas.GeoSeries([tile])).set_crs(crs) 
+    }
+
+
+def make_weave_gdf(polys, strand_ids, bb, offset, margin, crs):
+  weave = geopandas.GeoDataFrame(
+    data = { "strand": strand_ids },
+    # geometry = geopandas.GeoSeries(polys)
+    geometry = geopandas.GeoSeries([translate(p, offset[0], offset[1]) for p in polys])
+  )
+  weave = weave[weave.strand != "-"]
+  weave = weave.dissolve(by = "strand", as_index = False)
+  weave.geometry = weave.buffer(-margin)
+  return weave.clip(bb).set_crs(crs)
+
 

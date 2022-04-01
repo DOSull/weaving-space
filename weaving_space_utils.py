@@ -4,12 +4,15 @@
 # Some strand label parser stuff
 # This is much nicer in python than in R
 
+import re
+
 def parse_labels(ids):
     output = ids.split("|")
     if len(output) == 2:
         output.append("-")
     return(output)
     
+
 def parse_strand_label(s):
     clean_s = re.sub("[(]+", "(", re.sub("[)]+", ")", s))
     is_combo = False

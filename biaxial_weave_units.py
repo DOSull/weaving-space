@@ -24,34 +24,32 @@
 # treadling matrices. An accessible introduction can be found at 
 # https://www.youtube.com/watch?v=oMOSiag3dxg
 
-import pandas
-import shapely
 import numpy as np
-import random
-import re
-from render_weave_grids import Loom
+from loom import Loom
+from render_weave_grids import make_shapes_from_coded_weave_matrix
+from weaving_space_utils import get_strand_ids
 
-# augment matrix by adding `by` rows and columns identical to 
-# the first row and first column of 
-def augment_matrix(m, by = 1):
-    s = np.array(m.shape)
-    s_aug = s + by
-    scale = tuple(np.ceil(s_aug / s).astype(np.int32))
-    return np.tile(m, scale)[0:(tuple(s_aug)[0]), 0:(tuple(s_aug)[1])]
+# # augment matrix by adding `by` rows and columns identical to 
+# # the first row and first column of 
+# def augment_matrix(m, by = 1):
+#     s = np.array(m.shape)
+#     s_aug = s + by
+#     scale = tuple(np.ceil(s_aug / s).astype(np.int32))
+#     return np.tile(m, scale)[0:(tuple(s_aug)[0]), 0:(tuple(s_aug)[1])]
 
 
-def augment_matrix_with_values(m, by = 1, values = 0):
-    output = augment_matrix(m, by)
-    s1 = m.shape
-    s2 = output.shape
-    output[s1[0]:s2[0], :] = values
-    output[:, s1[1]:s2[1]] = values
-    return output
+# def augment_matrix_with_values(m, by = 1, values = 0):
+#     output = augment_matrix(m, by)
+#     s1 = m.shape
+#     s2 = output.shape
+#     output[s1[0]:s2[0], :] = values
+#     output[:, s1[1]:s2[1]] = values
+#     return output
 
 
 def reps_needed(x1, x2):
     n = np.lcm(x1, x2)
-    return tuple(int(i) for i in (n / x1, n / x2))
+    return tuple(i for i in (n // x1, n // x2))
 
 
 # Returns a 1/2 encoded weave matrix given tie_up, treadling and
@@ -198,12 +196,15 @@ def get_weave_pattern_matrix(*,
     elif weave_type == "basket":
         p = make_basket_pattern(n = n, warp_n = width, weft_n = height)
     else:
-        p = make_this_pattern(tie_up = tie_up, th = th, tr = tr,
+        p = make_this_pattern(tie_up = tie_up, threading = th, treadling = tr,
                                warp_n = width, weft_n = height)
-        
-    warp_threads = np.repeat(warps, np.prod(p.shape) / len(warps)).reshape(p.shape)
-    weft_threads = np.repeat(wefts, np.prod(p.shape) / len(wefts)).reshape(p.shape).transpose()
-    # encode to reflect missing threadsry
+    nr, nc = p.shape
+    warp_threads = np.array(warps * reps_needed(nc, len(warps))[1] * nr).reshape((nr, nc))
+    weft_threads = np.array(wefts * reps_needed(nr, len(wefts))[1] * nc).reshape((nc, nr)).transpose()
+    
+    # warp_threads = np.repeat(warps, np.prod(p.shape) / len(warps)).reshape(p.shape)
+    # weft_threads = np.repeat(wefts, np.prod(p.shape) / len(wefts)).reshape(p.shape)
+    # # encode to reflect missing threads
     return encode_biaxial_weave(p, warp_threads, weft_threads)
 
 
@@ -224,14 +225,7 @@ def get_biaxial_weave_unit(*, spacing = 10_000, aspect = 1, margin = 0,
     p = get_weave_pattern_matrix(weave_type = weave_type, n = n, 
                     warp = warp_threads, weft = weft_threads, 
                     tie_up = tie_up, tr = tr, th = th)
-    
-    return Loom([p])
 
-#   get_weave_pattern_matrix(type = type, n = n,
-#                            warp_threads, weft_threads,
-#                            tie_up = tie_up, tr = tr, th = th) %>%
-#     matrices_as_loom() %>%
-#     make_sf_from_coded_weave_matrix(spacing = spacing, width = aspect,
-#                                     margin = margin,
-#                                     axis1_threads = weft_threads,
-#                                     axis2_threads = warp_threads, crs = crs)
+    return make_shapes_from_coded_weave_matrix(
+        Loom([p]), spacing = spacing, width = aspect, margin = margin, 
+        axis1_threads = weft_threads, axis2_threads = warp_threads, crs = crs)
