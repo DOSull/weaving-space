@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import numpy as np
-
 from dataclasses import dataclass
+
+import numpy as np
 
 
 @dataclass
@@ -50,10 +50,10 @@ class Loom:
 
 
 bi_to_tri = (
-    {1: 0, 2: 1, 3: "NA", 4: (0, 1,), 5: (1, 0,)},
-    {1: 1, 2: 0, 3: "NA", 4: (1, 0,), 5: (0, 1,)},
-    {1: 2, 2: 1, 3: "NA", 4: (2, 1,), 5: (1, 2,)},
-    {1: 0, 2: 2, 3: "NA", 4: (0, 2,), 5: (2, 0,)}
+    {1: (0, ), 2: (1, ), 3: "NA", 4: (0, 1,), 5: (1, 0,)},
+    {1: (1, ), 2: (0, ), 3: "NA", 4: (1, 0,), 5: (0, 1,)},
+    {1: (2, ), 2: (1, ), 3: "NA", 4: (2, 1,), 5: (1, 2,)},
+    {1: (0, ), 2: (2, ), 3: "NA", 4: (0, 2,), 5: (2, 0,)}
 )
 
 def decode_biaxial_to_order(code, axis = 0):

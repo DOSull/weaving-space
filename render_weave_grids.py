@@ -2,6 +2,7 @@
 # coding: utf-8
 
 from itertools import chain
+import logging
 
 import numpy as np
 
@@ -213,10 +214,10 @@ def make_shapes_from_coded_weave_matrix(
     bb_polys.append(cell)
     # print(f"strand_order: {strand_order} ids: {ids}")
     if strand_order is None: continue
-    if strand_order == "NA":
-      weave_polys.append(cell)
-      strands.append("NA")
-      continue
+    if strand_order == "NA": continue
+      # weave_polys.append(cell)
+      # strands.append("NA")
+      # continue
     n_slices = [len(id) for id in ids]
     next_polys = [translate(p, xy[0], xy[1]) for p in 
                   get_visible_cell_strands(n_sides, spacing, width, 
