@@ -46,40 +46,51 @@ class Loom:
       ordBC = [decode_biaxial_to_order(mBC[ij], axis = 2) for ij in [(x[2], x[1]) for x in self.indices]]
       ordCA = [decode_biaxial_to_order(mCA[ij], axis = 3) for ij in [(x[0], x[2]) for x in self.indices]]
       self.orderings = [combine_orders(abc) for abc in zip(ordAB, ordBC, ordCA)]
-    #   self.orderings = [combine_orderings(abc) for abc in zip(ordAB, ordBC, ordCA)]
 
 
+# initially in a biaxial weave intersection sites are encoded numerically: 
+# 1 = weft absent
+# 2 = warp absent
+# 3 = both absent
+# 4 = warp on top
+# 5 = weft on top
+# this dictionary translates these to tuples listing the 'layer' order
 bi_to_tri = (
-    {1: (0, ), 2: (1, ), 3: "NA", 4: (0, 1,), 5: (1, 0,)},
-    {1: (1, ), 2: (0, ), 3: "NA", 4: (1, 0,), 5: (0, 1,)},
-    {1: (2, ), 2: (1, ), 3: "NA", 4: (2, 1,), 5: (1, 2,)},
-    {1: (0, ), 2: (2, ), 3: "NA", 4: (0, 2,), 5: (2, 0,)}
+  {1: 0, 2: 1, 3: "NA", 4: (0, 1,), 5: (1, 0,)},
+  {1: 1, 2: 0, 3: "NA", 4: (1, 0,), 5: (0, 1,)},
+  {1: 2, 2: 1, 3: "NA", 4: (2, 1,), 5: (1, 2,)},
+  {1: 0, 2: 2, 3: "NA", 4: (0, 2,), 5: (2, 0,)}
 )
-
+# wrapper for the bi_to_tri dictionary
 def decode_biaxial_to_order(code, axis = 0):
-    return bi_to_tri[axis][code]
+  return bi_to_tri[axis][code]
 
+# nested dictionary to combine layer orders from 3 biaxial weaves
+# into a single consistent order of layers. Inconsistent combinations
+# will not return a value
 combine = {
-    "NA":   { "NA":  { "NA":  None, 
-                          2:  (2, )}, 
-                 1:  { "NA":  (1, )},
-                 2:  {    2:  (2, )}},
-    0:      { "NA":  {    0:  (0, )},
-                 2:  {(2,0):  (2, 0),
-                      (0,2):  (0, 2)}},
-    1:      {    1:  { "NA":  (1, )},
-             (1,2):  {    2:  (1, 2)},
-             (2,1):  {    2:  (2, 1)}},
-    (0,1):  {    1:  {    0:  (0, 1)},
-             (1,2):  {(0,2):  (0, 1, 2)},
-             (2,1):  {(2,0):  (2, 0, 1),
-                      (0,2):  (0, 2, 1)}},
-    (1,0):  {    1:  {    0:  (1, 0)},
-             (1,2):  {(2,0):  (1, 2, 0),
-                      (0,2):  (1, 0, 2)},
-             (2,1):  {(2,0):  (2, 1, 0)}}
+  "NA":  { "NA":  { "NA":  None, 
+                       2:  (2, )}, 
+              1:  { "NA":  (1, )},
+              2:  {    2:  (2, )}},
+  0:     { "NA":  {    0:  (0, )},
+              2:  {(2,0):  (2, 0),
+                   (0,2):  (0, 2)}},
+  1:     {    1:  { "NA":  (1, )},
+          (1,2):  {    2:  (1, 2)},
+          (2,1):  {    2:  (2, 1)}},
+  (0,1): {    1:  {    0:  (0, 1)},
+          (1,2):  {(0,2):  (0, 1, 2)},
+          (2,1):  {(2,0):  (2, 0, 1),
+                   (0,2):  (0, 2, 1)}},
+  (1,0): {    1:  {    0:  (1, 0)},
+          (1,2):  {(2,0):  (1, 2, 0),
+                   (0,2):  (1, 0, 2)},
+          (2,1):  {(2,0):  (2, 1, 0)}}
 }
 
+# wrapper for the combine dictionary
+# missing values return "NA"
 def combine_orders(orders):
     # print(f"orders: {orders}")
     try:
@@ -89,32 +100,3 @@ def combine_orders(orders):
         return "NA"
     else:
         return result 
-
-
-# def match(vals, lst, default = 100):
-#     return [default if v not in lst else lst.index(v) for v in vals]
- 
-# def x_over_y(L, x, y):
-#     return L.index(x) < L.index(y) 
-
-# # SOME inconsistencies in ordering of tied values make this unworkable? I think?
-# def combine_orderings(orderings, values = (0, 1, 2), verbose = False, default = 100):
-#     ranks = [match(values, order, default) for order in orderings]
-#     scores = [sum(x) for x in zip(*ranks)]
-#     hiscore = len(orderings) * default
-#     number_present = sum([s < hiscore for s in scores])
-#     if number_present == 0:
-#         result = None
-#     elif len(set(scores)) != len(scores) and number_present != 1:
-#         print(f"Unable to determine ordering on {orderings}")
-#         result = "NA"
-#     else:
-#         sorted_scores = sorted(scores)
-#         indexes = [sorted_scores.index(x) for x in scores][:number_present]
-#         result = [values[i] for i in indexes]
-#     print(f"orderings: {orderings} values: {values} result: {result}")
-#     if verbose:
-#         return result, ranks, scores
-#     else:
-#         return result
-
