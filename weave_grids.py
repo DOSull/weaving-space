@@ -16,7 +16,6 @@ from shapely.geometry import MultiPolygon
 from shapely.ops import unary_union
 from shapely.wkt import dumps
 from shapely.wkt import loads
-# import geopandas
 
 
 # Class to encapsulate the generation of square or triangular
@@ -100,8 +99,8 @@ class _WeaveGrid:
     return Polygon(corners)
 
   def _gridify(self, shape):
-    return loads(dumps(shape, rounding_precision = self.precision))
-      
+    return loads(dumps(shape, rounding_precision = 0))
+
   # Returns 'slices' across grid cell (i.e. horizontally) centered vertically
   # relative to the cell, ie
   #
@@ -131,7 +130,8 @@ class _WeaveGrid:
       slice = translate(slice, -L / 2, -slice_w / 2)
       slice = translate(slice, 0, o)
       slice = translate(slice, offset[0], offset[1])
-      slices.append(self._gridify(slice))
+      # slices.append(self._gridify(slice))
+      slices.append(slice)
     return slices
 
   # Gets the cross grid cell strands running across a cell in the x direction
@@ -149,8 +149,9 @@ class _WeaveGrid:
       self._get_grid_cell_slices(big_l, width, n_slices))
     strands = translate(strands, cell_offset[0], cell_offset[1])
     strands = MultiPolygon([expanded_cell.intersection(s) for s in strands.geoms])
-    strands = self._gridify(rotate(strands, orientation, origin = cell.centroid))
-    return strands.geoms
+    # strands = self._gridify(rotate(strands, orientation, origin = cell.centroid))
+    strands = rotate(strands, orientation, origin = cell.centroid)
+    return strands.geoms # [self._gridify(p) for p in strands.geoms]
 
 
   # Returns the visible parts of the strands in a grid, given the spacing S
@@ -173,5 +174,5 @@ class _WeaveGrid:
       else:
         all_polys.extend([p.difference(mask) for p in next_polys])
         mask = mask.union(unary_union(next_polys))
-    return all_polys
+    return all_polys # [self._gridify(p) for p in all_polys]
 

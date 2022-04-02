@@ -10,6 +10,7 @@ from shapely.affinity import translate
 from shapely.ops import unary_union
 from shapely.wkt import dumps
 from shapely.wkt import loads
+from shapely.validation import make_valid
 import geopandas
 
 from weave_grids import _WeaveGrid

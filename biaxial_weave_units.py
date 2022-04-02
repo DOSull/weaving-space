@@ -48,8 +48,8 @@ from weaving_space_utils import get_strand_ids
 
 
 def reps_needed(x1, x2):
-    n = np.lcm(x1, x2)
-    return tuple(i for i in (n // x1, n // x2))
+  n = np.lcm(x1, x2)
+  return tuple(i for i in (n // x1, n // x2))
 
 
 # Returns a 1/2 encoded weave matrix given tie_up, treadling and
@@ -61,41 +61,41 @@ def reps_needed(x1, x2):
 # ncol(threading) respectively, the output matrix will be repeated as
 # needed to make this match
 def get_pattern(tie_up, treadling, threading, warp_n, weft_n, rep = 1):
-    pattern = (treadling @ tie_up @ threading > 0) + 0
-    rep_warp = reps_needed(warp_n, pattern.shape[1])
-    rep_weft = reps_needed(weft_n, pattern.shape[0])
-    return np.tile(pattern, (rep_weft[1] * rep, rep_warp[1] * rep))
+  pattern = (treadling @ tie_up @ threading > 0) + 0
+  rep_warp = reps_needed(warp_n, pattern.shape[1])
+  rep_weft = reps_needed(weft_n, pattern.shape[0])
+  return np.tile(pattern, (rep_weft[1] * rep, rep_warp[1] * rep))
 
 
 # Note that as currently written this function requires the warp and weft
 # matrices to be the same size, which get_weave_pattern_matrix will ensure, b
 # but which may not be the case if called from elsewhere
 def encode_biaxial_weave(pattern, warp, weft):
-    pattern = np.where(pattern == 1, 5, pattern)         # warp present and on top
-    pattern = np.where(pattern == 0, 4, pattern)         # weft present and on top
-    pattern = np.where(warp < 0, 1, pattern)             # warp absent
-    pattern = np.where(weft < 0, 2, pattern)             # weft absent
-    return np.where((warp < 0) & (weft < 0), 3, pattern)   # both absent
+  pattern = np.where(pattern == 1, 5, pattern)         # warp present and on top
+  pattern = np.where(pattern == 0, 4, pattern)         # weft present and on top
+  pattern = np.where(warp < 0, 1, pattern)             # warp absent
+  pattern = np.where(weft < 0, 2, pattern)             # weft absent
+  return np.where((warp < 0) & (weft < 0), 3, pattern)   # both absent
 
 
 # THE WEAVES
 # -- Plain --
 # simple over-under weave
 def make_plain_pattern(warp_n = 1, weft_n = 1):
-    return make_twill_pattern(n = 1, warp_n = warp_n, weft_n = weft_n)
+  return make_twill_pattern(n = 1, warp_n = warp_n, weft_n = weft_n)
 
 
 # -- Twills --
 # twill weave with n the number of over-unders
 # note this is used with n = 1 to make plain weaves
 def make_twill_pattern(n = 2, warp_n = 2, weft_n = 2):
-    over_under = n
-    if type(over_under) == int:
-        over_under = (over_under, over_under)
-    tie_up = make_twill_matrix(over_under)
-    threading = np.diag(np.ones(tie_up.shape[0]))
-    treadling = np.diag(np.ones(tie_up.shape[1]))
-    return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
+  over_under = n
+  if type(over_under) == int:
+    over_under = (over_under, over_under)
+  tie_up = make_twill_matrix(over_under)
+  threading = np.diag(np.ones(tie_up.shape[0]))
+  treadling = np.diag(np.ones(tie_up.shape[1]))
+  return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 
 
 # returns a vector of runs of 1s and 0s per the supplied vector.
@@ -105,24 +105,24 @@ def make_twill_pattern(n = 2, warp_n = 2, weft_n = 2):
 # over-under pattern. Doubling it makes 100111011000 which has the
 # requested pattern
 def make_over_under_row(n):
-    over_under = n
-    if type(over_under) == int:
-        over_under = [n, n]
-    elif len(n) % 2 != 0:
-        over_under = n * 2
-    x = 1
-    row = []
-    for y in over_under:
-        row.extend([x] * y)
-        x = 1 - x
-    return row
+  over_under = n
+  if type(over_under) == int:
+    over_under = [n, n]
+  elif len(n) % 2 != 0:
+    over_under = n * 2
+  x = 1
+  row = []
+  for y in over_under:
+    row.extend([x] * y)
+    x = 1 - x
+  return row
 
 
 # wraps a vector
 # by : the number of positions to shift the row
 # r  : the row
 def wrap_row(by, r):
-    return r[-by:] + r[:-by]
+  return r[-by:] + r[:-by]
 
 
 # makes a matrix like
@@ -132,21 +132,21 @@ def wrap_row(by, r):
 # 1 0 0 1
 # where the repeat runs in each row are length n
 def make_twill_matrix(over_under):
-    row = make_over_under_row(over_under)
-    d = len(row)
-    out = []
-    for i in range(d):
-        row = wrap_row(1, row)
-        out.extend(row)
-    return np.array(out).reshape(d, d)
+  row = make_over_under_row(over_under)
+  d = len(row)
+  out = []
+  for i in range(d):
+    row = wrap_row(1, row)
+    out.extend(row)
+  return np.array(out).reshape(d, d)
 
 
 # -- Basket weave --
 def make_basket_pattern(n = 2, warp_n = 2, weft_n = 2):
-    tie_up = make_basket_matrix(n)
-    threading = np.diag(np.ones(tie_up.shape[0]))
-    treadling = np.diag(np.ones(tie_up.shape[1]))
-    return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
+  tie_up = make_basket_matrix(n)
+  threading = np.diag(np.ones(tie_up.shape[0]))
+  treadling = np.diag(np.ones(tie_up.shape[1]))
+  return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 
 
 # makes a matrix like
@@ -156,8 +156,8 @@ def make_basket_pattern(n = 2, warp_n = 2, weft_n = 2):
 # 0 0 1 1
 # where the repeat runs in each row are length n
 def make_basket_matrix(n):
-    return np.array((([1] * n + [0] * n) * n) + 
-                    (([0] * n + [1] * n) * n)).reshape(n * 2, n * 2)
+  return np.array((([1] * n + [0] * n) * n) + 
+          (([0] * n + [1] * n) * n)).reshape(n * 2, n * 2)
 
 
 # -- Other stuff --
@@ -165,9 +165,9 @@ def make_basket_matrix(n):
 #   ncol(treadling) == nrow(tie_up) and ncol(tie_up) == nrow(threading)
 # but unsure what would be an appropriate way to do this...
 def make_this_pattern(tie_up, threading, treadling, warp_n = 2, weft_n = 2):
-    threading = np.diag(np.ones(tie_up.shape[0]))
-    treadling = np.diag(np.ones(tie_up.shape[1]))
-    return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
+  threading = np.diag(np.ones(tie_up.shape[0]))
+  treadling = np.diag(np.ones(tie_up.shape[1]))
+  return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 
 
 # returns a matrix giving where 1 indicates warp on top, 2
@@ -181,51 +181,52 @@ def make_this_pattern(tie_up, threading, treadling, warp_n = 2, weft_n = 2):
 #              indicates a different thread colour; repeats are allowed,
 #              and "-" indicates that a thread should be skipped
 def get_weave_pattern_matrix(*,
-        weave_type = "plain", n = 2, warp = list("ab"), weft = list("cd"),
-        tie_up = make_twill_matrix((2, 2)), tr = np.diag(np.ones(2)), th = np.diag(np.ones(2))):
-    
-    warps = [-1 if c == "-" else i for i, c in enumerate(warp)]
-    wefts = [-1 if c == "-" else i for i, c in enumerate(weft)]
-    width = len(warp)
-    height = len(weft)
-    
-    if weave_type == "plain":
-        p = make_plain_pattern()
-    elif weave_type == "twill":
-        p = make_twill_pattern(n = n, warp_n = width, weft_n = height)
-    elif weave_type == "basket":
-        p = make_basket_pattern(n = n, warp_n = width, weft_n = height)
-    else:
-        p = make_this_pattern(tie_up = tie_up, threading = th, treadling = tr,
-                               warp_n = width, weft_n = height)
-    nr, nc = p.shape
-    warp_threads = np.array(warps * reps_needed(nc, len(warps))[1] * nr).reshape((nr, nc))
-    weft_threads = np.array(wefts * reps_needed(nr, len(wefts))[1] * nc).reshape((nc, nr)).transpose()
-    
-    # warp_threads = np.repeat(warps, np.prod(p.shape) / len(warps)).reshape(p.shape)
-    # weft_threads = np.repeat(wefts, np.prod(p.shape) / len(wefts)).reshape(p.shape)
-    # # encode to reflect missing threads
-    return encode_biaxial_weave(p, warp_threads, weft_threads)
+    weave_type = "plain", n = 2, warp = list("ab"), weft = list("cd"),
+    tie_up = make_twill_matrix((2, 2)), 
+    tr = np.diag(np.ones(2)), th = np.diag(np.ones(2))):
+  
+  warps = [-1 if c == "-" else i for i, c in enumerate(warp)]
+  wefts = [-1 if c == "-" else i for i, c in enumerate(weft)]
+  width = len(warp)
+  height = len(weft)
+  
+  if weave_type == "plain":
+    p = make_plain_pattern()
+  elif weave_type == "twill":
+    p = make_twill_pattern(n = n, warp_n = width, weft_n = height)
+  elif weave_type == "basket":
+    p = make_basket_pattern(n = n, warp_n = width, weft_n = height)
+  else:
+    p = make_this_pattern(tie_up = tie_up, threading = th, treadling = tr,
+                 warp_n = width, weft_n = height)
+  nr, nc = p.shape
+  warp_threads = np.array(warps * 
+              reps_needed(nc, len(warps))[1] * nr).reshape((nr, nc))
+  weft_threads = np.array(wefts * 
+              reps_needed(nr, len(wefts))[1] * nc).reshape((nc, nr)).transpose()
+  # encode to reflect missing threads
+  return encode_biaxial_weave(p, warp_threads, weft_threads)
 
 
 # EXTERNAL API
 def get_biaxial_weave_unit(*, spacing = 10_000, aspect = 1, margin = 0,
-        weave_type = "twill", n = (2, 2), strands = "ab|cd", crs = 3857,
-        tie_up = make_twill_matrix((2, 2)), tr = np.diag(np.ones(2)), th = np.diag(np.ones(2))):
-    strand_ids = get_strand_ids(strands)
-    warp_threads = strand_ids[0]
-    weft_threads = strand_ids[1]
-    
-    if weave_type == "basket":
-        n = n[0]
-    
-    treadling = np.diag(np.ones(tie_up.shape[0]))
-    threading = np.diag(np.ones(tie_up.shape[1]))
-    
-    p = get_weave_pattern_matrix(weave_type = weave_type, n = n, 
-                    warp = warp_threads, weft = weft_threads, 
-                    tie_up = tie_up, tr = tr, th = th)
+    weave_type = "twill", n = (2, 2), strands = "ab|cd", crs = 3857,
+    tie_up = make_twill_matrix((2, 2)), 
+    tr = np.diag(np.ones(2)), th = np.diag(np.ones(2))):
+  strand_ids = get_strand_ids(strands)
+  warp_threads = strand_ids[0]
+  weft_threads = strand_ids[1]
+  
+  if weave_type == "basket":
+    n = n[0]
+  
+  treadling = np.diag(np.ones(tie_up.shape[0]))
+  threading = np.diag(np.ones(tie_up.shape[1]))
+  
+  p = get_weave_pattern_matrix(weave_type = weave_type, n = n, 
+          warp = warp_threads, weft = weft_threads, 
+          tie_up = tie_up, tr = tr, th = th)
 
-    return make_shapes_from_coded_weave_matrix(
-        Loom(p), spacing = spacing, width = aspect, margin = margin, 
-        axis1_threads = weft_threads, axis2_threads = warp_threads, crs = crs)
+  return make_shapes_from_coded_weave_matrix(
+    Loom(p), spacing = spacing, width = aspect, margin = margin, 
+    axis1_threads = weft_threads, axis2_threads = warp_threads, crs = crs)
