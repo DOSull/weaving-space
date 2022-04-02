@@ -67,7 +67,8 @@ def make_weave_gdf(polys, strand_ids, bb, offset, margin, crs):
   )
   weave = weave[weave.strand != "-"]
   weave = weave.dissolve(by = "strand", as_index = False)
-  weave.geometry = weave.buffer(-margin)
+  weave.geometry = weave.buffer(-0.2)
+  weave.geometry = weave.buffer(-margin + 0.2)
   return weave.clip(bb).set_crs(crs)
 
 
