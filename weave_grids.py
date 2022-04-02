@@ -30,7 +30,7 @@ class _WeaveGrid:
   spacing: float = 10000
   precision: int = 1
   
-  def __init__(self, n_axes, orientations, spacing, precision = 1):
+  def __init__(self, n_axes, orientations, spacing = 10000, precision = 1):
     self.n_axes = n_axes
     self.orientations = orientations
     self.spacing = spacing

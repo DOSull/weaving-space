@@ -12,23 +12,23 @@ def get_triaxial_weave_matrices(*,
   weave_type = "cube", strands_1 = ["a"], strands_2 = ["b"], strands_3 = ["c"]):
   
   if weave_type == "hex":
-    loom = Loom([
+    loom = Loom(
       get_weave_pattern_matrix(weave_type = "this", tie_up = np.ones((6, 6)), 
                                warp = strands_1, weft = strands_2),
       get_weave_pattern_matrix(weave_type = "this", tie_up = np.ones((6, 6)), 
                                warp = strands_2, weft = strands_3),
       get_weave_pattern_matrix(weave_type = "this", tie_up = np.ones((6, 6)), 
                                warp = strands_3, weft = strands_1),
-    ])
+    )
   else: # "cube"
-    loom = Loom([
+    loom = Loom(
       get_weave_pattern_matrix(weave_type = "twill", n = (1, 2, 1, 2), 
                                warp = strands_1, weft = strands_2),
       get_weave_pattern_matrix(weave_type = "twill", n = (1, 2, 1, 2), 
                                warp = strands_2, weft = strands_3),
       get_weave_pattern_matrix(weave_type = "twill", n = (1, 2, 1, 2), 
                                warp = strands_3, weft = strands_1),
-    ])
+    )
   return loom
 
 

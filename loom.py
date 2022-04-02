@@ -15,7 +15,7 @@ class Loom:
   orientations: tuple
   n_axes: int
   
-  def __init__(self, matrices):
+  def __init__(self, *matrices):
     if len(matrices) == 1:
       m = matrices[0]
       self.dimensions = m.shape
@@ -92,11 +92,11 @@ combine = {
 # wrapper for the combine dictionary
 # missing values return "NA"
 def combine_orders(orders):
-    # print(f"orders: {orders}")
-    try:
-        result = combine[orders[0]][orders[1]][orders[2]]
-    except:
-        print(f"Unable to determine unique ordering on {orders}")
-        return "NA"
-    else:
-        return result 
+  # print(f"orders: {orders}")
+  try:
+    result = combine[orders[0]][orders[1]][orders[2]]
+  except:
+    print(f"Unable to determine unique ordering on {orders}")
+    return "NA"
+  else:
+    return result 
