@@ -29,6 +29,7 @@ from loom import Loom
 from render_weave_grids import make_shapes_from_coded_weave_matrix
 from weaving_space_utils import get_strand_ids
 
+
 # # augment matrix by adding `by` rows and columns identical to 
 # # the first row and first column of 
 # def augment_matrix(m, by = 1):

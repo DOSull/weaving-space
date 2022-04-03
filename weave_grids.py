@@ -81,8 +81,10 @@ class _WeaveGrid:
     xy = self.get_coordinates(coords)
     polygon = translate(polygon, xy[0], xy[1])
     if self.n_axes == 2 or sum(coords) %2 == 0:
+      return polygon
       return self._gridify(polygon)
     else:
+      return rotate(polygon, 180, origin = polygon.centroid)
       return self._gridify(rotate(polygon, 180, origin = polygon.centroid))
       
   def _make_grid_cell(self):
@@ -123,14 +125,13 @@ class _WeaveGrid:
     ribbon_w = self.spacing * W
     slice_w = ribbon_w / n_slices
     odd_numbers = [x for x in range(1, 2 * n_slices, 2)]
-    slice_offsets = [slice_w * o / 2 - ribbon_w / 2 for o in odd_numbers] # -0.2 
+    slice_offsets = [slice_w * o / 2 - ribbon_w / 2 for o in odd_numbers] 
     slices = []
     for o in slice_offsets:
       slice = Polygon([(0, 0), (L, 0), (L, slice_w), (0, slice_w)])
       slice = translate(slice, -L / 2, -slice_w / 2)
       slice = translate(slice, 0, o)
       slice = translate(slice, offset[0], offset[1])
-      # slices.append(self._gridify(slice))
       slices.append(slice)
     return slices
 
@@ -146,12 +147,11 @@ class _WeaveGrid:
     big_l = sf * self.spacing if self.n_axes == 2 \
       else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2
     strands = MultiPolygon(
-      self._get_grid_cell_slices(big_l, width, n_slices))
+      self._get_grid_cell_slices(L = big_l, W = width, n_slices = n_slices))
     strands = translate(strands, cell_offset[0], cell_offset[1])
     strands = MultiPolygon([expanded_cell.intersection(s) for s in strands.geoms])
-    # strands = self._gridify(rotate(strands, orientation, origin = cell.centroid))
     strands = rotate(strands, orientation, origin = cell.centroid)
-    return strands.geoms # [self._gridify(p) for p in strands.geoms]
+    return [self._gridify(s) for s in strands.geoms]
 
 
   # Returns the visible parts of the strands in a grid, given the spacing S
@@ -174,5 +174,5 @@ class _WeaveGrid:
       else:
         all_polys.extend([p.difference(mask) for p in next_polys])
         mask = mask.union(unary_union(next_polys))
-    return all_polys # [self._gridify(p) for p in all_polys]
+    return all_polys
 

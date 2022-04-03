@@ -40,7 +40,7 @@ def make_shapes_from_coded_weave_matrix(
     if loom.n_axes == 3:
       ids.append(ids3[coords[2]])
     cell = grid.get_grid_cell_at(coords)
-    bb_polys.append(cell)
+    bb_polys.append(grid._gridify(cell))
     # print(f"strand_order: {strand_order} ids: {ids}")
     if strand_order is None: continue
     if strand_order == "NA": continue
@@ -55,20 +55,20 @@ def make_shapes_from_coded_weave_matrix(
   shift = centre_offset(tile)
   tile = translate(tile, shift[0], shift[1])
   return { 
-    "weave_unit": make_weave_gdf(weave_polys, strands, tile, shift, margin, crs),
+    "weave_unit": make_weave_gdf(weave_polys, strands, tile, shift, spacing, margin, crs),
     "tile": geopandas.GeoDataFrame(geometry = geopandas.GeoSeries([tile])).set_crs(crs) 
     }
 
 
-def make_weave_gdf(polys, strand_ids, bb, offset, margin, crs):
+def make_weave_gdf(polys, strand_ids, bb, offset, spacing, margin, crs):
   weave = geopandas.GeoDataFrame(
     data = { "strand": strand_ids },
     geometry = geopandas.GeoSeries([translate(p, offset[0], offset[1]) for p in polys])
   )
   weave = weave[weave.strand != "-"]
   weave = weave.dissolve(by = "strand", as_index = False)
-  weave.geometry = weave.buffer(-0.2)
-  weave.geometry = weave.buffer(-margin + 0.2)
+  weave.geometry = weave.buffer(-0.0001 * spacing)
+  weave.geometry = weave.buffer((0.0001 - margin) * spacing)
   return weave.clip(bb).set_crs(crs)
 
 
