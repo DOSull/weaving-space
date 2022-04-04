@@ -3,7 +3,7 @@
 
 from itertools import chain
 from dataclasses import dataclass
-from operator import ge
+import logging
 
 import numpy as np
 import geopandas 
@@ -31,7 +31,7 @@ class WeaveUnit:
 def get_weave_unit(weave_type = "plain", spacing = 10000, aspect = 1,
                    margin = 0, n = (2, 2), strands = "a|b|c",
                    tie_up = None, tr = None, th = None, crs = 3857):
-  
+  parameter_info(margin, aspect)
   if weave_type in ("hex", "cube"):
     unit = get_triaxial_weave_unit(spacing = spacing, aspect = aspect,
                                    margin = margin, weave_type = weave_type,
@@ -47,6 +47,24 @@ def get_weave_unit(weave_type = "plain", spacing = 10000, aspect = 1,
       unit["tile"],
       weave_type
   )
+
+def parameter_info(margin, aspect):
+  max_margin = (1 - aspect) / 2
+  if aspect == 0:
+    logging.info("""Setting aspect to 0 is probably not a great plan.""")
+  if aspect < 0 or aspect > 1:
+    logging.warning("""Values of aspect outside the range 0 to 1 won't produce
+                    tiles that will look like weaves, but they might be 
+                    pretty anyway! Values less than -1 seem particularly
+                    promising, especially with opacity set less than 1.""")
+  if margin > max_margin:
+    logging.warning(f"""With aspect set to {aspect} the largest margin that will 
+                    work is {max_margin}. Lower values are required to produce 
+                    proper tileable weaves. Higher values will make nice tilings 
+                    that are not strictly weaves. An alternative is to make the 
+                    tile with margin = 0, and then apply a negative buffer after 
+                    you have tiled your map.""")
+  
 
 
 # returns width, height, x-origin and y-origin of GeoSeries
