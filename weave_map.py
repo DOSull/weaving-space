@@ -4,7 +4,6 @@
 from itertools import chain
 from dataclasses import dataclass
 import logging
-from operator import ge
 
 import numpy as np
 import geopandas 
@@ -81,13 +80,15 @@ def get_weave_unit(weave_type:str = "plain", spacing:float = 10000,
     parameter_info(margin, aspect)
 
     if weave_type in ("hex", "cube"):
-        unit = get_triaxial_weave_unit(spacing = spacing, aspect = aspect,
-                                        margin = margin, weave_type = weave_type,
-                                        strands = strands, crs = crs)
+        unit = get_triaxial_weave_unit(weave_type = weave_type,
+                                       spacing = spacing, aspect = aspect,
+                                       margin = margin, strands = strands, 
+                                       crs = crs)
     else:
-        unit = get_biaxial_weave_unit(spacing = spacing, aspect = aspect,
-                                    margin = margin, weave_type = weave_type,
-                                    strands = strands, crs = crs)
+        unit = get_biaxial_weave_unit(weave_type = weave_type, 
+                                      spacing = spacing, aspect = aspect,
+                                      margin = margin, strands = strands, 
+                                      crs = crs)
 
     return WeaveUnit(
         unit["weave_unit"],
