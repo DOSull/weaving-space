@@ -3,8 +3,6 @@
 
 from calendar import c
 from dataclasses import dataclass
-# from itertools import chain
-# import logging
 
 import numpy as np
 
@@ -161,7 +159,7 @@ class _WeaveGrid:
 
 
     def _gridify(self, shape: Polygon, precision = 3) -> Polygon:
-        """Returns polygon with coordinates at specified precision 
+        """Returns polygon with coordinates at specified precision. 
 
         Args:
             shape (Polygon): polygon to gridify.
@@ -217,40 +215,74 @@ class _WeaveGrid:
         return [translate(base_slice, 0, offset) for offset in slice_offsets]
 
 
-    # Gets the cross grid cell strands running across a cell in the x direction
-    # optionally rotated by orientation for a grid cell spacing S, total strand
-    # width width (as a fraction of S), sliced into n_slices along its length
-    def _get_cell_strands(self, width = 1, coords = None, 
-                            orientation = 0, n_slices = 1):
+    def _get_cell_strands(
+            self, width:float = 1.0, coords:tuple[int] = None, 
+            orientation:int = 0, n_slices:int = 1
+        ) -> list[Polygon|MultiPolygon]:
+        """Gets n_slices cells strands with specified total width across the
+        grid cell at coords at orientation.
+
+        Args:
+            width (float, optional): total width of strands relative to 
+                self.spacing. Defaults to 1.0.
+            coords (tuple[int], optional): integer grid coordinates of 
+                cell. Defaults to None.
+            orientation (int, optional): orientation of the strands. 
+                Defaults to 0.
+            n_slices (int, optional): number of length-wise slices to cut
+                strands into. Defaults to 1.
+
+        Returns:
+            list[Polygon|MultiPolygon]: polygons representing the strands.
+        """        
         cell = self.get_grid_cell_at(coords)
-        cell_offset = cell.envelope.centroid.coords[0]
+        # when aspect is <1 strands extend outside cell by some scale factor
         sf = 2 - width if self.n_axes == 2 else (5 - 3 * width) / 2
         expanded_cell = scale(cell, sf, sf, origin = cell.centroid)
         big_l = (
-            sf * self.spacing 
-            if self.n_axes == 2 \
+            sf * self.spacing      ## recatngular case is simple
+            if self.n_axes == 2    ## triangular less so!
             else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2)
-        strands = MultiPolygon(
-        self._get_grid_cell_slices(L = big_l, W = width, n_slices = n_slices))
+        strands = MultiPolygon(self._get_grid_cell_slices(
+                                                    L = big_l, W = width, 
+                                                    n_slices = n_slices))
+        # we need centre of cell bounding box to shift strands to 
+        # vertical center of triangular cells. In rectangular case
+        # this will be (0, 0).
+        cell_offset = cell.envelope.centroid.coords[0]
         strands = translate(strands, cell_offset[0], cell_offset[1])
-        strands = MultiPolygon([expanded_cell.intersection(s) 
+        strands = MultiPolygon([expanded_cell.intersection(s)
                                 for s in strands.geoms])
         strands = rotate(strands, orientation, origin = cell.centroid)
         return [self._gridify(s) for s in strands.geoms]
 
 
-    # Returns the visible parts of the strands in a grid, given the spacing S
-    # strand width width, parity (for the triangular case), a vector of strand
-    # orders and matching vectors of orientations and the desired number 
-    # of slices
-    def get_visible_cell_strands(self, width = 1, coords = None, 
-                                strand_order = None, n_slices = None):
-        if strand_order is None:
-            strand_order = tuple([i for i in range(self.n_axes)])
-        if n_slices is None:
-            n_slices = tuple([1] * self.n_axes)
+    def get_visible_cell_strands(
+            self, width :float= 1.0, coords:tuple[int] = None, 
+            strand_order:tuple[int] = (0, 1, 2), n_slices:tuple[int] = (1, 1, 1)
+        ) -> list[Polygon|MultiPolygon]:
+        """Returns visible strands in grid cell based on layer order.
+
+        Returns the visible parts of the strands in a grid cell, given
+        strand width width, strand order and the number of slices in each
+        direction.
+
+        Args:
+            width (float): total width of strands relative to self.spacing.
+                Defaults to 1.0.
+            coords (tuple[int], optional): grid cell coordinates. Defaults 
+                to None.
+            strand_order (tuple[int], optional): order of the layers from top,  
+                at this cell site. Defaults to (0, 1, 2).
+            n_slices (tuple[int], optional): number of slices in each layer 
+                at this cell site. Defaults to (1, 1, 1).
+
+        Returns:
+            list[Polygon|MultiPolygon]: those polygons that will be visible at
+                this site given requested strand order from the top.
+        """        
         all_polys = []
-        for order in strand_order:
+        for order in strand_order[:self.n_axes]:
             next_polys = self._get_cell_strands(width, coords, 
                                                 self.orientations[order], 
                                                 n_slices[order])
