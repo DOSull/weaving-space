@@ -230,4 +230,4 @@ def get_biaxial_weave_unit(*, spacing = 10_000, aspect = 1, margin = 0,
 
   return make_shapes_from_coded_weave_matrix(
     Loom(p), spacing = spacing, width = aspect, margin = margin, 
-    axis1_threads = weft_threads, axis2_threads = warp_threads, crs = crs)
+    strand_labels = [weft_threads, warp_threads, []], crs = crs)

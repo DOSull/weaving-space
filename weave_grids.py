@@ -263,9 +263,7 @@ class _WeaveGrid:
         ) -> list[Polygon|MultiPolygon]:
         """Returns visible strands in grid cell based on layer order.
 
-        Returns the visible parts of the strands in a grid cell, given
-        strand width width, strand order and the number of slices in each
-        direction.
+        Returns visible parts of the strands in a grid cell, given strand width, strand layer order and the number of slices in each direction.
 
         Args:
             width (float): total width of strands relative to self.spacing.

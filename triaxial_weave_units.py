@@ -49,6 +49,5 @@ def get_triaxial_weave_unit(spacing = 10000, aspect = 1, margin = 0,
   return make_shapes_from_coded_weave_matrix(
     loom, spacing = spacing,
     width = aspect, margin = margin,
-    axis1_threads = strands_1,
-    axis2_threads = strands_2,
-    axis3_threads = strands_3, crs = crs)
+    strand_labels = [strands_1, strands_2, strands_3],
+    crs = crs)
