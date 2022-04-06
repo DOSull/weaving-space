@@ -297,8 +297,8 @@ def get_weave_pattern_matrix(*, weave_type:str = "plain", n:int|tuple[int] = 2,
                              warp:list[str] = ["a", "b"],
                              weft:list[str] = ["c", "d"], 
                              tie_up:np.ndarray = make_twill_matrix((2, 2)), 
-                             tr:np.ndarray = np.diag(np.ones(2)), 
-                             th:np.ndarray = np.diag(np.ones(2))) -> np.ndarray:
+                             tr:np.ndarray = None, 
+                             th:np.ndarray = None) -> np.ndarray:
     """Returns encoded weave pattern matrix.
     
     See encode_biaxial_weave() for the encoding.
@@ -319,9 +319,9 @@ def get_weave_pattern_matrix(*, weave_type:str = "plain", n:int|tuple[int] = 2,
         tie_up (np.ndarray, optional): a weave pattern matrix to pass thru in 
             the "this" case. Defaults to make_twill_matrix((2, 2)).
         tr (np.ndarray, optional): treadling matrix for the "this" case.        
-            Defaults to np.diag(np.ones(2)).
+            Defaults to None.
         th (np.ndarray, optional): threading matrix for the "this" case.        
-            Defaults to np.diag(np.ones(2)).
+            Defaults to None.
 
     Returns:
         np.ndarray: encoded weave pattern matrix.
@@ -353,8 +353,8 @@ def get_biaxial_weave_unit(*, spacing:float = 10_000, aspect:float = 1.0,
                            margin:float = 0.0, weave_type:str = "twill", 
                            n:int|tuple[int] = (2, 2), strands:str = "ab|cd", crs:int = 3857, 
                            tie_up:np.ndarray = make_twill_matrix((2, 2)),
-                           tr:np.ndarray = np.diag(np.ones(2)), 
-                           th:np.ndarray = np.diag(np.ones(2))) -> dict:
+                           tr:np.ndarray = None, 
+                           th:np.ndarray = None) -> dict:
     """Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
 
     Args:
@@ -375,9 +375,9 @@ def get_biaxial_weave_unit(*, spacing:float = 10_000, aspect:float = 1.0,
         tie_up (np.ndarray, optional): a weave pattern matrix to pass thru in 
             the "this" case. Defaults to make_twill_matrix((2, 2)).
         tr (np.ndarray, optional): treadling matrix for the "this" case.        
-            Defaults to np.diag(np.ones(2)).
+            Defaults to None.
         th (np.ndarray, optional): threading matrix for the "this" case.        
-            Defaults to np.diag(np.ones(2)).
+            Defaults to None.
 
     Returns:
         dict: dictionary with contents {"weave_unit": GeoDataFrame of weave 
@@ -389,9 +389,6 @@ def get_biaxial_weave_unit(*, spacing:float = 10_000, aspect:float = 1.0,
     
     if weave_type == "basket":
         n = n[0]
-    
-    treadling = np.diag(np.ones(tie_up.shape[0]))
-    threading = np.diag(np.ones(tie_up.shape[1]))
     
     p = get_weave_pattern_matrix(weave_type = weave_type, n = n, 
             warp = warp_threads, weft = weft_threads, 
