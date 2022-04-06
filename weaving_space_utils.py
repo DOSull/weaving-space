@@ -6,33 +6,49 @@
 
 import re
 
-def parse_labels(ids):
-  output = ids.split("|")
-  if len(output) == 2:
-    output.append("-")
-  return(output)
-    
 
-def parse_strand_label(s):
-  clean_s = re.sub("[(]+", "(", re.sub("[)]+", ")", s))
-  is_combo = False
-  output = []
-  current = ""
-  for c in clean_s:
-    if is_combo:
-      if c == ")":
-        output.append(current)
-        current = ""
-        is_combo = False
-      else:
-        current = current + c
-    else:
-      if c == "(":
-        is_combo = True
-      else:
-        output.append(c)
-  return output
+def _parse_strand_label(s:str) -> list[str]:
+    """Breaks a strand label specifiction in to a list of labels
 
-def get_strand_ids(strands_spec):
-  return [parse_strand_label(x) for x in parse_labels(strands_spec)]
+    Args:
+        s (str): see get_strand_ids() for details
+    Returns:
+        list[str]: list of strand labels.
+    """    
+    clean_s = re.sub("[(]+", "(", re.sub("[)]+", ")", s))
+    is_combo = False
+    output = []
+    current = ""
+    for c in clean_s:
+        if is_combo:
+            if c == ")":
+                output.append(current)
+                current = ""
+                is_combo = False
+            else:
+                current = current + c
+        else:
+            if c == "(":
+                is_combo = True
+            else:
+                output.append(c)
+    return output
+
+
+def get_strand_ids(strands_spec: str) -> tuple[list[str]]:
+    """Strands label string to split into strand labels.
+
+    Args:
+        strands_spec (str): string format "a|bc|(de)f" | separates strands in
+            each direction and () designates combining labels into a single strand that will be sliced lengthwise. Example output:
+
+                "a|bc|(de)f" -> (["a"], ["b", "c"], ["de", "f"])
+            
+            Superflous parentheses are removed, but no other error-checks are
+            applied.
+
+    Returns:
+        tuple[str]: tuple of lists of labels for each set of strands.
+    """    
+    return tuple([_parse_strand_label(s) for s in strands_spec.split("|")])
 

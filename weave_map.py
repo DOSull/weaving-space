@@ -111,13 +111,13 @@ def parameter_info(margin: float, aspect: float) -> None:
 
     if aspect < 0 or aspect > 1:
         logging.warning("""Values of aspect outside the range 0 to 1 won't 
-                        produce tiles that will look like weaves, but they might be  pretty anyway! Values less than -1 seem particularly promising, especially with opacity set less than 1.""")
+                        produce tiles that will look like weaves, but they might be pretty anyway! Values less than -1 seem particularly promising, especially with opacity set less than 1.""")
 
     # maximum margin that will produce a weave-able tile
     max_margin = (1 - aspect) / 2
     if margin > max_margin:
-        logging.warning(f"""With aspect set to {aspect} the largest margin that
-                        will work is {max_margin}. Lower values are required to produce proper tileable weaves. Higher values will make nice tilings that are not strictly weaves. An alternative is to make the tile with margin = 0, and then apply a negative buffer after you have tiled your map.""")   
+        logging.warning(f"""With aspect set to {aspect:.3f} the largest margin 
+                        that will work is {max_margin:.3f}. Lower values are required to produce proper tileable weaves. Specifically, with too wide a margin, strands in adjacent tiles will not 'join up' when tiled. Higher values will make nice tilings with broken strands, which aren't 'proper' weaves. The best alternative is to make the weave unit with margin = 0, then apply a negative buffer after you have tiled your map.""")   
     return None
   
 

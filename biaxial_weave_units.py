@@ -294,8 +294,8 @@ def make_this_pattern(tie_up:np.ndarray,
 
 
 def get_weave_pattern_matrix(*, weave_type:str = "plain", n:int|tuple[int] = 2, 
-                             warp:list[str] = ["a", "b"],
-                             weft:list[str] = ["c", "d"], 
+                             warp:list[str]|tuple[str] = ["a", "b"],
+                             weft:list[str]|tuple[str] = ["c", "d"], 
                              tie_up:np.ndarray = make_twill_matrix((2, 2)), 
                              tr:np.ndarray = None, 
                              th:np.ndarray = None) -> np.ndarray:
@@ -312,10 +312,10 @@ def get_weave_pattern_matrix(*, weave_type:str = "plain", n:int|tuple[int] = 2,
             "this". Defaults to "plain".
         n (int | tuple[int], optional): over under pattern. See 
             make_over_under_row() for details. Defaults to 2.
-        warp (list[str], optional): list of labels for warp strands. Defaults 
-            to ["a", "b"].
-        weft (list[str], optional): list of labels for weft strands. Defaults 
-            to ["c", "d"].
+        warp (list[str] | tuple[str], optional): list of labels for warp 
+            strands. Defaults to ["a", "b"].
+        weft (list[str] | tuple[str], optional): list of labels for weft 
+            strands. Defaults to ["c", "d"].
         tie_up (np.ndarray, optional): a weave pattern matrix to pass thru in 
             the "this" case. Defaults to make_twill_matrix((2, 2)).
         tr (np.ndarray, optional): treadling matrix for the "this" case.        
@@ -349,8 +349,8 @@ def get_weave_pattern_matrix(*, weave_type:str = "plain", n:int|tuple[int] = 2,
     return encode_biaxial_weave(p, warp_threads, weft_threads)
 
 
-def get_biaxial_weave_unit(*, spacing:float = 10_000, aspect:float = 1.0,
-                           margin:float = 0.0, weave_type:str = "twill", 
+def get_biaxial_weave_unit(*, spacing:float = 10_000., aspect:float = 1.,
+                           margin:float = 0., weave_type:str = "twill", 
                            n:int|tuple[int] = (2, 2), strands:str = "ab|cd", crs:int = 3857, 
                            tie_up:np.ndarray = make_twill_matrix((2, 2)),
                            tr:np.ndarray = None, 
@@ -383,9 +383,7 @@ def get_biaxial_weave_unit(*, spacing:float = 10_000, aspect:float = 1.0,
         dict: dictionary with contents {"weave_unit": GeoDataFrame of weave 
             elements, "tile": GeoDataFrame of the tile}.
     """    
-    strand_ids = get_strand_ids(strands)
-    warp_threads = strand_ids[0]
-    weft_threads = strand_ids[1]
+    warp_threads, weft_threads = get_strand_ids(strands)
     
     if weave_type == "basket":
         n = n[0]
