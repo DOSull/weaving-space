@@ -23,9 +23,11 @@ decode_orders = (
 )
 
 
-# nested dictionary to combine layer orders from 3 biaxial weaves
+# Nested dictionary to combine layer orders from 3 biaxial weaves
 # into a single consistent order of layers. Inconsistent combinations
-# will not return a value
+# will not return a value. 
+# Various other if-elif-else types of approach were tried here, but
+# overall, I think this is the cleanest option. 
 combined_orderings = {
   "NA":  { "NA":  { "NA":  None,         # All absent
                        2:  (2, )},       # Only 2 present
@@ -51,14 +53,14 @@ combined_orderings = {
 # convenience wrapper for the combined_orderings dictionary
 # missing values return "NA"
 def _combine_orders(orders):
-  # print(f"orders: {orders}")
-  try:
-    result = combined_orderings[orders[0]][orders[1]][orders[2]]
-  except:
-    print(f"Unable to determine unique ordering on {orders}")
-    return "NA"
-  else:
-    return result 
+    # print(f"orders: {orders}")
+    try:
+        result = combined_orderings[orders[0]][orders[1]][orders[2]]
+    except:
+        print(f"Unable to determine unique ordering on {orders}")
+        return "NA"
+    else:
+        return result 
 
 
 @dataclass
