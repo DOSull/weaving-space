@@ -85,7 +85,7 @@ def get_pattern(tie_up:np.ndarray, treadling:np.ndarray, threading:np.ndarray,
 def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray, 
                          weft:np.ndarray) -> np.ndarray:
     """Encodes a biaxial weave pattern as below.
-    
+
     1 = warp is absent
     2 = weft is absent
     3 = both threads are absent
