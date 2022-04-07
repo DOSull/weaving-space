@@ -10,8 +10,8 @@ from shapely.geometry import Polygon
 from shapely.geometry import MultiPolygon
 from shapely.ops import unary_union
 
-from weavingspace.loom import Loom
-from weavingspace.weave_grids import _WeaveGrid
+from loom import Loom
+from weave_grids import _WeaveGrid
 
 
 def centre_offset(shape: Polygon, 

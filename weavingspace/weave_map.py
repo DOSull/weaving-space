@@ -11,8 +11,8 @@ from shapely.affinity import translate
 from shapely.geometry import MultiPolygon
 from shapely.geometry import Polygon
 
-from weavingspace.triaxial_weave_units import get_triaxial_weave_unit
-from weavingspace.biaxial_weave_units import get_biaxial_weave_unit
+from triaxial_weave_units import get_triaxial_weave_unit
+from biaxial_weave_units import get_biaxial_weave_unit
 
 
 @dataclass

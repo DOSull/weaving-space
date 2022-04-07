@@ -3,10 +3,10 @@
 
 import numpy as np
 
-from weavingspace.loom import Loom
-from weavingspace.biaxial_weave_units import get_weave_pattern_matrix
-from weavingspace.render_weave_grids import make_shapes_from_coded_weave_matrix
-from weavingspace.weaving_space_utils import get_strand_ids
+from loom import Loom
+from biaxial_weave_units import get_weave_pattern_matrix
+from render_weave_grids import make_shapes_from_coded_weave_matrix
+from weaving_space_utils import get_strand_ids
 
 def get_triaxial_weave_matrices(*,
                                 weave_type:str = "cube", 

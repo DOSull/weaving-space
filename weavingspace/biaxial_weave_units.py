@@ -26,9 +26,9 @@
 
 
 import numpy as np
-from weavingspace.loom import Loom
-from weavingspace.render_weave_grids import make_shapes_from_coded_weave_matrix
-from weavingspace.weaving_space_utils import get_strand_ids
+from loom import Loom
+from render_weave_grids import make_shapes_from_coded_weave_matrix
+from weaving_space_utils import get_strand_ids
 
 
 def reps_needed(x1:int, x2:int) -> tuple[int]:
