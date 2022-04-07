@@ -50,5 +50,9 @@ def get_strand_ids(strands_spec: str) -> tuple[list[str]]:
     Returns:
         tuple[str]: tuple of lists of labels for each set of strands.
     """    
-    return tuple([_parse_strand_label(s) for s in strands_spec.split("|")])
+    strand_ids = [_parse_strand_label(s) for s in strands_spec.split("|")]
+    strand_ids = (strand_ids
+                  if len(strand_ids) == 3
+                  else strand_ids + [[""]])
+    return tuple(strand_ids)
 

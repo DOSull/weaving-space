@@ -26,9 +26,9 @@
 
 
 import numpy as np
-from loom import Loom
-from render_weave_grids import make_shapes_from_coded_weave_matrix
-from weaving_space_utils import get_strand_ids
+from weavingspace.loom import Loom
+from weavingspace.render_weave_grids import make_shapes_from_coded_weave_matrix
+from weavingspace.weaving_space_utils import get_strand_ids
 
 
 def reps_needed(x1:int, x2:int) -> tuple[int]:
@@ -383,7 +383,7 @@ def get_biaxial_weave_unit(*, spacing:float = 10_000., aspect:float = 1.,
         dict: dictionary with contents {"weave_unit": GeoDataFrame of weave 
             elements, "tile": GeoDataFrame of the tile}.
     """    
-    warp_threads, weft_threads = get_strand_ids(strands)
+    warp_threads, weft_threads, drop = get_strand_ids(strands)
     
     if weave_type == "basket":
         n = n[0]
