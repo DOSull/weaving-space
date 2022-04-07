@@ -141,84 +141,94 @@ class WeaveUnit:
         return None
   
 
-def _get_width_height_left_bottom(gs:geopandas.GeoSeries) -> tuple[float]:
-    """Returns width, height, left and bottom limits of a GeoSeries
+@dataclass
+class TileGrid:
+    tile:geopandas.GeoSeries = None
+    to_tile:geopandas.GeoSeries = None
+    
+    def __init__(self, tile, to_tile) -> None:
+        self.tile = tile
+        self.to_tile = to_tile
+        
 
-    Args:
-        gs (geopandas.GeoSeries): GeoSeries for which limits are required.
+    def _get_width_height_left_bottom(self, 
+                                      gs:geopandas.GeoSeries
+                                    ) -> tuple[float]:
+        """Returns width, height, left and bottom limits of a GeoSeries
 
-    Returns:
-        tuple: four float values of width, height, left and bottom of gs.
-    """    
-    extent = gs.total_bounds
-    return extent[2] - extent[0], extent[3] - extent[1], extent[0], extent[1]
+        Args:
+            gs (geopandas.GeoSeries): GeoSeries for which limits are required.
 
-
-def _get_grid(ll: tuple[float], nums: tuple[int], 
-              tdim: tuple[float]) -> np.ndarray:
-    """Returns rectilinear grid of x,y coordinate pairs.
-
-    Args:
-        ll (tuple[float]): lower left corner coordinates of the grid as (x, y).
-        nums (tuple[int]): grid extent as (number of columns, number of rows).
-        tdim (tuple[float]): grid resolution as (column width, column height)
-
-    Returns:
-        np.ndarray: a matrix of nums[0] * nums[1] rows and 2 columns, each row
-        containing an x, y coordinate pair.
-    """    
-    return np.array(np.meshgrid(np.arange(nums[0]) * tdim[0] + ll[0],
-                                np.arange(nums[1]) * tdim[1] + ll[1])
-                    ).reshape(2, nums[0] * nums[1]).transpose()
-      
-
-def _get_rect_centres(tile_gs:geopandas.GeoSeries, 
-                      to_tile_gs:geopandas.GeoSeries) -> np.ndarray:
-    """Returns a rectangular grid of translation vectors that will 'fill' to_tile_gs polygon with the tile_gs polygon (which should be rectangular).
-
-    Args:
-        tile_gs (geopandas.GeoSeries): the tile (which should be a rectangle).
-        to_tile_gs (geopandas.GeoSeries): the region to be tiled.
-
-    Returns:
-        np.ndarray: A 2 column array each row being an x, y translation vector.
-    """    
-    tt_w, tt_h, tt_x0, tt_y0 = _get_width_height_left_bottom(to_tile_gs)
-    tile_w, tile_h, tile_x0, tile_y0 = _get_width_height_left_bottom(tile_gs)
-    nx = int(np.ceil(tt_w / tile_w))
-    ny = int(np.ceil(tt_h / tile_h))
-    x0 = ((nx * tile_w) - tt_w) / 2 + tile_x0 + tt_x0
-    y0 = ((ny * tile_h) - tt_h) / 2 + tile_y0 + tt_y0
-    return _get_grid((x0, y0), (nx, ny), (tile_w, tile_h))
+        Returns:
+            tuple: four float values of width, height, left and bottom of gs.
+        """    
+        extent = gs.total_bounds
+        return extent[2] - extent[0], extent[3] - extent[1], extent[0], extent[1]
 
 
-def _get_hex_centres(tile_gs:geopandas.GeoSeries, 
-                     to_tile_gs:geopandas.GeoSeries) -> np.ndarray:
-    """Returns a hexagonal grid of translation vectors that will 'fill' 
-    to_tile_gs with the tile_gs polygon (which should be hexagonal).
+    def _get_grid(self, ll: tuple[float], nums: tuple[int], 
+                  tdim: tuple[float]) -> np.ndarray:
+        """Returns rectilinear grid of x,y coordinate pairs.
 
-    Args:
-        tile_gs (geopandas.GeoSeries): the tile (which should be hexagonal).
-        to_tile_gs (geopandas.GeoSeries): the region to be tiled.
+        Args:
+            ll (tuple[float]): lower left corner coordinates of the grid as 
+                (x, y). 
+            nums (tuple[int]): grid extent as (number of columns, number 
+                of rows).
+            tdim (tuple[float]): grid resolution as (column width, column 
+                height)
 
-    Returns:
-        np.ndarray: A 2 column array each row being an x, y translation vector.
-    """    
-    tt_w, tt_h, tt_x0, tt_y0  = _get_width_height_left_bottom(to_tile_gs)
-    tile_w, tile_h, tile_x0, tile_y0 = _get_width_height_left_bottom(tile_gs)
-    nx = int(np.ceil(tt_w / (tile_w * 3 / 2))) + 1
-    ny = int(np.ceil(tt_h / tile_h)) + 1
-    # the effective width of two columns of hexagonal tiles is 3w/2
-    x0 = ((nx * tile_w * 3 / 2) - tt_w) / 2 + tile_x0 + tt_x0
-    y0 = ((ny * tile_h) - tt_h) / 2 + tile_y0 + tt_y0
-    # get two offset rectangular grids and combine them
-    g1 = _get_grid((x0, y0 + tile_h / 4), 
-                   (nx, ny), 
-                   (tile_w * 3 / 2, tile_h))
-    g2 = _get_grid((x0 + tile_w * 3 / 4, y0 - tile_h / 4), 
-                   (nx, ny), 
-                   (tile_w * 3 / 2, tile_h))
-    return np.append(g1, g2).reshape((g1.shape[0] + g2.shape[0], 2))
+        Returns:
+            np.ndarray: a matrix of nums[0] * nums[1] rows and 2 columns, 
+                each row
+            containing an x, y coordinate pair.
+        """    
+        return np.array(np.meshgrid(np.arange(nums[0]) * tdim[0] + ll[0],
+                                    np.arange(nums[1]) * tdim[1] + ll[1])
+                        ).reshape(2, nums[0] * nums[1]).transpose()
+        
+
+    def _get_rect_centres(self) -> np.ndarray:
+        """Returns a rectangular grid of translation vectors that will 'fill' to_tile_gs polygon with the tile_gs polygon (which should be rectangular).
+
+        Returns:
+            np.ndarray: A 2 column array each row being an x, y translation vector.
+        """    
+        tt_w, tt_h, tt_x0, tt_y0 = \
+            self._get_width_height_left_bottom(self.to_tile)
+        tile_w, tile_h, tile_x0, tile_y0 = \
+            self._get_width_height_left_bottom(self.tile)
+        nx = int(np.ceil(tt_w / tile_w))
+        ny = int(np.ceil(tt_h / tile_h))
+        x0 = ((nx * tile_w) - tt_w) / 2 + tile_x0 + tt_x0
+        y0 = ((ny * tile_h) - tt_h) / 2 + tile_y0 + tt_y0
+        return self._get_grid((x0, y0), (nx, ny), (tile_w, tile_h))
+
+
+    def _get_hex_centres(self) -> np.ndarray:
+        """Returns a hexagonal grid of translation vectors that will 'fill' 
+        to_tile_gs with the tile_gs polygon (which should be hexagonal).
+
+        Returns:
+            np.ndarray: A 2 column array each row being an x, y translation vector.
+        """    
+        tt_w, tt_h, tt_x0, tt_y0  = \
+            self._get_width_height_left_bottom(self.to_tile)
+        tile_w, tile_h, tile_x0, tile_y0 = \
+            self._get_width_height_left_bottom(self.tile)
+        nx = int(np.ceil(tt_w / (tile_w * 3 / 2))) + 1
+        ny = int(np.ceil(tt_h / tile_h)) + 1
+        # the effective width of two columns of hexagonal tiles is 3w/2
+        x0 = ((nx * tile_w * 3 / 2) - tt_w) / 2 + tile_x0 + tt_x0
+        y0 = ((ny * tile_h) - tt_h) / 2 + tile_y0 + tt_y0
+        # get two offset rectangular grids and combine them
+        g1 = self._get_grid((x0, y0 + tile_h / 4), 
+                            (nx, ny), 
+                            (tile_w * 3 / 2, tile_h))
+        g2 = self._get_grid((x0 + tile_w * 3 / 4, y0 - tile_h / 4), 
+                            (nx, ny), 
+                            (tile_w * 3 / 2, tile_h))
+        return np.append(g1, g2).reshape((g1.shape[0] + g2.shape[0], 2))
 
 
 def _translate_geoms(gs:geopandas.GeoSeries, 
@@ -288,11 +298,12 @@ def get_tiling(unit: WeaveUnit,
         to_tile_gs, centre = _rotate_gdf_to_geoseries(region, rotation)
     else:
         to_tile_gs, centre = region.geometry, None
-        
+    
+    grid = TileGrid(tile_gs, to_tile_gs) 
     if unit.weave_type in ("hex", "cube"):
-        shifts = _get_hex_centres(tile_gs, to_tile_gs)
+        shifts = grid._get_hex_centres()
     else:
-        shifts = _get_rect_centres(tile_gs, to_tile_gs)
+        shifts = grid._get_rect_centres()
 
     # TODO: filter shifts by some buffered version of the region, so as to save 
     # time (possibly) on generating and then clipping the tiled weave units
