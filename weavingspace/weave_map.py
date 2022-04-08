@@ -28,8 +28,9 @@ class WeaveUnit:
         tile: a GeoDataFrame of the weave_unit tileable polygon (either a
             rectangle or a hexagon).
     """  
-    elements:geopandas.GeoDataFrame
-    tile:geopandas.GeoDataFrame
+    elements:geopandas.GeoDataFrame = None
+    tile:geopandas.GeoDataFrame = None
+    tile_shape:str = "rectangle"
     weave_type:str = "plain"
     spacing:float = 10_000.
     aspect:float = 1.
@@ -73,6 +74,9 @@ class WeaveUnit:
         self.tile = unit["tile"]
         for k, v in kwargs.items():
             self.__dict__[k] = v
+        self.tile_shape = ("hexagon" 
+                           if self.weave_type in ("hex", "cube")
+                           else "rectangle") 
 
 
     def _get_weave_unit(self, weave_type:str = "plain", spacing:float = 10000, 
@@ -284,7 +288,7 @@ class Tiling:
         self.region = region
         self.grid = TileGrid(self.tile.elements.geometry,
                              self.region.geometry, 
-                             self.tile.weave_type in ("cube", "hex"))
+                             self.tile.tile_shape == "hexagon")
         self.tiles = self.make_tiling()
 
 
