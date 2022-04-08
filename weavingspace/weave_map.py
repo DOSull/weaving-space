@@ -122,7 +122,7 @@ class WeaveUnit:
                                         margin = margin, strands = strands, 
                                         crs = crs)
         else:
-            unit = get_biaxial_weave_unit(weave_type = weave_type, 
+            unit = get_biaxial_weave_unit(weave_type = weave_type, n = n,
                                         spacing = spacing, aspect = aspect,
                                         margin = margin, strands = strands, 
                                         crs = crs, tie_up = tie_up, )
