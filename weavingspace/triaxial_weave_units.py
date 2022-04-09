@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from typing import Union
 import numpy as np
 
 from loom import Loom
@@ -10,9 +11,9 @@ from weaving_space_utils import get_strand_ids
 
 def get_triaxial_weave_matrices(*,
                                 weave_type:str = "cube", 
-                                strands_1:list[str]|tuple[str] = ["a"], 
-                                strands_2:list[str]|tuple[str] = ["b"], 
-                                strands_3:list[str]|tuple[str] = ["c"]
+                                strands_1:Union[list[str], tuple[str]] = ["a"], 
+                                strands_2:Union[list[str], tuple[str]] = ["b"], 
+                                strands_3:Union[list[str], tuple[str]] = ["c"]
                                 ) -> Loom:
     """Returns encoded weave pattern matrix as Loom of three biaxial matrices.
     

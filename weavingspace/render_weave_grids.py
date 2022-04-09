@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from typing import Union
 from itertools import chain
 
 import numpy as np
@@ -88,8 +89,10 @@ def make_shapes_from_coded_weave_matrix(
     }
 
 
-def make_weave_gdf(polys:list[Polygon|MultiPolygon], strand_ids:list[str], 
-                   bb:Polygon, offset:tuple[float], spacing:float, margin:float, crs:int) -> geopandas.GeoDataFrame:
+def make_weave_gdf(polys:list[Union[Polygon, MultiPolygon]], 
+                   strand_ids:list[str], bb:Polygon, 
+                   offset:tuple[float], spacing:float, margin:float, 
+                   crs:int) -> geopandas.GeoDataFrame:
     """Makes a GeoDataFrame from weave element polygons, labels, tile, etc.
 
     Args:

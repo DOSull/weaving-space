@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from calendar import c
+from typing import Union
 from dataclasses import dataclass
 
 import numpy as np
@@ -218,7 +218,7 @@ class _WeaveGrid:
     def _get_cell_strands(
             self, width:float = 1.0, coords:tuple[int] = None, 
             orientation:int = 0, n_slices:int = 1
-        ) -> list[Polygon|MultiPolygon]:
+        ) -> list[Union[Polygon, MultiPolygon]]:
         """Gets n_slices cells strands with specified total width across the
         grid cell at coords at orientation.
 
@@ -260,7 +260,7 @@ class _WeaveGrid:
     def get_visible_cell_strands(
             self, width :float= 1.0, coords:tuple[int] = None, 
             strand_order:tuple[int] = (0, 1, 2), n_slices:tuple[int] = (1, 1, 1)
-        ) -> list[Polygon|MultiPolygon]:
+        ) -> list[Union[Polygon, MultiPolygon]]:
         """Returns visible strands in grid cell based on layer order.
 
         Returns visible parts of the strands in a grid cell, given strand width, strand layer order and the number of slices in each direction.

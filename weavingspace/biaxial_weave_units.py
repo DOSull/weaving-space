@@ -24,6 +24,7 @@
 # treadling matrices. An accessible introduction can be found at 
 # https://www.youtube.com/watch?v=oMOSiag3dxg
 
+from typing import Union
 
 import numpy as np
 from loom import Loom
@@ -123,7 +124,7 @@ def make_plain_pattern(warp_n:int = 1, weft_n:int = 1) -> np.ndarray:
     return make_twill_pattern(n = 1, warp_n = warp_n, weft_n = weft_n)
 
 
-def make_twill_pattern(n:int|tuple[int] = 2, 
+def make_twill_pattern(n:Union[int, tuple[int]] = 2, 
                        warp_n:int = 2, weft_n:int = 2) -> np.ndarray:
     """Returns twill pattern matrix extended for warp and weft patterns.
 
@@ -144,7 +145,7 @@ def make_twill_pattern(n:int|tuple[int] = 2,
     return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 
 
-def make_over_under_row(n:int|tuple[int]) -> list[int]:
+def make_over_under_row(n:Union[int, tuple[int]]) -> list[int]:
     """Returns a tuple of runs of 1s and 0s.
 
     Returns a tuple of runs of 1s and 0s per supplied n. 
@@ -192,7 +193,7 @@ def wrap_row(r:list, by:int = 1) -> list:
     return r[-by:] + r[:-by]
 
 
-def make_twill_matrix(over_under:int|tuple[int]) -> np.ndarray:
+def make_twill_matrix(over_under:Union[int, tuple[int]]) -> np.ndarray:
     """Makes a twill 0/1 matrix.
 
     Makes a matrix like
@@ -293,9 +294,10 @@ def make_this_pattern(tie_up:np.ndarray,
     return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 
 
-def get_weave_pattern_matrix(*, weave_type:str = "plain", n:int|tuple[int] = 2, 
-                             warp:list[str]|tuple[str] = ["a", "b"],
-                             weft:list[str]|tuple[str] = ["c", "d"], 
+def get_weave_pattern_matrix(*, weave_type:str = "plain", 
+                             n:Union[int, tuple[int]] = 2, 
+                             warp:Union[list[str], tuple[str]] = ["a", "b"],
+                             weft:Union[list[str], tuple[str]] = ["c", "d"], 
                              tie_up:np.ndarray = make_twill_matrix((2, 2)), 
                              tr:np.ndarray = None, 
                              th:np.ndarray = None) -> np.ndarray:
@@ -351,7 +353,7 @@ def get_weave_pattern_matrix(*, weave_type:str = "plain", n:int|tuple[int] = 2,
 
 def get_biaxial_weave_unit(*, spacing:float = 10_000., aspect:float = 1.,
                            margin:float = 0., weave_type:str = "twill", 
-                           n:int|tuple[int] = (2, 2), strands:str = "ab|cd", crs:int = 3857, 
+                           n:Union[int, tuple[int]] = (2, 2), strands:str = "ab|cd", crs:int = 3857, 
                            tie_up:np.ndarray = make_twill_matrix((2, 2)),
                            tr:np.ndarray = None, 
                            th:np.ndarray = None) -> dict:

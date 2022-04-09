@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from typing import Union
 from itertools import chain
 from dataclasses import dataclass
 import logging
-from sys import hexversion
 
 import numpy as np
 import geopandas 
-from shapely.affinity import rotate
 from shapely.affinity import translate
 from shapely.geometry import MultiPolygon
 from shapely.geometry import Point
 from shapely.geometry import Polygon
-from shapely.ops import unary_union
 
 from triaxial_weave_units import get_triaxial_weave_unit
 from biaxial_weave_units import get_biaxial_weave_unit
@@ -35,7 +33,7 @@ class WeaveUnit:
     spacing:float = 10_000.
     aspect:float = 1.
     margin:float = 0.
-    n:int|tuple[int] = (2, 2)
+    n:Union[int, tuple[int]] = (2, 2)
     strands:str = "a|b|c"
     tie_up:np.ndarray = None
     tr:np.ndarray = None
@@ -293,7 +291,7 @@ class Tiling:
 
 
     def _translate_geoms(self, gs:geopandas.GeoSeries, dx:float = 0., 
-                         dy:float = 0.) -> list[Polygon|MultiPolygon]:
+                         dy:float = 0.) -> list[Union[Polygon, MultiPolygon]]:
         """Translates geometries in supplied GeoSeries by (dx, dy).
         
         This is needed in place of GeoSeries.translate because we have 
