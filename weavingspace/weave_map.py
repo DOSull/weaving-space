@@ -227,7 +227,7 @@ class TileGrid:
                         ).reshape(2, nums[0] * nums[1]).transpose()
         
 
-    def _get_rect_centres(self, centres:bool = True) -> np.ndarray:
+    def _get_rect_centres(self) -> np.ndarray:
         """Returns a rectangular grid of translation vectors that will 'fill' to_tile_gs polygon with the tile_gs polygon (which should be rectangular).
 
         Returns:
@@ -245,13 +245,10 @@ class TileGrid:
                               (tile_w, tile_h))
 
 
-    def _get_hex_centres(self, centres:bool = True) -> np.ndarray:
+    def _get_hex_centres(self) -> np.ndarray:
         """Returns a hexagonal grid of translation vectors that will 'fill' 
         to_tile_gs with the tile_gs polygon (which should be hexagonal).
         
-        Args:
-            centers (bool): return centres if True, else the tiles.
-
         Returns:
             np.ndarray: A 2 column array each row being an x, y translation vector.
         """    
@@ -284,7 +281,7 @@ class Tiling:
                  region:geopandas.GeoDataFrame) -> None:
         self.tile = unit
         self.region = region
-        self.grid = TileGrid(self.tile.elements.geometry,
+        self.grid = TileGrid(self.tile.tile.geometry,
                              self.region.geometry, 
                              self.tile.tile_shape == "hexagon")
         self.tiles = self.make_tiling()
