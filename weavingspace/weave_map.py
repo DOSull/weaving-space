@@ -269,6 +269,32 @@ class TileGrid:
                             (nx, ny), 
                             (tile_w * 3 / 2, tile_h))
         return np.append(g1, g2).reshape((g1.shape[0] + g2.shape[0], 2))
+    
+    ## EXPERIMENTAL
+    def _get_tri_centres(self) -> np.ndarray:
+        tt_w, tt_h, tt_x0, tt_y0  = \
+            self._get_width_height_left_bottom(self.extent)
+        tile_w, tile_h, tile_x0, tile_y0 = \
+            self._get_width_height_left_bottom(self.tile)
+        nx = int(np.ceil(tt_w / tile_w)) + 1
+        ny = int(np.ceil(tt_h / tile_h / 2)) + 1
+        x0 = ((nx * tile_w) - tt_w) / 2 + tile_x0 + tt_x0
+        y0 = ((ny * tile_h) - tt_h) / 2 + tile_y0 + tt_y0
+        # this time there are four of them
+        g1 = self._get_grid((x0, y0),
+                            (nx, ny),
+                            (tile_w, tile_h * 2))
+        g2 = self._get_grid((x0, y0 + tile_h * 2 / 3),
+                            (nx, ny),
+                            (tile_w, tile_h * 2))
+        g3 = self._get_grid((x0 + tile_w / 2, y0 - tile_h / 3),
+                            (nx, ny),
+                            (tile_w, tile_h * 2))
+        g4 = self._get_grid((x0 + tile_w / 2, y0 + tile_h),
+                            (nx, ny),
+                            (tile_w, tile_h * 2))
+        return np.append(np.append(np.append(g1, g2), g3), g4).reshape(
+            g1.shape[0] + g2.shape[0] + g3.shape[0] + g4.shape[0], 2)
 
 
 class Tiling:
