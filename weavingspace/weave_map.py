@@ -237,12 +237,13 @@ class TileGrid:
             self._get_width_height_left_bottom(self.extent)
         tile_w, tile_h, tile_x0, tile_y0 = \
             self._get_width_height_left_bottom(self.tile)
+        # number of tiles in each direction
         nx = int(np.ceil(tt_w / tile_w))
         ny = int(np.ceil(tt_h / tile_h))
-        x0 = ((nx * tile_w) - tt_w) / 2 + tile_x0 + tt_x0
-        y0 = ((ny * tile_h) - tt_h) / 2 + tile_y0 + tt_y0
-        return self._get_grid((x0, y0), (nx, ny), 
-                              (tile_w, tile_h))
+        # origin is inset from the lower lwft corner based
+        x0 = (tt_w - (nx * tile_w)) / 2 + tt_x0
+        y0 = (tt_h - (ny * tile_h)) / 2 + tt_y0
+        return self._get_grid((x0, y0), (nx + 1, ny + 1), (tile_w, tile_h))
 
 
     def _get_hex_centres(self) -> np.ndarray:
@@ -256,42 +257,49 @@ class TileGrid:
             self._get_width_height_left_bottom(self.extent)
         tile_w, tile_h, tile_x0, tile_y0 = \
             self._get_width_height_left_bottom(self.tile)
-        nx = int(np.ceil(tt_w / (tile_w * 3 / 2))) + 1
-        ny = int(np.ceil(tt_h / tile_h)) + 1
+        nx = int(np.ceil(tt_w / (tile_w * 3 / 2)))
+        ny = int(np.ceil(tt_h / tile_h))
         # the effective width of two columns of hexagonal tiles is 3w/2
-        x0 = ((nx * tile_w * 3 / 2) - tt_w) / 2 + tile_x0 + tt_x0
-        y0 = ((ny * tile_h) - tt_h) / 2 + tile_y0 + tt_y0
+        x0 = (tt_w - (nx * tile_w * 3 / 2)) / 2 + tt_x0
+        y0 = (tt_h - (ny * tile_h)) / 2 + tt_y0
         # get two offset rectangular grids and combine them
         g1 = self._get_grid((x0, y0 + tile_h / 4), 
-                            (nx, ny), 
+                            (nx + 1, ny + 1), 
                             (tile_w * 3 / 2, tile_h))
         g2 = self._get_grid((x0 + tile_w * 3 / 4, y0 - tile_h / 4), 
                             (nx, ny), 
                             (tile_w * 3 / 2, tile_h))
         return np.append(g1, g2).reshape((g1.shape[0] + g2.shape[0], 2))
     
-    ## EXPERIMENTAL
+    # EXPERIMENTAL
+    # Based on 4 offset rectangular grids
+    # 
+    #     /\
+    #    /__\
+    #    \  /
+    #     \/
+    # 
     def _get_tri_centres(self) -> np.ndarray:
         tt_w, tt_h, tt_x0, tt_y0  = \
             self._get_width_height_left_bottom(self.extent)
         tile_w, tile_h, tile_x0, tile_y0 = \
             self._get_width_height_left_bottom(self.tile)
-        nx = int(np.ceil(tt_w / tile_w)) + 1
-        ny = int(np.ceil(tt_h / tile_h / 2)) + 1
-        x0 = ((nx * tile_w) - tt_w) / 2 + tile_x0 + tt_x0
-        y0 = ((ny * tile_h) - tt_h) / 2 + tile_y0 + tt_y0
+        nx = int(np.ceil(tt_w / tile_w))
+        ny = int(np.ceil(tt_h / tile_h / 2))
+        x0 = (tt_w - (nx * tile_w)) / 2 + tt_x0
+        y0 = (tt_h - (ny * tile_h * 2)) / 2 + tt_y0
         # this time there are four of them
-        g1 = self._get_grid((x0, y0),
-                            (nx, ny),
+        g1 = self._get_grid((x0, y0), 
+                            (nx + 1, ny + 1), 
                             (tile_w, tile_h * 2))
         g2 = self._get_grid((x0, y0 + tile_h * 2 / 3),
-                            (nx, ny),
+                            (nx + 1, ny + 1), 
                             (tile_w, tile_h * 2))
         g3 = self._get_grid((x0 + tile_w / 2, y0 - tile_h / 3),
-                            (nx, ny),
+                            (nx + 1, ny + 1), 
                             (tile_w, tile_h * 2))
         g4 = self._get_grid((x0 + tile_w / 2, y0 + tile_h),
-                            (nx, ny),
+                            (nx + 1, ny + 1), 
                             (tile_w, tile_h * 2))
         return np.append(np.append(np.append(g1, g2), g3), g4).reshape(
             g1.shape[0] + g2.shape[0] + g3.shape[0] + g4.shape[0], 2)
