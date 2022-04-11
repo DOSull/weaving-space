@@ -2,20 +2,19 @@
 # coding: utf-8
 
 from typing import Union
-from itertools import chain
+import itertools
 
 import numpy as np
-import geopandas
-from shapely.affinity import translate
-from shapely.geometry import Polygon
-from shapely.geometry import MultiPolygon
-from shapely.ops import unary_union
+import geopandas as gpd
+import shapely.affinity as affine
+import shapely.geometry as geom
+import shapely.ops
 
 from loom import Loom
 from weave_grids import _WeaveGrid
 
 
-def centre_offset(shape: Polygon, 
+def centre_offset(shape: geom.Polygon, 
                     target:tuple[float] = (0, 0)) -> tuple[float]:
     """Returns vector required to move centroid of polygon to target. 
 
@@ -75,24 +74,24 @@ def make_shapes_from_coded_weave_matrix(
                                                    strand_order, n_slices)
         weave_polys.extend(next_polys)
         next_labels = [list(ids[i]) for i in strand_order]  # a list of lists
-        next_labels = list(chain(*next_labels))  # flatten list of lists
+        next_labels = list(itertools.chain(*next_labels))  # flatten 
         # print(f"n: {len(next_polys)} labels: {labels}")
         strand_ids.extend(next_labels)
-    tile = unary_union(bb_polys)
+    tile = shapely.ops.unary_union(bb_polys)
     shift = centre_offset(tile)
-    tile = translate(tile, shift[0], shift[1])
+    tile = affine.translate(tile, shift[0], shift[1])
     return {
         "weave_unit": make_weave_gdf(weave_polys, strand_ids, tile, 
                                      shift, spacing, margin, crs),
-        "tile": geopandas.GeoDataFrame(geometry = geopandas.GeoSeries([tile]),
+        "tile": gpd.GeoDataFrame(geometry = gpd.GeoSeries([tile]),
                                        crs = crs)
     }
 
 
-def make_weave_gdf(polys:list[Union[Polygon, MultiPolygon]], 
-                   strand_ids:list[str], bb:Polygon, 
+def make_weave_gdf(polys:list[Union[geom.Polygon, geom.MultiPolygon]], 
+                   strand_ids:list[str], bb:geom.Polygon, 
                    offset:tuple[float], spacing:float, margin:float, 
-                   crs:int) -> geopandas.GeoDataFrame:
+                   crs:int) -> gpd.GeoDataFrame:
     """Makes a GeoDataFrame from weave element polygons, labels, tile, etc.
 
     Args:
@@ -108,10 +107,10 @@ def make_weave_gdf(polys:list[Union[Polygon, MultiPolygon]],
     Returns:
         geopandas.GeoDataFrame: GeoDataFrame clipped to the tile, with margin applied.
     """    
-    weave = geopandas.GeoDataFrame(
+    weave = gpd.GeoDataFrame(
         data = {"strand": strand_ids},
-        geometry = geopandas.GeoSeries([translate(p, offset[0], offset[1]) for p in polys])
-    )
+        geometry = gpd.GeoSeries(
+            [affine.translate(p, offset[0], offset[1]) for p in polys]))
     weave = weave[weave.strand != "-"]
     weave = weave.dissolve(by = "strand", as_index = False)
     # this buffer operation cleans up some geometry issues

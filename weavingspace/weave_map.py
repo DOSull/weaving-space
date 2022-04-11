@@ -2,16 +2,14 @@
 # coding: utf-8
 
 from typing import Union
-from itertools import chain
 from dataclasses import dataclass
+import itertools
 import logging
 
 import numpy as np
-import geopandas 
-from shapely.affinity import translate
-from shapely.geometry import MultiPolygon
-from shapely.geometry import Point
-from shapely.geometry import Polygon
+import geopandas as gpd
+import shapely.affinity as affine
+import shapely.geometry as geom
 
 from triaxial_weave_units import get_triaxial_weave_unit
 from biaxial_weave_units import get_biaxial_weave_unit
@@ -26,8 +24,8 @@ class WeaveUnit:
         tile: a GeoDataFrame of the weave_unit tileable polygon (either a
             rectangle or a hexagon).
     """  
-    elements:geopandas.GeoDataFrame = None
-    tile:geopandas.GeoDataFrame = None
+    elements:gpd.GeoDataFrame = None
+    tile:gpd.GeoDataFrame = None
     tile_shape:str = "rectangle"
     weave_type:str = "plain"
     spacing:float = 10_000.
@@ -152,46 +150,42 @@ class WeaveUnit:
 
 @dataclass
 class TileGrid:
-    tile:geopandas.GeoSeries = None
-    to_tile:geopandas.GeoSeries = None
+    tile:gpd.GeoSeries = None
+    to_tile:gpd.GeoSeries = None
     is_hex_grid:bool = None
-    extent:geopandas.GeoSeries = None
+    extent:gpd.GeoSeries = None
     centre:tuple[float] = None
-    points:geopandas.GeoSeries = None
+    points:gpd.GeoSeries = None
     
     def __init__(self, tile, to_tile, hexes:bool = False):
         self.tile = tile
-        self.to_tile = geopandas.GeoSeries([to_tile.unary_union])
+        self.to_tile = gpd.GeoSeries([to_tile.unary_union])
         self.is_hex_grid = hexes
         self.extent, self.centre = self._get_extent()
         self.points = self._get_points()
         
     
-    def _get_extent(self) -> geopandas.GeoSeries:
+    def _get_extent(self) -> gpd.GeoSeries:
         mrr = self.to_tile.geometry[0].minimum_rotated_rectangle
-        mrr_centre = Point(mrr.centroid.coords[0])
-        mrr_corner = Point(mrr.exterior.coords[0])
+        mrr_centre = geom.Point(mrr.centroid.coords[0])
+        mrr_corner = geom.Point(mrr.exterior.coords[0])
         radius = mrr_centre.distance(mrr_corner)
-        # TO CONSIDER: limiting the available rotation angles so as
-        # not to make too many tiling grid centres?
-        # extent = unary_union(
-        #     [rotate(mrr, a, mrr_centre) for a in range(0, 100, 5)])
-        # return geopandas.GeoSeries([extent]), mrr_centre
-        return geopandas.GeoSeries([mrr_centre.buffer(radius)]), mrr_centre
+        return gpd.GeoSeries([mrr_centre.buffer(radius)]), mrr_centre
     
         
-    def _get_points(self) -> geopandas.GeoSeries:
+    def _get_points(self) -> gpd.GeoSeries:
         pts = (self._get_hex_centres()
                if self.is_hex_grid
                else self._get_rect_centres())
-        tiles = [ translate(self.tile.geometry[0], p[0], p[1]) 
+        tr = affine.translate
+        tiles = [ tr(self.tile.geometry[0], p[0], p[1]) 
                   for p in list(pts) ]
         tiles = [ t for t in tiles if self.extent[0].intersects(t) ]
-        return geopandas.GeoSeries([t.centroid for t in tiles])
+        return gpd.GeoSeries([t.centroid for t in tiles])
         
 
     def _get_width_height_left_bottom(self, 
-                                      gs:geopandas.GeoSeries
+                                      gs:gpd.GeoSeries
                                     ) -> tuple[float]:
         """Returns width, height, left and bottom limits of a GeoSeries
 
@@ -307,12 +301,12 @@ class TileGrid:
 
 class Tiling:
     tile:WeaveUnit = None
-    region:geopandas.GeoDataFrame = None
+    region:gpd.GeoDataFrame = None
     grid:TileGrid = None
-    tiles:geopandas.GeoDataFrame = None
+    tiles:gpd.GeoDataFrame = None
 
     def __init__(self, unit:WeaveUnit, 
-                 region:geopandas.GeoDataFrame) -> None:
+                 region:gpd.GeoDataFrame) -> None:
         self.tile = unit
         self.region = region
         self.grid = TileGrid(self.tile.tile.geometry,
@@ -321,8 +315,9 @@ class Tiling:
         self.tiles = self.make_tiling()
 
 
-    def _translate_geoms(self, gs:geopandas.GeoSeries, dx:float = 0., 
-                         dy:float = 0.) -> list[Union[Polygon, MultiPolygon]]:
+    def _translate_geoms(self, gs:gpd.GeoSeries, 
+                dx:float = 0., dy:float = 0.
+            ) -> list[Union[geom.Polygon, geom.MultiPolygon]]:
         """Translates geometries in supplied GeoSeries by (dx, dy).
         
         This is needed in place of GeoSeries.translate because we have 
@@ -335,14 +330,15 @@ class Tiling:
 
         Returns:
             list[Polygon|MultiPolygon]: _description_
-        """    
-        return [ translate(s, dx, dy) for s in gs ]
+        """ 
+        tr = affine.translate   
+        return [ tr(s, dx, dy) for s in gs ]
 
 
     def _rotate_gdf_to_geoseries(
-            self, gdf:geopandas.GeoDataFrame, 
+            self, gdf:gpd.GeoDataFrame, 
             angle:float, centre:tuple = (0, 0)
-        ) -> tuple[geopandas.GeoSeries, tuple[float]]:
+        ) -> tuple[gpd.GeoSeries, tuple[float]]:
         """Rotates the geometries in a GeoDataFrame as a single collection.
         
         Rotation is about the supplied centre (if supplied) or about the centroid of the GeoDataFrame (if not). This allows for reversal of 
@@ -365,7 +361,7 @@ class Tiling:
         return gdf.geometry.rotate(angle, origin = centre), centre
 
 
-    def make_tiling(self) -> geopandas.GeoDataFrame:
+    def make_tiling(self) -> gpd.GeoDataFrame:
         """Tiles the region with a weave unit tile, returning a GeoDataFrame
 
         Returns:
@@ -377,15 +373,15 @@ class Tiling:
             self.region.rename_geometry("geometry", inplace = True)
 
         # chain list of lists of GeoSeries geometries to list of geometries 
-        tiles = chain(*[self._translate_geoms(
+        tiles = itertools.chain(*[self._translate_geoms(
                                     self.tile.elements.geometry, p.x, p.y) 
                         for p in self.grid.points])
         # replicate the strand ids
         ids = list(self.tile.elements.strand) * len(self.grid.points)
-        tiles_gs = geopandas.GeoSeries(tiles)
+        tiles_gs = gpd.GeoSeries(tiles)
         
         # assemble and return as a GeoDataFrame
-        return geopandas.GeoDataFrame(data = {"strand": ids},
+        return gpd.GeoDataFrame(data = {"strand": ids},
                                       geometry = tiles_gs, 
                                       crs = self.tile.crs)
         
@@ -395,7 +391,7 @@ class Tiling:
             self.tiles = self.make_tiling()
         if rotation is None or rotation == 0:
             return self.tiles
-        return geopandas.GeoDataFrame(
+        return gpd.GeoDataFrame(
             data = {"strand": self.tiles.strand}, crs = self.tiles.crs,
             geometry = self.tiles.geometry.rotate(rotation, 
                                                   origin = self.grid.centre))
