@@ -9,8 +9,7 @@ from biaxial_weave_units import get_weave_pattern_matrix
 from render_weave_grids import make_shapes_from_coded_weave_matrix
 from weaving_space_utils import get_strand_ids
 
-def get_triaxial_weave_matrices(*,
-                                weave_type:str = "cube", 
+def get_triaxial_weave_matrices(weave_type:str = "cube", 
                                 strands_1:Union[list[str], tuple[str]] = ["a"], 
                                 strands_2:Union[list[str], tuple[str]] = ["b"], 
                                 strands_3:Union[list[str], tuple[str]] = ["c"]

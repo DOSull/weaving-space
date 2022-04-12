@@ -17,7 +17,7 @@ from shapely.wkt import loads
 
 
 @dataclass
-class _WeaveGrid:
+class WeaveGrid:
     """Class to encapsulate generation of sites where strands intersect.
     
     Can generate both triangular and square grid 'cells' as visual 

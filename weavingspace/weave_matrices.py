@@ -25,12 +25,7 @@
 # https://www.youtube.com/watch?v=oMOSiag3dxg
 
 from typing import Union
-
 import numpy as np
-
-from loom import Loom
-from render_weave_grids import make_shapes_from_coded_weave_matrix
-from weaving_space_utils import get_strand_ids
 
 
 def reps_needed(x1:int, x2:int) -> tuple[int]:
@@ -295,7 +290,7 @@ def make_this_pattern(tie_up:np.ndarray,
     return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 
 
-def get_weave_pattern_matrix(*, weave_type:str = "plain", 
+def get_weave_pattern_matrix(weave_type:str = "plain", 
                              n:Union[int, tuple[int]] = 2, 
                              warp:Union[list[str], tuple[str]] = ["a", "b"],
                              weft:Union[list[str], tuple[str]] = ["c", "d"], 
@@ -351,50 +346,3 @@ def get_weave_pattern_matrix(*, weave_type:str = "plain",
     # encode to reflect missing threads
     return encode_biaxial_weave(p, warp_threads, weft_threads)
 
-
-def get_biaxial_weave_unit(*, spacing:float = 10_000., aspect:float = 1.,
-                           margin:float = 0., weave_type:str = "twill", 
-                           n:Union[int, tuple[int]] = (2, 2), strands:str = "ab|cd", crs:int = 3857, 
-                           tie_up:np.ndarray = make_twill_matrix((2, 2)),
-                           tr:np.ndarray = None, 
-                           th:np.ndarray = None) -> dict:
-    """Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
-
-    Args:
-        spacing (float, optional): spacing of strands. Defaults to 10_000.
-        aspect (float, optional): width of strands relative to spacing.     
-            Defaults to 1.0.
-        margin (float, optional): inset margin relative to spacing. 
-            Defaults to 0.0.
-        weave_type (str, optional): one of "plain", "twill", "basket" or
-            "this". Defaults to "twill".
-        n (int | tuple[int], optional): over under pattern. See 
-            make_over_under_row() for details. Defaults to 2.
-        strands (str, optional): specification of strand labels. See 
-            weaving_space_utils.get_strand_ids() for details. 
-            Defaults to "ab|cd".
-        crs (int, optional): CRS usually an EPSG int, but any geopandas CRS 
-            object will work. Defaults to 3857.
-        tie_up (np.ndarray, optional): a weave pattern matrix to pass thru in 
-            the "this" case. Defaults to make_twill_matrix((2, 2)).
-        tr (np.ndarray, optional): treadling matrix for the "this" case.        
-            Defaults to None.
-        th (np.ndarray, optional): threading matrix for the "this" case.        
-            Defaults to None.
-
-    Returns:
-        dict: dictionary with contents {"weave_unit": GeoDataFrame of weave 
-            elements, "tile": GeoDataFrame of the tile}.
-    """    
-    warp_threads, weft_threads, drop = get_strand_ids(strands)
-    
-    if weave_type == "basket":
-        n = n[0]
-    
-    p = get_weave_pattern_matrix(weave_type = weave_type, n = n, 
-            warp = warp_threads, weft = weft_threads, 
-            tie_up = tie_up, tr = tr, th = th)
-
-    return make_shapes_from_coded_weave_matrix(
-        Loom(p), spacing = spacing, width = aspect, margin = margin, 
-        strand_labels = [weft_threads, warp_threads, []], crs = crs)
