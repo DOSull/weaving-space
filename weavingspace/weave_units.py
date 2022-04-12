@@ -18,6 +18,139 @@ from loom import Loom
 from weave_grids import WeaveGrid
 
 
+@dataclass
+class WeaveUnit:
+    """ Small data class containing elements of a weave unit.
+    
+    Attributes:
+        elements: a GeoDataFrame of strand geometries.
+        tile: a GeoDataFrame of the weave_unit tileable polygon (either a
+            rectangle or a hexagon).
+    """  
+    elements:gpd.GeoDataFrame = None
+    tile:gpd.GeoDataFrame = None
+    tile_shape:str = "rectangle"
+    weave_type:str = "plain"
+    spacing:float = 10_000.
+    aspect:float = 1.
+    margin:float = 0.
+    n:Union[int, tuple[int]] = (2, 2)
+    strands:str = "a|b|c"
+    tie_up:np.ndarray = None
+    tr:np.ndarray = None
+    th:np.ndarray = None
+    crs:int = 3857
+    
+    def __init__(self, **kwargs):
+        """Constructor for WeaveUnit. Parameters are passed through to get_weave_unit function and also stored as instance attributes.
+        
+        Args:
+            weave_type (str, optional): the type of weave pattern, one of 
+                "plain",  "twill", "basket", "this", "cube" or "hex". Defaults
+                to "plain".
+            spacing (float, optional): spacing of threads in the weave in units 
+                of the CRS. Defaults to 10000.
+            aspect (float, optional): width of strands relative to the spacing. 
+                Defaults to 1.
+            margin (float, optional): margin applied to 'shrink' strand 
+                elements, relative to the spacing. Defaults to 0.
+            n (tuple of ints): number of over-under strands in biaxial weaves. 
+                Only one item is required in a plain weave. Twill and basket patterns expect an even number of elements in the tuple. Defaults to (2, 2).
+            strands (str, optional): specification of the strand labels 
+                along each axis. Defaults to "a|b|c".
+            tie_up (numpy.ndarray, optional): used when type is "this" to
+                specify a desired weave pattern. See: Glassner A, 2002, “Digital weaving. 1” IEEE Computer Graphics and Applications 22(6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
+            tr (numpy.ndarray, optional): used when type is "this" to specify 
+                the treadling matrix. See: Glassner 2002. Defaults to None.
+            th (numpy.ndarray, optional): used when type is "this" to specify
+                the threading matrix. See: Glassner 2002. Defaults to None.
+            crs (int, optional): coordinate reference system. Usually an integer
+                EPSG code, but any CRS object interpretable by geopandas will
+                work. Defaults to 3857 (for Web Mercator).
+        """
+        unit = self._get_weave_unit(**kwargs)
+        self.elements = unit["weave_unit"]
+        self.tile = unit["tile"]
+        for k, v in kwargs.items():
+            self.__dict__[k] = v
+        self.tile_shape = ("hexagon" 
+                           if self.weave_type in ("hex", "cube")
+                           else "rectangle") 
+
+
+    def _get_weave_unit(self, weave_type:str = "plain", spacing:float = 10000, 
+            aspect:float = 1, margin:float = 0, n:tuple[int] = (2, 2), 
+            strands:str = "a|b|c", tie_up:np.ndarray = None, 
+            tr:np.ndarray = None, th:np.ndarray = None, crs:int = 3857
+        ) -> dict:
+        """Returns dictionary with weave unit and tile GeoDataFrames
+        
+        Args:
+            weave_type (str, optional): the type of weave pattern, one of 
+                "plain",  "twill", "basket", "this", "cube" or "hex". Defaults
+                to "plain".
+            spacing (float, optional): spacing of threads in the weave in units 
+                of the CRS. Defaults to 10000.
+            aspect (float, optional): width of strands relative to the spacing. 
+                Defaults to 1.
+            margin (float, optional): margin applied to 'shrink' strand 
+                elements, relative to the spacing. Defaults to 0.
+            n (tuple of ints): number of over-under strands in biaxial weaves. 
+                Only one item is required in a plain weave. Twill and basket patterns expect an even number of elements in the tuple. Defaults to (2, 2).
+            strands (str, optional): specification of the strand labels 
+                along each axis. Defaults to "a|b|c".
+            tie_up (numpy.ndarray, optional): used when type is "this" to
+                specify a desired weave pattern. See: Glassner A, 2002, “Digital weaving. 1” IEEE Computer Graphics and Applications 22(6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
+            tr (numpy.ndarray, optional): used when type is "this" to specify 
+                the treadling matrix. See: Glassner 2002. Defaults to None.
+            th (numpy.ndarray, optional): used when type is "this" to specify
+                the threading matrix. See: Glassner 2002. Defaults to None.
+            crs (int, optional): coordinate reference system. Usually an integer
+                EPSG code, but any CRS object interpretable by geopandas will
+                work. Defaults to 3857 (for Web Mercator).
+
+        Returns:
+            dict: dictionary with contents {"weave_unit": GeoDataFrame of weave 
+                elements, "tile": GeoDataFrame of the tile}.
+        """
+        self._parameter_info(margin, aspect)
+
+        if weave_type in ("hex", "cube"):
+            unit = get_triaxial_weave_unit(weave_type = weave_type,
+                                           spacing = spacing, aspect = aspect,
+                                           margin = margin, strands = strands, 
+                                           crs = crs)
+        else:
+            unit = get_biaxial_weave_unit(weave_type = weave_type, n = n,
+                                          spacing = spacing, aspect = aspect,
+                                          margin = margin, strands = strands, 
+                                          crs = crs, tie_up = tie_up, )
+        return unit
+
+
+    def _parameter_info(self, margin: float, aspect: float) -> None:
+        """Outputs logging message concerning the supplied margin and aspect settings.
+
+        Args:
+            margin (float): weave unit margin.
+            aspect (float): weave unit aspect.
+        """    
+        
+        if aspect == 0:
+            logging.info("""Setting aspect to 0 is probably not a great plan.""")
+
+        if aspect < 0 or aspect > 1:
+            logging.warning("""Values of aspect outside the range 0 to 1 won't 
+                            produce tiles that will look like weaves, but they might be pretty anyway! Values less than -1 seem particularly promising, especially with opacity set less than 1.""")
+
+        # maximum margin that will produce a weave-able tile
+        max_margin = (1 - aspect) / 2
+        if margin > max_margin:
+            logging.warning(f"""With aspect set to {aspect:.3f} the largest margin 
+                            that will work is {max_margin:.3f}. Lower values are required to produce proper tileable weaves. Specifically, with too wide a margin, strands in adjacent tiles will not 'join up' when tiled. Higher values will make nice tilings with broken strands, which aren't 'proper' weaves. The best alternative is to make the weave unit with margin = 0, then apply a negative buffer after you have tiled your map.""")   
+        return None
+
+
 def get_biaxial_weave_unit(
         spacing:float = 10_000., aspect:float = 1.,
         margin:float = 0., weave_type:str = "twill", crs:int = 3857, 
@@ -261,146 +394,12 @@ def make_weave_gdf(polys:list[Union[geom.Polygon, geom.MultiPolygon]],
         geopandas.GeoDataFrame: GeoDataFrame clipped to the tile, with margin applied.
     """    
     weave = gpd.GeoDataFrame(
-        data = {"strand": strand_ids},
+        data = {"element_id": strand_ids},
         geometry = gpd.GeoSeries(
             [affine.translate(p, offset[0], offset[1]) for p in polys]))
-    weave = weave[weave.strand != "-"]
-    weave = weave.dissolve(by = "strand", as_index = False)
+    weave = weave[weave.element_id != "-"]
+    weave = weave.dissolve(by = "element_id", as_index = False)
     # this buffer operation cleans up some geometry issues
     weave.geometry = weave.buffer(-0.0001 * spacing)
     weave.geometry = weave.buffer((0.0001 - margin) * spacing)
     return weave.clip(bb).set_crs(crs)
-
-
-@dataclass
-class WeaveUnit:
-    """ Small data class containing elements of a weave unit.
-    
-    Attributes:
-        elements: a GeoDataFrame of strand geometries.
-        tile: a GeoDataFrame of the weave_unit tileable polygon (either a
-            rectangle or a hexagon).
-    """  
-    elements:gpd.GeoDataFrame = None
-    tile:gpd.GeoDataFrame = None
-    tile_shape:str = "rectangle"
-    weave_type:str = "plain"
-    spacing:float = 10_000.
-    aspect:float = 1.
-    margin:float = 0.
-    n:Union[int, tuple[int]] = (2, 2)
-    strands:str = "a|b|c"
-    tie_up:np.ndarray = None
-    tr:np.ndarray = None
-    th:np.ndarray = None
-    crs:int = 3857
-    
-    def __init__(self, **kwargs):
-        """Constructor for WeaveUnit. Parameters are passed through to get_weave_unit function and also stored as instance attributes.
-        
-        Args:
-            weave_type (str, optional): the type of weave pattern, one of 
-                "plain",  "twill", "basket", "this", "cube" or "hex". Defaults
-                to "plain".
-            spacing (float, optional): spacing of threads in the weave in units 
-                of the CRS. Defaults to 10000.
-            aspect (float, optional): width of strands relative to the spacing. 
-                Defaults to 1.
-            margin (float, optional): margin applied to 'shrink' strand 
-                elements, relative to the spacing. Defaults to 0.
-            n (tuple of ints): number of over-under strands in biaxial weaves. 
-                Only one item is required in a plain weave. Twill and basket patterns expect an even number of elements in the tuple. Defaults to (2, 2).
-            strands (str, optional): specification of the strand labels 
-                along each axis. Defaults to "a|b|c".
-            tie_up (numpy.ndarray, optional): used when type is "this" to
-                specify a desired weave pattern. See: Glassner A, 2002, “Digital weaving. 1” IEEE Computer Graphics and Applications 22(6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
-            tr (numpy.ndarray, optional): used when type is "this" to specify 
-                the treadling matrix. See: Glassner 2002. Defaults to None.
-            th (numpy.ndarray, optional): used when type is "this" to specify
-                the threading matrix. See: Glassner 2002. Defaults to None.
-            crs (int, optional): coordinate reference system. Usually an integer
-                EPSG code, but any CRS object interpretable by geopandas will
-                work. Defaults to 3857 (for Web Mercator).
-        """
-        unit = self._get_weave_unit(**kwargs)
-        self.elements = unit["weave_unit"]
-        self.tile = unit["tile"]
-        for k, v in kwargs.items():
-            self.__dict__[k] = v
-        self.tile_shape = ("hexagon" 
-                           if self.weave_type in ("hex", "cube")
-                           else "rectangle") 
-
-
-    def _get_weave_unit(self, weave_type:str = "plain", spacing:float = 10000, 
-            aspect:float = 1, margin:float = 0, n:tuple[int] = (2, 2), 
-            strands:str = "a|b|c", tie_up:np.ndarray = None, 
-            tr:np.ndarray = None, th:np.ndarray = None, crs:int = 3857
-        ) -> dict:
-        """Returns dictionary with weave unit and tile GeoDataFrames
-        
-        Args:
-            weave_type (str, optional): the type of weave pattern, one of 
-                "plain",  "twill", "basket", "this", "cube" or "hex". Defaults
-                to "plain".
-            spacing (float, optional): spacing of threads in the weave in units 
-                of the CRS. Defaults to 10000.
-            aspect (float, optional): width of strands relative to the spacing. 
-                Defaults to 1.
-            margin (float, optional): margin applied to 'shrink' strand 
-                elements, relative to the spacing. Defaults to 0.
-            n (tuple of ints): number of over-under strands in biaxial weaves. 
-                Only one item is required in a plain weave. Twill and basket patterns expect an even number of elements in the tuple. Defaults to (2, 2).
-            strands (str, optional): specification of the strand labels 
-                along each axis. Defaults to "a|b|c".
-            tie_up (numpy.ndarray, optional): used when type is "this" to
-                specify a desired weave pattern. See: Glassner A, 2002, “Digital weaving. 1” IEEE Computer Graphics and Applications 22(6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
-            tr (numpy.ndarray, optional): used when type is "this" to specify 
-                the treadling matrix. See: Glassner 2002. Defaults to None.
-            th (numpy.ndarray, optional): used when type is "this" to specify
-                the threading matrix. See: Glassner 2002. Defaults to None.
-            crs (int, optional): coordinate reference system. Usually an integer
-                EPSG code, but any CRS object interpretable by geopandas will
-                work. Defaults to 3857 (for Web Mercator).
-
-        Returns:
-            dict: dictionary with contents {"weave_unit": GeoDataFrame of weave 
-                elements, "tile": GeoDataFrame of the tile}.
-        """
-        self._parameter_info(margin, aspect)
-
-        if weave_type in ("hex", "cube"):
-            unit = get_triaxial_weave_unit(weave_type = weave_type,
-                                           spacing = spacing, aspect = aspect,
-                                           margin = margin, strands = strands, 
-                                           crs = crs)
-        else:
-            unit = get_biaxial_weave_unit(weave_type = weave_type, n = n,
-                                          spacing = spacing, aspect = aspect,
-                                          margin = margin, strands = strands, 
-                                          crs = crs, tie_up = tie_up, )
-        return unit
-
-
-    def _parameter_info(self, margin: float, aspect: float) -> None:
-        """Outputs logging message concerning the supplied margin and aspect settings.
-
-        Args:
-            margin (float): weave unit margin.
-            aspect (float): weave unit aspect.
-        """    
-        
-        if aspect == 0:
-            logging.info("""Setting aspect to 0 is probably not a great plan.""")
-
-        if aspect < 0 or aspect > 1:
-            logging.warning("""Values of aspect outside the range 0 to 1 won't 
-                            produce tiles that will look like weaves, but they might be pretty anyway! Values less than -1 seem particularly promising, especially with opacity set less than 1.""")
-
-        # maximum margin that will produce a weave-able tile
-        max_margin = (1 - aspect) / 2
-        if margin > max_margin:
-            logging.warning(f"""With aspect set to {aspect:.3f} the largest margin 
-                            that will work is {max_margin:.3f}. Lower values are required to produce proper tileable weaves. Specifically, with too wide a margin, strands in adjacent tiles will not 'join up' when tiled. Higher values will make nice tilings with broken strands, which aren't 'proper' weaves. The best alternative is to make the weave unit with margin = 0, then apply a negative buffer after you have tiled your map.""")   
-        return None
-

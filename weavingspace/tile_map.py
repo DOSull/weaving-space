@@ -12,6 +12,7 @@ import shapely.geometry as geom
 import shapely.ops
 
 from weave_units import WeaveUnit
+from tile_units import TileUnit
 
 
 @dataclass
@@ -28,28 +29,11 @@ class TileGrid:
         self.grid_type = grid_type
         self.tile = tile
         if self.grid_type == "triangle":
-            self._modify_triangle_tile(self.tile, to_hex)
+            self.tile, self.grid_type = self._modify_triangle_tile(to_hex)
         self.to_tile = gpd.GeoSeries([to_tile.unary_union])
         self.extent, self.centre = self._get_extent()
         self.points = self._get_points()
         
-    
-    # make up a hexagon from the supplied tile because it is a triangle
-    # and also change the grid_type to a hexagon
-    # assume the triangle is point up with centroid at (0, 0)
-    def _modify_triangle_tile(self, gs:gpd.GeoSeries, 
-                              to_hex:bool = True) -> None:
-        tile = self.tile[0]
-        if to_hex:  # hexagon
-            # rotate to point down and translate so point is at (0, 0)
-            tile = affine.rotate(tile, 180)
-        tile = affine.translate(tile, 0, -tile.bounds[1])
-        # make rotated copies
-        twins = [affine.rotate(tile, a, origin = (0, 0)) 
-                for a in range(0, 360, 60 if to_hex else 180)]
-        self.tile = gpd.GeoSeries([shapely.ops.unary_union(twins)])
-        self.grid_type = "tri-hex" if to_hex else "tri-diamond"
-                                       
     
     def _get_extent(self) -> gpd.GeoSeries:
         mrr = self.to_tile.geometry[0].minimum_rotated_rectangle
@@ -181,21 +165,20 @@ class TileGrid:
         return np.append(g1, g2).reshape(g1.shape[0] + g2.shape[0], 2)
 
 
+@dataclass
 class Tiling:
-    tile:WeaveUnit = None
+    tile_unit:Union[WeaveUnit, TileUnit] = None
     tile_shape:str = ""
     region:gpd.GeoDataFrame = None
     grid:TileGrid = None
     tiles:gpd.GeoDataFrame = None
 
-    def __init__(self, unit:WeaveUnit, 
-                 region:gpd.GeoDataFrame, to_hex:bool = True) -> None:
+    def __init__(self, unit:Union[WeaveUnit, TileUnit], 
+                 region:gpd.GeoDataFrame) -> None:
         self.tile_shape = unit.tile_shape
-        self.tile = unit
-        if self.tile_shape == "triangle":
-            self._modify_triangle_elements(to_hex)
+        self.tile_unit = unit
         self.region = region
-        self.grid = TileGrid(self.tile.tile.geometry,
+        self.grid = TileGrid(self.tile_unit.tile.geometry,
                              self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
 
@@ -218,27 +201,6 @@ class Tiling:
         """ 
         tr = affine.translate   
         return [ tr(s, dx, dy) for s in gs ]
-
-
-    # TO CONSIDER: there is probably a refactoring to make this more 
-    # elegant - at present the TileGrid class has a similar method...
-    # they both operate in the same way, one on a single geometry GeoSeries
-    # the other on a multi-element one
-    def _modify_triangle_elements(self, to_hex:bool = True) -> None:
-        elements = self.tile.elements.geometry
-        ids = elements.strand
-        if to_hex:
-            # rotate to point down and translate so point is at (0, 0)
-            elements = elements.rotate(180)
-        elements = elements.translate(0, -elements.total_bounds[1])
-        twins = [elements.rotate(a, origin = (0, 0)) 
-                 for a in range(0, 360, 60 if to_hex else 180)]
-        twins = itertools.chain(*twins)
-        self.tile.elements = gpd.GeoDataFrame(
-            data = {"strand": ids * 6 if to_hex else 2}, 
-            geometry = gpd.GeoSeries(twins), crs = self.tile.elements.crs
-        )
-        self.tile_shape = "tri-hex" if to_hex else "tri-diamond"
 
 
     def _rotate_gdf_to_geoseries(
@@ -280,16 +242,15 @@ class Tiling:
 
         # chain list of lists of GeoSeries geometries to list of geometries 
         tiles = itertools.chain(*[self._translate_geoms(
-                                    self.tile.elements.geometry, p.x, p.y)
+                                    self.tile_unit.elements.geometry, p.x, p.y)
                                   for p in self.grid.points])
-        # replicate the strand ids
-        ids = list(self.tile.elements.strand) * len(self.grid.points)
+        # replicate the element ids
+        ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
         tiles_gs = gpd.GeoSeries(tiles)
         
         # assemble and return as a GeoDataFrame
-        return gpd.GeoDataFrame(data = {"strand": ids},
-                                      geometry = tiles_gs, 
-                                      crs = self.tile.crs)
+        return gpd.GeoDataFrame(data = {"element_id": ids},
+                                geometry = tiles_gs, crs = self.tile_unit.crs)
         
     
     def rotated(self, rotation:float = None):
@@ -298,6 +259,6 @@ class Tiling:
         if rotation is None or rotation == 0:
             return self.tiles
         return gpd.GeoDataFrame(
-            data = {"strand": self.tiles.strand}, crs = self.tiles.crs,
+            data = {"element_id": self.tiles.element_id}, crs = self.tiles.crs,
             geometry = self.tiles.geometry.rotate(rotation, 
                                                   origin = self.grid.centre))
