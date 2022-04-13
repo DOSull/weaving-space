@@ -170,17 +170,29 @@ class Tiling:
     tile_unit:Union[WeaveUnit, TileUnit] = None
     tile_shape:str = ""
     region:gpd.GeoDataFrame = None
+    region_id_var:str = None
     grid:TileGrid = None
     tiles:gpd.GeoDataFrame = None
 
     def __init__(self, unit:Union[WeaveUnit, TileUnit], 
-                 region:gpd.GeoDataFrame) -> None:
+                 region:gpd.GeoDataFrame, id_var:str) -> None:
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         self.region = region
+        self.region_id_var = ("ID" if id_var is None else id_var)
         self.grid = TileGrid(self.tile_unit.tile.geometry,
                              self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
+
+
+    def get_tiled_map(self, id_var:str = None, 
+                      rotation:float = 0.) -> gpd.GeoDataFrame:
+        id_var = (self.region_id_var
+                  if id_var is None
+                  else id_var)
+        weave = self.region.overlay(self.rotated(rotation))
+        weave["diss_var"] = weave.element_id + weave[id_var].astype(str)
+        return weave.dissolve(by = "diss_var")
 
 
     def _translate_geoms(self, gs:gpd.GeoSeries, 
