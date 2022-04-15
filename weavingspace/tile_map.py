@@ -4,6 +4,7 @@
 from typing import Union
 from dataclasses import dataclass
 import itertools
+import functools
 
 import numpy as np
 import geopandas as gpd
@@ -195,6 +196,7 @@ class Tiling:
         return weave.dissolve(by = "diss_var")
 
 
+    # DEPRECATED? I THINK?
     def _translate_geoms(self, gs:gpd.GeoSeries, 
                 dx:float = 0., dy:float = 0.
             ) -> list[Union[geom.Polygon, geom.MultiPolygon]]:
@@ -211,8 +213,11 @@ class Tiling:
         Returns:
             list[Polygon|MultiPolygon]: _description_
         """ 
-        tr = affine.translate   
-        return [ tr(s, dx, dy) for s in gs ]
+        # this seems like it's quicker... I think
+        tr = functools.partial(affine.translate, xoff = dx, yoff = dy)   
+        return map(tr, gs)
+        # tr = affine.translate
+        # return [ tr(s, dx, dy) for s in gs ]
 
 
     def _rotate_gdf_to_geoseries(
@@ -253,9 +258,10 @@ class Tiling:
             self.region.rename_geometry("geometry", inplace = True)
 
         # chain list of lists of GeoSeries geometries to list of geometries 
-        tiles = itertools.chain(*[self._translate_geoms(
-                                    self.tile_unit.elements.geometry, p.x, p.y)
-                                  for p in self.grid.points])
+        # previously used self._translate_geoms, but I don't think we need it
+        tiles = itertools.chain(*[
+            self.tile_unit.elements.geometry.translate(p.x, p.y)
+            for p in self.grid.points])
         # replicate the element ids
         ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
         tiles_gs = gpd.GeoSeries(tiles)
@@ -274,3 +280,7 @@ class Tiling:
             data = {"element_id": self.tiles.element_id}, crs = self.tiles.crs,
             geometry = self.tiles.geometry.rotate(rotation, 
                                                   origin = self.grid.centre))
+        
+
+
+
