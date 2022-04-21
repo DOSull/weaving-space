@@ -37,7 +37,7 @@ class TileUnit:
              else (6 
                    if self.tile_shape == "hexagon"
                    else 3))
-        R = self.spacing / np.cos(np.radians(180 / n))
+        R = self.spacing / np.cos(np.radians(180 / n)) / 2
         a0 = -90 + 180 / n
         angles = [a0 + a for a in range(0, 360, 360 // n)]
         corners = [(R * np.cos(np.radians(a)), 
