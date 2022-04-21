@@ -8,6 +8,7 @@ import functools
 
 import numpy as np
 import geopandas as gpd
+import pandas as pd
 import shapely.affinity as affine
 import shapely.geometry as geom
 import shapely.ops
@@ -186,16 +187,38 @@ class Tiling:
         self.tiles = self.make_tiling()
 
 
-    def get_tiled_map(self, id_var:str = None, 
-                      rotation:float = 0.) -> gpd.GeoDataFrame:
+    # THIS FUNCTION NEEDS AN OPTION TO PRIORITISE STRAND CONTINUITY
+    # over the boundaries in the region in the overlay/dissolve
+    def get_tiled_map(self, id_var:str = None, rotation:float = 0.,             
+                      prioritise_tiles:bool = False) -> gpd.GeoDataFrame:
         id_var = (self.region_id_var
                   if id_var is None
                   else id_var)
-        weave = self.region.overlay(self.rotated(rotation))
-        weave["diss_var"] = weave.element_id + weave[id_var].astype(str)
-        return weave.dissolve(by = "diss_var")
-
-
+        if prioritise_tiles:
+            tiled = self.rotated(rotation)
+            tiled["UID"] = list(range(tiled.shape[0]))
+            tiled = self.region.overlay(tiled)
+            # calculate areas of intersections
+            tiled["area"] = tiled.geometry.area
+            # make a lookup from each UID to the region ID var with max overlap
+            lookup = tiled.iloc[tiled.groupby("UID")["area"].agg(
+                    pd.Series.idxmax)][["UID", id_var]]
+            region_cols = list(self.region.columns)
+            region_cols.remove("geometry")
+            tiled = tiled.drop(region_cols, axis = 1)  # avoids confusions below
+            tiled_map = tiled.merge(lookup, on = "UID")
+            tiled_map = tiled_map.merge(
+                self.region.drop(["geometry"], axis = 1), on = id_var)
+            tiled_map["diss_var"] = \
+                tiled_map.element_id + tiled_map.UID.astype(str)
+            return tiled_map.dissolve(by = "diss_var")
+        else:
+            tiled_map = self.region.overlay(self.rotated(rotation))
+            tiled_map["diss_var"] = \
+                tiled_map.element_id + tiled_map[id_var].astype(str)
+            return tiled_map.dissolve(by = "diss_var")
+    
+    
     # DEPRECATED? I THINK?
     def _translate_geoms(self, gs:gpd.GeoSeries, 
                 dx:float = 0., dy:float = 0.

@@ -37,9 +37,9 @@
      inkscape:snap-object-midpoints="true"
      inkscape:snap-center="true"
      inkscape:snap-text-baseline="true"
-     inkscape:zoom="0.7474263"
-     inkscape:cx="788.03756"
-     inkscape:cy="588.01784"
+     inkscape:zoom="1.6029353"
+     inkscape:cx="394.27667"
+     inkscape:cy="267.32208"
      inkscape:window-width="1920"
      inkscape:window-height="1021"
      inkscape:window-x="0"
@@ -59,27 +59,41 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
+    <path
+       style="opacity:1;fill:#ffffff;stroke:#000000;stroke-width:0.300001;stroke-linecap:round"
+       d="M 198.89572,32.053695 H 12.470505"
+       id="path523432"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       style="opacity:1;fill:#ffffff;stroke:#000000;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       d="M 12.470505,26.279593 H 198.89572"
+       id="rect521154"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
     <text
        xml:space="preserve"
        style="font-size:2.82223px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;stroke-width:0.264583"
-       x="99.415375"
-       y="14.141175"
+       x="105.01034"
+       y="16.787006"
        id="text73440"><tspan
          sodipodi:role="line"
          id="tspan73438"
-         style="text-align:center;text-anchor:middle;stroke-width:0.264583"
-         x="99.415375"
-         y="14.141175">Preferred(?!) dissections of the the regular polygons</tspan><tspan
+         style="font-weight:bold;text-align:center;text-anchor:middle;stroke-width:0.264583"
+         x="105.01034"
+         y="16.787006">Preferred(?!) dissections of the the regular polygons</tspan><tspan
          sodipodi:role="line"
-         style="text-align:center;text-anchor:middle;stroke-width:0.264583"
-         x="99.415375"
-         y="17.668962"
+         style="font-size:2.82222px;text-align:center;text-anchor:middle;stroke-width:0.264583"
+         x="105.01034"
+         y="20.326881"
          id="tspan245530">(emphasising equal subdivision of the plane)</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:3.52778px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="37.57169"
-       y="28.884956"
+       x="19.050854"
+       y="30.472458"
        id="text84842"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -87,8 +101,8 @@
          sodipodi:role="line"
          id="tspan84840"
          style="font-size:3.52778px;stroke-width:0.264583"
-         x="37.57169"
-         y="28.884956">2</tspan></text>
+         x="19.050854"
+         y="30.472458">2</tspan></text>
     <path
        sodipodi:type="star"
        style="fill:#0066ff;stroke:#ffffff;stroke-width:0.377953;stroke-linecap:round"
@@ -104,7 +118,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z"
-       transform="matrix(0.26458333,0,0,0.26458333,6.1736206,11.779042)"
+       transform="matrix(0.26458333,0,0,0.26458333,-12.347213,14.424877)"
        inkscape:transform-center-y="-1.1273474"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -124,7 +138,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 121.92834,74.245613 7.37999,12.782518 7.37999,12.782519 -14.75998,0 -14.75998,-10e-7 7.37999,-12.782517 z"
-       transform="matrix(-0.26458333,0,0,-0.26458333,70.694031,64.59551)"
+       transform="matrix(-0.26458333,0,0,-0.26458333,52.173195,67.241345)"
        inkscape:transform-center-y="1.1273478"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -132,14 +146,14 @@
     <path
        id="path85910"
        style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="M 44.33424,54.134822 H 32.533411 l 2.950207,5.109766 h 5.900415 z"
+       d="M 25.813404,56.780657 H 14.012575 l 2.950207,5.109766 h 5.900415 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path86162"
        style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="m 35.483618,49.02454 -2.950207,5.110282 H 44.33424 L 41.384033,49.02454 Z"
+       d="m 16.962782,51.670375 -2.950207,5.110282 h 11.800829 l -2.950207,-5.110282 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -147,21 +161,21 @@
        id="path86140"
        style="fill:#0066ff;stroke:#ffffff;stroke-width:0.0999999;stroke-linecap:round"
        inkscape:transform-center-y="-0.91113876"
-       d="m 74.679913,75.897524 -1.576363,2.73356 -1.57678,2.733144 1.57678,2.733562 1.576363,2.733143 1.57678,-2.733143 1.576361,-2.733562 -1.576361,-2.733144 z"
+       d="m 56.159077,78.543359 -1.576363,2.73356 -1.57678,2.733144 1.57678,2.733562 1.576363,2.733143 1.57678,-2.733143 1.576361,-2.733562 -1.576361,-2.733144 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path90340"
        style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="m 38.404962,60.600061 h -2.950207 l -2.950208,5.109766 2.950208,5.109765 h 2.950207 z"
+       d="m 19.884126,63.245896 h -2.950207 l -2.950208,5.109766 2.950208,5.109765 h 2.950207 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path90468"
        style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="m 38.463207,60.600061 v 10.219531 h 2.950207 l 2.949692,-5.109765 -2.949692,-5.109766 z"
+       d="m 19.942371,63.245896 v 10.219531 h 2.950207 l 2.949692,-5.109765 -2.949692,-5.109766 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -179,7 +193,7 @@
        sodipodi:arg2="-0.78539816"
        inkscape:rounded="0"
        inkscape:randomized="0"
-       transform="matrix(-0.14649516,0.03925326,-0.03925326,-0.14649516,82.451082,47.291505)"
+       transform="matrix(-0.14649516,0.03925326,-0.03925326,-0.14649516,63.930246,49.93734)"
        d="m 173.63324,72.467638 15.76863,15.768626 -5.77172,21.540346 -21.54034,5.77171 -15.76863,-15.768623 5.77172,-21.540342 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -198,7 +212,7 @@
        sodipodi:arg2="-0.78539816"
        inkscape:rounded="0"
        inkscape:randomized="0"
-       transform="matrix(-0.14649516,0.03925326,-0.03925326,-0.14649516,88.372482,47.291505)"
+       transform="matrix(-0.14649516,0.03925326,-0.03925326,-0.14649516,69.851646,49.93734)"
        d="m 173.63324,72.467638 15.76863,15.768626 -5.77172,21.540346 -21.54034,5.77171 -15.76863,-15.768623 5.77172,-21.540342 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -217,7 +231,7 @@
        sodipodi:arg2="-0.78539816"
        inkscape:rounded="0"
        inkscape:randomized="0"
-       transform="matrix(-0.14649516,0.03925326,-0.03925326,-0.14649516,85.411782,42.163425)"
+       transform="matrix(-0.14649516,0.03925326,-0.03925326,-0.14649516,66.890946,44.80926)"
        d="m 173.63324,72.467638 15.76863,15.768626 -5.77172,21.540346 -21.54034,5.77171 -15.76863,-15.768623 5.77172,-21.540342 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -237,15 +251,15 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 173.63324,72.467638 15.76863,15.768626 -5.77172,21.540346 -21.54034,5.77171 -15.76863,-15.768623 5.77172,-21.540342 z"
-       transform="matrix(0.25556787,0.0684792,-0.0684792,0.25556787,20.636639,2.8974022)"
+       transform="matrix(0.25556787,0.0684792,-0.0684792,0.25556787,2.1158036,5.5432357)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <text
        xml:space="preserve"
        style="font-size:3.52778px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="56.233315"
-       y="28.884956"
+       x="37.712475"
+       y="30.472458"
        id="text108954"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -253,12 +267,12 @@
          sodipodi:role="line"
          id="tspan108952"
          style="font-size:3.52778px;stroke-width:0.264583"
-         x="56.233315"
-         y="28.884956">3</tspan></text>
+         x="37.712475"
+         y="30.472458">3</tspan></text>
     <path
        id="path114726"
        style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999997;stroke-linecap:round"
-       d="m 88.41868,35.386047 v 2.452806 h -2.45239 v 2.452394 h 2.45239 v 2.452808 h 2.45281 v -2.452808 h 2.452804 V 37.838853 H 90.87149 v -2.452806 z"
+       d="m 69.897844,38.031882 v 2.452806 h -2.45239 v 2.452394 h 2.45239 v 2.452808 h 2.45281 v -2.452808 h 2.452804 v -2.452394 h -2.452804 v -2.452806 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -277,7 +291,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0.17542634,0,0,0.17542634,63.20261,26.761874)"
+       transform="matrix(0.17542634,0,0,0.17542634,44.681774,29.407709)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -296,7 +310,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0.17542634,0,0,0.17542634,68.434878,26.761874)"
+       transform="matrix(0.17542634,0,0,0.17542634,49.914042,29.407709)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -315,7 +329,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0.17542634,0,0,0.17542634,68.434878,26.761874)"
+       transform="matrix(0.17542634,0,0,0.17542634,49.914042,29.407709)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -334,7 +348,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0.17542634,0,0,0.17542634,63.20261,31.944143)"
+       transform="matrix(0.17542634,0,0,0.17542634,44.681774,34.589978)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -353,7 +367,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0.17542634,0,0,0.17542634,68.434878,31.944143)"
+       transform="matrix(0.17542634,0,0,0.17542634,49.914042,34.589978)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -372,7 +386,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0,0.17542634,-0.35423781,0,91.494076,50.976623)"
+       transform="matrix(0,0.17542634,-0.35423781,0,72.97324,53.622458)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -391,7 +405,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0,0.17542634,-0.35423781,0,91.494076,56.229263)"
+       transform="matrix(0,0.17542634,-0.35423781,0,72.97324,58.875098)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -410,7 +424,7 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0.17542634,0,0,0.35423781,63.173251,35.121234)"
+       transform="matrix(0.17542634,0,0,0.35423781,44.652415,37.767069)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -429,15 +443,15 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0.17542634,0,0,0.35423781,68.425891,35.121234)"
+       transform="matrix(0.17542634,0,0,0.35423781,49.905055,37.767069)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <text
        xml:space="preserve"
        style="font-size:3.52778px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="73.75959"
-       y="28.873932"
+       x="55.238754"
+       y="30.461433"
        id="text143643"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -445,13 +459,13 @@
          sodipodi:role="line"
          id="tspan143641"
          style="font-size:3.52778px;stroke-width:0.264583"
-         x="73.75959"
-         y="28.873932">4</tspan></text>
+         x="55.238754"
+         y="30.461433">4</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:2.11667px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="68.619049"
-       y="70.376564"
+       x="50.098209"
+       y="73.0224"
        id="text145707"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -459,38 +473,38 @@
          sodipodi:role="line"
          id="tspan145705"
          style="font-size:2.11667px;stroke-width:0.264583"
-         x="68.619049"
-         y="70.376564">or any number</tspan><tspan
+         x="50.098209"
+         y="73.0224">or any number</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
-         x="68.619049"
-         y="73.0224"
+         x="50.098209"
+         y="75.668236"
          id="tspan145709">of weaves...</tspan></text>
     <path
        id="path149597"
        style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999997;stroke-linecap:round"
-       d="m 95.776684,32.933653 v 2.452394 h -2.45239 v 2.452806 h 2.45239 v 2.452394 h 2.452798 v -2.452394 h 2.452378 v -2.452806 h -2.452378 v -2.452394 z"
+       d="m 77.255848,35.579488 v 2.452394 h -2.45239 v 2.452806 h 2.45239 v 2.452394 h 2.452798 v -2.452394 h 2.452378 v -2.452806 h -2.452378 v -2.452394 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path149607"
        style="fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999997;stroke-linecap:round"
-       d="m 93.324294,37.838853 v 2.452394 H 90.87149 v 2.452808 h 2.452804 v 2.452392 h 2.45239 v -2.452392 h 2.452798 v -2.452808 h -2.452798 v -2.452394 z"
+       d="m 74.803458,40.484688 v 2.452394 h -2.452804 v 2.452808 h 2.452804 v 2.452392 h 2.45239 V 45.38989 h 2.452798 v -2.452808 h -2.452798 v -2.452394 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path149621"
        style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999997;stroke-linecap:round"
-       d="m 98.229482,40.291247 v 2.452808 h -2.452798 v 2.452392 h 2.452798 v 2.452808 h 2.452378 v -2.452808 h 2.45281 v -2.452392 h -2.45281 v -2.452808 z"
+       d="m 79.708646,42.937082 v 2.452808 h -2.452798 v 2.452392 h 2.452798 v 2.452808 h 2.452378 v -2.452808 h 2.45281 V 45.38989 h -2.45281 v -2.452808 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path149623"
        style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999997;stroke-linecap:round"
-       d="m 90.87149,42.744055 v 2.452392 h -2.45281 v 2.452808 h 2.45281 v 2.452806 h 2.452804 v -2.452806 h 2.45239 v -2.452808 h -2.45239 v -2.452392 z"
+       d="m 72.350654,45.38989 v 2.452392 h -2.45281 v 2.452808 h 2.45281 v 2.452806 h 2.452804 V 50.29509 h 2.45239 v -2.452808 h -2.45239 V 45.38989 Z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -499,8 +513,8 @@
        id="rect163320"
        width="12.263157"
        height="12.26316"
-       x="88.418877"
-       y="35.386101"
+       x="69.898048"
+       y="38.031937"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -509,7 +523,7 @@
        style="opacity:1;fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:transform-center-x="-1.4189148e-06"
        inkscape:transform-center-y="0.39333116"
-       d="m 97.617905,85.865325 0.679027,-1.18029 0.679534,-1.179773 0.679027,-1.18029 0.679547,-1.179773 0.67903,-1.180289 0.67954,-1.179773 -0.67954,-1.179774 -0.67903,-1.180288 -0.679547,-1.179774 -0.679027,-1.180291 -0.679534,-1.179771 -0.679027,-1.180291 -0.679027,1.180291 -0.679542,1.179771 0.679542,1.180291 0.679027,1.179774 0.679027,1.180288 0.679534,1.179774 -0.679534,1.179773 -0.679027,1.180289 -0.679027,1.179773 -0.679542,1.18029 0.679542,1.179773 z"
+       d="m 79.097069,88.51116 0.679027,-1.18029 0.679534,-1.179773 0.679027,-1.18029 0.679547,-1.179773 0.67903,-1.180289 0.67954,-1.179773 -0.67954,-1.179774 -0.67903,-1.180288 -0.679547,-1.179774 -0.679027,-1.180291 -0.679534,-1.179771 -0.679027,-1.180291 -0.679027,1.180291 -0.679542,1.179771 0.679542,1.180291 0.679027,1.179774 0.679027,1.180288 0.679534,1.179774 -0.679534,1.179773 -0.679027,1.180289 -0.679027,1.179773 -0.679542,1.18029 0.679542,1.179773 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -517,7 +531,7 @@
        id="path928"
        style="opacity:1;fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:transform-center-y="0.39333125"
-       d="m 97.617905,81.145199 0.679027,-1.180289 0.679534,-1.179773 -0.679534,-1.179774 -0.679027,-1.180288 h -1.358569 -1.35857 -1.35857 -1.358057 l -0.67955,1.180288 -0.67902,1.179774 0.67902,1.179773 0.67955,1.180289 h 1.358057 1.35857 1.35857 z"
+       d="M 79.097069,83.791034 79.776096,82.610745 80.45563,81.430972 79.776096,80.251198 79.097069,79.07091 H 77.7385 76.37993 75.02136 73.663303 l -0.67955,1.180288 -0.67902,1.179774 0.67902,1.179773 0.67955,1.180289 h 1.358057 1.35857 1.35857 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -525,7 +539,7 @@
        id="path934"
        style="opacity:1;fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:transform-center-y="0.39333146"
-       d="m 92.184139,85.865325 0.67903,-1.18029 0.679027,-1.179773 -0.679027,-1.18029 -0.67903,-1.179773 -0.67955,-1.180289 -0.67902,-1.179773 0.67902,-1.179774 0.67955,-1.180288 0.67903,-1.179774 0.679027,-1.180291 -0.679027,-1.179771 -0.67903,-1.180291 -0.67955,1.180291 -0.67902,1.179771 -0.67955,1.180291 -0.67903,1.179774 -0.67954,1.180288 -0.67903,1.179774 0.67903,1.179773 0.67954,1.180289 0.67903,1.179773 0.67955,1.18029 0.67902,1.179773 z"
+       d="m 73.663303,88.51116 0.67903,-1.18029 0.679027,-1.179773 -0.679027,-1.18029 -0.67903,-1.179773 -0.67955,-1.180289 -0.67902,-1.179773 0.67902,-1.179774 0.67955,-1.180288 0.67903,-1.179774 0.679027,-1.180291 -0.679027,-1.179771 -0.67903,-1.180291 -0.67955,1.180291 -0.67902,1.179771 -0.67955,1.180291 -0.67903,1.179774 -0.67954,1.180288 -0.67903,1.179774 0.67903,1.179773 0.67954,1.180289 0.67903,1.179773 0.67955,1.18029 0.67902,1.179773 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -533,7 +547,7 @@
        id="path946"
        style="opacity:1;fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:transform-center-y="0.39333129"
-       d="m 94.900766,90.584933 0.67954,-1.179773 0.67903,-1.179773 0.679542,-1.180289 0.679027,-1.179773 -0.679027,-1.18029 -0.679542,-1.179773 0.679542,-1.18029 0.679027,-1.179773 h -1.358569 -1.35857 -1.35857 -1.358057 l 0.67903,1.179773 0.679027,1.18029 -0.679027,1.179773 -0.67903,1.18029 0.67903,1.179773 0.679027,1.180289 0.67954,1.179773 z"
+       d="m 76.37993,93.230768 0.67954,-1.179773 0.67903,-1.179773 0.679542,-1.180289 0.679027,-1.179773 -0.679027,-1.18029 -0.679542,-1.179773 0.679542,-1.18029 0.679027,-1.179773 H 77.7385 76.37993 75.02136 73.663303 l 0.67903,1.179773 0.679027,1.18029 -0.679027,1.179773 -0.67903,1.18029 0.67903,1.179773 0.679027,1.180289 0.67954,1.179773 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300"
@@ -543,49 +557,49 @@
        style="opacity:1;fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:transform-center-x="-1.2050738e-06"
        inkscape:transform-center-y="-0.39333087"
-       d="m 97.617905,76.425075 -0.679027,-1.179774 -0.679542,-1.180291 0.679542,-1.179771 0.679027,-1.180291 -0.679027,-1.179772 -0.679542,-1.179774 -0.67903,-1.180288 -0.67954,-1.179774 -0.67903,1.179774 -0.67954,1.180288 -0.679027,1.179774 -0.67903,1.179772 0.67903,1.180291 0.679027,1.179771 -0.679027,1.180291 -0.67903,1.179774 h 1.358057 1.35857 1.35857 z"
+       d="m 79.097069,79.07091 -0.679027,-1.179774 -0.679542,-1.180291 0.679542,-1.179771 0.679027,-1.180291 -0.679027,-1.179772 -0.679542,-1.179774 -0.67903,-1.180288 -0.67954,-1.179774 -0.67903,1.179774 -0.67954,1.180288 -0.679027,1.179774 -0.67903,1.179772 0.67903,1.180291 0.679027,1.179771 -0.679027,1.180291 -0.67903,1.179774 h 1.358057 1.35857 1.35857 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path191048"
        style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="m 61.475717,49.674526 -4.42557,2.554883 v 5.109765 h 2.95021 l 2.95021,-5.109765 z"
+       d="m 42.954881,52.320361 -4.42557,2.554883 v 5.109765 h 2.95021 l 2.95021,-5.109765 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path191107"
        style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="m 57.050147,57.339174 v -5.109765 l -4.30413,-2.48512 -1.43506,2.48512 2.9497,5.109765 z"
+       d="m 38.529311,59.985009 v -5.109765 l -4.30413,-2.48512 -1.43506,2.48512 2.9497,5.109765 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path191104"
        style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="m 52.745497,49.744289 4.30465,2.48512 4.42557,-2.554883 -1.39527,-2.415873 h -5.90041 z"
+       d="m 34.224661,52.390124 4.30465,2.48512 4.42557,-2.554883 -1.39527,-2.415873 h -5.90041 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path206338"
        style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="M 54.180737,71.170671 57.130944,66.060906 54.180737,60.95114 51.23053,66.060906 Z"
+       d="m 35.659901,73.816506 2.950207,-5.109765 -2.950207,-5.109766 -2.950207,5.109766 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path206253"
        style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="m 54.180737,71.170929 h 5.899899 l 2.950207,-5.110281 h -5.899899 z"
+       d="M 35.659901,73.816764 H 41.5598 l 2.950207,-5.110281 h -5.899899 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path206167"
        style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round"
-       d="m 54.180737,60.951139 2.950207,5.109766 h 5.899899 l -2.950207,-5.109766 z"
+       d="m 35.659901,63.596974 2.950207,5.109766 h 5.899899 L 41.5598,63.596974 Z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -593,7 +607,7 @@
        id="path223895"
        style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999999;stroke-linecap:round"
        inkscape:transform-center-y="-0.91113813"
-       d="m 77.833054,81.364228 -1.576361,2.733562 -1.57678,2.733143 1.57678,2.733561 1.576361,2.73356 1.576781,-2.73356 1.576782,-2.733561 -1.576782,-2.733143 z"
+       d="m 59.312218,84.010063 -1.576361,2.733562 -1.57678,2.733143 1.57678,2.733561 1.576361,2.73356 1.576781,-2.73356 1.576782,-2.733561 -1.576782,-2.733143 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -601,7 +615,7 @@
        id="path223897"
        style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999999;stroke-linecap:round"
        inkscape:transform-center-y="-0.91113813"
-       d="m 71.52677,81.364228 -1.576361,2.733562 -1.576781,2.733143 1.576781,2.733561 1.576361,2.73356 1.57678,-2.73356 1.576363,-2.733561 -1.576363,-2.733143 z"
+       d="m 53.005934,84.010063 -1.576361,2.733562 -1.576781,2.733143 1.576781,2.733561 1.576361,2.73356 1.57678,-2.73356 1.576363,-2.733561 -1.576363,-2.733143 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -609,49 +623,49 @@
        id="path223901"
        style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999999;stroke-linecap:round"
        inkscape:transform-center-y="0.91113795"
-       d="m 74.679913,86.830933 -1.576363,2.733561 -1.57678,2.73356 1.57678,2.73314 1.576363,2.73357 1.57678,-2.73357 1.576361,-2.73314 -1.576361,-2.73356 z"
+       d="m 56.159077,89.476768 -1.576363,2.733561 -1.57678,2.73356 1.57678,2.73314 1.576363,2.733571 1.57678,-2.733571 1.576361,-2.73314 -1.576361,-2.73356 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <text
        xml:space="preserve"
        style="font-size:2.11667px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="62.983921"
-       y="78.597641"
+       x="44.463081"
+       y="81.243477"
        id="text242872"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
-         x="62.983921"
-         y="78.597641"
+         x="44.463081"
+         y="81.243477"
          id="tspan242870">also a</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
-         x="62.983921"
-         y="81.243477"
+         x="44.463081"
+         y="83.889313"
          id="tspan348118">weave</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:2.11667px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="143.1879"
-       y="14.205595"
+       x="150.38164"
+       y="12.633976"
        id="text256356"><tspan
          sodipodi:role="line"
          id="tspan256354"
          style="font-size:2.11667px;stroke-width:0.264583"
-         x="143.1879"
-         y="14.205595">in general, square tiles</tspan><tspan
+         x="150.38164"
+         y="12.633976">in general, square tiles</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
-         x="143.1879"
-         y="16.851433"
+         x="150.38164"
+         y="15.279814"
          id="tspan256358">may be best dissected by</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
-         x="143.1879"
-         y="19.497271"
+         x="150.38164"
+         y="17.925652"
          id="tspan256360">weave patterns...?</tspan></text>
     <text
        xml:space="preserve"
@@ -673,188 +687,202 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(0.35423781,0,0,0.35423781,-4.7388623,12.9243)" />
-    <path
-       sodipodi:type="star"
-       style="fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       id="path261756"
-       inkscape:flatsided="true"
-       sodipodi:sides="3"
-       sodipodi:cx="121.92834"
-       sodipodi:cy="91.288971"
-       sodipodi:r1="17.043358"
-       sodipodi:r2="8.5216789"
-       sodipodi:arg1="-1.5707963"
-       sodipodi:arg2="-0.52359875"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       transform="matrix(0.30283195,0,0,0.30341666,76.180282,10.558633)"
-       inkscape:transform-center-y="-1.2928104"
+       transform="matrix(0.35423781,0,0,0.35423781,8.6830899,-3.575616)" />
+    <g
+       id="g526045"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300"
-       d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
-    <path
-       sodipodi:type="star"
-       style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       id="path268795"
-       inkscape:flatsided="true"
-       sodipodi:sides="3"
-       sodipodi:cx="121.92834"
-       sodipodi:cy="91.288971"
-       sodipodi:r1="17.043358"
-       sodipodi:r2="8.5216789"
-       sodipodi:arg1="-1.5707963"
-       sodipodi:arg2="-0.52359875"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       transform="matrix(0.30283195,0,0,0.30341666,85.119869,10.558633)"
-       inkscape:transform-center-y="-1.2928104"
+       transform="translate(-10.583333)">
+      <path
+         sodipodi:type="star"
+         style="fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path261756"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(0.30283195,0,0,0.30341666,68.24278,13.204468)"
+         inkscape:transform-center-y="-1.2928104"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path268795"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(0.30283195,0,0,0.30341666,77.182367,13.204468)"
+         inkscape:transform-center-y="-1.2928104"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path268797"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(0.30283195,0,0,0.30341666,72.712574,20.961327)"
+         inkscape:transform-center-y="-1.2928105"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path268804"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(-0.30283195,0,0,-0.30341666,151.0299,73.772896)"
+         inkscape:transform-center-y="-1.2928103"
+         inkscape:transform-center-x="-3.0512947e-06"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path268806"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(-0.30283195,0,0,-0.30341666,142.09031,73.772896)"
+         inkscape:transform-center-y="-1.2928103"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path268808"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(-0.30283195,0,0,-0.30341666,146.56011,66.016037)"
+         inkscape:transform-center-y="-1.2928106"
+         inkscape:transform-center-x="-3.4962037e-06"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+    </g>
+    <g
+       id="g526053"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300"
-       d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
-    <path
-       sodipodi:type="star"
-       style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       id="path268797"
-       inkscape:flatsided="true"
-       sodipodi:sides="3"
-       sodipodi:cx="121.92834"
-       sodipodi:cy="91.288971"
-       sodipodi:r1="17.043358"
-       sodipodi:r2="8.5216789"
-       sodipodi:arg1="-1.5707963"
-       sodipodi:arg2="-0.52359875"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       transform="matrix(0.30283195,0,0,0.30341666,80.650076,18.315492)"
-       inkscape:transform-center-y="-1.2928105"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300"
-       d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
-    <path
-       sodipodi:type="star"
-       style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       id="path268804"
-       inkscape:flatsided="true"
-       sodipodi:sides="3"
-       sodipodi:cx="121.92834"
-       sodipodi:cy="91.288971"
-       sodipodi:r1="17.043358"
-       sodipodi:r2="8.5216789"
-       sodipodi:arg1="-1.5707963"
-       sodipodi:arg2="-0.52359875"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       transform="matrix(-0.30283195,0,0,-0.30341666,158.96742,71.127061)"
-       inkscape:transform-center-y="-1.2928103"
-       inkscape:transform-center-x="-3.0512947e-06"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300"
-       d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
-    <path
-       sodipodi:type="star"
-       style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       id="path268806"
-       inkscape:flatsided="true"
-       sodipodi:sides="3"
-       sodipodi:cx="121.92834"
-       sodipodi:cy="91.288971"
-       sodipodi:r1="17.043358"
-       sodipodi:r2="8.5216789"
-       sodipodi:arg1="-1.5707963"
-       sodipodi:arg2="-0.52359875"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       transform="matrix(-0.30283195,0,0,-0.30341666,150.02783,71.127061)"
-       inkscape:transform-center-y="-1.2928103"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300"
-       d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
-    <path
-       sodipodi:type="star"
-       style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       id="path268808"
-       inkscape:flatsided="true"
-       sodipodi:sides="3"
-       sodipodi:cx="121.92834"
-       sodipodi:cy="91.288971"
-       sodipodi:r1="17.043358"
-       sodipodi:r2="8.5216789"
-       sodipodi:arg1="-1.5707963"
-       sodipodi:arg2="-0.52359875"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       transform="matrix(-0.30283195,0,0,-0.30341666,154.49763,63.370202)"
-       inkscape:transform-center-y="-1.2928106"
-       inkscape:transform-center-x="-3.4962037e-06"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300"
-       d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
-    <path
-       id="path101002"
-       style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 117.43741,54.041647 -1e-4,7.813073 6.76181,-3.906625 -2.254,-3.906734 z"
-       inkscape:transform-center-x="-3.3809037"
-       inkscape:transform-center-y="-3.9066807"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300" />
-    <path
-       id="path285546"
-       style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 110.67571,57.948095 6.7616,3.906625 v -7.813251 h -4.50799 z"
-       inkscape:transform-center-x="3.3808012"
-       inkscape:transform-center-y="-3.9066267"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300" />
-    <path
-       id="path285548"
-       style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 110.67561,65.761168 6.7617,-3.906448 -6.7618,-3.906625 -2.254,3.906733 z"
-       inkscape:transform-center-x="4.5078998"
-       inkscape:transform-center-y="-8.9733986e-05"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300" />
-    <path
-       id="path285550"
-       style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 117.43722,69.667793 9e-5,-7.813073 -6.7618,3.906626 2.254,3.906733 z"
-       inkscape:transform-center-x="3.3809043"
-       inkscape:transform-center-y="3.9066783"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300" />
-    <path
-       id="path285552"
-       style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 124.19892,65.761346 -6.76161,-3.906626 v 7.813251 h 4.508 z"
-       inkscape:transform-center-x="-3.3808007"
-       inkscape:transform-center-y="3.9066243"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300" />
-    <path
-       id="path285554"
-       style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 124.199,57.948272 -6.76169,3.906448 6.76181,3.906626 2.254,-3.906734 z"
-       inkscape:transform-center-x="-4.5078991"
-       inkscape:transform-center-y="8.7766014e-05"
-       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300" />
+       transform="translate(-10.583333)">
+      <path
+         id="path101002"
+         style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 109.49989,56.687482 -10e-5,7.813073 6.76181,-3.906625 -2.254,-3.906734 z"
+         inkscape:transform-center-x="-3.3809037"
+         inkscape:transform-center-y="-3.9066807"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path285546"
+         style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 102.73819,60.59393 6.7616,3.906625 v -7.813251 h -4.50799 z"
+         inkscape:transform-center-x="3.3808012"
+         inkscape:transform-center-y="-3.9066267"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path285548"
+         style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 102.73809,68.407003 6.7617,-3.906448 -6.7618,-3.906625 -2.254,3.906733 z"
+         inkscape:transform-center-x="4.5078998"
+         inkscape:transform-center-y="-8.9733986e-05"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path285550"
+         style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 109.4997,72.313628 9e-5,-7.813073 -6.7618,3.906626 2.254,3.906733 z"
+         inkscape:transform-center-x="3.3809043"
+         inkscape:transform-center-y="3.9066783"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path285552"
+         style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 116.2614,68.407181 -6.76161,-3.906626 v 7.813251 h 4.508 z"
+         inkscape:transform-center-x="-3.3808007"
+         inkscape:transform-center-y="3.9066243"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path285554"
+         style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 116.26148,60.594107 -6.76169,3.906448 6.76181,3.906626 2.254,-3.906734 z"
+         inkscape:transform-center-x="-4.5078991"
+         inkscape:transform-center-y="8.7766014e-05"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+    </g>
     <text
        xml:space="preserve"
        style="font-size:3.52778px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="93.84684"
-       y="28.864285"
+       x="75.326012"
+       y="30.451786"
        id="text303383"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -862,13 +890,13 @@
          sodipodi:role="line"
          id="tspan303381"
          style="font-size:3.52778px;stroke-width:0.264583"
-         x="93.84684"
-         y="28.864285">5</tspan></text>
+         x="75.326012"
+         y="30.451786">5</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:3.52778px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="116.72803"
-       y="28.884956"
+       x="98.207199"
+       y="30.472458"
        id="text303387"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -876,11 +904,11 @@
          sodipodi:role="line"
          id="tspan303385"
          style="font-size:3.52778px;stroke-width:0.264583"
-         x="116.72803"
-         y="28.884956">6</tspan></text>
+         x="98.207199"
+         y="30.472458">6</tspan></text>
     <path
        sodipodi:type="star"
-       style="fill:#0066ff;stroke:#ffffff;stroke-width:0.208318;stroke-linecap:round"
+       style="fill:#0066ff;stroke:#ffffff;stroke-width:0.29087;stroke-linecap:round"
        id="path306395"
        inkscape:flatsided="true"
        sodipodi:sides="3"
@@ -893,8 +921,8 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z"
-       transform="matrix(0.48003659,0,0,0.48003659,-45.471529,3.9369489)"
-       inkscape:transform-center-y="-2.0453587" />
+       transform="matrix(0.34391714,0,0,0.3436774,-27.215587,-16.614578)"
+       inkscape:transform-center-y="-1.4643534" />
     <path
        sodipodi:type="star"
        style="fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.282296;stroke-linecap:round"
@@ -910,10 +938,10 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="M 65.011876,62.325127 44.835002,67.731505 30.064504,52.961008 35.470881,32.784133 55.647756,27.377756 70.418253,42.148253 Z"
-       transform="matrix(0.34216745,0.09168349,-0.09168349,0.34216745,0.51289066,-6.1417641)" />
+       transform="matrix(0.34216747,0.0916835,-0.0916835,0.34216747,27.447378,-7.6079209)" />
     <g
        id="g364365"
-       transform="translate(-4.2634595,-6.6716416)"
+       transform="translate(-22.784295,-4.0258081)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300">
@@ -1073,8 +1101,8 @@
     <text
        xml:space="preserve"
        style="font-size:3.52778px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="139.30141"
-       y="28.864285"
+       x="120.78061"
+       y="30.451786"
        id="text319057"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -1082,13 +1110,14 @@
          sodipodi:role="line"
          id="tspan319055"
          style="font-size:3.52778px;stroke-width:0.264583"
-         x="139.30141"
-         y="28.864285">7</tspan></text>
+         x="120.78061"
+         y="30.451786">7</tspan></text>
     <g
        id="g361357"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300">
+       inkscape:export-ydpi="300"
+       transform="translate(-18.520834,2.6458334)">
       <path
          id="path319623"
          style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
@@ -1129,28 +1158,28 @@
     <path
        id="path350886"
        style="fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999998;stroke-linecap:round"
-       d="M 99.944443,63.611749 V 58.42912 h -2.869585 v 2.362647 h -2.312515 v 2.819982 z"
+       d="m 81.423607,66.257584 v -5.182629 h -2.869585 v 2.362647 h -2.312515 v 2.819982 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path350890"
        style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999998;stroke-linecap:round"
-       d="M 94.712217,63.611749 V 60.791767 H 92.450339 V 58.42912 h -2.92023 v 5.182629 z"
+       d="m 76.191381,66.257584 v -2.819982 h -2.261878 v -2.362647 h -2.92023 v 5.182629 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path350892"
        style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999998;stroke-linecap:round"
-       d="m 99.944443,58.42912 v -5.182113 h -5.1821 v 2.920235 h 2.312515 v 2.261878 z"
+       d="m 81.423607,61.074955 v -5.182113 h -5.1821 v 2.920235 h 2.312515 v 2.261878 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <path
        id="path350894"
        style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.0999998;stroke-linecap:round"
-       d="m 92.450339,58.42912 v -2.261878 h 2.261878 v -2.920235 h -5.182108 v 5.182113 z"
+       d="m 73.929503,61.074955 v -2.261878 h 2.261878 v -2.920235 h -5.182108 v 5.182113 z"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
@@ -1169,13 +1198,13 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 65.011876,62.325127 -29.540994,10e-7 -1e-6,-29.540995 29.540995,0 z"
-       transform="matrix(-0.15654743,0,0,-0.15654743,102.62753,65.923832)"
+       transform="matrix(-0.15654743,0,0,-0.15654743,84.106694,68.569667)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300" />
     <g
        id="g361351"
-       transform="matrix(1.4161156,0,0,1.4169951,-30.069744,-52.090328)"
+       transform="matrix(1.4161156,0,0,1.4169951,-48.59058,-49.444493)"
        style="stroke-width:0.705938"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -1211,7 +1240,7 @@
     </g>
     <g
        id="g400678"
-       transform="translate(-0.07149299,-2.6458332)"
+       transform="translate(-18.592327)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300">
@@ -1253,7 +1282,7 @@
     </g>
     <g
        id="g437211"
-       transform="matrix(1.0480922,0,0,1.0481384,-10.106485,-2.8223568)"
+       transform="matrix(1.0480922,0,0,1.0481384,-28.627321,-0.17652336)"
        style="stroke-width:0.954094"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -1308,8 +1337,8 @@
     <text
        xml:space="preserve"
        style="font-size:3.52778px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="161.70724"
-       y="28.864285"
+       x="143.18643"
+       y="30.451786"
        id="text435237"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -1317,11 +1346,11 @@
          sodipodi:role="line"
          id="tspan435235"
          style="font-size:3.52778px;stroke-width:0.264583"
-         x="161.70724"
-         y="28.864285">8</tspan></text>
+         x="143.18643"
+         y="30.451786">8</tspan></text>
     <g
        id="g453424"
-       transform="translate(7.3519766,-1.2516666)"
+       transform="translate(-11.168857,1.3941667)"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300">
@@ -1494,15 +1523,14 @@
          inkscape:transform-center-x="2.1793779e-06" />
     </g>
     <g
-       id="g495668"
-       transform="matrix(1.1909186,0,0,1.1909893,-40.380666,-8.4543605)"
-       style="stroke-width:0.839663"
+       id="g565819"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300">
+       inkscape:export-ydpi="300"
+       transform="translate(-10.583333)">
       <g
          id="g495619"
-         transform="rotate(-7.2334679,-460.70267,-119.88529)"
+         transform="matrix(1.1814405,-0.14996072,0.14995181,1.1815106,-34.707755,-76.032186)"
          style="stroke-width:0.839663">
         <path
            id="path453426"
@@ -1555,14 +1583,14 @@
          sodipodi:arg2="1.3089969"
          inkscape:rounded="0"
          inkscape:randomized="0"
-         d="M 65.011876,62.325127 44.835002,67.731505 30.064504,52.961008 35.470881,32.784133 55.647756,27.377756 70.418253,42.148253 Z"
-         transform="matrix(0.34216745,0.09168349,-0.09168349,0.34216745,176.50277,21.067325)" />
+         transform="matrix(0.40749358,0.10919406,-0.10918757,0.40751777,161.88226,19.282432)"
+         d="M 65.011876,62.325127 44.835002,67.731505 30.064504,52.961008 35.470881,32.784133 55.647756,27.377756 70.418253,42.148253 Z" />
     </g>
     <text
        xml:space="preserve"
        style="font-size:3.52778px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="184.21855"
-       y="28.864285"
+       x="165.69774"
+       y="30.451786"
        id="text495672"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -1570,43 +1598,699 @@
          sodipodi:role="line"
          id="tspan495670"
          style="font-size:3.52778px;stroke-width:0.264583"
-         x="184.21855"
-         y="28.864285">9</tspan></text>
+         x="165.69774"
+         y="30.451786">9</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:2.11667px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="83.138245"
-       y="102.12909"
+       x="64.617416"
+       y="104.77493"
        id="text498913"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
-         x="83.138245"
-         y="102.12909"
+         x="64.617416"
+         y="104.77493"
          id="tspan498911">these are</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
-         x="83.138245"
-         y="104.77493"
+         x="64.617416"
+         y="107.42077"
          id="tspan503112">hexiamonds</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:2.11667px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="81.962753"
-       y="118.90228"
+       x="63.441921"
+       y="121.54811"
        id="text504364"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
          id="tspan504482"
-         x="81.962753"
-         y="118.90228">centre hex is 50%</tspan><tspan
+         x="63.441921"
+         y="121.54811">centre hex is 50%</tspan><tspan
          sodipodi:role="line"
-         x="81.962753"
-         y="121.54812"
+         x="63.441921"
+         y="124.19395"
          id="tspan510386">scaled base hex</tspan></text>
+    <rect
+       style="opacity:0;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect519602"
+       width="159.41068"
+       height="7.8907709"
+       x="14.587174"
+       y="25.22126"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <g
+       id="g526067"
+       transform="translate(12.091535,20.936241)"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300">
+      <path
+         sodipodi:type="star"
+         style="fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path526055"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(0.30283195,0,0,0.30341666,68.24278,13.204468)"
+         inkscape:transform-center-y="-1.2928104"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path526057"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(0.30283195,0,0,0.30341666,77.182367,13.204468)"
+         inkscape:transform-center-y="-1.2928104"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path526059"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(0.30283195,0,0,0.30341666,72.712574,20.961327)"
+         inkscape:transform-center-y="-1.2928105"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path526061"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(-0.30283195,0,0,-0.30341666,151.0299,73.772896)"
+         inkscape:transform-center-y="-1.2928103"
+         inkscape:transform-center-x="-3.0512947e-06"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path526063"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(-0.30283195,0,0,-0.30341666,142.09031,73.772896)"
+         inkscape:transform-center-y="-1.2928103"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+      <path
+         sodipodi:type="star"
+         style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.329898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         id="path526065"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="121.92834"
+         sodipodi:cy="91.288971"
+         sodipodi:r1="17.043358"
+         sodipodi:r2="8.5216789"
+         sodipodi:arg1="-1.5707963"
+         sodipodi:arg2="-0.52359875"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(-0.30283195,0,0,-0.30341666,146.56011,66.016037)"
+         inkscape:transform-center-y="-1.2928106"
+         inkscape:transform-center-x="-3.4962037e-06"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300"
+         d="m 121.92834,74.245613 14.75998,25.565037 -29.51996,-10e-7 z" />
+    </g>
+    <g
+       id="g526081"
+       transform="translate(12.228078,20.936241)"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300">
+      <path
+         id="path526069"
+         style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 109.49989,56.687482 -10e-5,7.813073 6.76181,-3.906625 -2.254,-3.906734 z"
+         inkscape:transform-center-x="-3.3809037"
+         inkscape:transform-center-y="-3.9066807"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path526071"
+         style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 102.73819,60.59393 6.7616,3.906625 v -7.813251 h -4.50799 z"
+         inkscape:transform-center-x="3.3808012"
+         inkscape:transform-center-y="-3.9066267"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path526073"
+         style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 102.73809,68.407003 6.7617,-3.906448 -6.7618,-3.906625 -2.254,3.906733 z"
+         inkscape:transform-center-x="4.5078998"
+         inkscape:transform-center-y="-8.9733986e-05"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path526075"
+         style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 109.4997,72.313628 9e-5,-7.813073 -6.7618,3.906626 2.254,3.906733 z"
+         inkscape:transform-center-x="3.3809043"
+         inkscape:transform-center-y="3.9066783"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path526077"
+         style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 116.2614,68.407181 -6.76161,-3.906626 v 7.813251 h 4.508 z"
+         inkscape:transform-center-x="-3.3808007"
+         inkscape:transform-center-y="3.9066243"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+      <path
+         id="path526079"
+         style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 116.26148,60.594107 -6.76169,3.906448 6.76181,3.906626 2.254,-3.906734 z"
+         inkscape:transform-center-x="-4.5078991"
+         inkscape:transform-center-y="8.7766014e-05"
+         inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+         inkscape:export-xdpi="300"
+         inkscape:export-ydpi="300" />
+    </g>
+    <path
+       sodipodi:type="star"
+       style="fill:#ff0000;fill-opacity:1;stroke:#ffffff;stroke-width:0.608135;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path526083"
+       inkscape:flatsided="true"
+       sodipodi:sides="6"
+       sodipodi:cx="50.241379"
+       sodipodi:cy="47.55463"
+       sodipodi:r1="20.888638"
+       sodipodi:r2="14.770497"
+       sodipodi:arg1="0.78539816"
+       sodipodi:arg2="1.3089969"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="M 65.011876,62.325127 44.835002,67.731505 30.064504,52.961008 35.470881,32.784133 55.647756,27.377756 70.418253,42.148253 Z"
+       transform="matrix(0.15820514,-0.04198667,0.04322423,0.15944282,111.72391,79.964019)"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       sodipodi:type="star"
+       style="fill:#ff0000;fill-opacity:1;stroke:#ffffff;stroke-width:0.608135;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path526086"
+       inkscape:flatsided="true"
+       sodipodi:sides="6"
+       sodipodi:cx="50.241379"
+       sodipodi:cy="47.55463"
+       sodipodi:r1="20.888638"
+       sodipodi:r2="14.770497"
+       sodipodi:arg1="0.78539816"
+       sodipodi:arg2="1.3089969"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="M 65.011876,62.325127 44.835002,67.731505 30.064504,52.961008 35.470881,32.784133 55.647756,27.377756 70.418253,42.148253 Z"
+       transform="matrix(-0.04198667,-0.15820514,0.15944282,-0.04322423,116.25509,74.42888)"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <g
+       id="g565806"
+       transform="translate(-10.527023,-2.0768443)"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300">
+      <g
+         id="g565793"
+         transform="rotate(-4.2184267,157.42392,28.848098)">
+        <path
+           id="path526205"
+           style="fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.377953;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+           d="m 644.3457,228.17578 -4.74218,2.73633 v 5.47656 l 4.74218,2.73633 v 5.47656 l 4.74219,2.73828 v 5.47461 l 4.74219,2.73828 4.74219,-2.73828 v -5.47461 l 4.74218,-2.73828 V 239.125 l -4.74218,-2.73633 -4.74219,2.73633 -4.74219,-2.73633 v -5.47656 z"
+           transform="scale(0.26458333)" />
+        <path
+           id="path532217"
+           style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.377953;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+           d="m 653.83008,228.17578 -4.74219,2.73633 v 5.47656 l 4.74219,2.73633 4.74219,-2.73633 4.74218,2.73633 v 5.47656 l 4.74219,2.73828 4.74219,-2.73828 V 239.125 l 4.74219,-2.73633 v -5.47656 l -4.74219,-2.73633 -4.74219,2.73633 -4.74219,-2.73633 -4.74218,2.73633 z"
+           transform="scale(0.26458333)" />
+        <path
+           id="path532229"
+           style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.377953;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+           d="m 639.60352,236.38867 -4.74219,2.73633 v 5.47656 l -4.74219,2.73828 v 5.47461 l 4.74219,2.73828 4.74219,-2.73828 4.74218,2.73828 v 5.47461 l 4.74219,2.73828 4.74219,-2.73828 v -5.47461 l -4.74219,-2.73828 v -5.47461 l -4.74219,-2.73828 V 239.125 Z"
+           transform="scale(0.26458333)" />
+        <path
+           id="path532237"
+           style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.377953;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+           d="m 677.54102,236.38867 -4.74219,2.73633 v 5.47656 l -4.74219,2.73828 -4.74219,-2.73828 -4.74218,2.73828 v 5.47461 l 4.74218,2.73828 4.74219,-2.73828 4.74219,2.73828 4.74219,-2.73828 4.74218,2.73828 4.74219,-2.73828 v -5.47461 l -4.74219,-2.73828 V 239.125 Z"
+           transform="scale(0.26458333)" />
+        <path
+           id="path532257"
+           style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.377953;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+           d="m 630.11914,252.81445 -4.74219,2.73828 v 5.47461 l 4.74219,2.73828 v 5.47657 l 4.74219,2.73633 v 5.47656 l 4.74219,2.73633 4.74218,-2.73633 v -5.47656 l -4.74218,-2.73633 v -5.47657 l 4.74218,-2.73828 v -5.47461 l -4.74218,-2.73828 -4.74219,2.73828 z"
+           transform="scale(0.26458333)" />
+        <path
+           id="path532265"
+           style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+           d="m 176.75665,66.890489 -1.25471,0.724503 v 1.448491 l 1.25471,0.724503 v 1.449009 l 1.2547,0.723988 1.25471,-0.723988 v -1.449009 l 1.2547,-0.724503 1.2547,0.724503 1.25471,-0.724503 v -1.448491 l -1.25471,-0.724503 -1.2547,0.724503 -1.2547,-0.724503 -1.25471,0.724503 z" />
+        <path
+           id="path532273"
+           style="fill:#ff0000;fill-opacity:1;stroke:#ffffff;stroke-width:0.377953;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+           d="m 644.3457,261.02734 -4.74218,2.73828 v 5.47657 l 4.74218,2.73633 v 5.47656 l -4.74218,2.73633 v 5.47656 l 4.74218,2.73828 4.74219,-2.73828 v -5.47656 l 4.74219,-2.73633 v -5.47656 l 4.74219,-2.73633 v -5.47657 l -4.74219,-2.73828 -4.74219,2.73828 z"
+           transform="scale(0.26458333)" />
+        <path
+           id="path532277"
+           style="fill:#916f7c;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+           d="m 175.50195,69.063483 -1.2547,0.724503 v 1.449009 l -1.25471,0.723988 v 1.449006 l -1.2547,0.723987 v 1.449007 l 1.2547,0.724503 1.25471,-0.724503 1.2547,0.724503 1.2547,-0.724503 v -1.449007 l -1.2547,-0.723987 v -1.449006 l 1.2547,-0.723988 v -1.449009 z" />
+        <path
+           id="path532281"
+           style="fill:#ff55dd;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+           d="m 180.52077,69.063483 -1.25471,0.724503 v 1.449009 l -1.2547,0.723988 -1.25471,-0.723988 -1.2547,0.723988 v 1.449006 l 1.2547,0.723987 v 1.449007 l 1.25471,0.724503 1.2547,-0.724503 v -1.449007 l 1.25471,-0.723987 v -1.449006 l 1.2547,-0.723988 v -1.449009 z" />
+      </g>
+      <path
+         sodipodi:type="star"
+         style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.237034;stroke-linecap:round"
+         id="path565782"
+         inkscape:flatsided="true"
+         sodipodi:sides="6"
+         sodipodi:cx="50.241379"
+         sodipodi:cy="47.55463"
+         sodipodi:r1="20.888638"
+         sodipodi:r2="14.770497"
+         sodipodi:arg1="0.78539816"
+         sodipodi:arg2="1.3089969"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         transform="matrix(0.40749358,0.10919406,-0.10918757,0.40751777,161.82595,42.129592)"
+         d="M 65.011876,62.325127 44.835002,67.731505 30.064504,52.961008 35.470881,32.784133 55.647756,27.377756 70.418253,42.148253 Z" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:2.11667px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       x="159.1507"
+       y="99.53833"
+       id="text565825"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="159.1507"
+         y="99.53833"
+         id="tspan566447">Also note triaxial </tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="159.1507"
+         y="102.18417"
+         id="tspan575585">'madweave', which</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="159.1507"
+         y="104.83"
+         id="tspan576573">is equivalent to 3</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="159.1507"
+         y="107.47585"
+         id="tspan576575">3-section hexes </tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:2.11667px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       x="91.609215"
+       y="105.20257"
+       id="text581559"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="91.609215"
+         y="105.20257"
+         id="tspan581551">Also note triaxial </tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="91.609215"
+         y="107.8484"
+         id="tspan581557">weaves with 2+2+2</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="91.609215"
+         y="110.49424"
+         id="tspan581588">strands in each</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="91.609215"
+         y="113.14008"
+         id="tspan581590">direction, or</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="91.609215"
+         y="115.78592"
+         id="tspan581592">biaxial 3+3 </tspan></text>
+    <g
+       id="g618122"
+       transform="matrix(0.44501847,0,0,0.44479884,89.133053,34.675028)"
+       style="stroke-width:2.24765"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300">
+      <path
+         id="path588852"
+         style="fill:#ff0000;fill-opacity:1;stroke:#ffffff;stroke-width:0.849507;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:transform-center-x="3.5054237e-06"
+         inkscape:transform-center-y="-1.0064161"
+         d="m 605.07617,387.76172 -13.16797,22.82422 -13.16992,22.82226 13.16992,22.82227 h 13.16797 13.16992 l 13.16797,-22.82227 h -26.33789 l 6.58399,-11.41211 6.58593,-11.41015 z"
+         transform="scale(0.26458333)" />
+      <path
+         id="path588858"
+         style="fill:#ff55dd;fill-opacity:1;stroke:#ffffff;stroke-width:0.849507;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:transform-center-x="3.5054237e-06"
+         inkscape:transform-center-y="-1.0064161"
+         d="m 618.24609,410.58594 -13.16992,22.82226 h 26.33789 l -6.58398,11.41016 -6.58399,11.41211 13.16797,22.82226 13.16797,-22.82226 13.16992,-22.82227 -13.16992,-22.82226 h -13.16797 z"
+         transform="scale(0.26458333)" />
+      <path
+         id="path588864"
+         style="fill:#916f7c;fill-opacity:1;stroke:#ffffff;stroke-width:0.849507;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:transform-center-x="2.1793779e-06"
+         inkscape:transform-center-y="1.0064164"
+         d="m 631.41406,387.76172 6.58399,11.41211 6.58398,11.41211 6.58594,11.41015 6.58398,11.41211 h 26.33789 l 6.58399,-11.41211 6.58398,-11.41015 -13.16797,-22.82422 -13.16992,22.82422 -13.16797,-22.82422 h -13.16992 z"
+         transform="scale(0.26458333)" />
+      <path
+         id="path588870"
+         style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.849507;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:transform-center-x="3.5054237e-06"
+         inkscape:transform-center-y="-1.0064161"
+         d="m 697.25781,410.58594 -13.16797,22.82226 h 26.33594 l -6.58398,11.41016 -6.58399,11.41211 13.16797,22.82226 13.16992,-22.82226 13.16797,-22.82227 -13.16797,-22.82226 h -13.16992 z"
+         transform="scale(0.26458333)" />
+      <path
+         id="path588878"
+         style="fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.849507;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:transform-center-x="2.1793779e-06"
+         inkscape:transform-center-y="1.0064164"
+         d="m 618.24609,364.93945 -13.16992,22.82227 6.58399,11.41211 6.58593,11.41211 h 26.33594 l -13.16797,-22.82422 h 26.33789 l 6.58399,-11.41016 6.58398,-11.41211 h -13.16797 -13.16992 -13.16797 z"
+         transform="scale(0.26458333)" />
+      <path
+         id="path588886"
+         style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.849507;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:transform-center-x="2.1793779e-06"
+         inkscape:transform-center-y="1.0064164"
+         d="m 670.91992,364.93945 -13.16797,22.82227 6.58399,11.41211 6.58398,11.41211 6.58399,-11.41211 6.58593,-11.41211 6.58399,11.41211 6.58398,11.41211 h 26.33789 l -13.16992,-22.82422 -13.16797,-22.82227 h -13.16797 z"
+         transform="scale(0.26458333)" />
+      <path
+         id="path588912"
+         style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.849507;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:transform-center-x="-7.0909929e-06"
+         inkscape:transform-center-y="1.0064199"
+         d="m 657.75195,433.4082 -6.58398,11.41016 -6.58594,11.41211 13.16992,22.82226 h 13.16797 13.16992 l -6.58593,-11.41015 -6.58399,-11.41211 h 13.16992 13.16797 l 13.16797,-22.82227 h -26.33594 z"
+         transform="scale(0.26458333)" />
+      <path
+         id="path588932"
+         style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.849507;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:transform-center-x="-5.7649471e-06"
+         inkscape:transform-center-y="-1.0064186"
+         d="m 670.91992,456.23047 13.16992,22.82226 h -26.33789 l -6.58398,11.41211 -6.58594,11.41016 h 13.16992 13.16797 13.16992 13.16797 l 13.16797,-22.82227 -6.58398,-11.41015 -6.58399,-11.41211 z"
+         transform="scale(0.26458333)" />
+      <path
+         id="path588940"
+         style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.849507;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:transform-center-x="-5.7649471e-06"
+         inkscape:transform-center-y="-1.0064186"
+         d="m 591.9082,456.23047 13.16797,22.82226 13.16992,22.82227 h 13.16797 13.16797 l 13.16992,-22.82227 -6.58398,-11.41015 -6.58594,-11.41211 -6.58398,11.41211 -6.58399,11.41015 -6.58398,-11.41015 -6.58399,-11.41211 z"
+         transform="scale(0.26458333)" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:2.11667px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       x="159.1507"
+       y="112.14783"
+       id="text618132"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="159.1507"
+         y="112.14783"
+         id="tspan618130">Also note 3x3</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="159.1507"
+         y="114.79366"
+         id="tspan618165">subdivisions of</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="159.1507"
+         y="117.4395"
+         id="tspan618167">diamond or square</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.11667px;stroke-width:0.264583"
+         x="159.1507"
+         y="120.08534"
+         id="tspan618169">are trivial</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.52778px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       x="186.39113"
+       y="30.451786"
+       id="text621063"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
+         sodipodi:role="line"
+         id="tspan621061"
+         style="font-size:3.52778px;stroke-width:0.264583"
+         x="186.39113"
+         y="30.451786">10</tspan></text>
+    <path
+       id="path621167"
+       style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       inkscape:transform-center-y="-0.42264738"
+       d="m 180.94685,48.671658 2.91827,10e-6 2.91843,-8.6e-5 -1.45914,-2.535813 -1e-4,-1.69e-4 0.72953,-1.267768 0.72969,-1.267866 -1.45926,-4.1e-5 -1.45891,1.99e-4 -1e-4,-1.69e-4 -6e-5,2.65e-4 -1.45923,2.535635 z"
+       inkscape:transform-center-x="0.72956624"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path621173"
+       style="fill:#ff5555;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       inkscape:transform-center-y="-0.21132558"
+       d="m 186.78338,48.671679 2.91844,-8.7e-5 0.72953,-1.267769 0.7296,-1.268033 -1.45915,-2.535813 -1.45912,2.535801 -1.45915,-2.535812 -1.45929,2.535899 0.72957,1.267907 z"
+       inkscape:transform-center-x="-0.36479417"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path621181"
+       style="fill:#800000;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       inkscape:transform-center-y="-0.84526927"
+       d="m 183.86526,43.599955 2.91827,1.1e-5 0.72958,1.267907 0.72957,1.267905 0.72953,-1.267768 0.72959,-1.268033 -1.45914,-2.535814 -1.45914,-2.535813 -1.45913,2.535803 z"
+       inkscape:transform-center-x="-0.72957498"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path621191"
+       style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       inkscape:transform-center-y="-0.42262682"
+       d="m 189.70182,48.671592 2.91827,1e-5 1e-4,1.68e-4 1.6e-4,-9.7e-5 2.9181,1.08e-4 -1.45924,-2.535981 -1.45914,-2.535813 -1.459,3e-5 -1.45927,-4e-5 0.72957,1.267906 0.72958,1.267907 z"
+       inkscape:transform-center-x="-0.72955477"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path621201"
+       style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       inkscape:transform-center-y="-0.84526892"
+       d="m 189.7018,43.599977 2.91827,10e-6 -1.45914,-2.535813 -1.45915,-2.535813 -1.45924,-2.535982 -1.45902,2.535971 0.72957,1.267907 0.72957,1.267906 0.72957,1.267907 z"
+       inkscape:transform-center-x="-0.72962855"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path641286"
+       style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 195.53863,48.671683 -2.91828,-1e-5 -2.91843,8.7e-5 1.45914,2.535815 1e-4,1.65e-4 -0.72953,1.26777 -0.7297,1.267868 1.45927,3.9e-5 1.45891,-1.97e-4 9e-5,1.66e-4 7e-5,-2.63e-4 1.45923,-2.535635 z"
+       inkscape:transform-center-x="-0.72957489"
+       inkscape:transform-center-y="0.4226478"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path641288"
+       style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 189.70208,48.671662 -2.91843,8.7e-5 -0.72953,1.26777 -0.7296,1.268032 1.45915,2.535815 1.45912,-2.535802 1.45914,2.535814 1.4593,-2.535901 -0.72957,-1.267907 z"
+       inkscape:transform-center-y="0.21132658"
+       inkscape:transform-center-x="0.36478968"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path641290"
+       style="fill:#ff0000;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 192.6202,53.743386 -2.91827,-8e-6 -0.72957,-1.267907 -0.72957,-1.267907 -0.72953,1.267766 -0.72959,1.268036 1.45914,2.535811 1.45914,2.535814 1.45913,-2.535801 z"
+       inkscape:transform-center-y="0.84526931"
+       inkscape:transform-center-x="0.72957551"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path641292"
+       style="fill:#916f7c;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 186.78365,48.671749 -2.91827,-1.2e-5 -10e-5,-1.66e-4 -1.7e-4,9.7e-5 -2.9181,-1.07e-4 1.45924,2.535979 1.45915,2.535815 1.459,-3.1e-5 1.45927,4.2e-5 -0.72958,-1.267908 -0.72957,-1.267907 z"
+       inkscape:transform-center-x="0.72955518"
+       inkscape:transform-center-y="0.42262797"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path641294"
+       style="fill:#ff55dd;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 186.78367,53.743366 -2.91827,-1.1e-5 1.45914,2.535814 1.45914,2.535812 1.45924,2.53598 1.45903,-2.53597 -0.72957,-1.267907 -0.72957,-1.267907 -0.72957,-1.267904 z"
+       inkscape:transform-center-x="0.72962404"
+       inkscape:transform-center-y="0.84526831"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666256"
+       style="fill:#0066ff;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       inkscape:transform-center-y="-0.51955135"
+       d="m 188.42364,63.236549 -1.49013,2.585936 0.74516,1.293071 0.74497,1.293064 0.74516,1.292872 0.74517,1.293072 h 2.98026 l -1.49013,-2.585944 -1.49013,-2.586135 z"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666344"
+       style="fill:#008080;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1"
+       inkscape:transform-center-y="-0.51955662"
+       d="m 186.93351,65.822385 -1.49012,2.586144 0.74515,1.292864 0.74497,1.293071 0.74516,1.293072 0.74498,1.292864 h 2.98045 l -1.49013,-2.585936 -1.49032,-2.585935 z"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666356"
+       style="fill:#800080;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1"
+       inkscape:transform-center-y="-0.51955275"
+       d="m 185.44343,68.408612 -1.49013,2.585935 0.74516,1.293072 0.74497,1.292864 0.74516,1.293072 0.74497,1.293072 h 2.98046 l -1.49033,-2.586144 -1.49013,-2.585936 z"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666360"
+       style="fill:#ffcc00;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1"
+       inkscape:transform-center-y="-0.51955628"
+       d="m 183.95325,70.994564 -1.49013,2.585944 0.74516,1.293064 0.74497,1.293071 1.49013,2.585936 h 1.49013 1.49013 l -0.74497,-1.293063 -0.74516,-1.292873 -1.49013,-2.586135 z"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666374"
+       style="fill:#d38d5f;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1"
+       inkscape:transform-center-y="0.51956981"
+       d="m 189.91391,70.994556 0.74497,1.293063 0.74516,1.292873 0.74497,1.293071 0.74516,1.293064 1.49012,2.585944 1.49013,-2.585944 -1.49013,-2.586135 -1.49012,-2.585936 h -1.49013 z"
+       inkscape:transform-center-x="1.5916418e-06"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666378"
+       style="fill:#ff5555;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none"
+       inkscape:transform-center-y="0.51956533"
+       d="m 188.42375,73.5804 0.74515,1.293072 0.74517,1.293063 1.49013,2.585945 1.49013,2.585935 1.49013,-2.585935 -0.74516,-1.293072 -0.74497,-1.292873 -1.49013,-2.586135 h -1.49013 z"
+       inkscape:transform-center-x="-2.1422391e-06"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666392"
+       style="fill:#916f7c;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1"
+       inkscape:transform-center-y="-0.51955659"
+       d="m 182.46302,73.580599 -1.49013,2.586144 1.49013,2.585936 1.49013,2.585935 h 1.49013 1.49013 l -0.74497,-1.293063 -0.74516,-1.292872 -0.74497,-1.293072 -0.74516,-1.292864 z"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666402"
+       style="fill:#ff0000;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1"
+       inkscape:transform-center-y="0.51956657"
+       d="m 183.95317,81.338465 1.49013,2.585936 1.49013,2.586143 1.49032,2.585935 1.49014,-2.585935 -0.74517,-1.293071 -0.74516,-1.292873 v -1.99e-4 l -0.74497,-1.292864 -0.74516,-1.293072 z"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666406"
+       style="fill:#800000;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1"
+       inkscape:transform-center-y="0.51956929"
+       d="m 185.4433,78.752529 1.49013,2.585936 1.49013,2.585936 h 1.9e-4 l 1.49014,2.586143 1.49013,-2.586143 -0.74518,-1.292864 -0.74495,-1.293072 -0.74517,-1.292872 -0.74516,-1.292873 v -1.91e-4 z"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       id="path666418"
+       style="fill:#ff55dd;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1"
+       inkscape:transform-center-y="0.51956668"
+       d="m 186.93361,76.166544 1.49013,2.585936 h 2e-4 l 1.49013,2.585944 1.49013,2.585936 1.49012,-2.585936 -0.74516,-1.292873 -0.74496,-1.293071 -0.74517,-1.293064 -0.74496,-1.292872 z"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
   </g>
 </svg>
