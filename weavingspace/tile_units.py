@@ -3,6 +3,7 @@
 
 from dataclasses import dataclass
 import itertools
+import copy
 
 import geopandas as gpd
 import numpy as np
@@ -15,6 +16,7 @@ class TileUnit:
     elements:gpd.GeoDataFrame = None
     tile:gpd.GeoDataFrame = None
     tile_shape:str = "rectangle"
+    spacing:float = 1000.
 
 
     def __init__(self, shape:str = "rectangle", **kwargs) -> None:
@@ -23,7 +25,7 @@ class TileUnit:
             self.__dict__[k] = v
         self.tile = self.get_base_tile()
         self.elements = self.tile.overlay(
-            make_some_shapes(self.spacing, self.crs))
+            self.make_elements())
         if self.tile_shape == "triangle":
             self._modify_elements()
             self._modify_tile()
@@ -85,10 +87,13 @@ class TileUnit:
         return gpd.GeoSeries([merged_tile])
     
 
-def make_some_shapes(d, crs:int) -> gpd.GeoDataFrame:
-    square = geom.Polygon([(0, 0), (d * 2, 0), (d * 2, d * 2), (0, d * 2)])
-    squares = [affine.rotate(square, a, origin = (0, 0))
-               for a in range(45, 360, 90)]
-    return gpd.GeoDataFrame(
-        data = {"element_id": list("abcd")},
-        geometry = gpd.GeoSeries(squares), crs = crs)
+    def make_elements(self) -> gpd.GeoDataFrame:
+        return gpd.GeoDataFrame(
+            data = {"element_id": list("a")}, crs = self.crs,
+            geometry = self.tile.geometry)
+        # square = geom.Polygon([(0, 0), (d * 2, 0), (d * 2, d * 2), (0, d * 2)])
+        # squares = [affine.rotate(square, a, origin = (0, 0))
+        #         for a in range(45, 360, 90)]
+        # return gpd.GeoDataFrame(
+        #     data = {"element_id": list("abcd")},
+        #     geometry = gpd.GeoSeries(squares), crs = crs)

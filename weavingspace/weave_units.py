@@ -31,7 +31,7 @@ class WeaveUnit:
     tile:gpd.GeoDataFrame = None
     tile_shape:str = "rectangle"
     weave_type:str = "plain"
-    spacing:float = 10_000.
+    spacing:float = 1000.
     aspect:float = 1.
     margin:float = 0.
     n:Union[int, tuple[int]] = (2, 2)
