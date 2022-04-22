@@ -37,9 +37,9 @@
      inkscape:snap-object-midpoints="true"
      inkscape:snap-center="true"
      inkscape:snap-text-baseline="true"
-     inkscape:zoom="1.6029353"
-     inkscape:cx="394.27667"
-     inkscape:cy="267.32208"
+     inkscape:zoom="1.06447"
+     inkscape:cx="494.1426"
+     inkscape:cy="400.66886"
      inkscape:window-width="1920"
      inkscape:window-height="1021"
      inkscape:window-x="0"
@@ -59,6 +59,43 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
+    <g
+       id="g15704"
+       transform="translate(-12.082082,-10.583333)"
+       inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300">
+      <path
+         id="path1244"
+         style="fill:#0066ff;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 104.2295,127.08068 6.9093,-3.9982 2.6e-4,-7.99641 z"
+         sodipodi:nodetypes="ccc" />
+      <path
+         id="path2088"
+         style="fill:#ff5555;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 118.04836,127.08068 -6.9093,-3.9982 -2.6e-4,-7.99641 z"
+         sodipodi:nodetypes="ccc" />
+      <path
+         id="path2090"
+         style="fill:#008080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 104.21391,127.06712 6.91719,-3.98453 6.92523,3.99798 z"
+         sodipodi:nodetypes="ccc" />
+      <path
+         id="path2094"
+         style="fill:#800080;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 118.04074,127.08046 -6.9093,3.9982 -2.6e-4,7.99641 z"
+         sodipodi:nodetypes="ccc" />
+      <path
+         id="path2096"
+         style="fill:#ffcc00;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 104.22188,127.08046 6.9093,3.9982 2.6e-4,7.99641 z"
+         sodipodi:nodetypes="ccc" />
+      <path
+         id="path2098"
+         style="fill:#d38d5f;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 118.05633,127.09402 -6.91718,3.98453 -6.92524,-3.99798 z"
+         sodipodi:nodetypes="ccc" />
+    </g>
     <path
        style="opacity:1;fill:#ffffff;stroke:#000000;stroke-width:0.300001;stroke-linecap:round"
        d="M 198.89572,32.053695 H 12.470505"
@@ -1976,7 +2013,7 @@
        xml:space="preserve"
        style="font-size:2.11667px;line-height:1.25;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
        x="91.609215"
-       y="105.20257"
+       y="132.41457"
        id="text581559"
        inkscape:export-filename="/home/osullid3/Documents/code/weaving-space/sketches/regular-polygon-dissections.png"
        inkscape:export-xdpi="300"
@@ -1984,27 +2021,27 @@
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
          x="91.609215"
-         y="105.20257"
+         y="132.41457"
          id="tspan581551">Also note triaxial </tspan><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
          x="91.609215"
-         y="107.8484"
+         y="135.06041"
          id="tspan581557">weaves with 2+2+2</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
          x="91.609215"
-         y="110.49424"
+         y="137.70624"
          id="tspan581588">strands in each</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
          x="91.609215"
-         y="113.14008"
+         y="140.35208"
          id="tspan581590">direction, or</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.11667px;stroke-width:0.264583"
          x="91.609215"
-         y="115.78592"
+         y="142.99791"
          id="tspan581592">biaxial 3+3 </tspan></text>
     <g
        id="g618122"
