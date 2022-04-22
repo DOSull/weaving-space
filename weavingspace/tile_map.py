@@ -6,12 +6,14 @@ from dataclasses import dataclass
 import itertools
 import functools
 
+import copy
+
 import numpy as np
 import geopandas as gpd
 import pandas as pd
 import shapely.affinity as affine
 import shapely.geometry as geom
-import shapely.ops
+import shapely.wkt
 
 from weave_units import WeaveUnit
 from tile_units import TileUnit
@@ -304,6 +306,82 @@ class Tiling:
             geometry = self.tiles.geometry.rotate(rotation, 
                                                   origin = self.grid.centre))
         
+    
+    def get_dual_tiling(self):
+        t = Tiling(self.tile_unit, self.region, self.region_id_var)
+        t.tile_shape = self.tile_shape
+        t.grid = self.grid
+
+        base = gpd.GeoDataFrame(
+            data = {"id": [1]}, crs = self.tile_unit.crs,
+            geometry = self.tile_unit.tile.geometry.scale(3, 3, origin = (0, 0))
+        )
+            
+        original = Tiling(self.tile_unit, base, id_var = "id")
+        original = original.tiles
+        tiles_to_keep = []
+        ids = []
+        for p, id in zip(original.geometry, original.element_id):
+            if p.within(base.geometry[0]):
+                tiles_to_keep.append(p)
+                ids.append(id)
+        original = gpd.GeoDataFrame(
+            data = {"element_id": ids}, crs = self.tile_unit.crs,
+            geometry = gpd.GeoSeries(tiles_to_keep)
+        )
+        interior_pts = set()
+        original.geometry = self.gridify(original.geometry)
+        uu = original.geometry.unary_union.buffer(0.1).buffer(-0.1)
+        for p in original.geometry:
+            for pt in p.exterior.coords:
+                if uu.contains(geom.Point(pt).buffer(1)):
+                    interior_pts.add(pt)
+        interior_pts = gpd.GeoSeries([geom.Point(p) for p in interior_pts])
+        cycles = []
+        for pt in interior_pts:
+            cycles.append(
+                set([i for i, p in enumerate(original.geometry) if
+                    pt.buffer(0.1).intersects(p)]))
+        dual_faces = []
+        ids = []
+        for cycle in cycles:
+            id = []
+            coords = []
+            for i in cycle:
+                id.append(original.element_id[i])
+                centroid = original.geometry[i].centroid
+                coords.append([centroid.x, centroid.y])
+            sorted_coords = self.sort_ccw([(p, i) for p, i in zip(coords, id)])
+            dual_faces.append(geom.Polygon([c[0] for c in sorted_coords]))
+            ids.append("".join([c[1] for c in sorted_coords]))
+            
+        dual_faces = [(f, id) for f, id in zip(dual_faces, ids) 
+                      if self.tile_unit.tile.geometry[0].contains(f.centroid)]
+        t.tile_unit.elements = gpd.GeoDataFrame(
+            data = {"element_id": [f[1] for f in dual_faces]}, 
+            crs = self.tile_unit.crs,
+            geometry = gpd.GeoSeries([f[0] for f in dual_faces])
+        )
+        t.tiles = t.make_tiling()
+        return t
+
+        
+    def gridify(self, gs, precision = 6):
+        return gpd.GeoSeries([
+            shapely.wkt.loads(
+                shapely.wkt.dumps(p, rounding_precision = precision))
+            for p in list(gs)])
+        
+    
+    def sort_ccw(self, pts):
+        x = [p[0][0] for p in pts]
+        y = [p[0][1] for p in pts]
+        cx, cy = np.mean(x), np.mean(y)
+        dx = [_ - cx for _ in x]
+        dy = [_ - cy for _ in y]
+        angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
+        d = dict(zip(angles, pts))
+        return [v for k, v in sorted(d.items())]
 
 
 
