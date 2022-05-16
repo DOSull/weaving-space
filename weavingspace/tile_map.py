@@ -189,36 +189,35 @@ class Tiling:
         self.tiles = self.make_tiling()
 
 
-    # THIS FUNCTION NEEDS AN OPTION TO PRIORITISE STRAND CONTINUITY
-    # over the boundaries in the region in the overlay/dissolve
     def get_tiled_map(self, id_var:str = None, rotation:float = 0.,             
                       prioritise_tiles:bool = False) -> gpd.GeoDataFrame:
         id_var = (self.region_id_var
                   if id_var is None
                   else id_var)
-        if prioritise_tiles:
-            tiled = self.rotated(rotation)
-            tiled["UID"] = list(range(tiled.shape[0]))
-            tiled = self.region.overlay(tiled)
-            # calculate areas of intersections
-            tiled["area"] = tiled.geometry.area
-            # make a lookup from each UID to the region ID var with max overlap
-            lookup = tiled.iloc[tiled.groupby("UID")["area"].agg(
-                    pd.Series.idxmax)][["UID", id_var]]
-            region_cols = list(self.region.columns)
-            region_cols.remove("geometry")
-            tiled = tiled.drop(region_cols, axis = 1)  # avoids confusions below
-            tiled_map = tiled.merge(lookup, on = "UID")
-            tiled_map = tiled_map.merge(
-                self.region.drop(["geometry"], axis = 1), on = id_var)
-            tiled_map["diss_var"] = \
-                tiled_map.element_id + tiled_map.UID.astype(str)
-            return tiled_map.dissolve(by = "diss_var")
+        tiled_map = self.rotated(rotation)
+        
+        if prioritise_tiles: # respect tile sides over zone boundaries
+            # explode tiles to all elements
+            # tiled_map = tiled_map.explode(ignore_index = True)
+            tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
+            tiled_map = tiled_map.overlay(self.region, keep_geom_type = False)
+            tiled_map["area"] = tiled_map.geometry.area
+            # now make a lookup of the largest overlap
+            lookup = tiled_map.iloc[tiled_map.groupby("tileUID")["area"].agg(
+                pd.Series.idxmax)][["tileUID", id_var]]
+            # join it to the elements
+            tiled_map = tiled_map \
+                .drop([id_var], axis = 1) \
+                .merge(lookup, on = "tileUID")
         else:
-            tiled_map = self.region.overlay(self.rotated(rotation))
-            tiled_map["diss_var"] = \
-                tiled_map.element_id + tiled_map[id_var].astype(str)
-            return tiled_map.dissolve(by = "diss_var")
+            tiled_map = self.region.overlay(tiled_map)
+        
+        # make a dissolve variable from element_id and id_var
+        tiled_map["diss_var"] = (tiled_map.element_id + 
+                                 tiled_map[id_var].astype(str))
+        return tiled_map \
+            .dissolve(by = "diss_var", as_index = False) \
+            .drop(["diss_var"], axis = 1)
     
     
     # DEPRECATED? I THINK?
@@ -290,10 +289,11 @@ class Tiling:
         # replicate the element ids
         ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
         tiles_gs = gpd.GeoSeries(tiles)
-        
+        tiles_gdf = gpd.GeoDataFrame(data = {"element_id": ids},
+                                     geometry = tiles_gs, 
+                                     crs = self.tile_unit.crs)
         # assemble and return as a GeoDataFrame
-        return gpd.GeoDataFrame(data = {"element_id": ids},
-                                geometry = tiles_gs, crs = self.tile_unit.crs)
+        return tiles_gdf.explode(ignore_index = True)
         
     
     def rotated(self, rotation:float = None):
