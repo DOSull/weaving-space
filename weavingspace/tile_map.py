@@ -220,28 +220,25 @@ class Tiling:
             .drop(["diss_var"], axis = 1)
     
     
-    # DEPRECATED? I THINK?
-    def _translate_geoms(self, gs:gpd.GeoSeries, 
-                dx:float = 0., dy:float = 0.
-            ) -> list[Union[geom.Polygon, geom.MultiPolygon]]:
-        """Translates geometries in supplied GeoSeries by (dx, dy).
+    # # DEPRECATED? I THINK?
+    # def _translate_geoms(self, gs:gpd.GeoSeries, 
+    #             dx:float = 0., dy:float = 0.
+    #         ) -> list[Union[geom.Polygon, geom.MultiPolygon]]:
+    #     """Translates geometries in supplied GeoSeries by (dx, dy).
         
-        This is needed in place of GeoSeries.translate because we have 
-        to unpack the geometries to a list so that we can chain them into a list and bundle back up into a GeoSeries in the get_tiling function.
+    #     This is needed in place of GeoSeries.translate because we have 
+    #     to unpack the geometries to a list so that we can chain them into a list and bundle back up into a GeoSeries in the get_tiling function.
 
-        Args:
-            gs (geopandas.GeoSeries): GeoSeries to translate.
-            dx (float, optional): x transation. Defaults to 0.
-            dy (float, optional): x transation. Defaults to 0.
+    #     Args:
+    #         gs (geopandas.GeoSeries): GeoSeries to translate.
+    #         dx (float, optional): x transation. Defaults to 0.
+    #         dy (float, optional): x transation. Defaults to 0.
 
-        Returns:
-            list[Polygon|MultiPolygon]: _description_
-        """ 
-        # this seems like it's quicker... I think
-        tr = functools.partial(affine.translate, xoff = dx, yoff = dy)   
-        return map(tr, gs)
-        # tr = affine.translate
-        # return [ tr(s, dx, dy) for s in gs ]
+    #     Returns:
+    #         list[Polygon|MultiPolygon]: _description_
+    #     """ 
+    #     # this seems like it's the quickest... I think
+    #     return gs.apply(affine.translate, xoff = dx, yoff = dy)
 
 
     def _rotate_gdf_to_geoseries(
