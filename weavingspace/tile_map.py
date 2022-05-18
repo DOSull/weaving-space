@@ -11,9 +11,10 @@ import copy
 import numpy as np
 import geopandas as gpd
 import pandas as pd
+
 import shapely.affinity as affine
 import shapely.geometry as geom
-import shapely.wkt
+import shapely.wkt as wkt
 
 from weave_units import WeaveUnit
 from tile_units import TileUnit
@@ -195,20 +196,26 @@ class Tiling:
                   if id_var is None
                   else id_var)
         tiled_map = self.rotated(rotation)
+        region_vars = list(self.region.columns)
+        region_vars.remove("geometry")
+        region_vars.remove(id_var)
         
         if prioritise_tiles: # respect tile sides over zone boundaries
-            # explode tiles to all elements
-            # tiled_map = tiled_map.explode(ignore_index = True)
+            # make column with unique ID for every element in the tiling
             tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
+            # overlay with the zones from the region to be tiled
             tiled_map = tiled_map.overlay(self.region, keep_geom_type = False)
+            # determine areas of overlaid tile elements and drop the data
             tiled_map["area"] = tiled_map.geometry.area
-            # now make a lookup of the largest overlap
+            tiled_map = tiled_map.drop(columns = region_vars)
+            # make a lookup by largest area element to the zone ID
             lookup = tiled_map.iloc[tiled_map.groupby("tileUID")["area"].agg(
                 pd.Series.idxmax)][["tileUID", id_var]]
-            # join it to the elements
+            tiled_map = tiled_map.drop(columns = [id_var])
+            # now join the lookup and from there the region data
             tiled_map = tiled_map \
-                .drop([id_var], axis = 1) \
-                .merge(lookup, on = "tileUID")
+                .merge(lookup, on = "tileUID")   \
+                .merge(self.region.drop(columns = ["geometry"]), on = id_var) 
         else:
             tiled_map = self.region.overlay(tiled_map)
         
@@ -290,7 +297,9 @@ class Tiling:
                                      geometry = tiles_gs, 
                                      crs = self.tile_unit.crs)
         # assemble and return as a GeoDataFrame
-        return tiles_gdf.explode(ignore_index = True)
+        tiles_gdf.geometry = self.gridify(tiles_gdf.geometry)
+        return tiles_gdf.dissolve(
+            by = "element_id", as_index = False).explode(ignore_index = True)
         
     
     def rotated(self, rotation:float = None):
@@ -364,10 +373,12 @@ class Tiling:
 
         
     def gridify(self, gs, precision = 6):
+        return gs.apply(wkt.dumps, 
+                        rounding_precision = precision).apply(wkt.loads)
         return gpd.GeoSeries([
             shapely.wkt.loads(
                 shapely.wkt.dumps(p, rounding_precision = precision))
-            for p in list(gs)])
+            for p in gs.geoms])
         
     
     def sort_ccw(self, pts):
