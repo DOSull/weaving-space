@@ -4,8 +4,6 @@
 from typing import Union
 from dataclasses import dataclass
 import itertools
-import functools
-
 import copy
 
 import numpy as np
@@ -205,6 +203,19 @@ class Tiling:
         if prioritise_tiles: # respect tile sides over zone boundaries
             # make column with unique ID for every element in the tiling
             tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
+            
+            ## The below seems like it should work, but 
+            ## and almost does, but is not clipped to the region 
+            ## ...
+            # overlay = copy.copy(tiled_map)
+            # # overlay with the zones from the region to be tiled
+            # overlay = overlay.overlay(self.region, keep_geom_type = False)
+            # # determine areas of overlaid tile elements and drop the data
+            # overlay["area"] = overlay.geometry.area
+            # # make a lookup by largest area element to the zone ID
+            # lookup = overlay.iloc[overlay.groupby("tileUID")["area"].agg(
+            #     pd.Series.idxmax)][["tileUID", id_var]]
+
             # overlay with the zones from the region to be tiled
             tiled_map = tiled_map.overlay(self.region, keep_geom_type = False)
             # determine areas of overlaid tile elements and drop the data
