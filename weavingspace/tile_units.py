@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass
 import itertools
-import copy
+from enum import Enum
 
 import geopandas as gpd
 import numpy as np
@@ -11,31 +11,39 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 
 
+class TileShape(Enum):
+    RECTANGLE = "rectangle"
+    HEXAGON = "hexagon"
+    TRIANGLE = "triangle"
+    TRIHEX = "tri-hex"
+    TRIDIAMOND = "tri-diamond"
+
+
 @dataclass
 class TileUnit:
     elements:gpd.GeoDataFrame = None
     tile:gpd.GeoDataFrame = None
-    tile_shape:str = "rectangle"
+    tile_shape:TileShape = TileShape.RECTANGLE
     spacing:float = 1000.
 
 
-    def __init__(self, shape:str = "rectangle", **kwargs) -> None:
+    def __init__(self, shape:TileShape = TileShape.RECTANGLE, **kwargs) -> None:
         self.tile_shape = shape
         for k, v in kwargs.items():
             self.__dict__[k] = v
         self.tile = self.get_base_tile()
         self.elements = self.tile.overlay(
             self.make_elements())
-        if self.tile_shape == "triangle":
+        if self.tile_shape == TileShape.TRIANGLE:
             self._modify_elements()
             self._modify_tile()
     
     
     def get_base_tile(self) -> gpd.GeoDataFrame: 
         n = (4 
-             if self.tile_shape == "rectangle"
+             if self.tile_shape == TileShape.RECTANGLE
              else (6 
-                   if self.tile_shape == "hexagon"
+                   if self.tile_shape == TileShape.HEXAGON
                    else 3))
         R = self.spacing / np.cos(np.radians(180 / n)) / 2
         a0 = -90 + 180 / n
@@ -66,7 +74,9 @@ class TileUnit:
         self.elements = self.elements.dissolve(
                                     by = "element_id", as_index = False)
         self.tile.geometry = self._modify_tile()
-        self.tile_shape = ("tri-hex" if self.to_hex else "tri-diamond")
+        self.tile_shape = (TileShape.TRIHEX 
+                           if self.to_hex 
+                           else TileShape.TRIDIAMOND)
         return None
 
 
@@ -97,3 +107,16 @@ class TileUnit:
         # return gpd.GeoDataFrame(
         #     data = {"element_id": list("abcd")},
         #     geometry = gpd.GeoSeries(squares), crs = crs)
+    
+    
+    def normalize_elements(self) -> None:
+        if self.tile_shape in (TileShape.RECTANGLE, ):
+            pts = self.tile.geometry[0].exterior.coords
+            vectors = [(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]), 
+                       (pts[3][0] - pts[0][0], pts[3][1] - pts[0][1])]
+            return vectors
+        elif self.tile_shape in (TileShape.HEXAGON, TileShape.TRIHEX):
+            pass
+        else:
+            pass  # TileShape.TRIDIAMOND
+        return None

@@ -17,9 +17,11 @@ import weave_utils
 from loom import Loom
 from weave_grids import WeaveGrid
 
+from tile_units import TileShape
+from tile_units import TileUnit
 
 @dataclass
-class WeaveUnit:
+class WeaveUnit(TileUnit):
     """ Small data class containing elements of a weave unit.
     
     Attributes:
@@ -29,7 +31,7 @@ class WeaveUnit:
     """  
     elements:gpd.GeoDataFrame = None
     tile:gpd.GeoDataFrame = None
-    tile_shape:str = "rectangle"
+    tile_shape:TileShape = TileShape.RECTANGLE
     weave_type:str = "plain"
     spacing:float = 1000.
     aspect:float = 1.
@@ -73,9 +75,9 @@ class WeaveUnit:
         self.tile = unit["tile"]
         for k, v in kwargs.items():
             self.__dict__[k] = v
-        self.tile_shape = ("hexagon" 
+        self.tile_shape = (TileShape.HEXAGON 
                            if self.weave_type in ("hex", "cube")
-                           else "rectangle") 
+                           else TileShape.RECTANGLE) 
 
 
     def _get_weave_unit(self, weave_type:str = "plain", spacing:float = 10000, 

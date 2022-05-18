@@ -18,22 +18,24 @@ import shapely.wkt as wkt
 
 from weave_units import WeaveUnit
 from tile_units import TileUnit
+from tile_units import TileShape
 
 
 @dataclass
 class TileGrid:
     tile:gpd.GeoSeries = None
     to_tile:gpd.GeoSeries = None
-    grid_type:str = None
+    grid_type:TileShape = None
     extent:gpd.GeoSeries = None
     centre:tuple[float] = None
     points:gpd.GeoSeries = None
     
     def __init__(self, tile:gpd.GeoSeries, to_tile:gpd.GeoSeries, 
-                 grid_type:str = "rectangle", to_hex:bool = True) -> None:
+                 grid_type:TileShape = TileShape.RECTANGLE, 
+                 to_hex:bool = True) -> None:
         self.grid_type = grid_type
         self.tile = tile
-        if self.grid_type == "triangle":
+        if self.grid_type == TileShape.TRIANGLE:
             self.tile, self.grid_type = self._modify_triangle_tile(to_hex)
         self.to_tile = gpd.GeoSeries([to_tile.unary_union])
         self.extent, self.centre = self._get_extent()
@@ -49,11 +51,11 @@ class TileGrid:
     
         
     def _get_points(self) -> gpd.GeoSeries:
-        if self.grid_type == "rectangle":
+        if self.grid_type in (TileShape.RECTANGLE, ):
             pts = self._get_rect_centres()
-        elif self.grid_type in ("hexagon", "tri-hex"):
+        elif self.grid_type in (TileShape.HEXAGON, TileShape.TRIHEX):
             pts = self._get_hex_centres()
-        elif self.grid_type in ("diamond", "tri-diamond"):
+        elif self.grid_type in (TileShape.TRIDIAMOND, ):
             pts = self._get_diamond_centres()
         tr = affine.translate  # for efficiency here
         tiles = [tr(self.tile.geometry[0], p[0], p[1]) 
@@ -375,10 +377,6 @@ class Tiling:
     def gridify(self, gs, precision = 6):
         return gs.apply(wkt.dumps, 
                         rounding_precision = precision).apply(wkt.loads)
-        return gpd.GeoSeries([
-            shapely.wkt.loads(
-                shapely.wkt.dumps(p, rounding_precision = precision))
-            for p in gs.geoms])
         
     
     def sort_ccw(self, pts):
