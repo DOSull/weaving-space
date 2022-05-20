@@ -405,6 +405,6 @@ def make_weave_gdf(polys:list[Union[geom.Polygon, geom.MultiPolygon]],
     weave = weave.dissolve(by = "element_id", as_index = False)
     weave = weave.explode(index_parts = False, ignore_index = True)
     # this buffer operation cleans up some geometry issues
-    weave.geometry = weave.buffer(-0.0001 * spacing)
-    weave.geometry = weave.buffer((0.0001 - margin) * spacing)
+    weave.geometry = weave.buffer(-1e-4 * spacing)
+    weave.geometry = weave.buffer((1e-4 - margin) * spacing)
     return weave.clip(bb).set_crs(crs)
