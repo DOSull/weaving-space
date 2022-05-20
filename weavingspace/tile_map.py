@@ -15,7 +15,7 @@ import shapely.geometry as geom
 import shapely.wkt as wkt
 
 from weave_units import WeaveUnit
-from tile_units import TileUnit
+from tile_units import Tileable
 from tile_units import TileShape
 
 
@@ -172,14 +172,14 @@ class TileGrid:
 
 @dataclass
 class Tiling:
-    tile_unit:Union[WeaveUnit, TileUnit] = None
+    tile_unit:Union[WeaveUnit, Tileable] = None
     tile_shape:str = ""
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
     grid:TileGrid = None
     tiles:gpd.GeoDataFrame = None
 
-    def __init__(self, unit:Union[WeaveUnit, TileUnit], 
+    def __init__(self, unit:Union[WeaveUnit, Tileable], 
                  region:gpd.GeoDataFrame, id_var:str) -> None:
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit

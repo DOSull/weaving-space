@@ -5,6 +5,7 @@ import logging
 import itertools
 from dataclasses import dataclass
 from typing import Union
+import copy
 
 import geopandas as gpd
 import numpy as np
@@ -18,10 +19,11 @@ from loom import Loom
 from weave_grids import WeaveGrid
 
 from tile_units import TileShape
-from tile_units import TileUnit
+from tile_units import Tileable
+
 
 @dataclass
-class WeaveUnit(TileUnit):
+class WeaveUnit(Tileable):
     """ Small data class containing elements of a weave unit.
     
     Attributes:
@@ -29,11 +31,7 @@ class WeaveUnit(TileUnit):
         tile: a GeoDataFrame of the weave_unit tileable polygon (either a
             rectangle or a hexagon).
     """  
-    elements:gpd.GeoDataFrame = None
-    tile:gpd.GeoDataFrame = None
-    tile_shape:TileShape = TileShape.RECTANGLE
     weave_type:str = "plain"
-    spacing:float = 1000.
     aspect:float = 1.
     margin:float = 0.
     n:Union[int, tuple[int]] = (2, 2)
@@ -41,7 +39,6 @@ class WeaveUnit(TileUnit):
     tie_up:np.ndarray = None
     tr:np.ndarray = None
     th:np.ndarray = None
-    crs:int = 3857
     
     def __init__(self, **kwargs):
         """Constructor for WeaveUnit. Parameters are passed through to get_weave_unit function and also stored as instance attributes.
@@ -73,6 +70,7 @@ class WeaveUnit(TileUnit):
         unit = self._get_weave_unit(**kwargs)
         self.elements = unit["weave_unit"]
         self.tile = unit["tile"]
+        self.regularised_tile = copy.copy(self.tile)
         for k, v in kwargs.items():
             self.__dict__[k] = v
         self.tile_shape = (TileShape.HEXAGON 
@@ -141,7 +139,7 @@ class WeaveUnit(TileUnit):
         """    
         
         if aspect == 0:
-            logging.info("""Setting aspect to 0 is probably not a great plan.""")
+            logging.info("Setting aspect to 0 is probably not a great plan.")
 
         if aspect < 0 or aspect > 1:
             logging.warning("""Values of aspect outside the range 0 to 1 won't 
