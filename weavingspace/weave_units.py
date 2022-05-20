@@ -78,6 +78,8 @@ class WeaveUnit(TileUnit):
         self.tile_shape = (TileShape.HEXAGON 
                            if self.weave_type in ("hex", "cube")
                            else TileShape.RECTANGLE) 
+        self.vectors = self.get_vectors()
+        self.regularise_elements()
 
 
     def _get_weave_unit(self, weave_type:str = "plain", spacing:float = 10000, 
@@ -401,6 +403,7 @@ def make_weave_gdf(polys:list[Union[geom.Polygon, geom.MultiPolygon]],
             [affine.translate(p, offset[0], offset[1]) for p in polys]))
     weave = weave[weave.element_id != "-"]
     weave = weave.dissolve(by = "element_id", as_index = False)
+    weave = weave.explode(index_parts = False, ignore_index = True)
     # this buffer operation cleans up some geometry issues
     weave.geometry = weave.buffer(-0.0001 * spacing)
     weave.geometry = weave.buffer((0.0001 - margin) * spacing)

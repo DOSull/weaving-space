@@ -311,8 +311,7 @@ class Tiling:
                                      crs = self.tile_unit.crs)
         # assemble and return as a GeoDataFrame
         tiles_gdf.geometry = self.gridify(tiles_gdf.geometry)
-        return tiles_gdf.dissolve(
-            by = "element_id", as_index = False).explode(ignore_index = True)
+        return tiles_gdf
         
     
     def rotated(self, rotation:float = None):

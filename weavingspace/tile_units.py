@@ -25,6 +25,7 @@ class TileUnit:
     tile:gpd.GeoDataFrame = None
     tile_shape:TileShape = TileShape.RECTANGLE
     spacing:float = 1000.
+    vectors:list[tuple[float]] = None
 
 
     def __init__(self, shape:TileShape = TileShape.RECTANGLE, **kwargs) -> None:
@@ -37,6 +38,8 @@ class TileUnit:
         if self.tile_shape == TileShape.TRIANGLE:
             self._modify_elements()
             self._modify_tile()
+        self.vectors = self.get_vectors()
+        self.regularise_elements()
     
     
     def get_base_tile(self) -> gpd.GeoDataFrame: 
@@ -109,14 +112,66 @@ class TileUnit:
         #     geometry = gpd.GeoSeries(squares), crs = crs)
     
     
-    def normalize_elements(self) -> None:
-        if self.tile_shape in (TileShape.RECTANGLE, ):
-            pts = self.tile.geometry[0].exterior.coords
-            vectors = [(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]), 
-                       (pts[3][0] - pts[0][0], pts[3][1] - pts[0][1])]
-            return vectors
-        elif self.tile_shape in (TileShape.HEXAGON, TileShape.TRIHEX):
-            pass
+    def get_vectors(self):
+        if self.tile_shape == TileShape.RECTANGLE:
+            bb = self.tile.geometry[0].bounds
+            w, h = bb[2] - bb[0], bb[3] - bb[1]
+            return [(dx, dy) 
+                    for dx in (-w, 0, w) 
+                    for dy in (-h, 0, h)
+                    if (dx == 0 or dy == 0) and dx != dy]
         else:
-            pass  # TileShape.TRIDIAMOND
+            return None
+            
+    
+    def merge_fragments(self, fragments) -> list[geom.Polygon]:
+        if len(fragments) == 1:
+            return fragments
+        changes_made = True
+        tile = self.tile.geometry[0]
+        while changes_made:
+            changes_made = False
+            for v in self.vectors:
+                next_frags = []
+                t_fragments = [affine.translate(f, v[0], v[1]) 
+                               for f in fragments]
+                matches = set()
+                for i, f1 in enumerate(fragments):
+                    for j, f2, in enumerate(t_fragments):
+                        if i != j and f1.distance(f2) < 1e-3:
+                            matches.add((i, j))
+                to_remove = set()
+                for i, j in matches:
+                    f1 = fragments[i]
+                    f2 = t_fragments[j]
+                    u1 = f1.union(f2).simplify(1e-6)
+                    u2 = affine.translate(u1, -v[0], -v[1]).simplify(1e-6)
+                    if tile.intersection(u1).area > tile.intersection(u2).area:
+                        next_frags.append(u1)
+                    else:
+                        next_frags.append(u2)
+                    changes_made = True
+                    to_remove.add(i)
+                    to_remove.add(j)
+                fragments = [f for i, f in enumerate(fragments) 
+                            if not (i in to_remove)]
+                fragments = next_frags + fragments
+        return fragments
+
+
+    def regularise_elements(self):
+        elements = []
+        element_ids = []
+        ids = list(set(self.elements.element_id))
+        for id in ids:
+            fragment_set = list(
+                self.elements[self.elements.element_id == id].geometry)
+            merged = self.merge_fragments(fragment_set)
+            elements.extend(merged)
+            element_ids.extend([id] * len(merged))
+        new_elements = gpd.GeoDataFrame(
+            data = {"element_id": element_ids}, crs = self.crs,
+            geometry = gpd.GeoSeries(elements)
+        )
+        self.elements = new_elements
         return None
