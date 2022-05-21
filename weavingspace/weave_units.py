@@ -190,7 +190,7 @@ def get_biaxial_weave_unit(
     """    
     warp_threads, weft_threads, drop = weave_utils.get_strand_ids(strands)
     
-    if weave_type == "basket":
+    if weave_type == "basket" and isinstance(n, (list, tuple)):
         n = n[0]
     
     p = weave_matrices.get_weave_pattern_matrix(weave_type = weave_type, n = n, 

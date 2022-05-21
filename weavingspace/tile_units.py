@@ -4,7 +4,6 @@
 from dataclasses import dataclass
 import itertools
 from enum import Enum
-import copy
 
 import geopandas as gpd
 import numpy as np
@@ -31,7 +30,13 @@ class Tileable:
     tile_shape:TileShape = TileShape.RECTANGLE
     crs:int = 3857
         
-    def get_vectors(self):
+    def get_vectors(self) -> list[tuple[float]]:
+        """
+        Returns symmetry translation vectors as floating point pairs. Derived from the size and shape of the tile attribute. These are not the minimal translation vectors, but the 'face to face' vectors of the tile, such that a hexagonal tile will have 3 vectors, not the minimal parallelogram pair. Also supplies the inverse vectors.
+
+        Returns:
+            list[tuple[float]]: _description_
+        """
         bb = self.tile.geometry[0].bounds
         w, h = bb[2] - bb[0], bb[3] - bb[1]
         if self.tile_shape in (TileShape.RECTANGLE, ):
@@ -46,7 +51,17 @@ class Tileable:
             return None
         
     
-    def merge_fragments(self, fragments) -> list[geom.Polygon]:
+    def merge_fragments(
+            self, fragments:list[geom.Polygon]) -> list[geom.Polygon]:
+        """
+        Merges a set of polygons based on testing if they touch when subjected to the translation vectors provided by the get_vectors() method. Called by regularise_elements() method to combine elements in a tile that may be fragmented as supplied but will combine when tiled into single elements. This step makes for more efficient implementation of the tiling of map regions.
+
+        Args:
+            fragments (list[geom.Polygon]): A set of polygons to merge.
+
+        Returns:
+            list[geom.Polygon]: A minimal list of merged polygons.
+        """
         if len(fragments) == 1:
             return fragments
         changes_made = True
@@ -88,7 +103,13 @@ class Tileable:
         return fragments
 
 
-    def regularise_elements(self):
+    def regularise_elements(self) -> None:
+        """
+        Combines separate elements that share an element_id value into single elements, if they would end up touching when tiled. Also adjusts the regularised_tile attribute according.
+
+        Returns:
+            None: 
+        """
         elements = []
         element_ids = []
         self.regularised_tile.geometry = \
@@ -113,18 +134,10 @@ class Tileable:
 
 @dataclass
 class TileUnit(Tileable):
-    # fudge_factor:float = 1e-3
-    # elements:gpd.GeoDataFrame = None
-    # tile:gpd.GeoDataFrame = None
-    # tile_shape:TileShape = TileShape.RECTANGLE
-    # spacing:float = 1000.
-    # vectors:list[tuple[float]] = None
-    # regularised_tile:gpd.GeoDataFrame = None
 
-    def __init__(self, shape:TileShape = TileShape.RECTANGLE, **kwargs) -> None:
+    def __init__(self, **kwargs) -> None:
         for k, v in kwargs.items():
             self.__dict__[k] = v
-        self.tile_shape = shape
         self.tile = self.get_base_tile()
         self.regularised_tile = self.get_base_tile()
         self.elements = self.tile.overlay(

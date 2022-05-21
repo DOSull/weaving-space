@@ -218,8 +218,8 @@ def make_twill_matrix(over_under:Union[int, tuple[int]]) -> np.ndarray:
     return np.array(out).reshape(d, d)
 
 
-def make_basket_pattern(n:int = 2, 
-                        warp_n:int = 2, weft_n:int = 2) -> np.ndarray: 
+def make_basket_pattern(
+    n:int = 2, warp_n:int = 2, weft_n:int = 2) -> np.ndarray: 
     """Returns basket pattern matrix extended for warp and weft patterns.
 
     Args:
