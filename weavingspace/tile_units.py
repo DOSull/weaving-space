@@ -4,6 +4,7 @@
 from dataclasses import dataclass
 import itertools
 from enum import Enum
+import copy
 
 import geopandas as gpd
 import pandas as pd
@@ -142,37 +143,37 @@ class Tileable:
 class TileUnit(Tileable):
 
     def __init__(self, **kwargs) -> None:
+        unit = self.get_tile_unit(**kwargs)
+        self.elements = unit["elements"]
+        self.tile = unit["tile"]
+        self.regularised_tile = unit["regularised_tile"]
         for k, v in kwargs.items():
             self.__dict__[k] = v
-        self.tile = self.get_base_tile()
-        self.regularised_tile = self.get_base_tile()
-        self.elements = self.tile.overlay(
-            self.make_elements())
         if self.tile_shape == TileShape.TRIANGLE:
             self._modify_elements()
             self._modify_tile()
-        self.regularise_elements()
+        if self.regularised_tile is None:
+            self.regularised_tile = copy.copy(self.tile)
+            self.regularise_elements()
     
     
-    def get_base_tile(self) -> gpd.GeoDataFrame: 
+    def get_base_tile(self, shape, spacing, crs) -> gpd.GeoDataFrame: 
         n = (4 
-             if self.tile_shape == TileShape.RECTANGLE
+             if shape == TileShape.RECTANGLE
              else (6 
-                   if self.tile_shape == TileShape.HEXAGON
+                   if shape == TileShape.HEXAGON
                    else 3))
-        R = self.spacing / np.cos(np.radians(180 / n)) / 2
+        R = spacing / np.cos(np.radians(180 / n)) / 2
         a0 = -90 + 180 / n
         angles = [a0 + a for a in range(0, 360, 360 // n)]
         corners = [(R * np.cos(np.radians(a)), 
                     R * np.sin(np.radians(a))) for a in angles]
         tile = geom.Polygon(corners)
-        return gpd.GeoDataFrame(geometry = [tile], crs = self.crs) 
+        return gpd.GeoDataFrame(geometry = [tile], crs = crs) 
     
-    
-    # TO CONSIDER: there is probably a refactoring to make this more 
-    # elegant - at present the TileGrid class has a similar method...
-    # they both operate in the same way, one on a single geometry GeoSeries
-    # the other on a multi-element one
+    # change the element in a triangle tile to either a hex or
+    # a diamond. Assumes the triangle is point up with centroid
+    # at (0, 0) 
     def _modify_elements(self) -> None:
         elements = self.elements.geometry
         ids = list(self.elements.element_id)
@@ -186,8 +187,8 @@ class TileUnit(Tileable):
         self.elements = gpd.GeoDataFrame(
             data = {"element_id": ids * (6 if self.to_hex else 2)},
             geometry = gpd.GeoSeries(twins), crs = self.elements.crs)
-        self.elements = self.elements.dissolve(
-                                    by = "element_id", as_index = False)
+        self.elements = self.elements.dissolve(by = "element_id", 
+                                               as_index = False)
         self.tile.geometry = self._modify_tile()
         self.tile_shape = (TileShape.TRIHEX 
                            if self.to_hex 
@@ -206,13 +207,42 @@ class TileUnit(Tileable):
         # translate to sit on x-axis
         tile = affine.translate(tile, 0, -tile.bounds[1])
         # make rotated copies
-        twins = [affine.rotate(tile, a, origin = (0, 0)).buffer(0.1) 
-                for a in range(0, 360, (60 if self.to_hex else 180))]
+        twins = [affine.rotate(tile, a, origin = (0, 0)).buffer(0.1)
+                 for a in range(0, 360, (60 if self.to_hex else 180))]
         merged_tile = gpd.GeoSeries(twins).unary_union.buffer(-0.1)
         return gpd.GeoSeries([merged_tile])
     
+    
+    def get_tile_unit(self, tiling_type:str = "cairo", spacing:float = 10000,
+                      tile_shape:TileShape = TileShape.RECTANGLE, to_hex = False, crs:int = 3857) -> dict:
+        return self.get_cairo(spacing, tile_shape, crs)
 
-    def make_elements(self) -> gpd.GeoDataFrame:
-        return gpd.GeoDataFrame(
-            data = {"element_id": list("a")}, crs = self.crs,
-            geometry = self.tile.geometry)
+
+    def get_cairo(self, spacing, tile_shape, crs):
+        d = spacing
+        x = d / 2 * (np.sqrt(3) - 1) / 2 / np.sqrt(3)
+
+        p1 = geom.Polygon([(-d / 2 + x, 0),
+                           (-d / 4, -d / 4), 
+                           (0, -x), 
+                           (0, x),
+                           (-d / 4, d / 4)])
+        p1 = affine.translate(p1, x, x) 
+        p2 = affine.rotate(p1, 90, origin = p1.exterior.coords[1])
+        p3 = affine.rotate(p1, 180, origin = p1.exterior.coords[1])
+        p4 = affine.rotate(p1, 270, origin = p1.exterior.coords[1])
+        p5 = affine.rotate(p4, 90, origin = p4.exterior.coords[4]) 
+        p6 = affine.rotate(p4, 270, origin = p4.exterior.coords[4])
+        p7 = affine.rotate(p6, 270, origin = p6.exterior.coords[1])
+        p8 = affine.rotate(p7, 180, origin = p7.exterior.coords[4])
+
+        elements = gpd.GeoDataFrame(
+            data = {"element_id": list("abcdacbd")}, crs = crs,
+            geometry = gpd.GeoSeries([p1, p2, p3, p4, p5, p6, p7, p8]))
+        tile = self.get_base_tile(tile_shape, spacing, crs)
+        reg_tile = copy.copy(tile)
+        reg_tile.geometry = gpd.GeoSeries([elements.geometry.unary_union])
+        
+        return {"elements": elements, 
+                "tile": tile, 
+                "regularised_tile": reg_tile}
