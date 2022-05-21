@@ -1,21 +1,21 @@
 # Geographical weaving
 This is work in progress towards developing tiled 'woven' geospatial data layers for symbolisation of complex multi-attribute choropleths.  
 
-The working code is all in R and Rmd files in this top level folder. Needed datasets to run the code are in the `data` folder.
+The original proof-of-concept code is in R and Rmd files in the `r-stuff` folder. Needed datasets to run the code are in the `data` folder.
 
 ## **Update** (*April 2022*) 
-There is now a working version in python using `geopandas` and `shapely`. It promises to be more extensible in the longer run and will likely form the basis of any further work at this stage. The python implementation also appears to be less prone to topological glitches when weave strands are dissolved to form 'weave units' and does not require that we use an additional library (`qgis`) to get reasonable performance when tiling large maps.
+There is now a working version in python using `geopandas` and `shapely`. It promises to be more extensible in the longer run and will likely form the basis of any further work at this stage. The python implementation also appears to be less prone to topological glitches when weave strands are dissolved to form 'weave units' and does not require that we use an additional library (`qgis`) to get reasonable performance when tiling large maps. This code is in the `weavingspace` folder and includes some notebooks that show work towards extending the approach to more general tilings than weaves.
 
 ## What does it do?
 The kind of thing we can make is this:
 
 ![a weave map](example.png)
 
-Some earlier abortive work in python based on generating geometries directly is in the `python-stuff` folder.
+Some earlier abortive work in python based on generating geometries directly is in the `old-python-stuff` folder.
 
 Some sketches figuring things out are in `sketches`.
 
-An overview of the concepts can be found on [this webpage](https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html).
+An overview of the concepts assembled from the proof-of-concept _R_ code is on [this webpage](https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html).
 
 ## Notes
 The follow documents describe aspects of the project
