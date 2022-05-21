@@ -76,7 +76,6 @@ class WeaveUnit(Tileable):
         self.tile_shape = (TileShape.HEXAGON 
                            if self.weave_type in ("hex", "cube")
                            else TileShape.RECTANGLE) 
-        self.vectors = self.get_vectors()
         self.regularise_elements()
 
 

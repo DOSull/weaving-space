@@ -6,6 +6,7 @@ import itertools
 from enum import Enum
 
 import geopandas as gpd
+import pandas as pd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
@@ -110,11 +111,16 @@ class Tileable:
         Returns:
             None: 
         """
+        self.vectors = self.get_vectors()
         elements = []
         element_ids = []
         self.regularised_tile.geometry = \
             self.regularised_tile.geometry.buffer(self.fudge_factor)
-        ids = list(set(self.elements.element_id))
+        # This preserves order while finding uniques, unlike list(set()).
+        # Reordering ids might cause confusion when colour palettes
+        # are not assigned explicitly to each id, but in the order
+        # encountered in the element_id Series of the GeoDataFrame.
+        ids = list(pd.Series.unique(self.elements.element_id))
         for id in ids:
             fragment_set = list(
                 self.elements[self.elements.element_id == id].geometry)
@@ -145,7 +151,6 @@ class TileUnit(Tileable):
         if self.tile_shape == TileShape.TRIANGLE:
             self._modify_elements()
             self._modify_tile()
-        self.vectors = self.get_vectors()
         self.regularise_elements()
     
     
