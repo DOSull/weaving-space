@@ -151,18 +151,21 @@ class Tileable:
                         include_0:bool = False) -> gpd.GeoDataFrame:
         ids = []
         tiles = []
-        vecs = ({(0, 0): (0, 0)} 
-                if self.tile_shape == TileShape.RECTANGLE
-                else {(0, 0, 0): (0, 0)})
+        vecs = {}
+        last_vecs = ({(0, 0): (0, 0)} 
+                     if self.tile_shape == TileShape.RECTANGLE
+                     else {(0, 0, 0): (0, 0)})
         vectors = self.get_vectors(return_values = False)
         for i in range(r):
             new_vecs = {}
-            for k1, v1 in vecs.items():
+            for k1, v1 in last_vecs.items():
                 for k2, v2 in vectors.items():
                     new_key = tuple([k1[i] + k2[i] for i in range(len(k1))])
                     new_val = (v1[0] + v2[0], v1[1] + v2[1])
-                    new_vecs[new_key] = new_val
+                    if not new_val in vecs: 
+                        new_vecs[new_key] = new_val
             vecs = vecs | new_vecs
+            last_vecs = new_vecs
         if not include_0:
             vecs.pop((0, 0) if self.tile_shape == TileShape.RECTANGLE
                      else (0, 0, 0))
