@@ -32,7 +32,7 @@ class Tileable:
     tile_shape:TileShape = TileShape.RECTANGLE
     crs:int = 3857
         
-    def get_vectors(self) -> list[tuple[float]]:
+    def get_vectors(self, return_values:bool = True) -> list[tuple[float]]:
         """
         Returns symmetry translation vectors as floating point pairs. Derived from the size and shape of the tile attribute. These are not the minimal translation vectors, but the 'face to face' vectors of the tile, such that a hexagonal tile will have 3 vectors, not the minimal parallelogram pair. Also supplies the inverse vectors.
 
@@ -41,16 +41,25 @@ class Tileable:
         """
         bb = self.tile.geometry[0].bounds
         w, h = bb[2] - bb[0], bb[3] - bb[1]
+        vec_dict = {(0, 0): (0, 0)}
         if self.tile_shape in (TileShape.RECTANGLE, ):
-            return [(dx, dy) 
-                    for dx in (-w, 0, w) 
-                    for dy in (-h, 0, h)
-                    if (dx == 0 or dy == 0) and dx != dy]
+            vec_dict[(1, 0)] = (w, 0)
+            vec_dict[(0, 1)] = (0, h)
+            vec_dict[(-1, 0)] = (-w, 0)
+            vec_dict[(0, -1)] = (0, -h)
         elif self.tile_shape in (TileShape.HEXAGON, TileShape.TRIHEX):
+            # hex grid coordinates associated with each of the vectors
+            i = [0, 1, 1, 0, -1, -1]
+            j = [1, 0, -1, -1, 0, 1]
+            k = [-1, -1, 0, 1, 1, 0]
             angles = [np.pi * 2 * i / 12 for i in range(1, 12, 2)]
-            return [(h * np.cos(a), h * np.sin(a)) for a in angles]
+            vecs = [(h * np.cos(a), h * np.sin(a)) for a in angles]
+            vec_dict = {(i, j, k): v for i, j, k, v in zip(i, j, k, vecs)}
         else: # TRIDIAMOND
             return None
+        return (list(vec_dict.values())
+                if return_values
+                else vec_dict)
         
     
     def merge_fragments(
@@ -142,14 +151,22 @@ class Tileable:
                         include_0:bool = False) -> gpd.GeoDataFrame:
         ids = []
         tiles = []
-        vecs = {(0, 0)}
+        vecs = ({(0, 0): (0, 0)} 
+                if self.tile_shape == TileShape.RECTANGLE
+                else {(0, 0, 0): (0, 0)})
+        vectors = self.get_vectors(return_values = False)
         for i in range(r):
-            new_vecs = {(v1[0] + v2[0], v1[1] + v2[1]) for
-                        v1 in vecs for v2 in self.get_vectors()}
-            vecs = vecs.union(new_vecs)
+            new_vecs = {}
+            for k1, v1 in vecs.items():
+                for k2, v2 in vectors.items():
+                    new_key = tuple([k1[i] + k2[i] for i in range(len(k1))])
+                    new_val = (v1[0] + v2[0], v1[1] + v2[1])
+                    new_vecs[new_key] = new_val
+            vecs = vecs | new_vecs
         if not include_0:
-            vecs.remove((0, 0))
-        for v in vecs:
+            vecs.pop((0, 0) if self.tile_shape == TileShape.RECTANGLE
+                     else (0, 0, 0))
+        for v in vecs.values():
             ids.extend(self.elements.element_id)
             tiles.extend(self.elements.geometry.apply(
                 affine.translate, xoff = v[0], yoff = v[1]))
@@ -158,8 +175,6 @@ class Tileable:
             geometry = gpd.GeoSeries(tiles)
         )
         
-
-
 
 @dataclass
 class TileUnit(Tileable):
