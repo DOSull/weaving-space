@@ -138,10 +138,18 @@ class Tileable:
         return None
     
     
-    def get_local_patch(self) -> gpd.GeoDataFrame:
+    def get_local_patch(self, r:int = 1, 
+                        include_0:bool = False) -> gpd.GeoDataFrame:
         ids = []
         tiles = []
-        for v in self.get_vectors():
+        vecs = {(0, 0)}
+        for i in range(r):
+            new_vecs = {(v1[0] + v2[0], v1[1] + v2[1]) for
+                        v1 in vecs for v2 in self.get_vectors()}
+            vecs = vecs.union(new_vecs)
+        if not include_0:
+            vecs.remove((0, 0))
+        for v in vecs:
             ids.extend(self.elements.element_id)
             tiles.extend(self.elements.geometry.apply(
                 affine.translate, xoff = v[0], yoff = v[1]))
