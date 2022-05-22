@@ -136,6 +136,20 @@ class Tileable:
         self.regularised_tile.geometry = \
             self.regularised_tile.geometry.buffer(-self.fudge_factor)
         return None
+    
+    
+    def get_local_patch(self) -> gpd.GeoDataFrame:
+        ids = []
+        tiles = []
+        for v in self.get_vectors():
+            ids.extend(self.elements.element_id)
+            tiles.extend(self.elements.geometry.apply(
+                affine.translate, xoff = v[0], yoff = v[1]))
+        return gpd.GeoDataFrame(
+            data = {"element_id": ids}, crs = self.crs,
+            geometry = gpd.GeoSeries(tiles)
+        )
+        
 
 
 
