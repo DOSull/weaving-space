@@ -184,6 +184,7 @@ class TileUnit(Tileable):
                     R * np.sin(np.radians(a))) for a in angles]
         tile = geom.Polygon(corners)
         return gpd.GeoDataFrame(geometry = [tile], crs = crs) 
+ 
     
     # change the element in a triangle tile to either a hex or
     # a diamond. Assumes the triangle is point up with centroid
@@ -227,12 +228,23 @@ class TileUnit(Tileable):
         return gpd.GeoSeries([merged_tile])
     
     
-    def get_tile_unit(self, tiling_type:str = "cairo", spacing:float = 10000,
+    def get_tile_unit(self, tiling_type:str = "none", spacing:float = 10000,
                       tile_shape:TileShape = TileShape.RECTANGLE, to_hex = False, crs:int = 3857) -> dict:
-        return self.get_cairo(spacing, tile_shape, crs)
+        if tiling_type == "cairo":
+            return self.get_cairo(tile_shape = tile_shape, 
+                                  spacing = spacing, crs = crs)
+        else:
+            t = self.get_base_tile(shape = tile_shape, 
+                                   spacing = spacing, crs = crs)
+            return {
+                "elements": gpd.GeoDataFrame(
+                    data = {"element_id": ["a"]}, crs = crs,
+                    geometry = copy.deepcopy(t.geometry)),
+                "tile": t,
+                "regularised_tile": copy.deepcopy(t)}
 
 
-    def get_cairo(self, spacing, tile_shape, crs):
+    def get_cairo(self, tile_shape, spacing, crs):
         d = spacing
         x = d / 2 * (np.sqrt(3) - 1) / 2 / np.sqrt(3)
 
