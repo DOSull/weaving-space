@@ -325,45 +325,47 @@ class Tiling:
                                                   origin = self.grid.centre))
         
     
-    # Generates the dual tiling 
-    def get_dual_tiling(self):
-        t = Tiling(self.tile_unit, self.region, self.region_id_var)
-        t.tile_shape = self.tile_shape
-        t.grid = self.grid
-        # first make a local patch of the Tiling using a 3 times scaled
-        # up version of the tile of this TIling
-        base = gpd.GeoDataFrame(
+    def get_local_patch(self, n:int = 3) -> gpd.GeoDataFrame:
+        patch_extent = gpd.GeoDataFrame(
             data = {"id": [1]}, crs = self.tile_unit.crs,
-            geometry = self.tile_unit.tile.geometry.scale(3, 3, origin = (0, 0))
+            geometry = self.tile_unit.tile.geometry.scale(n, n, origin = (0, 0))
         )
-        original = Tiling(self.tile_unit, base, id_var = "id")
-        original = original.tiles
-        # Now filter the tiles down those that fall inside the 3x3 area
+        patch = Tiling(self.tile_unit, patch_extent, id_var = "id")
         tiles_to_keep = []
         ids = []
-        for p, id in zip(original.geometry, original.element_id):
-            if p.within(base.geometry[0]):
+        for p, id in zip(patch.tiles.geometry, patch.tiles.element_id):
+            if p.within(patch_extent.geometry[0]):
                 tiles_to_keep.append(p)
                 ids.append(id)
-        original = gpd.GeoDataFrame(
+        return gpd.GeoDataFrame(
             data = {"element_id": ids}, crs = self.tile_unit.crs,
-            geometry = gpd.GeoSeries(tiles_to_keep)
-        )       
-        # Find the interior points of these tiles - i.e. those that are not
-        # on the boundary of the aggregation of all the tiles 
+            geometry = gpd.GeoSeries(tiles_to_keep))
+    
+    
+    def _get_interior_vertices(
+            self, tiles:gpd.GeoDataFrame) -> gpd.GeoSeries:
+        polygons = self.gridify(tiles.geometry)
+        uu = polygons.unary_union.buffer(0.1).buffer(-0.1)
         interior_pts = set()
-        original.geometry = self.gridify(original.geometry)
-        uu = original.geometry.unary_union.buffer(0.1).buffer(-0.1)
-        for p in original.geometry:
-            for pt in p.exterior.coords:
+        for poly in polygons:
+            for pt in poly.exterior.coords:
                 if uu.contains(geom.Point(pt).buffer(1)):
                     interior_pts.add(pt)
-        interior_pts = gpd.GeoSeries([geom.Point(p) for p in interior_pts])
+        return gpd.GeoSeries([geom.Point(p) for p in interior_pts])
+    
+    
+    # Generates the dual tiling 
+    def get_dual_tiling(self):
+        # get a local patch for a 3x scaled tile extent of this Tiling
+        local_patch = self.get_local_patch()     
+        # Find the interior points of these tiles - these will be guaranteed
+        # to have a sequence of surrounding tiles incident on them 
+        interior_pts = self._get_interior_vertices(local_patch)
         # Compile a list of the polygons incident on the interior points
         cycles = []
         for pt in interior_pts:
             cycles.append(
-                set([i for i, p in enumerate(original.geometry) if
+                set([i for i, p in enumerate(local_patch.geometry) if
                     pt.buffer(0.1).intersects(p)]))
         # These can be used to construct the dual polygons
         dual_faces = []
@@ -372,8 +374,8 @@ class Tiling:
             id = []
             coords = []
             for i in cycle:
-                id.append(original.element_id[i])
-                centroid = original.geometry[i].centroid
+                id.append(local_patch.element_id[i])
+                centroid = local_patch.geometry[i].centroid
                 coords.append([centroid.x, centroid.y])
             # sort them into CCW order so they are well formed
             sorted_coords = self.sort_ccw([(p, i) for p, i in zip(coords, id)])
@@ -385,6 +387,7 @@ class Tiling:
         # the generating polygon...
         dual_faces = [(f, id) for f, id in zip(dual_faces, ids) 
                       if self.tile_unit.tile.geometry[0].contains(f.centroid)]
+        t = copy.deepcopy(self)
         t.tile_unit.elements = gpd.GeoDataFrame(
             data = {"element_id": [f[1] for f in dual_faces]}, 
             crs = self.tile_unit.crs,
@@ -395,8 +398,9 @@ class Tiling:
 
         
     def gridify(self, gs, precision = 6):
-        return gs.apply(wkt.dumps, 
-                        rounding_precision = precision).apply(wkt.loads)
+        return gpd.GeoSeries(
+            list(gs.apply(wkt.dumps, 
+                          rounding_precision = precision).apply(wkt.loads)))
     
         
     # sort supplied  points into CCW order - by measuring angles around
