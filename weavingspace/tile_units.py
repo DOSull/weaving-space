@@ -5,14 +5,15 @@ from dataclasses import dataclass
 import itertools
 from enum import Enum
 import copy
+import string
 
 import geopandas as gpd
-from matplotlib.patches import Rectangle
 import pandas as pd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
+import tile_utils
 
 class TileShape(Enum):
     RECTANGLE = "rectangle"
@@ -184,14 +185,10 @@ class Tileable:
 
 @dataclass
 class TileUnit(Tileable):
-
     def __init__(self, **kwargs) -> None:
-        unit = self.get_tile_unit(**kwargs)
-        self.elements = unit["elements"]
-        self.tile = unit["tile"]
-        self.regularised_tile = unit["regularised_tile"]
         for k, v in kwargs.items():
             self.__dict__[k] = v
+        self.setup_tile_unit()
         if self.tile_shape == TileShape.TRIANGLE:
             self._modify_elements()
             self._modify_tile()
@@ -200,19 +197,12 @@ class TileUnit(Tileable):
             self.regularise_elements()
     
     
-    def get_base_tile(self, shape, spacing, crs) -> gpd.GeoDataFrame: 
-        n = (4 
-             if shape == TileShape.RECTANGLE
-             else (6 
-                   if shape == TileShape.HEXAGON
-                   else 3))
-        R = spacing / np.cos(np.radians(180 / n)) / 2
-        a0 = -90 + 180 / n
-        angles = [a0 + a for a in range(0, 360, 360 // n)]
-        corners = [(R * np.cos(np.radians(a)), 
-                    R * np.sin(np.radians(a))) for a in angles]
-        tile = geom.Polygon(corners)
-        return gpd.GeoDataFrame(geometry = [tile], crs = crs) 
+    def get_base_tile(self) -> gpd.GeoDataFrame: 
+        tile = tile_utils.get_regular_polygon(
+            self.spacing, n = (4 
+                          if self.tile_shape == TileShape.RECTANGLE
+                          else 6))
+        return gpd.GeoDataFrame(geometry = [tile], crs = self.crs) 
  
     
     # change the element in a triangle tile to either a hex or
@@ -257,24 +247,22 @@ class TileUnit(Tileable):
         return gpd.GeoSeries([merged_tile])
     
     
-    def get_tile_unit(self, tiling_type:str = "none", spacing:float = 10000,
-                      tile_shape:TileShape = TileShape.RECTANGLE, to_hex = False, crs:int = 3857) -> dict:
-        if tiling_type == "cairo":
-            return self.get_cairo(tile_shape = tile_shape, 
-                                  spacing = spacing, crs = crs)
+    def setup_tile_unit(self, **kwargs) -> dict:
+        if self.tiling_type == "cairo":
+            self.setup_cairo()
+        elif self.tiling_type == "hex-dissection":
+            self.setup_hex_dissection()
         else:
-            t = self.get_base_tile(shape = tile_shape, 
-                                   spacing = spacing, crs = crs)
-            return {
-                "elements": gpd.GeoDataFrame(
-                    data = {"element_id": ["a"]}, crs = crs,
-                    geometry = copy.deepcopy(t.geometry)),
-                "tile": t,
-                "regularised_tile": copy.deepcopy(t)}
+            t = self.get_base_tile()
+            self.elements = gpd.GeoDataFrame(
+                data = {"element_id": ["a"]}, crs = self.crs,
+                geometry = copy.deepcopy(t.geometry)),
+            self.tile = t,
+            self.regularised_tile = copy.deepcopy(t)
 
 
-    def get_cairo(self, tile_shape, spacing, crs):
-        d = spacing
+    def setup_cairo(self):
+        d = self.spacing
         x = d / 2 * (np.sqrt(3) - 1) / 2 / np.sqrt(3)
 
         p1 = geom.Polygon([(-d / 2 + x, 0),
@@ -291,13 +279,57 @@ class TileUnit(Tileable):
         p7 = affine.rotate(p6, 270, origin = p6.exterior.coords[1])
         p8 = affine.rotate(p7, 180, origin = p7.exterior.coords[4])
 
-        elements = gpd.GeoDataFrame(
-            data = {"element_id": list("abcdacbd")}, crs = crs,
+        self.elements = gpd.GeoDataFrame(
+            data = {"element_id": list("abcdacbd")}, crs = self.crs,
             geometry = gpd.GeoSeries([p1, p2, p3, p4, p5, p6, p7, p8]))
-        tile = self.get_base_tile(tile_shape, spacing, crs)
-        reg_tile = copy.copy(tile)
-        reg_tile.geometry = gpd.GeoSeries([elements.geometry.unary_union])
+        self.tile = self.get_base_tile()
+        self.regularised_tile = copy.deepcopy(self.tile)
+        self.regularised_tile.geometry = gpd.GeoSeries(
+            [self.elements.geometry.unary_union])
+            
         
-        return {"elements": elements, 
-                "tile": tile, 
-                "regularised_tile": reg_tile}
+    def setup_hex_dissection(self):
+        self.tile_shape = TileShape.HEXAGON
+        hex = tile_utils.get_regular_polygon(self.spacing, 6)
+        v = list(hex.exterior.coords)
+        m = [((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+                     for p1, p2 in zip(v[:-1], v[1:])]
+        if self.n == 3:
+            slices = [geom.Polygon([m[0], v[1], v[2], m[2], (0, 0)]),
+                      geom.Polygon([m[2], v[3], v[4], m[4], (0, 0)]),
+                      geom.Polygon([m[4], v[5], v[6], m[0], (0, 0)])]
+        elif self.n == 4:
+            slices = [geom.Polygon([m[0], v[1], v[2], (0, 0)]),
+                      geom.Polygon([v[2], v[3], m[3], (0, 0)]),
+                      geom.Polygon([m[3], v[4], v[5], (0, 0)]),
+                      geom.Polygon([v[5], v[6], m[0], (0, 0)])]
+        elif self.n == 6:
+            slices = [geom.Polygon([m[0], v[1], m[1], (0, 0)]),
+                      geom.Polygon([m[1], v[2], m[2], (0, 0)]),
+                      geom.Polygon([m[2], v[3], m[3], (0, 0)]),
+                      geom.Polygon([m[3], v[4], m[4], (0, 0)]),
+                      geom.Polygon([m[4], v[5], m[5], (0, 0)]),
+                      geom.Polygon([m[5], v[6], m[0], (0, 0)])]
+        elif self.n == 12:
+            slices = [geom.Polygon([m[0], v[1], (0, 0)]),
+                      geom.Polygon([v[1], m[1], (0, 0)]),
+                      geom.Polygon([m[1], v[2], (0, 0)]),
+                      geom.Polygon([v[2], m[2], (0, 0)]),
+                      geom.Polygon([m[2], v[3], (0, 0)]),
+                      geom.Polygon([v[3], m[3], (0, 0)]),
+                      geom.Polygon([m[3], v[4], (0, 0)]),
+                      geom.Polygon([v[4], m[4], (0, 0)]),
+                      geom.Polygon([m[4], v[5], (0, 0)]),
+                      geom.Polygon([v[5], m[5], (0, 0)]),
+                      geom.Polygon([m[5], v[6], (0, 0)]),
+                      geom.Polygon([v[6], m[0], (0, 0)])]
+        
+        self.elements = gpd.GeoDataFrame(
+            data = {"element_id": list(string.ascii_lowercase)[:self.n]}, 
+            crs = self.crs,
+            geometry = gpd.GeoSeries(slices))
+        self.tile = self.get_base_tile()
+        self.regularised_tile = copy.deepcopy(self.tile)
+        self.regularised_tile.geometry = gpd.GeoSeries(
+            [self.elements.geometry.unary_union])
+

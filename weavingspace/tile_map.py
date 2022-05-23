@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from threading import local
 from typing import Union
 from dataclasses import dataclass
 import itertools
@@ -17,6 +18,7 @@ import shapely.wkt as wkt
 from weave_units import WeaveUnit
 from tile_units import Tileable
 from tile_units import TileShape
+import tile_utils
 
 
 @dataclass
@@ -375,7 +377,11 @@ class Tiling:
             coords = []
             for i in cycle:
                 id.append(local_patch.element_id[i])
-                centroid = local_patch.geometry[i].centroid
+                poly = local_patch.geometry[i]
+                if len(poly.exterior.coords) == 4:
+                    centroid = tile_utils.incentre(poly)
+                else:
+                    centroid = poly.centroid
                 coords.append([centroid.x, centroid.y])
             # sort them into CCW order so they are well formed
             sorted_coords = self.sort_ccw([(p, i) for p, i in zip(coords, id)])
