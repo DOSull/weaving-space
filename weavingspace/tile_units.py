@@ -7,6 +7,7 @@ from enum import Enum
 import copy
 
 import geopandas as gpd
+from matplotlib.patches import Rectangle
 import pandas as pd
 import numpy as np
 import shapely.geometry as geom
@@ -41,7 +42,9 @@ class Tileable:
         """
         bb = self.tile.geometry[0].bounds
         w, h = bb[2] - bb[0], bb[3] - bb[1]
-        vec_dict = {(0, 0): (0, 0)}
+        vec_dict = ({(0, 0): (0, 0)} 
+                    if self.tile_shape == TileShape.RECTANGLE
+                    else {(0, 0, 0): (0, 0)})
         if self.tile_shape in (TileShape.RECTANGLE, ):
             vec_dict[(1, 0)] = (w, 0)
             vec_dict[(0, 1)] = (0, h)
@@ -151,10 +154,10 @@ class Tileable:
                         include_0:bool = False) -> gpd.GeoDataFrame:
         ids = []
         tiles = []
-        vecs = {}
-        last_vecs = ({(0, 0): (0, 0)} 
-                     if self.tile_shape == TileShape.RECTANGLE
-                     else {(0, 0, 0): (0, 0)})
+        vecs = ({(0, 0): (0, 0)} 
+                if self.tile_shape == TileShape.RECTANGLE
+                else {(0, 0, 0): (0, 0)})
+        last_vecs = copy.deepcopy(vecs)
         vectors = self.get_vectors(return_values = False)
         for i in range(r):
             new_vecs = {}
