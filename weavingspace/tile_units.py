@@ -13,7 +13,7 @@ import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
-import tile_utils
+import tiling_utils
 
 class TileShape(Enum):
     RECTANGLE = "rectangle"
@@ -60,7 +60,10 @@ class Tileable:
             vecs = [(h * np.cos(a), h * np.sin(a)) for a in angles]
             vec_dict = {(i, j, k): v for i, j, k, v in zip(i, j, k, vecs)}
         else: # TRIDIAMOND
-            return None
+            vec_dict[(1, 0)] = (w / 2, h / 2)
+            vec_dict[(0, 1)] = (-w / 2, h / 2)
+            vec_dict[(-1, 0)] = (-w / 2. -h / 2)
+            vec_dict[(0, -1)] = (w / 2, -h / 2)
         return (list(vec_dict.values())
                 if return_values
                 else vec_dict)
@@ -185,6 +188,9 @@ class Tileable:
 
 @dataclass
 class TileUnit(Tileable):
+    tiling_type:str = None
+    dissection_offset:int = 1
+    
     def __init__(self, **kwargs) -> None:
         for k, v in kwargs.items():
             self.__dict__[k] = v
@@ -198,10 +204,13 @@ class TileUnit(Tileable):
     
     
     def get_base_tile(self) -> gpd.GeoDataFrame: 
-        tile = tile_utils.get_regular_polygon(
+        tile = tiling_utils.get_regular_polygon(
             self.spacing, n = (4 
-                          if self.tile_shape == TileShape.RECTANGLE
-                          else 6))
+                          if self.tile_shape in (TileShape.RECTANGLE, )
+                          else (6 
+                                if self.tile_shape in (TileShape.HEXAGON, 
+                                                       TileShape.TRIHEX)
+                                else 3)))
         return gpd.GeoDataFrame(geometry = [tile], crs = self.crs) 
  
     
@@ -256,8 +265,8 @@ class TileUnit(Tileable):
             t = self.get_base_tile()
             self.elements = gpd.GeoDataFrame(
                 data = {"element_id": ["a"]}, crs = self.crs,
-                geometry = copy.deepcopy(t.geometry)),
-            self.tile = t,
+                geometry = copy.deepcopy(t.geometry))
+            self.tile = t
             self.regularised_tile = copy.deepcopy(t)
 
 
@@ -290,39 +299,47 @@ class TileUnit(Tileable):
         
     def setup_hex_dissection(self):
         self.tile_shape = TileShape.HEXAGON
-        hex = tile_utils.get_regular_polygon(self.spacing, 6)
+        hex = tiling_utils.get_regular_polygon(self.spacing, 6)
         v = list(hex.exterior.coords)
         m = [((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
                      for p1, p2 in zip(v[:-1], v[1:])]
-        if self.n == 3:
-            slices = [geom.Polygon([m[0], v[1], v[2], m[2], (0, 0)]),
-                      geom.Polygon([m[2], v[3], v[4], m[4], (0, 0)]),
-                      geom.Polygon([m[4], v[5], v[6], m[0], (0, 0)])]
+        p = list(itertools.chain(*zip(v[:-1], m)))
+        if self.n == 2:
+            s = (geom.Polygon([p[0], p[2], p[4], p[6], (0, 0)])
+                 if self.dissection_offset == 0
+                 else geom.Polygon(p[1:8] + [(0, 0)]))
+            slices = [affine.rotate(s, a, origin = (0, 0)) 
+                      for a in range(0, 360, 180)]
+        elif self.n == 3:
+            s = (geom.Polygon([p[0], p[2], p[4], (0, 0)])
+                 if self.dissection_offset == 0
+                 else geom.Polygon([p[1], p[2], p[4], p[5], (0, 0)]))
+            slices = [affine.rotate(s, a, origin = (0, 0)) 
+                      for a in range(0, 360, 120)]
         elif self.n == 4:
-            slices = [geom.Polygon([m[0], v[1], v[2], (0, 0)]),
-                      geom.Polygon([v[2], v[3], m[3], (0, 0)]),
-                      geom.Polygon([m[3], v[4], v[5], (0, 0)]),
-                      geom.Polygon([v[5], v[6], m[0], (0, 0)])]
+            s1 = (geom.Polygon([p[0], p[2], p[3], (0, 0)])
+                 if self.dissection_offset == 0
+                 else geom.Polygon([p[1], p[2], p[4], (0, 0)]))
+            s2 = (geom.Polygon([p[3], p[4], p[6], (0, 0)])
+                 if self.dissection_offset == 0
+                 else geom.Polygon([p[4], p[6], p[7], (0, 0)]))
+            slices = [s1, s2, 
+                      affine.rotate(s1, 180, (0, 0)),
+                      affine.rotate(s2, 180, (0, 0))]
         elif self.n == 6:
-            slices = [geom.Polygon([m[0], v[1], m[1], (0, 0)]),
-                      geom.Polygon([m[1], v[2], m[2], (0, 0)]),
-                      geom.Polygon([m[2], v[3], m[3], (0, 0)]),
-                      geom.Polygon([m[3], v[4], m[4], (0, 0)]),
-                      geom.Polygon([m[4], v[5], m[5], (0, 0)]),
-                      geom.Polygon([m[5], v[6], m[0], (0, 0)])]
+            s = (geom.Polygon([p[0], p[2], (0, 0)])
+                 if self.dissection_offset == 0
+                 else geom.Polygon([p[1], p[2], p[3], (0, 0)]))
+            slices = [affine.rotate(s, a, origin = (0, 0)) 
+                      for a in range(0, 360, 60)]
         elif self.n == 12:
-            slices = [geom.Polygon([m[0], v[1], (0, 0)]),
-                      geom.Polygon([v[1], m[1], (0, 0)]),
-                      geom.Polygon([m[1], v[2], (0, 0)]),
-                      geom.Polygon([v[2], m[2], (0, 0)]),
-                      geom.Polygon([m[2], v[3], (0, 0)]),
-                      geom.Polygon([v[3], m[3], (0, 0)]),
-                      geom.Polygon([m[3], v[4], (0, 0)]),
-                      geom.Polygon([v[4], m[4], (0, 0)]),
-                      geom.Polygon([m[4], v[5], (0, 0)]),
-                      geom.Polygon([v[5], m[5], (0, 0)]),
-                      geom.Polygon([m[5], v[6], (0, 0)]),
-                      geom.Polygon([v[6], m[0], (0, 0)])]
+            s1 = geom.Polygon([p[0], p[1], (0, 0)])
+            s2 = geom.Polygon([p[1], p[2], (0, 0)])
+            slices1 = [affine.rotate(s1, a, origin = (0, 0)) 
+                       for a in range(0, 360, 60)]
+            slices2 = [affine.rotate(s2, a, origin = (0, 0)) 
+                       for a in range(0, 360, 60)]
+            slices = itertools.chain(slices1, slices2)
         
         self.elements = gpd.GeoDataFrame(
             data = {"element_id": list(string.ascii_lowercase)[:self.n]}, 

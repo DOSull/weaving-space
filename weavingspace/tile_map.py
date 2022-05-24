@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from threading import local
 from typing import Union
 from dataclasses import dataclass
 import itertools
@@ -18,7 +17,7 @@ import shapely.wkt as wkt
 from weave_units import WeaveUnit
 from tile_units import Tileable
 from tile_units import TileShape
-import tile_utils
+import tiling_utils
 
 
 @dataclass
@@ -379,7 +378,7 @@ class Tiling:
                 id.append(local_patch.element_id[i])
                 poly = local_patch.geometry[i]
                 if len(poly.exterior.coords) == 4:
-                    centroid = tile_utils.incentre(poly)
+                    centroid = tiling_utils.incentre(poly)
                 else:
                     centroid = poly.centroid
                 coords.append([centroid.x, centroid.y])

@@ -14,7 +14,7 @@ import shapely.geometry as geom
 import shapely.ops
 
 import weave_matrices
-import weave_utils
+import weaving_utils
 from loom import Loom
 from weave_grids import WeaveGrid
 
@@ -187,7 +187,7 @@ def get_biaxial_weave_unit(
         dict: dictionary with contents {"weave_unit": GeoDataFrame of weave 
             elements, "tile": GeoDataFrame of the tile}.
     """    
-    warp_threads, weft_threads, drop = weave_utils.get_strand_ids(strands)
+    warp_threads, weft_threads, drop = weaving_utils.get_strand_ids(strands)
     
     if weave_type == "basket" and isinstance(n, (list, tuple)):
         n = n[0]
@@ -286,7 +286,7 @@ def get_triaxial_weave_unit(
         dict: dictionary with contents {"weave_unit": GeoDataFrame of weave 
             elements, "tile": GeoDataFrame of the tile}.
     """    
-    strands_1, strands_2, strands_3 = weave_utils.get_strand_ids(strands)
+    strands_1, strands_2, strands_3 = weaving_utils.get_strand_ids(strands)
     
     loom = get_triaxial_weave_matrices(
         weave_type = weave_type,
