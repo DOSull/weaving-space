@@ -281,7 +281,7 @@ class TileUnit(Tileable):
     def setup_cairo(self) -> None:
         d = self.spacing
         x = d / 2 * (np.sqrt(3) - 1) / 2 / np.sqrt(3)
-
+        
         p1 = geom.Polygon([(-d / 2 + x, 0),
                            (-d / 4, -d / 4), 
                            (0, -x), 
