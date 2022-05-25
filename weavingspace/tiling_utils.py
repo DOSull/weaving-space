@@ -51,13 +51,15 @@ def gridify(gs, precision = 6) -> gpd.GeoSeries:
             wkt.dumps, rounding_precision = precision).apply(wkt.loads)))
 
     
-# Converts the supplied TileUnit to its dual
+# Converts the supplied TileUnit to a candidate GeoDataFrame of its dual
 # BUT NOTE: this is complicated and not remotely guaranteed to work!
 # a particular issue is that where to place the vertices of the faces
 # of the dual with respect to the tiles in the original is ill-defined.
 # This is essentially because the dual process is not metrically defined
 # only topologically, so the vertex locations are arbitrary.
-def get_dual_tile_unit(t):
+# Only return a GeoDataFrame because there is no easy or obvious way to 
+# infer the output's tiling geometry (which we would need for a TileUnit)
+def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
     # get a local patch for a 3x scaled tile extent of this Tiling
     local_patch = t.get_local_patch(r = 2, include_0 = True)     
     # Find the interior points of these tiles - these will be guaranteed
@@ -93,12 +95,10 @@ def get_dual_tile_unit(t):
     # the generating polygon...
     dual_faces = [(f, id) for f, id in zip(dual_faces, ids) 
                     if t.tile.geometry[0].contains(f.centroid)]
-    
-    dual = copy.deepcopy(t)
-    dual.elements = gpd.GeoDataFrame(
+
+    return gpd.GeoDataFrame(
         data = {"element_id": [f[1] for f in dual_faces]}, crs = t.crs,
         geometry = gpd.GeoSeries([f[0] for f in dual_faces]))
-    return dual
 
     
 # sort supplied  points into CCW order - by measuring angles around
