@@ -17,6 +17,7 @@ import shapely.wkt as wkt
 from weave_units import WeaveUnit
 from tile_units import Tileable
 from tile_units import TileShape
+
 import tiling_utils
 
 
@@ -204,19 +205,6 @@ class Tiling:
         if prioritise_tiles: # respect tile sides over zone boundaries
             # make column with unique ID for every element in the tiling
             tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
-            
-            ## The below seems like it should work, but 
-            ## and almost does, but is not clipped to the region 
-            ## ...
-            # overlay = copy.copy(tiled_map)
-            # # overlay with the zones from the region to be tiled
-            # overlay = overlay.overlay(self.region, keep_geom_type = False)
-            # # determine areas of overlaid tile elements and drop the data
-            # overlay["area"] = overlay.geometry.area
-            # # make a lookup by largest area element to the zone ID
-            # lookup = overlay.iloc[overlay.groupby("tileUID")["area"].agg(
-            #     pd.Series.idxmax)][["tileUID", id_var]]
-
             # overlay with the zones from the region to be tiled
             tiled_map = tiled_map.overlay(self.region, keep_geom_type = False)
             # determine areas of overlaid tile elements and drop the data
@@ -241,27 +229,6 @@ class Tiling:
             .drop(["diss_var"], axis = 1)
     
     
-    # # DEPRECATED? I THINK?
-    # def _translate_geoms(self, gs:gpd.GeoSeries, 
-    #             dx:float = 0., dy:float = 0.
-    #         ) -> list[Union[geom.Polygon, geom.MultiPolygon]]:
-    #     """Translates geometries in supplied GeoSeries by (dx, dy).
-        
-    #     This is needed in place of GeoSeries.translate because we have 
-    #     to unpack the geometries to a list so that we can chain them into a list and bundle back up into a GeoSeries in the get_tiling function.
-
-    #     Args:
-    #         gs (geopandas.GeoSeries): GeoSeries to translate.
-    #         dx (float, optional): x transation. Defaults to 0.
-    #         dy (float, optional): x transation. Defaults to 0.
-
-    #     Returns:
-    #         list[Polygon|MultiPolygon]: _description_
-    #     """ 
-    #     # this seems like it's the quickest... I think
-    #     return gs.apply(affine.translate, xoff = dx, yoff = dy)
-
-
     def _rotate_gdf_to_geoseries(
             self, gdf:gpd.GeoDataFrame, 
             angle:float, centre:tuple = (0, 0)
@@ -311,7 +278,7 @@ class Tiling:
                                      geometry = tiles_gs, 
                                      crs = self.tile_unit.crs)
         # assemble and return as a GeoDataFrame
-        tiles_gdf.geometry = self.gridify(tiles_gdf.geometry)
+        tiles_gdf.geometry = tiling_utils.gridify(tiles_gdf.geometry)
         return tiles_gdf
         
     
@@ -343,82 +310,3 @@ class Tiling:
             geometry = gpd.GeoSeries(tiles_to_keep))
     
     
-    def _get_interior_vertices(
-            self, tiles:gpd.GeoDataFrame) -> gpd.GeoSeries:
-        polygons = self.gridify(tiles.geometry)
-        uu = polygons.unary_union.buffer(0.1).buffer(-0.1)
-        interior_pts = set()
-        for poly in polygons:
-            for pt in poly.exterior.coords:
-                if uu.contains(geom.Point(pt).buffer(1)):
-                    interior_pts.add(pt)
-        return gpd.GeoSeries([geom.Point(p) for p in interior_pts])
-    
-    
-    # Generates the dual tiling 
-    def get_dual_tiling(self):
-        # get a local patch for a 3x scaled tile extent of this Tiling
-        local_patch = self.get_local_patch()     
-        # Find the interior points of these tiles - these will be guaranteed
-        # to have a sequence of surrounding tiles incident on them 
-        interior_pts = self._get_interior_vertices(local_patch)
-        # Compile a list of the polygons incident on the interior points
-        cycles = []
-        for pt in interior_pts:
-            cycles.append(
-                set([i for i, p in enumerate(local_patch.geometry) if
-                    pt.buffer(0.1).intersects(p)]))
-        # These can be used to construct the dual polygons
-        dual_faces = []
-        ids = []
-        for cycle in cycles:
-            id = []
-            coords = []
-            for i in cycle:
-                id.append(local_patch.element_id[i])
-                poly = local_patch.geometry[i]
-                if len(poly.exterior.coords) == 4:
-                    centroid = tiling_utils.incentre(poly)
-                else:
-                    centroid = poly.centroid
-                coords.append([centroid.x, centroid.y])
-            # sort them into CCW order so they are well formed
-            sorted_coords = self.sort_ccw([(p, i) for p, i in zip(coords, id)])
-            dual_faces.append(geom.Polygon([c[0] for c in sorted_coords]))
-            # a reasonable stab at element IDs is the sequence of element_id
-            # values from the original tiling in the order encountered
-            ids.append("".join([c[1] for c in sorted_coords]))
-        # ensure the resulting faces actually contain the centroids of
-        # the generating polygon...
-        dual_faces = [(f, id) for f, id in zip(dual_faces, ids) 
-                      if self.tile_unit.tile.geometry[0].contains(f.centroid)]
-        t = copy.deepcopy(self)
-        t.tile_unit.elements = gpd.GeoDataFrame(
-            data = {"element_id": [f[1] for f in dual_faces]}, 
-            crs = self.tile_unit.crs,
-            geometry = gpd.GeoSeries([f[0] for f in dual_faces])
-        )
-        t.tiles = t.make_tiling()
-        return t
-
-        
-    def gridify(self, gs, precision = 6):
-        return gpd.GeoSeries(
-            list(gs.apply(wkt.dumps, 
-                          rounding_precision = precision).apply(wkt.loads)))
-    
-        
-    # sort supplied  points into CCW order - by measuring angles around
-    # their centroid
-    def sort_ccw(self, pts):
-        x = [p[0][0] for p in pts]
-        y = [p[0][1] for p in pts]
-        cx, cy = np.mean(x), np.mean(y)
-        dx = [_ - cx for _ in x]
-        dy = [_ - cy for _ in y]
-        angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
-        d = dict(zip(angles, pts))
-        return [v for k, v in sorted(d.items())]
-
-
-

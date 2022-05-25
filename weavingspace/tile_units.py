@@ -15,6 +15,7 @@ import shapely.affinity as affine
 
 import tiling_utils
 
+
 class TileShape(Enum):
     RECTANGLE = "rectangle"
     HEXAGON = "hexagon"
@@ -80,11 +81,11 @@ class Tileable:
         Returns:
             list[geom.Polygon]: A minimal list of merged polygons.
         """
+        tile = self.tile.geometry[0]
+        reg_tile = self.regularised_tile.geometry[0]
         if len(fragments) == 1:
             return fragments
         changes_made = True
-        tile = self.tile.geometry[0]
-        reg_tile = self.regularised_tile.geometry[0]
         while changes_made:
             changes_made = False
             for v in self.vectors:
@@ -190,7 +191,9 @@ class Tileable:
 class TileUnit(Tileable):
     tiling_type:str = None
     dissection_offset:int = 1
-    
+    laves_code:int = "3.3.4.3.4"
+    to_hex:bool = False
+        
     def __init__(self, **kwargs) -> None:
         for k, v in kwargs.items():
             self.__dict__[k] = v
@@ -198,8 +201,8 @@ class TileUnit(Tileable):
         if self.tile_shape == TileShape.TRIANGLE:
             self._modify_elements()
             self._modify_tile()
-        if self.regularised_tile is None:
-            self.regularised_tile = copy.copy(self.tile)
+        if self.regularised_tile is None: 
+            self.regularised_tile = copy.deepcopy(self.tile)
             self.regularise_elements()
     
     
@@ -256,21 +259,26 @@ class TileUnit(Tileable):
         return gpd.GeoSeries([merged_tile])
     
     
-    def setup_tile_unit(self, **kwargs) -> dict:
+    def setup_tile_unit(self) -> None:
         if self.tiling_type == "cairo":
             self.setup_cairo()
         elif self.tiling_type == "hex-dissection":
             self.setup_hex_dissection()
+        elif self.tiling_type == "laves":
+            self.setup_laves_tiles()
         else:
-            t = self.get_base_tile()
-            self.elements = gpd.GeoDataFrame(
-                data = {"element_id": ["a"]}, crs = self.crs,
-                geometry = copy.deepcopy(t.geometry))
-            self.tile = t
-            self.regularised_tile = copy.deepcopy(t)
+            self.setup_none_tile()
+        return
+            
+    
+    def setup_none_tile(self) -> None: 
+        self.tile = self.get_base_tile()
+        self.elements = gpd.GeoDataFrame(
+            data = {"element_id": ["a"]}, crs = self.crs,
+            geometry = copy.deepcopy(self.tile.geometry))
 
 
-    def setup_cairo(self):
+    def setup_cairo(self) -> None:
         d = self.spacing
         x = d / 2 * (np.sqrt(3) - 1) / 2 / np.sqrt(3)
 
@@ -291,10 +299,12 @@ class TileUnit(Tileable):
         self.elements = gpd.GeoDataFrame(
             data = {"element_id": list("abcdacbd")}, crs = self.crs,
             geometry = gpd.GeoSeries([p1, p2, p3, p4, p5, p6, p7, p8]))
+        self.tile_shape = TileShape.RECTANGLE
         self.tile = self.get_base_tile()
         self.regularised_tile = copy.deepcopy(self.tile)
         self.regularised_tile.geometry = gpd.GeoSeries(
-            [self.elements.geometry.unary_union])
+            [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+        
             
         
     def setup_hex_dissection(self):
@@ -345,8 +355,84 @@ class TileUnit(Tileable):
             data = {"element_id": list(string.ascii_lowercase)[:self.n]}, 
             crs = self.crs,
             geometry = gpd.GeoSeries(slices))
+        self.tile_shape = TileShape.HEXAGON
         self.tile = self.get_base_tile()
-        self.regularised_tile = copy.deepcopy(self.tile)
-        self.regularised_tile.geometry = gpd.GeoSeries(
-            [self.elements.geometry.unary_union])
 
+
+    def setup_laves_tiles(self) -> None:
+        if self.laves_code == "3.3.3.3.3.3":
+            self.tile_shape = TileShape.HEXAGON
+            self.setup_none_tile()
+            return
+        if self.laves_code == "3.3.3.3.6":
+            self.tile_shape = TileShape.HEXAGON
+            self.setup_laves_33336()
+            return
+        elif self.laves_code == "3.3.3.4.4":
+            self.tile_shape = TileShape.HEXAGON
+            self.n = 2
+            self.dissection_offset = 1
+            self.setup_hex_dissection()
+            return
+        elif self.laves_code == "3.3.4.3.4":
+            self.tile_shape = TileShape.RECTANGLE
+            self.setup_cairo()
+            return
+        elif self.laves_code == "3.4.6.4":
+            self.tile_shape = TileShape.HEXAGON
+            self.n = 6
+            self.dissection_offset = 1
+            self.setup_hex_dissection()
+            return
+        elif self.laves_code == "3.6.3.6":
+            self.tile_shape = TileShape.HEXAGON
+            self.n = 3
+            self.dissection_offset = 0
+            self.setup_hex_dissection()
+            return
+        elif self.laves_code == "3.12.12":
+            print(f"The code [{self.laves_code}] is unsupported.")
+        elif self.laves_code == "4.4.4":
+            self.tile_shape = TileShape.RECTANGLE
+            self.setup_none_tile()
+            return
+        elif self.laves_code == "4.6.12":
+            self.tile_shape = TileShape.HEXAGON
+            self.n = 12
+            self.setup_hex_dissection()
+            return
+        elif self.laves_code == "4.8.8":
+            print(f"The code [{self.laves_code}] is unsupported.")
+        elif self.laves_code == "6.6.6":
+            self.tile_shape = TileShape.TRIANGLE
+            self.setup_none_tile()
+        else:
+            print(f"[{self.laves_code}] is not a valid Laves code.")
+
+        self.tiling_type = None
+        self.setup_none_tile()
+        return
+    
+    
+    def setup_laves_33336(self) -> None:
+        offset_a = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
+        sf = 1 / np.sqrt(7)
+
+        tile = tiling_utils.get_regular_polygon(self.spacing, 6)
+
+        hex = affine.scale(tile, sf, sf)
+        hex = affine.translate(hex, 0, hex.bounds[3] - hex.bounds[1])
+        hex_p = [p for p in hex.exterior.coords]
+        petal = geom.Polygon([(0, 0)] + hex_p[1:5])
+        petals = [affine.rotate(petal, a + offset_a, origin = (0, 0))
+                     for a in range(30, 360, 60)]
+
+        self.elements = gpd.GeoDataFrame(
+            data = {"element_id": list("abcdef")}, 
+            crs = self.crs,
+            geometry = gpd.GeoSeries(petals))
+        self.tile_shape = TileShape.HEXAGON
+        self.tile = self.get_base_tile()
+        self.regularised_tile = gpd.GeoSeries(
+            [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+            
