@@ -2,9 +2,10 @@
 # coding: utf-8
 
 # Some strand label parser stuff
-# This is much nicer in python than in R
 
 import re
+
+import shapely.geometry as geom
 
 
 def _parse_strand_label(s:str) -> list[str]:
@@ -55,4 +56,21 @@ def get_strand_ids(strands_spec: str) -> tuple[list[str]]:
                   if len(strand_ids) == 3
                   else strand_ids + [[""]])
     return tuple(strand_ids)
+
+
+def centre_offset(shape: geom.Polygon, 
+                  target:tuple[float] = (0, 0)) -> tuple[float]:
+    """Returns vector required to move centroid of polygon to target. 
+
+    Args:
+        shape (Polygon): polygon to move.
+        target (tuple[float], optional): target to move to. 
+            Defaults to (0, 0).
+
+    Returns:
+        tuple[float]: tuple of x, y movement required.
+    """  
+    shape_c = shape.centroid.coords[0]
+    return (target[0] - shape_c[0], target[1] - shape_c[1])
+
 

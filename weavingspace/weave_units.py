@@ -9,12 +9,13 @@ import copy
 
 import geopandas as gpd
 import numpy as np
-import shapely.affinity as affine
 import shapely.geometry as geom
+import shapely.affinity as affine
 import shapely.ops
 
 import weave_matrices
 import weaving_utils
+
 from loom import Loom
 from weave_grids import WeaveGrid
 
@@ -24,7 +25,7 @@ from tile_units import Tileable
 
 @dataclass
 class WeaveUnit(Tileable):
-    """ Small data class containing elements of a weave unit.
+    """ Extends Tileable to allow for tiles that appear like woven patterns.
     
     Attributes:
         elements: a GeoDataFrame of strand geometries.
@@ -236,23 +237,6 @@ class WeaveUnit(Tileable):
             loom, strand_labels = [strands_1, strands_2, strands_3])
 
 
-    def centre_offset(self, 
-                      shape: geom.Polygon, 
-                      target:tuple[float] = (0, 0)) -> tuple[float]:
-        """Returns vector required to move centroid of polygon to target. 
-
-        Args:
-            shape (Polygon): polygon to move.
-            target (tuple[float], optional): target to move to. 
-                Defaults to (0, 0).
-
-        Returns:
-            tuple[float]: tuple of x, y movement required.
-        """  
-        shape_c = shape.centroid.coords[0]
-        return (target[0] - shape_c[0], target[1] - shape_c[1])
-
-
     # builds the geometric elements associated with a given weave supplied as
     # 'loom' containing the coordinates in an appropriate grid (Cartesian or
     # triangular) and the orderings of the strands at each coordinate location
@@ -288,7 +272,7 @@ class WeaveUnit(Tileable):
             next_labels = list(itertools.chain(*next_labels))  # flatten 
             strand_ids.extend(next_labels)
         tile = shapely.ops.unary_union(bb_polys)
-        shift = self.centre_offset(tile)
+        shift = weaving_utils.centre_offset(tile)
         tile = affine.translate(tile, shift[0], shift[1])
         self.elements = self.make_weave_elements_gdf(
             weave_polys, strand_ids, tile, shift)
@@ -298,8 +282,8 @@ class WeaveUnit(Tileable):
 
 
     def make_weave_elements_gdf(
-            self, polys:list[Union[geom.Polygon, geom.MultiPolygon]], 
-            strand_ids:list[str], bb:geom.Polygon, offset:tuple[float]
+            self, polys:list[geom.Polygon], strand_ids:list[str], 
+            bb:geom.Polygon, offset:tuple[float]
         ) -> gpd.GeoDataFrame:
         """Makes a GeoDataFrame from weave element polygons, labels, tile, etc.
 
