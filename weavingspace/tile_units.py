@@ -27,13 +27,14 @@ class TileShape(Enum):
 @dataclass
 class Tileable:
     fudge_factor:float = 1e-3
-    elements:gpd.GeoDataFrame = None
-    tile:gpd.GeoDataFrame = None
-    regularised_tile:gpd.GeoDataFrame = None
-    vectors:list[tuple[float]] = None
     spacing:float = 1000.
-    tile_shape:TileShape = TileShape.RECTANGLE
     crs:int = 3857
+    tile_shape:TileShape = TileShape.RECTANGLE
+    tile:gpd.GeoDataFrame = None
+    vectors:list[tuple[float]] = None
+    elements:gpd.GeoDataFrame = None
+    regularised_tile:gpd.GeoDataFrame = None
+    margin:float = 0.
         
     def get_vectors(self, return_values:bool = True) -> list[tuple[float]]:
         """
