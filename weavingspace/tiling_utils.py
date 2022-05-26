@@ -36,11 +36,11 @@ def incentre(tri:geom.Polygon) -> geom.Point:
 
 def get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
     polygons = gridify(polys.geometry)
-    uu = polygons.unary_union.buffer(0.1).buffer(-0.1)
+    uu = polygons.unary_union.buffer(1e-3).buffer(-1e-3)
     interior_pts = set()
     for poly in polygons:
         for pt in poly.exterior.coords:
-            if uu.contains(geom.Point(pt).buffer(1)):
+            if uu.contains(geom.Point(pt).buffer(1e-3)):
                 interior_pts.add(pt)
     return gpd.GeoSeries([geom.Point(p) for p in interior_pts])
 
@@ -61,7 +61,7 @@ def gridify(gs, precision = 6) -> gpd.GeoSeries:
 # infer the output's tiling geometry (which we would need for a TileUnit)
 def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
     # get a local patch for a 3x scaled tile extent of this Tiling
-    local_patch = t.get_local_patch(r = 2, include_0 = True)     
+    local_patch = t.get_local_patch(r = 3, include_0 = True)     
     # Find the interior points of these tiles - these will be guaranteed
     # to have a sequence of surrounding tiles incident on them 
     interior_pts = get_interior_vertices(local_patch)
@@ -70,7 +70,7 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
     for pt in interior_pts:
         cycles.append(
             set([i for i, p in enumerate(local_patch.geometry) if
-                pt.buffer(0.1).intersects(p)]))
+                pt.buffer(1e-3).intersects(p)]))
     # These can be used to construct the dual polygons
     dual_faces = []
     ids = []
@@ -112,6 +112,4 @@ def sort_ccw(pts):
     angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
     d = dict(zip(angles, pts))
     return [v for k, v in sorted(d.items())]
-
-
 
