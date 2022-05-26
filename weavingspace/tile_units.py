@@ -280,25 +280,41 @@ class TileUnit(Tileable):
 
     def setup_cairo(self) -> None:
         d = self.spacing
-        x = d / 2 * (np.sqrt(3) - 1) / 2 / np.sqrt(3)
+        # x = d / 2 * (np.sqrt(3) - 1) / 2 / np.sqrt(3)
         
-        p1 = geom.Polygon([(-d / 2 + x, 0),
-                           (-d / 4, -d / 4), 
-                           (0, -x), 
+        # p1 = geom.Polygon([(-d / 2 + x, 0),
+        #                    (-d / 4, -d / 4), 
+        #                    (0, -x), 
+        #                    (0, x),
+        #                    (-d / 4, d / 4)])
+        # p1 = affine.translate(p1, x, x) 
+        # p2 = affine.rotate(p1, 90, origin = p1.exterior.coords[1])
+        # p3 = affine.rotate(p1, 180, origin = p1.exterior.coords[1])
+        # p4 = affine.rotate(p1, 270, origin = p1.exterior.coords[1])
+        # p5 = affine.rotate(p4, 90, origin = p4.exterior.coords[4]) 
+        # p6 = affine.rotate(p4, 270, origin = p4.exterior.coords[4])
+        # p7 = affine.rotate(p6, 270, origin = p6.exterior.coords[1])
+        # p8 = affine.rotate(p7, 180, origin = p7.exterior.coords[4])
+
+        # self.elements = gpd.GeoDataFrame(
+        #     data = {"element_id": list("abcdacbd")}, crs = self.crs,
+        #     geometry = gpd.GeoSeries([p1, p2, p3, p4, p5, p6, p7, p8]))
+        
+        x = d / 2 / (np.cos(np.radians(15)) + np.cos(np.radians(75)))
+        p1 = geom.Polygon([(x, 0),
+                           (0, 0),
                            (0, x),
-                           (-d / 4, d / 4)])
-        p1 = affine.translate(p1, x, x) 
-        p2 = affine.rotate(p1, 90, origin = p1.exterior.coords[1])
-        p3 = affine.rotate(p1, 180, origin = p1.exterior.coords[1])
-        p4 = affine.rotate(p1, 270, origin = p1.exterior.coords[1])
-        p5 = affine.rotate(p4, 90, origin = p4.exterior.coords[4]) 
-        p6 = affine.rotate(p4, 270, origin = p4.exterior.coords[4])
-        p7 = affine.rotate(p6, 270, origin = p6.exterior.coords[1])
-        p8 = affine.rotate(p7, 180, origin = p7.exterior.coords[4])
+                           (x * np.sqrt(3) / 2, x + x / 2),
+                           (x * (1 + np.sqrt(3)) / 2, 
+                            x * (3 - np.sqrt(3)) / 2)])
+        p1 = affine.rotate(p1, -15, (0, 0))
+        p2 = affine.rotate(p1, 90, (0, 0))
+        p3 = affine.rotate(p2, 90, (0, 0))
+        p4 = affine.rotate(p3, 90, (0, 0))
 
         self.elements = gpd.GeoDataFrame(
-            data = {"element_id": list("abcdacbd")}, crs = self.crs,
-            geometry = gpd.GeoSeries([p1, p2, p3, p4, p5, p6, p7, p8]))
+            data = {"element_id": list("abcd")}, crs = self.crs,
+            geometry = gpd.GeoSeries([p1, p2, p3, p4]))
         self.tile_shape = TileShape.RECTANGLE
         self.tile = self.get_base_tile()
         self.regularised_tile = copy.deepcopy(self.tile)
