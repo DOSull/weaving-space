@@ -206,7 +206,8 @@ class Tiling:
             # make column with unique ID for every element in the tiling
             tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
             # overlay with the zones from the region to be tiled
-            tiled_map = tiled_map.overlay(self.region, keep_geom_type = False)
+            tiled_map = tiled_map.overlay(self.region)  
+            #, keep_geom_type = False)
             # determine areas of overlaid tile elements and drop the data
             tiled_map["area"] = tiled_map.geometry.area
             tiled_map = tiled_map.drop(columns = region_vars)

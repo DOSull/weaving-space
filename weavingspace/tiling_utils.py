@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import copy
-
+import string
 import geopandas as gpd
 import pandas as pd
 import numpy as np
 import shapely.geometry as geom
+import shapely.affinity as affine
 import shapely.wkt as wkt
 
 
@@ -69,8 +69,8 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
     cycles = []
     for pt in interior_pts:
         cycles.append(
-            set([i for i, p in enumerate(local_patch.geometry) if
-                pt.buffer(1e-3).intersects(p)]))
+            set([i for i, p in enumerate(local_patch.geometry) 
+                 if pt.distance(p) < t.fudge_factor]))
     # These can be used to construct the dual polygons
     dual_faces = []
     ids = []
@@ -87,29 +87,34 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
             coords.append([centroid.x, centroid.y])
         # sort them into CCW order so they are well formed
         sorted_coords = sort_ccw([(p, i) for p, i in zip(coords, id)])
-        dual_faces.append(geom.Polygon([c[0] for c in sorted_coords]))
+        dual_faces.append(geom.Polygon([pt_id[0] for pt_id in sorted_coords]))
         # a reasonable stab at element IDs is the sequence of element_id
         # values from the original tiling in the order encountered
-        ids.append("".join([c[1] for c in sorted_coords]))
+        ids.append("".join([pt_id[1] for pt_id in sorted_coords]))
     # ensure the resulting faces actually contain the centroids of
     # the generating polygon...
-    dual_faces = [(f, id) for f, id in zip(dual_faces, ids) 
-                    if t.tile.geometry[0].contains(f.centroid)]
+    dual_faces = [(f, id) for f, id in zip(dual_faces, ids)
+                  if affine.translate(t.tile.geometry[0],
+                                      t.fudge_factor, 
+                                      t.fudge_factor).contains(f.centroid)]
 
-    return gpd.GeoDataFrame(
+    gdf = gpd.GeoDataFrame(
         data = {"element_id": [f[1] for f in dual_faces]}, crs = t.crs,
         geometry = gpd.GeoSeries([f[0] for f in dual_faces]))
+    n_ids = len(set(list(gdf.element_id)))
+    gdf.element_id = list(string.ascii_letters[:n_ids])
+    return gdf
 
     
 # sort supplied  points into CCW order - by measuring angles around
 # their centroid
-def sort_ccw(pts):
-    x = [p[0][0] for p in pts]
-    y = [p[0][1] for p in pts]
+def sort_ccw(pts_ids):
+    x = [p[0][0] for p in pts_ids]
+    y = [p[0][1] for p in pts_ids]
     cx, cy = np.mean(x), np.mean(y)
     dx = [_ - cx for _ in x]
     dy = [_ - cy for _ in y]
     angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
-    d = dict(zip(angles, pts))
-    return [v for k, v in sorted(d.items())]
+    d = dict(zip(angles, pts_ids))
+    return [pt_id for amgle, pt_id in sorted(d.items())]
 
