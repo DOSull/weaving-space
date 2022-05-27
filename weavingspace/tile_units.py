@@ -208,7 +208,29 @@ class Tileable:
         self.elements = self.elements[self.elements.geometry.area > 0]
         self.regularised_tile = copy.deepcopy(self.tile)
         return
-        
+    
+    
+    def plot(self, ax = None, show_tile:bool = True, 
+             show_reg_tile:bool = True, r = 0, tile_edgecolor = "k", reg_tile_edgcolor = "r", facecolor = "#00000000", cmap = "Paired",
+             figsize = (8, 8), **kwargs) -> None:
+        if ax is None:
+            ax = self.elements.plot(column = "element_id", cmap = cmap, 
+                                    figsize = figsize, **kwargs)
+        else:
+            self.elements.plot(ax = ax, column = "element_id", cmap = cmap, 
+                               figsize = figsize, **kwargs)
+        if r > 0:
+            self.get_local_patch(r = r).plot(ax = ax, column = "element_id",
+                                             alpha = 0.3, cmap = cmap, **kwargs)
+        if show_tile:
+            self.tile.plot(ax = ax, edgecolor = tile_edgecolor,
+                           facecolor = facecolor, **kwargs) 
+        if show_reg_tile:
+            self.regularised_tile.plot(ax = ax, edgecolor = reg_tile_edgcolor,
+                                       facecolor = facecolor, linewidth = 2, 
+                                       **kwargs)
+        return None
+    
 
 @dataclass
 class TileUnit(Tileable):
