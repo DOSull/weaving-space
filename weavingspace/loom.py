@@ -16,10 +16,10 @@ import numpy as np
 # depending on the input axis, where 0 is the biaxial case with layers 0 and 1
 # only, and 1 is layers 0 and 1, 2 is layers 1 and 2, and 3 is layers 2 and 0.
 decode_orders = (
-    {1: (0,), 2: (1,), 3: "NA", 4: (0, 1,), 5: (1, 0,)},
-    {1: (1,), 2: (0,), 3: "NA", 4: (1, 0,), 5: (0, 1,)},
-    {1: (2,), 2: (1,), 3: "NA", 4: (2, 1,), 5: (1, 2,)},
-    {1: (0,), 2: (2,), 3: "NA", 4: (0, 2,), 5: (2, 0,)}
+    {1: (0,  ), 2: (1,  ), 3: (   ), 4: (0, 1), 5: (1, 0)},
+    {1: (1,  ), 2: (0,  ), 3: (   ), 4: (1, 0), 5: (0, 1)},
+    {1: (2,  ), 2: (1,  ), 3: (   ), 4: (2, 1), 5: (1, 2)},
+    {1: (0,  ), 2: (2,  ), 3: (   ), 4: (0, 2), 5: (2, 0)}
 )
 
 
@@ -29,25 +29,25 @@ decode_orders = (
 # Various other if-elif-else types of approach were tried here, but
 # overall, I think this is the cleanest option. 
 combined_orderings = {
-  "NA":  { "NA": { "NA": None,         # All absent
-                  (2, ): (2, )},       # Only 2 present
-          (1, ): { "NA": (1, )},       # Only 1 present
-          (2, ): {(2, ): (2, )}},      # Only 2 present
-  (0, ): { "NA": {(0, ): (0, ),        # Only 0 present
-                   "NA": (0, )},       # Only 0 present
-          (2, ): {(2,0): (2, 0),       # 0 2 20 --> 2 > 0
-                  (0,2): (0, 2)}},     # 0 2 02 --> 0 > 2
-  (1, ): {(1, ): { "NA": (1, )},       # Only 1 present
-          (1,2): {(2, ): (1, 2)},      # 1 12 2 --> 1 > 2
-          (2,1): {(2, ): (2, 1)}},     # 1 21 2 --> 2 > 1
-  (0,1): {(1, ): {(0, ): (0, 1)},      # 01 1 0 --> 0 > 1
-          (1,2): {(0,2): (0, 1, 2)},   # 01 12 02 --> 0 > 1 > 2
-          (2,1): {(2,0): (2, 0, 1),    # 01 21 20 --> 2 > 0 > 1
-                  (0,2): (0, 2, 1)}},  # 01 21 02 --> 0 > 2 > 1
-  (1,0): {(1, ): {(0, ): (1, 0)},      # 10 1 0 --> 1 > 0
-          (1,2): {(2,0): (1, 2, 0),    # 10 12 20 --> 1 > 2 > 0
-                  (0,2): (1, 0, 2)},   # 10 12 02 --> 1 > 0 > 2
-          (2,1): {(2,0): (2, 1, 0)}}   # 10 21 20 --> 2 > 1 > 0
+  (    ): {(    ): {(    ): None,          # All absent
+                    (2,  ): (2,  )},       # Only 2 present
+           (1,  ): {(    ): (1,  )},       # Only 1 present
+           (2,  ): {(2,  ): (2,  )}},      # Only 2 present
+  (0,  ): {(    ): {(0,  ): (0,  ),        # Only 0 present
+                    (    ): (0,  )},       # Only 0 present
+           (2,  ): {(2, 0): (2, 0),        # 0 2 20 --> 2 > 0
+                    (0, 2): (0, 2)}},      # 0 2 02 --> 0 > 2
+  (1,  ): {(1,  ): {(    ): (1,  )},       # Only 1 present
+           (1, 2): {(2,  ): (1, 2)},       # 1 12 2 --> 1 > 2
+           (2, 1): {(2,  ): (2, 1)}},      # 1 21 2 --> 2 > 1
+  (0, 1): {(1,  ): {(0,  ): (0, 1)},       # 01 1 0 --> 0 > 1
+           (1, 2): {(0, 2): (0, 1, 2)},    # 01 12 02 --> 0 > 1 > 2
+           (2, 1): {(2, 0): (2, 0, 1),     # 01 21 20 --> 2 > 0 > 1
+                    (0, 2): (0, 2, 1)}},   # 01 21 02 --> 0 > 2 > 1
+  (1, 0): {(1,  ): {(0,  ): (1, 0)},       # 10 1 0 --> 1 > 0
+           (1, 2): {(2, 0): (1, 2, 0),     # 10 12 20 --> 1 > 2 > 0
+                    (0, 2): (1, 0, 2)},    # 10 12 02 --> 1 > 0 > 2
+           (2, 1): {(2, 0): (2, 1, 0)}}    # 10 21 20 --> 2 > 1 > 0
 }
 
 # convenience wrapper for the combined_orderings dictionary
@@ -61,6 +61,56 @@ def _combine_orders(orders):
         return "NA"
     else:
         return result 
+
+
+# NOT USED
+# checks for head to tail match of 2-tuples
+# and returns merged 3-tuple if found
+# else returns a 4-tuple
+def combine_pairs(p1, p2):
+    if p1[1] == p2[0]:
+        return p1 + p2[1:]
+    if p2[1] == p1[0]:
+        return p2 + p1[1:]
+    return p1 + p2
+
+
+# NOT USED: this 'works', but it is hard to get it to detech
+# inconsistent inputs, unlike the dictionary approach, which
+# only knows about legitimate combinations...
+#
+# combines 3 2-tuple partial orders on 0, 1, 2
+# into a tuple ordered consistent with the partial orders
+# partial orders may be empty, 1 or 2 long 
+def combine_partial_orders(orders):
+    lengths = [len(o) for o in orders]
+    n = sum(lengths)
+    # the total lengths should be even
+    if n % 2 == 0:
+        if n == 0:  # result is empty tuple
+            return ()
+        if n == 2:
+            # lengths should be 1 1 0
+            if max(lengths) == 1:
+                i = lengths.index(0)
+                if i == 0:
+                    return orders[2]
+                if i == 1:
+                    return orders[0]
+                return orders[1]
+        if n == 4:  # lengths should be 2 1 1
+            if min(lengths) == 1 and max(lengths) == 2:
+                return orders[lengths.index(2)]
+        if n == 6:
+            for o in [orders, orders[1:] + orders[:1], orders[2:] + orders[:2]]:
+                combo = combine_pairs(o[0], o[1])
+                if len(combo) == 3:
+                    if combo.index(o[2][0]) < combo.index(o[2][1]):
+                        return combo
+    print(f"{orders} not consistent")
+    return None
+
+
 
 
 @dataclass
@@ -132,7 +182,7 @@ class Loom:
                      for ij in [(x[2], x[1]) for x in self.indices]]
             ordCA = [decode_orders[3][mCA[ij]] 
                      for ij in [(x[0], x[2]) for x in self.indices]]
-            # combine orders from the three matrices stacked 
+            # # combine orders from the three matrices stacked 
             self.orderings = [_combine_orders(abc) 
                               for abc in zip(ordAB, ordBC, ordCA)]
 
