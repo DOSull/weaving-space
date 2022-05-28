@@ -52,10 +52,11 @@ class Tileable:
         """
         bb = self.tile.geometry[0].bounds
         w, h = bb[2] - bb[0], bb[3] - bb[1]
-        vec_dict = ({(0, 0): (0, 0)} 
-                    if self.tile_shape in (TileShape.RECTANGLE,
-                                           TileShape.TRIDIAMOND)
-                    else {(0, 0, 0): (0, 0)})
+        vec_dict = {}
+        # vec_dict = ({(0, 0): (0, 0)} 
+        #             if self.tile_shape in (TileShape.RECTANGLE,
+        #                                    TileShape.TRIDIAMOND)
+        #             else {(0, 0, 0): (0, 0)})
         if self.tile_shape in (TileShape.RECTANGLE, ):
             vec_dict[(1, 0)] = (w, 0)
             vec_dict[(0, 1)] = (0, h)
@@ -213,9 +214,10 @@ class Tileable:
         return
     
     
-    def plot(self, ax = None, show_tile:bool = True, 
-             show_reg_tile:bool = True, r = 0, tile_edgecolor = "k", reg_tile_edgcolor = "r", facecolor = "#00000000", cmap = "Paired",
+    def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
+             show_vectors:bool = False, r = 0, tile_edgecolor = "k", reg_tile_edgcolor = "r", facecolor = "#00000000", cmap = "Paired",
              figsize = (8, 8), **kwargs) -> None:
+        w = self.tile.geometry[0].bounds[2] - self.tile.geometry[0].bounds[0] 
         if ax is None:
             ax = self.elements.plot(column = "element_id", cmap = cmap, 
                                     figsize = figsize, **kwargs)
@@ -226,8 +228,12 @@ class Tileable:
             self.get_local_patch(r = r).plot(ax = ax, column = "element_id",
                                              alpha = 0.3, cmap = cmap, **kwargs)
         if show_tile:
-            self.tile.plot(ax = ax, edgecolor = tile_edgecolor,
+            self.tile.plot(ax = ax, edgecolor = tile_edgecolor, lw = 0.5,
                            facecolor = facecolor, **kwargs) 
+        if show_vectors:
+            for v in self.vectors[:len(self.vectors) // 2]:
+                ax.arrow(0, 0, v[0], v[1], color = "grey", width = w * 0.002,
+                         head_width = w * 0.05, length_includes_head = True)
         if show_reg_tile:
             self.regularised_tile.plot(ax = ax, edgecolor = reg_tile_edgcolor,
                                        facecolor = facecolor, linewidth = 2, 
@@ -246,11 +252,14 @@ class TileUnit(Tileable):
         for k, v in kwargs.items():
             self.__dict__[k] = v
         self.setup_tile_unit()
+        self.vectors = self.get_vectors()
         if self.tile_shape == TileShape.TRIANGLE:
             self._modify_elements()
         if self.regularised_tile is None: 
             self.regularised_tile = copy.deepcopy(self.tile)
             self.regularise_elements()
+
+
     def setup_tile_unit(self) -> None:
         if self.tiling_type == "cairo":
             self.setup_cairo()
