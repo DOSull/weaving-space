@@ -37,7 +37,7 @@ class Tileable:
     margin:float = 0.
             
     def setup_none_tile(self) -> None: 
-        self.tile = self.get_base_tile()
+        self.setup_base_tile(self.tile_shape)
         self.elements = gpd.GeoDataFrame(
             data = {"element_id": ["a"]}, crs = self.crs,
             geometry = copy.deepcopy(self.tile.geometry))
@@ -53,7 +53,8 @@ class Tileable:
         bb = self.tile.geometry[0].bounds
         w, h = bb[2] - bb[0], bb[3] - bb[1]
         vec_dict = ({(0, 0): (0, 0)} 
-                    if self.tile_shape == TileShape.RECTANGLE
+                    if self.tile_shape in (TileShape.RECTANGLE,
+                                           TileShape.TRIDIAMOND)
                     else {(0, 0, 0): (0, 0)})
         if self.tile_shape in (TileShape.RECTANGLE, ):
             vec_dict[(1, 0)] = (w, 0)
@@ -71,7 +72,7 @@ class Tileable:
         else: # TRIDIAMOND
             vec_dict[(1, 0)] = (w / 2, h / 2)
             vec_dict[(0, 1)] = (-w / 2, h / 2)
-            vec_dict[(-1, 0)] = (-w / 2. -h / 2)
+            vec_dict[(-1, 0)] = (-w / 2, -h / 2)
             vec_dict[(0, -1)] = (w / 2, -h / 2)
         return (list(vec_dict.values())
                 if return_values
@@ -168,7 +169,8 @@ class Tileable:
         ids = []
         tiles = []
         vecs = ({(0, 0): (0, 0)} 
-                if self.tile_shape == TileShape.RECTANGLE
+                if self.tile_shape in (TileShape.RECTANGLE, 
+                                       TileShape.TRIDIAMOND)
                 else {(0, 0, 0): (0, 0)})
         last_vecs = copy.deepcopy(vecs)
         vectors = self.get_vectors(return_values = False)
@@ -183,7 +185,8 @@ class Tileable:
             vecs = vecs | new_vecs
             last_vecs = new_vecs
         if not include_0:
-            vecs.pop((0, 0) if self.tile_shape == TileShape.RECTANGLE
+            vecs.pop((0, 0) if self.tile_shape in (TileShape.RECTANGLE,
+                                                   TileShape.TRIDIAMOND)
                      else (0, 0, 0))
         for v in vecs.values():
             ids.extend(self.elements.element_id)
@@ -245,80 +248,25 @@ class TileUnit(Tileable):
         self.setup_tile_unit()
         if self.tile_shape == TileShape.TRIANGLE:
             self._modify_elements()
-            self._modify_tile()
         if self.regularised_tile is None: 
             self.regularised_tile = copy.deepcopy(self.tile)
             self.regularise_elements()
-    
-    
-    def get_base_tile(self) -> gpd.GeoDataFrame: 
-        tile = tiling_utils.get_regular_polygon(
-            self.spacing, n = (4 
-                          if self.tile_shape in (TileShape.RECTANGLE, )
-                          else (6 
-                                if self.tile_shape in (TileShape.HEXAGON, 
-                                                       TileShape.TRIHEX)
-                                else 3)))
-        return gpd.GeoDataFrame(geometry = [tile], crs = self.crs) 
- 
-    
-    # change the element in a triangle tile to either a hex or
-    # a diamond. Assumes the triangle is point up with centroid
-    # at (0, 0) 
-    def _modify_elements(self) -> None:
-        elements = self.elements.geometry
-        ids = list(self.elements.element_id)
-        if self.to_hex:
-            # rotate to point down
-            elements = elements.rotate(180, origin = (0, 0))
-        elements = elements.translate(0, -elements.total_bounds[1])
-        twins = [elements.rotate(a, origin = (0, 0)) 
-                 for a in range(0, 360, (60 if self.to_hex else 180))]
-        twins = itertools.chain(*twins)
-        self.elements = gpd.GeoDataFrame(
-            data = {"element_id": ids * (6 if self.to_hex else 2)},
-            geometry = gpd.GeoSeries(twins), crs = self.elements.crs)
-        self.elements = self.elements.dissolve(by = "element_id", 
-                                               as_index = False)
-        self.tile.geometry = self._modify_tile()
-        self.tile_shape = (TileShape.TRIHEX 
-                           if self.to_hex 
-                           else TileShape.TRIDIAMOND)
-        return None
-
-
-    # make up a hexagon from the supplied tile because it is a triangle
-    # and also change the grid_type to a hexagon
-    # assume the triangle is point up with centroid at (0, 0)
-    def _modify_tile(self) -> None:
-        tile = self.tile.geometry[0]
-        if self.to_hex:  # hexagon
-            # rotate so point is down
-            tile = affine.rotate(tile, 180)
-        # translate to sit on x-axis
-        tile = affine.translate(tile, 0, -tile.bounds[1])
-        # make rotated copies
-        twins = [affine.rotate(tile, a, origin = (0, 0)).buffer(0.1)
-                 for a in range(0, 360, (60 if self.to_hex else 180))]
-        merged_tile = gpd.GeoSeries(twins).unary_union.buffer(-0.1)
-        return gpd.GeoSeries([merged_tile])
-    
-    
     def setup_tile_unit(self) -> None:
         if self.tiling_type == "cairo":
             self.setup_cairo()
         elif self.tiling_type == "hex-dissection":
             self.setup_hex_dissection()
         elif self.tiling_type == "laves":
-            self.setup_laves_tiles()
+            self.setup_laves()
         elif self.tiling_type == "archimedean":
-            self.setup_archimedean_tiles()
+            self.setup_archimedean()
         else:
             self.setup_none_tile()
         return
 
 
     def setup_cairo(self) -> None:
+        self.setup_base_tile(TileShape.RECTANGLE)
         d = self.spacing        
         x = d / 2 / (np.cos(np.radians(15)) + np.cos(np.radians(75)))
         p1 = geom.Polygon([(x, 0),
@@ -335,8 +283,6 @@ class TileUnit(Tileable):
         self.elements = gpd.GeoDataFrame(
             data = {"element_id": list("abcd")}, crs = self.crs,
             geometry = gpd.GeoSeries([p1, p2, p3, p4]))
-        self.tile_shape = TileShape.RECTANGLE
-        self.tile = self.get_base_tile()
         self.regularised_tile = copy.deepcopy(self.tile)
         self.regularised_tile.geometry = gpd.GeoSeries(
             [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
@@ -344,7 +290,7 @@ class TileUnit(Tileable):
             
         
     def setup_hex_dissection(self):
-        self.tile_shape = TileShape.HEXAGON
+        self.setup_base_tile(TileShape.HEXAGON)
         hex = tiling_utils.get_regular_polygon(self.spacing, 6)
         v = list(hex.exterior.coords)
         m = [((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
@@ -391,37 +337,35 @@ class TileUnit(Tileable):
             data = {"element_id": list(string.ascii_lowercase)[:self.n]}, 
             crs = self.crs,
             geometry = gpd.GeoSeries(slices))
-        self.tile_shape = TileShape.HEXAGON
-        self.tile = self.get_base_tile()
 
 
-    def setup_laves_tiles(self) -> None:
+    def setup_laves(self) -> None:
         if self.code == "3.3.3.3.3.3":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.setup_none_tile()
             return
         if self.code == "3.3.3.3.6":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.setup_laves_33336()
             return
         elif self.code == "3.3.3.4.4":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.n = 2
             self.dissection_offset = 1
             self.setup_hex_dissection()
             return
         elif self.code == "3.3.4.3.4":
-            self.tile_shape = TileShape.RECTANGLE
+            self.setup_base_tile(TileShape.RECTANGLE)
             self.setup_cairo()
             return
         elif self.code == "3.4.6.4":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.n = 6
             self.dissection_offset = 1
             self.setup_hex_dissection()
             return
         elif self.code == "3.6.3.6":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.n = 3
             self.dissection_offset = 0
             self.setup_hex_dissection()
@@ -429,20 +373,20 @@ class TileUnit(Tileable):
         elif self.code == "3.12.12":
             print(f"The code [{self.code}] is unsupported.")
         elif self.code == "4.4.4":
-            self.tile_shape = TileShape.RECTANGLE
+            self.setup_base_tile(TileShape.RECTANGLE)
             self.setup_none_tile()
             return
         elif self.code == "4.6.12":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.n = 12
             self.setup_hex_dissection()
             return
         elif self.code == "4.8.8":
-            self.tile_shape = TileShape.RECTANGLE
+            self.setup_base_tile(TileShape.RECTANGLE)
             self.setup_laves_488()
             return
         elif self.code == "6.6.6":
-            self.tile_shape = TileShape.TRIANGLE
+            self.setup_base_tile(TileShape.TRIANGLE)
             self.setup_none_tile()
         else:
             print(f"[{self.code}] is not a valid Laves code.")
@@ -455,28 +399,23 @@ class TileUnit(Tileable):
     def setup_laves_33336(self) -> None:
         offset_a = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
         sf = 1 / np.sqrt(7)
-
-        tile = tiling_utils.get_regular_polygon(self.spacing, 6)
-
+        tile = self.tile.geometry[0]
         hex = affine.scale(tile, sf, sf)
         hex = affine.translate(hex, 0, hex.bounds[3] - hex.bounds[1])
         hex_p = [p for p in hex.exterior.coords]
         petal = geom.Polygon([(0, 0)] + hex_p[1:5])
         petals = [affine.rotate(petal, a + offset_a, origin = (0, 0))
                      for a in range(30, 360, 60)]
-
         self.elements = gpd.GeoDataFrame(
             data = {"element_id": list("abcdef")}, 
             crs = self.crs,
             geometry = gpd.GeoSeries(petals))
-        self.tile_shape = TileShape.HEXAGON
-        self.tile = self.get_base_tile()
         self.regularised_tile = gpd.GeoSeries(
             [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
             
 
     def setup_laves_488(self) -> None:
-        tile = tiling_utils.get_regular_polygon(self.spacing, 4)
+        tile = self.tile.geometry[0]
         pts = [p for p in tile.exterior.coords]
         tri1 = geom.Polygon([pts[0], pts[1], geom.Point(0, 0)])
         tri2 = affine.rotate(tri1, 90, (0, 0))
@@ -486,34 +425,31 @@ class TileUnit(Tileable):
             data = {"element_id": list("abcd")}, 
             crs = self.crs,
             geometry = gpd.GeoSeries([tri1, tri2, tri3, tri4]))
-        self.tile_shape = TileShape.RECTANGLE
-        self.tile = self.get_base_tile()
         self.regularised_tile = gpd.GeoSeries(
             [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
             
 
-    def setup_archimedean_tiles(self) -> None:
+    def setup_archimedean(self) -> None:
         if self.code == "3.3.3.3.3.3":
-            self.tile_shape = TileShape.TRIANGLE
-            self.setup_none_tile()
+            self.setup_none_tile(TileShape.TRIANGLE)
             return
         if self.code == "3.3.3.3.6":
             print(f"The code [{self.code}] is unsupported.")
         elif self.code == "3.3.3.4.4":
             print(f"The code [{self.code}] is unsupported.")
         elif self.code == "3.3.4.3.4":
-            self.tile_shape = TileShape.RECTANGLE
+            self.setup_base_tile(TileShape.RECTANGLE)
             self.setup_cairo()
             self.elements = tiling_utils.get_dual_tile_unit(self)
             self.regularised_tile.geometry = gpd.GeoSeries(
                 [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
             return
         elif self.code == "3.4.6.4":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.setup_archimedean_3464()
             return
         elif self.code == "3.6.3.6":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.n = 3
             self.dissection_offset = 0
             self.setup_hex_dissection()
@@ -525,11 +461,11 @@ class TileUnit(Tileable):
         elif self.code == "3.12.12":
             print(f"The code [{self.code}] is unsupported.")
         elif self.code == "4.4.4":
-            self.tile_shape = TileShape.RECTANGLE
+            self.setup_base_tile(TileShape.RECTANGLE)
             self.setup_none_tile()
             return
         elif self.code == "4.6.12":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.n = 12
             self.setup_hex_dissection()
             self.elements = tiling_utils.get_dual_tile_unit(self)
@@ -538,7 +474,7 @@ class TileUnit(Tileable):
                 [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
             return
         elif self.code == "4.8.8":
-            self.tile_shape = TileShape.RECTANGLE
+            self.setup_base_tile(TileShape.RECTANGLE)
             self.setup_laves_488()
             self.elements = tiling_utils.get_dual_tile_unit(self)
             self.regularised_tile = copy.deepcopy(self.tile)
@@ -546,7 +482,7 @@ class TileUnit(Tileable):
                 [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
             return
         elif self.code == "6.6.6":
-            self.tile_shape = TileShape.HEXAGON
+            self.setup_base_tile(TileShape.HEXAGON)
             self.setup_none_tile()
         else:
             print(f"[{self.code}] is not a valid Laves code.")
@@ -578,10 +514,67 @@ class TileUnit(Tileable):
             data = {"element_id": list("abcdef")}, 
             crs = self.crs,
             geometry = gpd.GeoSeries([hex, sq1, sq2, sq3, tri1, tri2]))
-        self.tile_shape = TileShape.HEXAGON
-        self.tile = self.get_base_tile()
         self.regularised_tile = gpd.GeoSeries(
             [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
-            
+    
+    
+    def setup_base_tile(self, shape:TileShape) -> None: 
+        self.tile_shape = shape
+        tile = tiling_utils.get_regular_polygon(
+            self.spacing, n = (4 
+                          if self.tile_shape in (TileShape.RECTANGLE, )
+                          else (6 
+                                if self.tile_shape in (TileShape.HEXAGON, )
+                                else 3)))
+        self.tile = gpd.GeoDataFrame(
+            geometry = gpd.GeoSeries([tile]), crs = self.crs)
+        if self.tile_shape == TileShape.TRIANGLE:
+            self._modify_tile()
+        return
+ 
+    
+    # change the element in a triangle tile to either a hex or
+    # a diamond. Assumes the triangle is point up with centroid
+    # at (0, 0) 
+    def _modify_elements(self) -> None:
+        elements = self.elements.geometry
+        ids = list(self.elements.element_id)
+        if self.to_hex:
+            # rotate to point down
+            elements = elements.rotate(180, origin = (0, 0))
+        elements = elements.translate(0, -elements.total_bounds[1])
+        twins = [elements.rotate(a, origin = (0, 0)) 
+                 for a in range(0, 360, (60 if self.to_hex else 180))]
+        twins = itertools.chain(*twins)
+        self.elements = gpd.GeoDataFrame(
+            data = {"element_id": ids * (6 if self.to_hex else 2)},
+            geometry = gpd.GeoSeries(twins), crs = self.elements.crs)
+        self.elements = self.elements.dissolve(by = "element_id", 
+                                               as_index = False)
+        self.tile.geometry = self._modify_tile()
+        self.tile_shape = (TileShape.TRIHEX 
+                           if self.to_hex 
+                           else TileShape.TRIDIAMOND)
+        return None
+
+
+    # make up a hexagon from the supplied tile because it is a triangle
+    # and also change the grid_type to a hexagon
+    # assume the triangle is point up with centroid at (0, 0)
+    def _modify_tile(self) -> None:
+        tile = self.tile.geometry[0]
+        if self.to_hex:  # hexagon
+            # rotate so point is down
+            tile = affine.rotate(tile, 180, origin = (0, 0))
+        # translate to sit on x-axis
+        tile = affine.translate(tile, 0, -tile.bounds[1])
+        # make rotated copies
+        twins = [
+            affine.rotate(tile, a, origin = (0, 0)).buffer(self.fudge_factor)
+                 for a in range(0, 360, (60 if self.to_hex else 180))]
+        merged_tile = \
+            gpd.GeoSeries(twins).unary_union.buffer(-self.fudge_factor)
+        return gpd.GeoSeries([merged_tile])
+                
 
     
