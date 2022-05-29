@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import string
+import copy
 import geopandas as gpd
 import pandas as pd
 import numpy as np
@@ -97,12 +98,19 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
                   if affine.translate(t.tile.geometry[0],
                                       t.fudge_factor, 
                                       t.fudge_factor).contains(f.centroid)]
-
     gdf = gpd.GeoDataFrame(
         data = {"element_id": [f[1] for f in dual_faces]}, crs = t.crs,
         geometry = gpd.GeoSeries([f[0] for f in dual_faces]))
-    n_ids = len(set(list(gdf.element_id)))
-    gdf.element_id = list(string.ascii_letters[:n_ids])
+    # ensure no duplicates
+    gdf = gdf.dissolve(by = "element_id", as_index = False).explode(
+        index_parts = False, ignore_index = True)
+    new_ids = {}
+    id_count = 0
+    for id in gdf.element_id:
+        if not id in new_ids:
+            new_ids[id] = string.ascii_letters[id_count]
+            id_count = id_count + 1
+    gdf.element_id = [new_ids[id] for id in gdf.element_id]
     return gdf
 
     
