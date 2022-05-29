@@ -217,24 +217,29 @@ class Tileable:
     
     
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
-             show_vectors:bool = False, r = 0, tile_edgecolor = "k", reg_tile_edgcolor = "r", facecolor = "#00000000", cmap = "Paired",
+             show_vectors:bool = False, r = 0, tile_edgecolor = "k", reg_tile_edgcolor = "r", facecolor = "#00000000", cmap = None,
              figsize = (8, 8), **kwargs) -> None:
         w = self.tile.geometry[0].bounds[2] - self.tile.geometry[0].bounds[0] 
+        n_cols = len(set(self.elements.element_id))
+        if cmap is None:
+            cm = "Dark2" if n_cols <= 8 else "Paired"
+        else:
+            cm = cmap
         if ax is None:
-            ax = self.elements.plot(column = "element_id", cmap = cmap, 
+            ax = self.elements.plot(column = "element_id", cmap = cm, 
                                     figsize = figsize, **kwargs)
         else:
-            self.elements.plot(ax = ax, column = "element_id", cmap = cmap, 
+            self.elements.plot(ax = ax, column = "element_id", cmap = cm, 
                                figsize = figsize, **kwargs)
         if r > 0:
             self.get_local_patch(r = r).plot(ax = ax, column = "element_id",
-                                             alpha = 0.3, cmap = cmap, **kwargs)
+                                             alpha = 0.25, cmap = cm, **kwargs)
         if show_tile:
             self.tile.plot(ax = ax, edgecolor = tile_edgecolor, lw = 0.5,
                            facecolor = facecolor, **kwargs) 
         if show_vectors:
             for v in self.vectors[:len(self.vectors) // 2]:
-                ax.arrow(0, 0, v[0], v[1], color = "grey", width = w * 0.002,
+                ax.arrow(0, 0, v[0], v[1], color = "k", width = w * 0.002,
                          head_width = w * 0.05, length_includes_head = True)
         if show_reg_tile:
             self.regularised_tile.plot(ax = ax, edgecolor = reg_tile_edgcolor,
