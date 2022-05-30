@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
+import shapely.wkt as wkt
 
 import tiling_utils
 
@@ -215,7 +216,7 @@ class Tileable:
         self.regularised_tile = copy.deepcopy(self.tile)
         return
     
-    
+        
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
              show_vectors:bool = False, r = 0, tile_edgecolor = "k", reg_tile_edgcolor = "r", facecolor = "#00000000", cmap = None,
              figsize = (8, 8), **kwargs) -> None:
@@ -246,6 +247,46 @@ class Tileable:
                                        facecolor = facecolor, linewidth = 2, 
                                        **kwargs)
         return ax
+
+
+    def plot_legend(self, ax, vars, pals, map_rotation = 0, 
+                    rotate_text = False, **kwargs):
+        n = 9
+        tiles = []
+        ids = []
+        vals = []
+        for i, t in zip(self.elements.element_id, self.elements.geometry):
+            tiles.extend(tiling_utils.get_insets(t, n))
+            ids.extend([i] * n)
+            vals.extend(range(n))
+        gdf = gpd.GeoDataFrame(
+            data = {"id": ids, "val": vals}, crs = self.crs, 
+            geometry = gpd.GeoSeries(tiles))
+        gdf.geometry = gdf.geometry.rotate(map_rotation, origin = (0, 0)) 
+
+        ax_legend = ax.inset_axes([1, .7, .3, .3])
+        ax_legend.set_axis_off()
+        groups = gdf.groupby("id")
+        for i, id in enumerate(sorted(set(gdf.id))):
+            item = groups.get_group(id)
+            item.plot(ax = ax_legend, column = "val", cmap = pals[i], lw = 0)
+        
+        rotated_elements = self.elements.rotate(map_rotation, origin = (0, 0))
+        rotated_elements.plot(ax = ax_legend, edgecolor = "lightgrey", 
+                              lw = 0.5, facecolor = "#00000000")
+        for var, ele in zip(vars, rotated_elements):
+            c = wkt.loads(wkt.dumps(ele.centroid, rounding_precision = 6))
+            rot = (0 if not rotate_text or c.x == 0
+                else (np.degrees(np.arctan2(c.y, c.x)) + 90) % 180 - 90)
+            ax_legend.annotate(var, xy = (1.2 * c.x, 1.2 * c.y), 
+                            ha = ("left" if c.x >= 0 else "right"), 
+                            va = "center", rotation = rot,
+                            rotation_mode = "anchor",
+                            bbox = {"lw": 0, "fc": "#ffffff40"})
+        return None
+
+
+    
     
 
 @dataclass
@@ -266,6 +307,12 @@ class TileUnit(Tileable):
         if self.regularised_tile is None: 
             self.regularised_tile = copy.deepcopy(self.tile)
             self.regularise_elements()
+        if self.margin > 0:
+            self.regularised_tile = self.regularised_tile.scale(
+                xfact = 1 - self.margin, yfact = 1 - self.margin)
+            self.elements.geometry = self.elements.geometry.scale(
+                xfact = 1 - self.margin, yfact = 1 - self.margin,
+                origin = self.regularised_tile.geometry[0].centroid)
 
 
     def setup_tile_unit(self) -> None:

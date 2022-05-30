@@ -180,6 +180,7 @@ class Tiling:
     region_id_var:str = None
     grid:TileGrid = None
     tiles:gpd.GeoDataFrame = None
+    rotation:float = 0.
 
     def __init__(self, unit:Union[WeaveUnit, Tileable], 
                  region:gpd.GeoDataFrame, id_var:str) -> None:
@@ -286,7 +287,8 @@ class Tiling:
     def rotated(self, rotation:float = None):
         if self.tiles is None:
             self.tiles = self.make_tiling()
-        if rotation is None or rotation == 0:
+        self.rotation = rotation
+        if self.rotation == 0:
             return self.tiles
         return gpd.GeoDataFrame(
             data = {"element_id": self.tiles.element_id}, crs = self.tiles.crs,
@@ -311,3 +313,20 @@ class Tiling:
             geometry = gpd.GeoSeries(tiles_to_keep))
     
     
+    def plot_map(self, fig, gdf, vars = [], pals = [], figsize = (15, 10),
+                 legend = False, rotate_text = False, **kwargs):
+            
+        ax = fig.add_subplot(111)
+        ids = sorted(set(gdf.element_id))
+        groups = gdf.groupby("element_id")
+        for id, var, pal in zip(ids, vars, pals):
+            groups.get_group(id).plot(ax = ax, column = var, cmap = pal,
+                                      figsize = figsize, **kwargs)
+        ax.set_axis_off()
+        if legend:
+            self.tile_unit.plot_legend(ax = ax, vars = vars, pals = pals,
+                                       map_rotation = self.rotation,
+                                       rotate_text = rotate_text, **kwargs)
+        return None
+
+

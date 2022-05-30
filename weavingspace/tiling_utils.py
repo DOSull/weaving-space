@@ -126,3 +126,21 @@ def sort_ccw(pts_ids):
     d = dict(zip(angles, pts_ids))
     return [pt_id for amgle, pt_id in sorted(d.items())]
 
+
+def write_map_to_layers(gdf, fname = "output.gpkg", element_var = "element_id"):
+    grouped = gdf.groupby(element_var, as_index = False)
+    for e in gdf[element_var].drop_duplicates():
+        grouped.get_group(e).to_fule(fname, layer = e, driver = "GPKG")
+        
+
+def get_insets(geometry, n = 10):
+    edges = [geom.LineString([p1, p2])
+             for p1, p2 in zip(geometry.exterior.coords[:-1],
+                               geometry.exterior.coords[1:])]
+    radius = max([geometry.centroid.distance(e) for e in edges])
+    nested_geoms = [geometry.buffer(-d) 
+                    for d in np.linspace(0, radius, n + 1)]
+    return [g1.difference(g2) 
+            for g1, g2 in zip(nested_geoms[:-1], nested_geoms[1:])]
+
+
