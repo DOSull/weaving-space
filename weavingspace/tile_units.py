@@ -251,6 +251,7 @@ class Tileable:
 
     def plot_legend(self, ax, vars, pals, map_rotation = 0, 
                     rotate_text = False, **kwargs):
+        ax.set_axis_off()
         n = 9
         tiles = []
         ids = []
@@ -264,25 +265,22 @@ class Tileable:
             geometry = gpd.GeoSeries(tiles))
         gdf.geometry = gdf.geometry.rotate(map_rotation, origin = (0, 0)) 
 
-        ax_legend = ax.inset_axes([1, .7, .3, .3])
-        ax_legend.set_axis_off()
         groups = gdf.groupby("id")
         for i, id in enumerate(sorted(set(gdf.id))):
             item = groups.get_group(id)
-            item.plot(ax = ax_legend, column = "val", cmap = pals[i], lw = 0)
+            item.plot(ax = ax, column = "val", cmap = pals[i], lw = 0)
         
         rotated_elements = self.elements.rotate(map_rotation, origin = (0, 0))
-        rotated_elements.plot(ax = ax_legend, edgecolor = "lightgrey", 
+        rotated_elements.plot(ax = ax, edgecolor = "lightgrey", 
                               lw = 0.5, facecolor = "#00000000")
         for var, ele in zip(vars, rotated_elements):
             c = wkt.loads(wkt.dumps(ele.centroid, rounding_precision = 6))
             rot = (0 if not rotate_text or c.x == 0
                 else (np.degrees(np.arctan2(c.y, c.x)) + 90) % 180 - 90)
-            ax_legend.annotate(var, xy = (1.2 * c.x, 1.2 * c.y), 
-                            ha = ("left" if c.x >= 0 else "right"), 
-                            va = "center", rotation = rot,
-                            rotation_mode = "anchor",
-                            bbox = {"lw": 0, "fc": "#ffffff40"})
+            ax.annotate(var, xy = (1.2 * c.x, 1.2 * c.y), 
+                        ha = ("left" if c.x >= 0 else "right"), va = "center",
+                        rotation = rot, rotation_mode = "anchor",
+                        bbox = {"lw": 0, "fc": "#ffffff40"})
         return None
 
 

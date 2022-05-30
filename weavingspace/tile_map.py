@@ -324,7 +324,8 @@ class Tiling:
                                       figsize = figsize, **kwargs)
         ax.set_axis_off()
         if legend:
-            self.tile_unit.plot_legend(ax = ax, vars = vars, pals = pals,
+            self.tile_unit.plot_legend(ax = ax.inset_axes([1, .7, .3, .3]),
+                                       vars = vars, pals = pals,
                                        map_rotation = self.rotation,
                                        rotate_text = rotate_text, **kwargs)
         return None
