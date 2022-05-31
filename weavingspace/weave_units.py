@@ -324,7 +324,6 @@ class WeaveUnit(Tileable):
                     data:dict[str:list], map_rotation:float, 
                     rotate_text:bool = False, **kwargs):
         ax.set_axis_off()
-        n = 25
         tiles, ids, vals, rots = [], [], [], []
         legend_elements = self._get_legend_elements()
         for i, t, r in zip(legend_elements.element_id, 
@@ -344,22 +343,23 @@ class WeaveUnit(Tileable):
             data = {"val": vals, "id": ids, "rotation": rots}, crs = self.crs,
             geometry = gpd.GeoSeries(tiles))
         gdf.geometry = gdf.rotate(map_rotation, origin = (0, 0))
-        bb = gdf.geometry.total_bounds
-        ax.set_xlim(1.1 * bb[0], 1.1 * bb[2])
-        ax.set_ylim(1.1 * bb[1], 1.1 * bb[3])
+
+        bb = [1.1 * x for x in gdf.geometry.total_bounds]
+        ax.set_xlim(bb[0], bb[2])
+        ax.set_ylim(bb[1], bb[3])
+        ax.axhspan(bb[1], bb[3], fc = "lightgrey", lw = 0)
         
-        self.get_local_patch(r = 1, include_0 = True) \
+        ax = self.get_local_patch(r = 2, include_0 = True) \
             .geometry.rotate(map_rotation, origin = (0, 0)).plot(
-                ax = ax, fc = "lightgrey", ec = "w", lw = 0.5)
-        
+                ax = ax, fc = "w", ec = "grey", lw = 0.5)
+
         groups = gdf.groupby("id")
         for i, id in enumerate(sorted(set(gdf.id))):
             item = groups.get_group(id)
-            item.plot(ax = ax, column = "val", cmap = pals[i], lw = 0)
+            ax = item.plot(ax = ax, column = "val", cmap = pals[i], lw = 0.5)
             
         legend_elements.geometry = legend_elements.geometry.rotate(
             map_rotation, origin = (0, 0))
-        legend_elements.plot(ax = ax, ec = "k", lw = 0.5, fc = "#00000000")
         
         for var, tile, rotn in zip(vars, legend_elements.geometry, 
                                   legend_elements.rotation):

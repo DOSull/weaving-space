@@ -636,7 +636,6 @@ class TileUnit(Tileable):
     def plot_legend(self, ax, vars:list[str], pals:list[str], 
                     data:dict[str:list], map_rotation:float = 0, rotate_text:bool = False, **kwargs):
         ax.set_axis_off()
-        n = 9
         tiles, ids, vals = [], [], []
         for i, t in zip(self.elements.element_id, self.elements.geometry):
             data_vals = data[i]
@@ -648,18 +647,21 @@ class TileUnit(Tileable):
             data = {"id": ids, "val": vals}, crs = self.crs, 
             geometry = gpd.GeoSeries(tiles))
         gdf.geometry = gdf.geometry.rotate(map_rotation, origin = (0, 0)) 
-        bb = gdf.geometry.total_bounds
+        bb = [1.1 * x for x in gdf.geometry.total_bounds]
         ax.set_xlim(bb[0], bb[2])
         ax.set_ylim(bb[1], bb[3])
+        ax.axhspan(bb[1], bb[3], fc = "lightgrey", lw = 0)
 
         groups = gdf.groupby("id")
         for i, id in enumerate(sorted(set(gdf.id))):
             item = groups.get_group(id)
             item.plot(ax = ax, column = "val", cmap = pals[i], lw = 0)
         
+        self.get_local_patch(r = 2) \
+            .geometry.rotate(map_rotation, origin = (0, 0)).plot(
+                ax = ax, fc = "w", ec = "grey", lw = 0.5)
+
         rotated_elements = self.elements.rotate(map_rotation, origin = (0, 0))
-        rotated_elements.plot(ax = ax, edgecolor = "lightgrey", 
-                              lw = 0.5, facecolor = "#00000000")
         for var, ele in zip(vars, rotated_elements):
             c = wkt.loads(wkt.dumps(ele.centroid, rounding_precision = 6))
             rot = (0 if not rotate_text or c.x == 0
