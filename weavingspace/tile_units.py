@@ -633,17 +633,17 @@ class TileUnit(Tileable):
         return gpd.GeoSeries([merged_tile])
                 
 
-    def plot_legend(self, ax, vars:list[str], pals:list[str],
-                    map_rotation:float = 0, rotate_text:bool = False, **kwargs):
+    def plot_legend(self, ax, vars:list[str], pals:list[str], 
+                    data:dict[str:list], map_rotation:float = 0, rotate_text:bool = False, **kwargs):
         ax.set_axis_off()
         n = 9
-        tiles = []
-        ids = []
-        vals = []
+        tiles, ids, vals = [], [], []
         for i, t in zip(self.elements.element_id, self.elements.geometry):
-            tiles.extend(tiling_utils.get_insets(t, n))
-            ids.extend([i] * n)
-            vals.extend(range(n))
+            data_vals = data[i]
+            tiles.extend(tiling_utils.get_insets(t, len(data_vals)))  #n))
+            ids.extend([i] * len(data_vals))  #n))
+            vals.extend(data_vals)  #range(n))
+        vals.sort()
         gdf = gpd.GeoDataFrame(
             data = {"id": ids, "val": vals}, crs = self.crs, 
             geometry = gpd.GeoSeries(tiles))

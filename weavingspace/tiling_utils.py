@@ -133,13 +133,16 @@ def write_map_to_layers(gdf, fname = "output.gpkg", element_var = "element_id"):
         grouped.get_group(e).to_fule(fname, layer = e, driver = "GPKG")
         
 
-def get_insets(geometry, n = 10):
+def get_insets(geometry, n = 25, equal_areas = True):
     edges = [geom.LineString([p1, p2])
              for p1, p2 in zip(geometry.exterior.coords[:-1],
                                geometry.exterior.coords[1:])]
     radius = max([geometry.centroid.distance(e) for e in edges])
+    bandwidths = range(1, n + 2) if equal_areas else [1] * (n + 1)
+    distances = np.cumsum(bandwidths)
+    distances = distances * radius / distances[-1]
     nested_geoms = [geometry.buffer(-d, join_style = 2) 
-                    for d in np.linspace(0, radius, n + 1)]
+                    for d in distances]
     return [g1.difference(g2) 
             for g1, g2 in zip(nested_geoms[:-1], nested_geoms[1:])]
 

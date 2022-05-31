@@ -321,7 +321,8 @@ class WeaveUnit(Tileable):
 
 
     def plot_legend(self, ax, vars:list[str], pals:list[str], 
-                    map_rotation:float, rotate_text:bool = False, **kwargs):
+                    data:dict[str:list], map_rotation:float, 
+                    rotate_text:bool = False, **kwargs):
         ax.set_axis_off()
         n = 25
         tiles, ids, vals, rots = [], [], [], []
@@ -329,11 +330,15 @@ class WeaveUnit(Tileable):
         for i, t, r in zip(legend_elements.element_id, 
                            legend_elements.geometry,
                            legend_elements.rotation):
+            data_vals = data[i]
+            n = len(data_vals)
             ramp = weaving_utils.get_colour_ramp(t, n, r)
             tiles.extend(ramp)
             ids.extend([i] * n)
             rots.extend([r] * n)
-            vals.extend(range(n))
+            vals.extend(data_vals)
+            # vals.extend(range(n))
+        vals.sort()
         
         gdf = gpd.GeoDataFrame(
             data = {"val": vals, "id": ids, "rotation": rots}, crs = self.crs,

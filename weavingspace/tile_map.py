@@ -325,13 +325,17 @@ class Tiling:
         ax = fig.add_subplot(111)
         ids = sorted(set(gdf.element_id))
         groups = gdf.groupby("element_id")
+        val_lookup = {}
         for id, var, pal in zip(ids, vars, pals):
-            groups.get_group(id).plot(ax = ax, column = var, cmap = pal,
-                                      figsize = figsize, **kwargs)
+            subset = groups.get_group(id)
+            val_lookup[id] = list(subset[var])
+            subset.plot(ax = ax, column = var, cmap = pal,
+                        figsize = figsize, **kwargs)
         ax.set_axis_off()
         if legend:
             self.tile_unit.plot_legend(ax = ax.inset_axes([1, .5, .3, .5]),
-                                       vars = vars, pals = pals,
+                                       vars = vars, pals = pals, 
+                                       data = val_lookup, 
                                        map_rotation = self.rotation,
                                        rotate_text = rotate_text, **kwargs)
         return None
