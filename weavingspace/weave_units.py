@@ -385,9 +385,15 @@ class WeaveUnit(Tileable):
         
 
     def _get_most_central(self, elements):
-        centroids = [g.centroid for g in elements.geometry]
+        areas = [g.area for g in elements.geometry]
+        min_area, max_area = min(areas), max(areas)
+        if min_area / max_area > 0.5:
+            geoms = list(elements.geometry)
+        else:
+            geoms = [g for g, a in zip(elements.geometry, areas)
+                     if a > 2 * min_area]
+        centroids = [g.centroid for g in geoms]
         d = [c.distance(geom.Point(0, 0)) for c in centroids]
         idx = d.index(min(d))
-        return (list(elements.geometry)[idx], 
-                (centroids[idx].x, centroids[idx].y))
+        return (geoms[idx], (centroids[idx].x, centroids[idx].y))
         
