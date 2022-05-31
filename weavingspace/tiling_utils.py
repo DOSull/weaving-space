@@ -138,7 +138,7 @@ def get_insets(geometry, n = 10):
              for p1, p2 in zip(geometry.exterior.coords[:-1],
                                geometry.exterior.coords[1:])]
     radius = max([geometry.centroid.distance(e) for e in edges])
-    nested_geoms = [geometry.buffer(-d) 
+    nested_geoms = [geometry.buffer(-d, join_style = 2) 
                     for d in np.linspace(0, radius, n + 1)]
     return [g1.difference(g2) 
             for g1, g2 in zip(nested_geoms[:-1], nested_geoms[1:])]

@@ -239,13 +239,11 @@ class WeaveGrid:
         # when aspect is <1 strands extend outside cell by some scale factor
         sf = 2 - width if self.n_axes == 2 else (5 - 3 * width) / 2
         expanded_cell = scale(cell, sf, sf, origin = cell.centroid)
-        big_l = (
-            sf * self.spacing      ## recatngular case is simple
-            if self.n_axes == 2    ## triangular less so!
-            else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2)
-        strands = MultiPolygon(self._get_grid_cell_slices(
-                                                    L = big_l, W = width, 
-                                                    n_slices = n_slices))
+        big_l = (sf * self.spacing      ## rectangular case is simple
+                 if self.n_axes == 2    ## triangular less so!
+                 else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2)
+        strands = MultiPolygon(self._get_grid_cell_slices(L = big_l, W = width,
+                                                          n_slices = n_slices))
         # we need centre of cell bounding box to shift strands to 
         # vertical center of triangular cells. In rectangular case
         # this will be (0, 0).
@@ -254,6 +252,7 @@ class WeaveGrid:
         strands = MultiPolygon([expanded_cell.intersection(s)
                                 for s in strands.geoms])
         strands = rotate(strands, orientation, origin = cell.centroid)
+        # return [s for s in strands.geoms]
         return [self._gridify(s) for s in strands.geoms]
 
 

@@ -4,6 +4,7 @@
 import logging
 import itertools
 from dataclasses import dataclass
+from operator import le
 from typing import Union
 import copy
 
@@ -11,6 +12,7 @@ import geopandas as gpd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
+import shapely.wkt as wkt
 import shapely.ops
 
 import weave_matrices
@@ -21,6 +23,8 @@ from weave_grids import WeaveGrid
 
 from tile_units import TileShape
 from tile_units import Tileable
+
+import tiling_utils
 
 
 @dataclass
@@ -261,6 +265,8 @@ class WeaveUnit(Tileable):
         for coords, strand_order in zip(loom.indices, loom.orderings):
             ids = [thread[coord] for coord, thread in zip(coords, labels)]
             cell = grid.get_grid_cell_at(coords)
+            # bb_polys.append(cell)
+            # bb_polys.append(cell.buffer(self.fudge_factor, join_style = 2))
             bb_polys.append(grid._gridify(cell))
             if strand_order is None: continue  # No strands present
             if strand_order == "NA": continue  # Inconsistency in layer order
@@ -271,7 +277,7 @@ class WeaveUnit(Tileable):
             next_labels = [list(ids[i]) for i in strand_order]  # list of lists
             next_labels = list(itertools.chain(*next_labels))  # flatten 
             strand_ids.extend(next_labels)
-        tile = shapely.ops.unary_union(bb_polys)
+        tile = shapely.ops.unary_union(bb_polys)  #.buffer(-self.fudge_factor)
         shift = weaving_utils.centre_offset(tile)
         tile = affine.translate(tile, shift[0], shift[1])
         self.elements = self.make_weave_elements_gdf(
@@ -307,7 +313,81 @@ class WeaveUnit(Tileable):
         weave = weave.dissolve(by = "element_id", as_index = False)
         weave = weave.explode(index_parts = False, ignore_index = True)
         # this buffer operation cleans up some geometry issues
-        weave.geometry = weave.buffer(-self.fudge_factor * self.spacing)
         weave.geometry = weave.buffer(
-            (self.fudge_factor - self.margin) * self.spacing)
+            -self.fudge_factor * self.spacing, join_style = 2)
+        weave.geometry = weave.buffer(
+            (self.fudge_factor - self.margin) * self.spacing, join_style = 2)
         return weave.clip(bb).set_crs(self.crs)
+
+
+    def plot_legend(self, ax, vars:list[str], pals:list[str], 
+                    map_rotation:float, rotate_text:bool = False, **kwargs):
+        ax.set_axis_off()
+        n = 25
+        tiles, ids, vals, rots = [], [], [], []
+        legend_elements = self._get_legend_elements()
+        for i, t, r in zip(legend_elements.element_id, 
+                           legend_elements.geometry,
+                           legend_elements.rotation):
+            ramp = weaving_utils.get_colour_ramp(t, n, r)
+            tiles.extend(ramp)
+            ids.extend([i] * n)
+            rots.extend([r] * n)
+            vals.extend(range(n))
+        
+        gdf = gpd.GeoDataFrame(
+            data = {"val": vals, "id": ids, "rotation": rots}, crs = self.crs,
+            geometry = gpd.GeoSeries(tiles))
+        gdf.geometry = gdf.rotate(map_rotation, origin = (0, 0))
+        bb = gdf.geometry.total_bounds
+        ax.set_xlim(bb[0], bb[2])
+        ax.set_ylim(bb[1], bb[3])
+        
+        groups = gdf.groupby("id")
+        for i, id in enumerate(sorted(set(gdf.id))):
+            item = groups.get_group(id)
+            item.plot(ax = ax, column = "val", cmap = pals[i], lw = 0)
+            
+        legend_elements.geometry = legend_elements.geometry.rotate(
+            map_rotation, origin = (0, 0))
+        legend_elements.plot(ax = ax, ec = "k", lw = 0.5, fc = "#00000000")
+        
+        for var, tile, rotn in zip(vars, legend_elements.geometry, 
+                                  legend_elements.rotation):
+            c = tile.centroid
+            ax.annotate(var, xy = (c.x, c.y), ha = "center", va = "center",
+                        rotation = (rotn + map_rotation + 90) % 180 - 90, 
+                        rotation_mode = "anchor", 
+                        bbox = {"lw": 0, "fc": "#ffffff40"})
+        return None
+
+
+    def _get_legend_elements(self):
+        angles = ((0, 240, 120) 
+                  if self.weave_type in ("hex", "cube") 
+                  else (90, 0))
+        element_ids = list(self.elements.element_id.drop_duplicates())
+        groups = self.elements.groupby("element_id")
+        elements, x, y, rotations = [], [], [], []
+        for ele in element_ids:
+            candidates = groups.get_group(ele)
+            axis = weaving_utils.get_axis_from_label(ele, self.strands)
+            the_one = self._get_most_central(candidates)  #, angles[axis])
+            elements.append(the_one[0])
+            x.append(the_one[1][0])
+            y.append(the_one[1][1]) 
+            rotations.append(-angles[axis])
+        return gpd.GeoDataFrame(
+            data = {"element_id": element_ids, 
+                    "x": x, "y": y, "rotation": rotations}, crs = self.crs,
+            geometry = gpd.GeoSeries(elements)
+        )
+        
+
+    def _get_most_central(self, elements):
+        centroids = [g.centroid for g in elements.geometry]
+        d = [c.distance(geom.Point(0, 0)) for c in centroids]
+        idx = d.index(min(d))
+        return (list(elements.geometry)[idx], 
+                (centroids[idx].x, centroids[idx].y))
+        

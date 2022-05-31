@@ -77,7 +77,8 @@ class TileGrid:
             tuple: four float values of width, height, left and bottom of gs.
         """    
         extent = gs.total_bounds
-        return extent[2] - extent[0], extent[3] - extent[1], extent[0], extent[1]
+        return (extent[2] - extent[0], extent[3] - extent[1], 
+                extent[0], extent[1])
 
 
     def _get_grid(self, ll: tuple[float], nums: tuple[int], 
@@ -103,10 +104,13 @@ class TileGrid:
         
 
     def _get_rect_centres(self) -> np.ndarray:
-        """Returns a rectangular grid of translation vectors that will 'fill' to_tile_gs polygon with the tile_gs polygon (which should be rectangular).
+        """Returns a rectangular grid of translation vectors that will 'fill'
+        to_tile_gs polygon with the tile_gs polygon (which should be
+        rectangular).
 
         Returns:
-            np.ndarray: A 2 column array each row being an x, y translation vector.
+            np.ndarray: A 2 column array each row being an x, y translation
+            vector.
         """    
         tt_w, tt_h, tt_x0, tt_y0 = \
             self._get_width_height_left_bottom(self.extent)
@@ -126,7 +130,8 @@ class TileGrid:
         to_tile_gs with the tile_gs polygon (which should be hexagonal).
         
         Returns:
-            np.ndarray: A 2 column array each row being an x, y translation vector.
+            np.ndarray: A 2 column array each row being an x, y translation
+            vector.
         """    
         tt_w, tt_h, tt_x0, tt_y0  = \
             self._get_width_height_left_bottom(self.extent)
@@ -237,7 +242,8 @@ class Tiling:
         ) -> tuple[gpd.GeoSeries, tuple[float]]:
         """Rotates the geometries in a GeoDataFrame as a single collection.
         
-        Rotation is about the supplied centre (if supplied) or about the centroid of the GeoDataFrame (if not). This allows for reversal of 
+        Rotation is about the supplied centre (if supplied) or about the
+        centroid of the GeoDataFrame (if not). This allows for reversal of 
         a rotation. [Note that this might not be a required precaution!]
 
         Args:
@@ -324,7 +330,7 @@ class Tiling:
                                       figsize = figsize, **kwargs)
         ax.set_axis_off()
         if legend:
-            self.tile_unit.plot_legend(ax = ax.inset_axes([1, .7, .3, .3]),
+            self.tile_unit.plot_legend(ax = ax.inset_axes([1, .5, .25, .5]),
                                        vars = vars, pals = pals,
                                        map_rotation = self.rotation,
                                        rotate_text = rotate_text, **kwargs)

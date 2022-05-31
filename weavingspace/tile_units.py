@@ -112,8 +112,8 @@ class Tileable:
                 for i, j in matches:
                     f1 = fragments[i]
                     f2 = t_fragments[j]
-                    u1 = (f1.buffer(self.fudge_factor) | 
-                          f2.buffer(self.fudge_factor))
+                    u1 = (f1.buffer(self.fudge_factor, join_style = 2) | 
+                          f2.buffer(self.fudge_factor, join_style = 2))
                     u2 = affine.translate(u1, -v[0], -v[1])
                     if tile.intersection(u1).area > tile.intersection(u2).area:
                         next_frags.append(u1)
@@ -144,7 +144,8 @@ class Tileable:
         elements = []
         element_ids = []
         self.regularised_tile.geometry = \
-            self.regularised_tile.geometry.buffer(self.fudge_factor)
+            self.regularised_tile.geometry.buffer(
+                self.fudge_factor, join_style = 2)
         # This preserves order while finding uniques, unlike list(set()).
         # Reordering ids might cause confusion when colour palettes
         # are not assigned explicitly to each id, but in the order
@@ -162,7 +163,11 @@ class Tileable:
         )
         self.elements = new_elements
         self.regularised_tile.geometry = \
-            self.regularised_tile.geometry.buffer(-self.fudge_factor)
+            self.regularised_tile.geometry.buffer(
+                -self.fudge_factor, join_style = 2)
+        self.regularised_tile.geometry = \
+            self.regularised_tile.geometry.explode(index_parts = False,
+                                                   ignore_index = True)[:1]
         return None
     
     
@@ -211,15 +216,16 @@ class Tileable:
         self.elements = patch.clip(self.tile)
         self.elements.geometry = self.elements.geometry \
             .buffer(-self.fudge_factor) \
-            .buffer(self.fudge_factor)
+            .buffer(self.fudge_factor, join_style = 2)
         self.elements = self.elements[self.elements.geometry.area > 0]
         self.regularised_tile = copy.deepcopy(self.tile)
         return
     
         
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
-             show_vectors:bool = False, r = 0, tile_edgecolor = "k", reg_tile_edgcolor = "r", facecolor = "#00000000", cmap = None,
-             figsize = (8, 8), **kwargs) -> None:
+             show_vectors:bool = False, r:int = 0, tile_edgecolor:str = "k", reg_tile_edgcolor:str = "r", facecolor:str = "#00000000", 
+             cmap:list[str] = None, figsize:tuple[float] = (8, 8), 
+             **kwargs) -> None:
         w = self.tile.geometry[0].bounds[2] - self.tile.geometry[0].bounds[0] 
         n_cols = len(set(self.elements.element_id))
         if cmap is None:
@@ -247,43 +253,6 @@ class Tileable:
                                        facecolor = facecolor, linewidth = 2, 
                                        **kwargs)
         return ax
-
-
-    def plot_legend(self, ax, vars, pals, map_rotation = 0, 
-                    rotate_text = False, **kwargs):
-        ax.set_axis_off()
-        n = 9
-        tiles = []
-        ids = []
-        vals = []
-        for i, t in zip(self.elements.element_id, self.elements.geometry):
-            tiles.extend(tiling_utils.get_insets(t, n))
-            ids.extend([i] * n)
-            vals.extend(range(n))
-        gdf = gpd.GeoDataFrame(
-            data = {"id": ids, "val": vals}, crs = self.crs, 
-            geometry = gpd.GeoSeries(tiles))
-        gdf.geometry = gdf.geometry.rotate(map_rotation, origin = (0, 0)) 
-
-        groups = gdf.groupby("id")
-        for i, id in enumerate(sorted(set(gdf.id))):
-            item = groups.get_group(id)
-            item.plot(ax = ax, column = "val", cmap = pals[i], lw = 0)
-        
-        rotated_elements = self.elements.rotate(map_rotation, origin = (0, 0))
-        rotated_elements.plot(ax = ax, edgecolor = "lightgrey", 
-                              lw = 0.5, facecolor = "#00000000")
-        for var, ele in zip(vars, rotated_elements):
-            c = wkt.loads(wkt.dumps(ele.centroid, rounding_precision = 6))
-            rot = (0 if not rotate_text or c.x == 0
-                else (np.degrees(np.arctan2(c.y, c.x)) + 90) % 180 - 90)
-            ax.annotate(var, xy = (1.2 * c.x, 1.2 * c.y), 
-                        ha = ("left" if c.x >= 0 else "right"), va = "center",
-                        rotation = rot, rotation_mode = "anchor",
-                        bbox = {"lw": 0, "fc": "#ffffff40"})
-        return None
-
-
     
     
 
@@ -346,8 +315,9 @@ class TileUnit(Tileable):
             data = {"element_id": list("abcd")}, crs = self.crs,
             geometry = gpd.GeoSeries([p1, p2, p3, p4]))
         self.regularised_tile = copy.deepcopy(self.tile)
-        self.regularised_tile.geometry = gpd.GeoSeries(
-            [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+        self.regularised_tile.geometry = gpd.GeoSeries([
+            self.elements.geometry.buffer(1e-3, join_style = 2) \
+                .unary_union.buffer(-1e-3)])
         
             
         
@@ -467,8 +437,10 @@ class TileUnit(Tileable):
             data = {"element_id": list("abcdef")}, 
             crs = self.crs,
             geometry = gpd.GeoSeries(petals))
-        self.regularised_tile = gpd.GeoSeries(
-            [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+        self.regularised_tile = copy.deepcopy(self.tile)
+        self.regularised_tile.geometry = gpd.GeoSeries([
+            self.elements.geometry.buffer(1e-3, join_style = 2) \
+                .unary_union.buffer(-1e-3)])
             
 
     def setup_laves_488(self) -> None:
@@ -483,8 +455,10 @@ class TileUnit(Tileable):
             data = {"element_id": list("abcd")}, 
             crs = self.crs,
             geometry = gpd.GeoSeries([tri1, tri2, tri3, tri4]))
-        self.regularised_tile = gpd.GeoSeries(
-            [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+        self.regularised_tile = copy.deepcopy(self.tile)
+        self.regularised_tile.geometry = gpd.GeoSeries([
+            self.elements.geometry.buffer(1e-3, join_style = 2) \
+                .unary_union.buffer(-1e-3)])
             
     
     def setup_laves_31212(self):
@@ -512,8 +486,9 @@ class TileUnit(Tileable):
         elif self.code == "3.3.4.3.4":
             self.setup_laves()
             self.elements = tiling_utils.get_dual_tile_unit(self)
-            self.regularised_tile.geometry = gpd.GeoSeries(
-                [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+            self.regularised_tile = \
+                gpd.GeoSeries([self.elements.geometry.buffer(
+                    1e-3, 1).unary_union.buffer(-1e-3, 1)])
             return
         elif self.code == "3.4.6.4":
             # our dual tiling code isn't correct for this one
@@ -523,8 +498,9 @@ class TileUnit(Tileable):
             self.setup_laves()
             self.elements = tiling_utils.get_dual_tile_unit(self)
             self.regularised_tile = copy.deepcopy(self.tile)
-            self.regularised_tile.geometry = gpd.GeoSeries(
-                [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+            self.regularised_tile.geometry = gpd.GeoSeries([
+                self.elements.geometry.buffer(1e-3, join_style = 2) \
+                    .unary_union.buffer(-1e-3)])
             return
         elif self.code == "3.12.12":
             self.setup_laves()
@@ -532,8 +508,9 @@ class TileUnit(Tileable):
             self._modify_elements()
             self.elements = tiling_utils.get_dual_tile_unit(self)
             self.regularised_tile = copy.deepcopy(self.tile)
-            self.regularised_tile.geometry = gpd.GeoSeries(
-                [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+            self.regularised_tile.geometry = gpd.GeoSeries([
+                self.elements.geometry.buffer(1e-3, join_style = 2) \
+                    .unary_union.buffer(-1e-3)])
             return
         elif self.code == "4.4.4":
             self.setup_base_tile(TileShape.RECTANGLE)
@@ -543,15 +520,17 @@ class TileUnit(Tileable):
             self.setup_laves()
             self.elements = tiling_utils.get_dual_tile_unit(self)
             self.regularised_tile = copy.deepcopy(self.tile)
-            self.regularised_tile.geometry = gpd.GeoSeries(
-                [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+            self.regularised_tile.geometry = gpd.GeoSeries([
+                self.elements.geometry.buffer(1e-3, join_style = 2) \
+                    .unary_union.buffer(-1e-3)])
             return
         elif self.code == "4.8.8":
             self.setup_laves()
             self.elements = tiling_utils.get_dual_tile_unit(self)
             self.regularised_tile = copy.deepcopy(self.tile)
-            self.regularised_tile.geometry = gpd.GeoSeries(
-                [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+            self.regularised_tile.geometry = gpd.GeoSeries([
+                self.elements.geometry.buffer(1e-3, join_style = 2) \
+                    .unary_union.buffer(-1e-3)])
             return
         elif self.code == "6.6.6":
             self.setup_base_tile(TileShape.HEXAGON)
@@ -587,8 +566,10 @@ class TileUnit(Tileable):
             data = {"element_id": list("abcdef")}, 
             crs = self.crs,
             geometry = gpd.GeoSeries([hex, sq1, sq2, sq3, tri1, tri2]))
-        self.regularised_tile = gpd.GeoSeries(
-            [self.elements.geometry.buffer(1e-3).unary_union.buffer(-1e-3)])
+        self.regularised_tile = copy.deepcopy(self.tile)
+        self.regularised_tile.geometry = gpd.GeoSeries([
+            self.elements.geometry.buffer(1e-3, join_style = 2) \
+                .unary_union.buffer(-1e-3)])
     
     
     def setup_base_tile(self, shape:TileShape) -> None: 
@@ -642,12 +623,50 @@ class TileUnit(Tileable):
         # translate to sit on x-axis
         tile = affine.translate(tile, 0, -tile.bounds[1])
         # make rotated copies
-        twins = [
-            affine.rotate(tile, a, origin = (0, 0)).buffer(self.fudge_factor)
+        twins = [affine.rotate(tile, 
+                               a, origin = (0, 0)).buffer(
+                                   self.fudge_factor, join_style = 2)
                  for a in range(0, 360, (60 if self.to_hex else 180))]
         merged_tile = \
-            gpd.GeoSeries(twins).unary_union.buffer(-self.fudge_factor)
+            gpd.GeoSeries(twins).unary_union.buffer(
+                -self.fudge_factor, join_style = 2)
         return gpd.GeoSeries([merged_tile])
                 
 
+    def plot_legend(self, ax, vars:list[str], pals:list[str],
+                    map_rotation:float = 0, rotate_text:bool = False, **kwargs):
+        ax.set_axis_off()
+        n = 9
+        tiles = []
+        ids = []
+        vals = []
+        for i, t in zip(self.elements.element_id, self.elements.geometry):
+            tiles.extend(tiling_utils.get_insets(t, n))
+            ids.extend([i] * n)
+            vals.extend(range(n))
+        gdf = gpd.GeoDataFrame(
+            data = {"id": ids, "val": vals}, crs = self.crs, 
+            geometry = gpd.GeoSeries(tiles))
+        gdf.geometry = gdf.geometry.rotate(map_rotation, origin = (0, 0)) 
+        bb = gdf.geometry.total_bounds
+        ax.set_xlim(bb[0], bb[2])
+        ax.set_ylim(bb[1], bb[3])
+
+        groups = gdf.groupby("id")
+        for i, id in enumerate(sorted(set(gdf.id))):
+            item = groups.get_group(id)
+            item.plot(ax = ax, column = "val", cmap = pals[i], lw = 0)
+        
+        rotated_elements = self.elements.rotate(map_rotation, origin = (0, 0))
+        rotated_elements.plot(ax = ax, edgecolor = "lightgrey", 
+                              lw = 0.5, facecolor = "#00000000")
+        for var, ele in zip(vars, rotated_elements):
+            c = wkt.loads(wkt.dumps(ele.centroid, rounding_precision = 6))
+            rot = (0 if not rotate_text or c.x == 0
+                else (np.degrees(np.arctan2(c.y, c.x)) + 90) % 180 - 90)
+            ax.annotate(var, xy = (1.2 * c.x, 1.2 * c.y), 
+                        ha = ("left" if c.x >= 0 else "right"), va = "center",
+                        rotation = rot, rotation_mode = "anchor",
+                        bbox = {"lw": 0, "fc": "#ffffff40"})
+        return None
     
