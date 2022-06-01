@@ -20,6 +20,9 @@ from tile_units import TileShape
 
 import tiling_utils
 
+import matplotlib
+import matplotlib.colors
+
 
 @dataclass
 class TileGrid:
@@ -330,7 +333,26 @@ class Tiling:
             # subset = gdf[gdf.element_id == id]
             subset = groups.get_group(id)
             val_lookup[id] = list(subset[vars[id]])
-            subset.plot(ax = ax, column = vars[id], cmap = pals[id],
+            
+
+            # Handle custom color assignments via 'pals' parameter.
+            # Result is setting 'cmap' variable used in plot command afterwards.
+            if (isinstance(pals,(matplotlib.colors.Colormap,matplotlib.colors.LinearSegmentedColormap,matplotlib.colors.ListedColormap))):
+                cmap=pals         # This allows the user to specify one palette for all ids
+            elif (len(pals)==0):
+                cmap='Reds'   # When no color palettes offered, set the default... here, to Brewer's 'Reds'
+            elif (id not in pals):
+                cmap='Reds'   # If current id does not have a color specified in a pals dictionary, use a default
+            elif (isinstance(pals[id],(matplotlib.colors.Colormap,matplotlib.colors.LinearSegmentedColormap,matplotlib.colors.ListedColormap))):
+                cmap=pals[id]     # If user specified a color object for this id in the pals dictionary, use it...
+            elif (type(pals[id]) is dict):
+                colormap_dict = pals[id]
+                data_unique_sorted = subset[vars[id]].unique()
+                data_unique_sorted.sort()
+                cmap = matplotlib.colors.ListedColormap([colormap_dict[x] for x in data_unique_sorted])
+            else:
+                raise Exception("Color map for "+id+" is not a known type, but is "+str(type(pals[id])))
+            subset.plot(ax = ax, column = vars[id], cmap=cmap,
                         figsize = figsize, **kwargs)
         ax.set_axis_off()
         if legend:
