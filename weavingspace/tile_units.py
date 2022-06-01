@@ -649,7 +649,8 @@ class TileUnit(Tileable):
         groups = gdf.groupby("id")
         for id in pd.Series.unique(gdf.id):
             item = groups.get_group(id)
-            item.plot(ax = ax, column = "val", cmap = pals[id], lw = 0)
+            item.plot(ax = ax, column = "val", 
+                      cmap = pals[id], lw = 0, **kwargs)
         
         rotated_unit = copy.deepcopy(self)
         rotated_unit.elements.geometry = \

@@ -356,7 +356,8 @@ class WeaveUnit(Tileable):
         groups = gdf.groupby("id")
         for id in pd.Series.unique(gdf.id):
             item = groups.get_group(id)
-            ax = item.plot(ax = ax, column = "val", cmap = pals[id], lw = 0.5)
+            ax = item.plot(ax = ax, column = "val", 
+                           cmap = pals[id], lw = 0.5, **kwargs)
             
         legend_elements.geometry = legend_elements.geometry.rotate(
             map_rotation, origin = (0, 0))
