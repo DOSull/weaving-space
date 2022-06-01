@@ -8,6 +8,7 @@ from operator import le
 from typing import Union
 import copy
 
+import pandas as pd
 import geopandas as gpd
 import numpy as np
 import shapely.geometry as geom
@@ -320,24 +321,23 @@ class WeaveUnit(Tileable):
         return weave.clip(bb).set_crs(self.crs)
 
 
-    def plot_legend(self, ax, vars:list[str], pals:list[str], 
+    def plot_legend(self, ax, vars:dict, pals:dict, 
                     data:dict[str:list], map_rotation:float, 
                     rotate_text:bool = False, **kwargs):
         ax.set_axis_off()
         tiles, ids, vals, rots = [], [], [], []
         legend_elements = self._get_legend_elements()
-        for i, t, r in zip(legend_elements.element_id, 
-                           legend_elements.geometry,
-                           legend_elements.rotation):
-            data_vals = data[i]
+        for id, t, r in zip(legend_elements.element_id,
+                            legend_elements.geometry,
+                            legend_elements.rotation):
+            data_vals = data[id]
+            data_vals.sort()
             n = len(data_vals)
             ramp = weaving_utils.get_colour_ramp(t, n, r)
             tiles.extend(ramp)
-            ids.extend([i] * n)
+            ids.extend([id] * n)
             rots.extend([r] * n)
             vals.extend(data_vals)
-            # vals.extend(range(n))
-        vals.sort()
         
         gdf = gpd.GeoDataFrame(
             data = {"val": vals, "id": ids, "rotation": rots}, crs = self.crs,
@@ -349,22 +349,23 @@ class WeaveUnit(Tileable):
         ax.set_ylim(bb[1], bb[3])
         ax.axhspan(bb[1], bb[3], fc = "lightgrey", lw = 0)
         
-        ax = self.get_local_patch(r = 2, include_0 = True) \
+        self.get_local_patch(r = 2, include_0 = True) \
             .geometry.rotate(map_rotation, origin = (0, 0)).plot(
                 ax = ax, fc = "w", ec = "grey", lw = 0.5)
 
         groups = gdf.groupby("id")
-        for i, id in enumerate(sorted(set(gdf.id))):
+        for id in pd.Series.unique(gdf.id):
             item = groups.get_group(id)
-            ax = item.plot(ax = ax, column = "val", cmap = pals[i], lw = 0.5)
+            ax = item.plot(ax = ax, column = "val", cmap = pals[id], lw = 0.5)
             
         legend_elements.geometry = legend_elements.geometry.rotate(
             map_rotation, origin = (0, 0))
         
-        for var, tile, rotn in zip(vars, legend_elements.geometry, 
-                                  legend_elements.rotation):
+        for id, tile, rotn in zip(legend_elements.element_id, 
+                              legend_elements.geometry,
+                              legend_elements.rotation):
             c = tile.centroid
-            ax.annotate(var, xy = (c.x, c.y), ha = "center", va = "center",
+            ax.annotate(vars[id], xy = (c.x, c.y), ha = "center", va = "center",
                         rotation = (rotn + map_rotation + 90) % 180 - 90, 
                         rotation_mode = "anchor", 
                         bbox = {"lw": 0, "fc": "#ffffff40"})
@@ -375,7 +376,8 @@ class WeaveUnit(Tileable):
         angles = ((0, 240, 120) 
                   if self.weave_type in ("hex", "cube") 
                   else (90, 0))
-        element_ids = list(self.elements.element_id.drop_duplicates())
+        # element_ids = list(self.elements.element_id.drop_duplicates())
+        element_ids = pd.Series.unique(self.elements.element_id)
         groups = self.elements.groupby("element_id")
         elements, x, y, rotations = [], [], [], []
         for ele in element_ids:

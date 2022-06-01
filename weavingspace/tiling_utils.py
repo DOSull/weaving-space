@@ -129,15 +129,13 @@ def sort_ccw(pts_ids):
 
 def write_map_to_layers(gdf, fname = "output.gpkg", element_var = "element_id"):
     grouped = gdf.groupby(element_var, as_index = False)
-    for e in gdf[element_var].drop_duplicates():
+    # for e in gdf[element_var].drop_duplicates():
+    for e in pd.Series.unique(gdf[element_var]):
         grouped.get_group(e).to_fule(fname, layer = e, driver = "GPKG")
         
 
-def get_insets(geometry, n = 25, equal_areas = True):
-    edges = [geom.LineString([p1, p2])
-             for p1, p2 in zip(geometry.exterior.coords[:-1],
-                               geometry.exterior.coords[1:])]
-    radius = max([geometry.centroid.distance(e) for e in edges])
+def get_insets(geometry:geom.Polygon, n = 25, equal_areas = True):
+    radius = get_collapse_distance(geometry)
     bandwidths = range(1, n + 2) if equal_areas else [1] * (n + 1)
     distances = np.cumsum(bandwidths)
     distances = distances * radius / distances[-1]
@@ -147,3 +145,18 @@ def get_insets(geometry, n = 25, equal_areas = True):
             for g1, g2 in zip(nested_geoms[:-1], nested_geoms[1:])]
 
 
+def get_collapse_distance(geometry):
+    radius = np.sqrt(geometry.area / np.pi)
+    lower = 0
+    upper = radius
+    delta = 1e12
+    stop_delta = radius / 1000
+    while delta > stop_delta:
+        new_r = (lower + upper) / 2
+        if geometry.buffer(-new_r).area > 0:
+            lower = new_r
+            delta = upper - new_r
+        else:
+            upper = new_r 
+            delta = new_r - lower
+    return new_r

@@ -53,9 +53,9 @@ class TileGrid:
     def _get_points(self) -> gpd.GeoSeries:
         if self.grid_type in (TileShape.RECTANGLE, ):
             pts = self._get_rect_centres()
-        elif self.grid_type in (TileShape.HEXAGON, TileShape.TRIHEX):
+        elif self.grid_type in (TileShape.HEXAGON, ):
             pts = self._get_hex_centres()
-        elif self.grid_type in (TileShape.TRIDIAMOND, ):
+        elif self.grid_type in (TileShape.DIAMOND, ):
             pts = self._get_diamond_centres()
         tr = affine.translate  # for efficiency here
         tiles = [tr(self.tile.geometry[0], p[0], p[1]) 
@@ -319,23 +319,24 @@ class Tiling:
             geometry = gpd.GeoSeries(tiles_to_keep))
     
     
-    def plot_map(self, fig, gdf, vars = [], pals = [], figsize = (15, 10),
-                 legend = False, rotate_text = False, **kwargs):
+    def plot_map(self, fig, gdf, vars = {}, pals = {}, figsize = (15, 10),
+                 legend = True, zoom = 0.8, rotate_text = False, **kwargs):
             
         ax = fig.add_subplot(111)
-        ids = sorted(set(gdf.element_id))
+        ids = pd.Series.unique(gdf.element_id)
         groups = gdf.groupby("element_id")
         val_lookup = {}
-        for id, var, pal in zip(ids, vars, pals):
+        for id in ids:
+            # subset = gdf[gdf.element_id == id]
             subset = groups.get_group(id)
-            val_lookup[id] = list(subset[var])
-            subset.plot(ax = ax, column = var, cmap = pal,
+            val_lookup[id] = list(subset[vars[id]])
+            subset.plot(ax = ax, column = vars[id], cmap = pals[id],
                         figsize = figsize, **kwargs)
         ax.set_axis_off()
         if legend:
             self.tile_unit.plot_legend(ax = ax.inset_axes([1, .5, .3, .5]),
                                        vars = vars, pals = pals, 
-                                       data = val_lookup, 
+                                       data = val_lookup, zoom = zoom,
                                        map_rotation = self.rotation,
                                        rotate_text = rotate_text, **kwargs)
         return None

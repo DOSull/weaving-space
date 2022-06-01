@@ -21,8 +21,7 @@ class TileShape(Enum):
     RECTANGLE = "rectangle"
     HEXAGON = "hexagon"
     TRIANGLE = "triangle"
-    TRIHEX = "tri-hex"
-    TRIDIAMOND = "tri-diamond"
+    DIAMOND = "diamond"
 
 
 @dataclass
@@ -54,16 +53,12 @@ class Tileable:
         bb = self.tile.geometry[0].bounds
         w, h = bb[2] - bb[0], bb[3] - bb[1]
         vec_dict = {}
-        # vec_dict = ({(0, 0): (0, 0)} 
-        #             if self.tile_shape in (TileShape.RECTANGLE,
-        #                                    TileShape.TRIDIAMOND)
-        #             else {(0, 0, 0): (0, 0)})
         if self.tile_shape in (TileShape.RECTANGLE, ):
             vec_dict[(1, 0)] = (w, 0)
             vec_dict[(0, 1)] = (0, h)
             vec_dict[(-1, 0)] = (-w, 0)
             vec_dict[(0, -1)] = (0, -h)
-        elif self.tile_shape in (TileShape.HEXAGON, TileShape.TRIHEX):
+        elif self.tile_shape in (TileShape.HEXAGON, ):
             # hex grid coordinates associated with each of the vectors
             i = [0, 1, 1, 0, -1, -1]
             j = [1, 0, -1, -1, 0, 1]
@@ -71,7 +66,7 @@ class Tileable:
             angles = [np.pi * 2 * i / 12 for i in range(1, 12, 2)]
             vecs = [(h * np.cos(a), h * np.sin(a)) for a in angles]
             vec_dict = {(i, j, k): v for i, j, k, v in zip(i, j, k, vecs)}
-        else: # TRIDIAMOND
+        else: # DIAMOND
             vec_dict[(1, 0)] = (w / 2, h / 2)
             vec_dict[(0, 1)] = (-w / 2, h / 2)
             vec_dict[(-1, 0)] = (-w / 2, -h / 2)
@@ -175,11 +170,9 @@ class Tileable:
                         include_0:bool = False) -> gpd.GeoDataFrame:
         ids = []
         tiles = []
-        vecs = ({(0, 0): (0, 0)} 
-                if self.tile_shape in (TileShape.RECTANGLE, 
-                                       TileShape.TRIANGLE,
-                                       TileShape.TRIDIAMOND)
-                else {(0, 0, 0): (0, 0)})
+        vecs = ({(0, 0, 0): (0, 0)} 
+                if self.tile_shape in (TileShape.HEXAGON, )
+                else {(0, 0): (0, 0)})
         last_vecs = copy.deepcopy(vecs)
         vectors = self.get_vectors(return_values = False)
         for i in range(r):
@@ -193,10 +186,8 @@ class Tileable:
             vecs = vecs | new_vecs
             last_vecs = new_vecs
         if not include_0:
-            vecs.pop((0, 0) if self.tile_shape in (TileShape.RECTANGLE,
-                                                   TileShape.TRIANGLE,
-                                                   TileShape.TRIDIAMOND)
-                     else (0, 0, 0))
+            vecs.pop((0, 0, 0) if self.tile_shape in (TileShape.HEXAGON, )
+                     else (0, 0))
         for v in vecs.values():
             ids.extend(self.elements.element_id)
             tiles.extend(self.elements.geometry.apply(
@@ -223,9 +214,10 @@ class Tileable:
     
         
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
-             show_vectors:bool = False, r:int = 0, tile_edgecolor:str = "k", reg_tile_edgcolor:str = "r", facecolor:str = "#00000000", 
-             cmap:list[str] = None, figsize:tuple[float] = (8, 8), 
-             **kwargs) -> None:
+             show_ids = True, show_vectors:bool = False, r:int = 0,
+             tile_edgecolor:str = "k", reg_tile_edgcolor:str = "r", 
+             facecolor:str = "#00000000", cmap:list[str] = None, 
+             figsize:tuple[float] = (8, 8), **kwargs) -> None:
         w = self.tile.geometry[0].bounds[2] - self.tile.geometry[0].bounds[0] 
         n_cols = len(set(self.elements.element_id))
         if cmap is None:
@@ -238,6 +230,12 @@ class Tileable:
         else:
             self.elements.plot(ax = ax, column = "element_id", cmap = cm, 
                                figsize = figsize, **kwargs)
+        if show_ids:
+            for id, tile in zip(self.elements.element_id, 
+                                self.elements.geometry):
+                ax.annotate(id, (tile.centroid.x, tile.centroid.y),
+                            ha = "center", va = "center",
+                            bbox = {"lw": 0, "fc": "#ffffff40"})
         if r > 0:
             self.get_local_patch(r = r).plot(ax = ax, column = "element_id",
                                              alpha = 0.25, cmap = cm, **kwargs)
@@ -261,7 +259,6 @@ class TileUnit(Tileable):
     tiling_type:str = None
     dissection_offset:int = 1
     code:str = "3.3.4.3.4"
-    to_hex:bool = False
         
     def __init__(self, **kwargs) -> None:
         for k, v in kwargs.items():
@@ -592,81 +589,77 @@ class TileUnit(Tileable):
         elements = self.elements.geometry
         ids = list(self.elements.element_id)
         new_ids = list(string.ascii_letters[:(len(ids) * 2)])
-        if self.to_hex:
-            new_ids = new_ids * 3
-            # rotate to point down
-            elements = elements.rotate(180, origin = (0, 0))
         elements = elements.translate(0, -elements.total_bounds[1])
-        twins = [elements.rotate(a, origin = (0, 0)) 
-                 for a in range(0, 360, (60 if self.to_hex else 180))]
-        twins = itertools.chain(*twins)
+        twins = [affine.rotate(element, a, origin = (0, 0)) 
+                 for element in elements
+                 for a in range(0, 360, 180)]
         self.elements = gpd.GeoDataFrame(
             data = {"element_id": new_ids},
             geometry = gpd.GeoSeries(twins), crs = self.elements.crs)
-        self.elements = self.elements.dissolve(by = "element_id", 
-                                               as_index = False)
         self.tile.geometry = self._modify_tile()
-        self.tile_shape = (TileShape.TRIHEX 
-                           if self.to_hex 
-                           else TileShape.TRIDIAMOND)
         return None
 
 
-    # make up a hexagon from the supplied tile because it is a triangle
-    # and also change the grid_type to a hexagon
+    # make up a diamond from the supplied tile because it is a triangle
+    # and also change the grid_type to a diamond
     # assume the triangle is point up with centroid at (0, 0)
     def _modify_tile(self) -> None:
         tile = self.tile.geometry[0]
-        if self.to_hex:  # hexagon
-            # rotate so point is down
-            tile = affine.rotate(tile, 180)
         # translate to sit on x-axis
         tile = affine.translate(tile, 0, -tile.bounds[1])
         # make rotated copies
-        twins = [affine.rotate(tile, 
-                               a, origin = (0, 0)).buffer(
-                                   self.fudge_factor, join_style = 2)
-                 for a in range(0, 360, (60 if self.to_hex else 180))]
+        twins = [affine.rotate(tile, a, origin = (0, 0)).buffer(
+                                self.fudge_factor, join_style = 2)
+                 for a in range(0, 360, 180)]
         merged_tile = \
             gpd.GeoSeries(twins).unary_union.buffer(
                 -self.fudge_factor, join_style = 2)
+        self.tile_shape = TileShape.DIAMOND
         return gpd.GeoSeries([merged_tile])
                 
 
-    def plot_legend(self, ax, vars:list[str], pals:list[str], 
-                    data:dict[str:list], map_rotation:float = 0, rotate_text:bool = False, **kwargs):
+    def plot_legend(self, ax, vars:dict[str:str], pals:dict[str:str], 
+                    data:dict[str:list], zoom:float = 1., 
+                    map_rotation:float = 0, rotate_text:bool = False, **kwargs):
         ax.set_axis_off()
         tiles, ids, vals = [], [], []
-        for i, t in zip(self.elements.element_id, self.elements.geometry):
-            data_vals = data[i]
-            tiles.extend(tiling_utils.get_insets(t, len(data_vals)))  #n))
-            ids.extend([i] * len(data_vals))  #n))
-            vals.extend(data_vals)  #range(n))
-        vals.sort()
+        for id, t in zip(self.elements.element_id, 
+                         self.elements.geometry):
+            data_vals = data[id]
+            data_vals.sort()
+            n = len(data_vals)
+            tiles.extend(tiling_utils.get_insets(t, n))
+            ids.extend([id] * n)
+            vals.extend(data_vals)
+
         gdf = gpd.GeoDataFrame(
-            data = {"id": ids, "val": vals}, crs = self.crs, 
+            data = {"val": vals, "id": ids}, crs = self.crs, 
             geometry = gpd.GeoSeries(tiles))
         gdf.geometry = gdf.geometry.rotate(map_rotation, origin = (0, 0)) 
-        bb = [1.1 * x for x in gdf.geometry.total_bounds]
+        
+        bb = [x / zoom for x in gdf.geometry.total_bounds]
         ax.set_xlim(bb[0], bb[2])
         ax.set_ylim(bb[1], bb[3])
         ax.axhspan(bb[1], bb[3], fc = "lightgrey", lw = 0)
 
-        groups = gdf.groupby("id")
-        for i, id in enumerate(sorted(set(gdf.id))):
-            item = groups.get_group(id)
-            item.plot(ax = ax, column = "val", cmap = pals[i], lw = 0)
-        
         self.get_local_patch(r = 2) \
             .geometry.rotate(map_rotation, origin = (0, 0)).plot(
                 ax = ax, fc = "w", ec = "grey", lw = 0.5)
 
-        rotated_elements = self.elements.rotate(map_rotation, origin = (0, 0))
-        for var, ele in zip(vars, rotated_elements):
-            c = wkt.loads(wkt.dumps(ele.centroid, rounding_precision = 6))
+        groups = gdf.groupby("id")
+        for id in pd.Series.unique(gdf.id):
+            item = groups.get_group(id)
+            item.plot(ax = ax, column = "val", cmap = pals[id], lw = 0)
+        
+        rotated_unit = copy.deepcopy(self)
+        rotated_unit.elements.geometry = \
+            rotated_unit.elements.geometry.rotate(map_rotation, origin = (0, 0))
+        for id, ele in zip(rotated_unit.elements.element_id, 
+                           rotated_unit.elements.geometry):
+            c = ele.centroid
             rot = (0 if not rotate_text or c.x == 0
                 else (np.degrees(np.arctan2(c.y, c.x)) + 90) % 180 - 90)
-            ax.annotate(var, xy = (1.2 * c.x, 1.2 * c.y), 
+            ax.annotate(vars[id], xy = (c.x, c.y),
                         ha = ("left" if c.x >= 0 else "right"), va = "center",
                         rotation = rot, rotation_mode = "anchor",
                         bbox = {"lw": 0, "fc": "#ffffff40"})
