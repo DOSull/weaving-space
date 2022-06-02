@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from typing import Union
 from dataclasses import dataclass
 import itertools
-import copy
 
 import numpy as np
 import geopandas as gpd
@@ -182,7 +180,7 @@ class TileGrid:
 
 @dataclass
 class Tiling:
-    tile_unit:Union[WeaveUnit, Tileable] = None
+    tile_unit:Tileable = None
     tile_shape:str = ""
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
@@ -190,8 +188,8 @@ class Tiling:
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
-    def __init__(self, unit:Union[WeaveUnit, Tileable], 
-                 region:gpd.GeoDataFrame, id_var:str) -> None:
+    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
+                 id_var:str) -> None:
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         self.region = region
@@ -338,7 +336,7 @@ class Tiling:
             # Handle custom color assignments via 'pals' parameter.
             # Result is setting 'cmap' variable used in plot command afterwards.
             if (isinstance(pals, 
-                           (matplotlib.colors.Colormap,
+                           (str, matplotlib.colors.Colormap,
                             matplotlib.colors.LinearSegmentedColormap,
                             matplotlib.colors.ListedColormap))):
                 cmap=pals  # user wants one palette for all ids
@@ -347,7 +345,7 @@ class Tiling:
             elif (id not in pals):
                 cmap = 'Reds'  # id has no color specified in dict, use default
             elif (isinstance(pals[id], 
-                             (matplotlib.colors.Colormap,
+                             (str, matplotlib.colors.Colormap,
                               matplotlib.colors.LinearSegmentedColormap,
                               matplotlib.colors.ListedColormap))):
                 cmap = pals[id]  # user specified colors for this id so use it
