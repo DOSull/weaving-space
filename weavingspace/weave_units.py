@@ -4,7 +4,6 @@
 import logging
 import itertools
 from dataclasses import dataclass
-from operator import le
 from typing import Union
 import copy
 
@@ -13,19 +12,16 @@ import geopandas as gpd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
-import shapely.wkt as wkt
 import shapely.ops
 
 import weave_matrices
-import weaving_utils
+import tiling_utils
 
 from loom import Loom
 from weave_grids import WeaveGrid
 
 from tile_units import TileShape
 from tile_units import Tileable
-
-import tiling_utils
 
 
 @dataclass
@@ -150,7 +146,7 @@ class WeaveUnit(Tileable):
                 case. Defaults to None.
         """    
         warp_threads, weft_threads, drop = \
-            weaving_utils.get_strand_ids(self.strands)
+            tiling_utils.get_strand_ids(self.strands)
         drop = None  # don't need this so throw it away
         
         if self.weave_type == "basket" and isinstance(self.n, (list, tuple)):
@@ -233,7 +229,7 @@ class WeaveUnit(Tileable):
                 Defaults to "a|b|c".
         """    
         strands_1, strands_2, strands_3 = \
-            weaving_utils.get_strand_ids(self.strands)
+            tiling_utils.get_strand_ids(self.strands)
         
         loom = self.get_triaxial_weave_matrices(
             strands_1 = strands_1, strands_2 = strands_2, strands_3 = strands_3)
@@ -279,16 +275,16 @@ class WeaveUnit(Tileable):
             next_labels = list(itertools.chain(*next_labels))  # flatten 
             strand_ids.extend(next_labels)
         tile = shapely.ops.unary_union(bb_polys)  #.buffer(-self.fudge_factor)
-        shift = weaving_utils.centre_offset(tile)
+        shift = tiling_utils.centre_offset(tile)
         tile = affine.translate(tile, shift[0], shift[1])
-        self.elements = self.make_weave_elements_gdf(
+        self.elements = self.get_weave_elements_gdf(
             weave_polys, strand_ids, tile, shift)
         self.tile = gpd.GeoDataFrame(
             geometry = gpd.GeoSeries([tile]), crs = self.crs)
         return None
 
 
-    def make_weave_elements_gdf(
+    def get_weave_elements_gdf(
             self, polys:list[geom.Polygon], strand_ids:list[str], 
             bb:geom.Polygon, offset:tuple[float]
         ) -> gpd.GeoDataFrame:
@@ -333,7 +329,7 @@ class WeaveUnit(Tileable):
             data_vals = data[id]
             data_vals.sort()
             n = len(data_vals)
-            ramp = weaving_utils.get_colour_ramp(t, n, r)
+            ramp = tiling_utils.get_colour_ramp(t, n, r)
             tiles.extend(ramp)
             ids.extend([id] * n)
             rots.extend([r] * n)
@@ -383,7 +379,7 @@ class WeaveUnit(Tileable):
         elements, x, y, rotations = [], [], [], []
         for ele in element_ids:
             candidates = groups.get_group(ele)
-            axis = weaving_utils.get_axis_from_label(ele, self.strands)
+            axis = tiling_utils.get_axis_from_label(ele, self.strands)
             the_one = self._get_most_central(candidates)  #, angles[axis])
             elements.append(the_one[0])
             x.append(the_one[1][0])
