@@ -290,3 +290,9 @@ def plot_subsetted_gdf(ax, gdf, vars = {}, pals = {}, **kwargs):
 
         subset.plot(ax = ax, column = vars[id], cmap=cmap, **kwargs)
     return ax
+
+
+def get_largest_polygon(polygons:gpd.GeoSeries) -> gpd.GeoSeries:
+    areas = list(polygons.area)
+    max_area = max(areas)
+    return gpd.GeoSeries([polygons[areas.index(max_area)]])

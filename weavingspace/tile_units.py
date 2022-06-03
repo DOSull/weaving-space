@@ -88,7 +88,7 @@ class Tileable:
                 matches = set()
                 for i, f1 in enumerate(fragments):
                     for j, f2, in enumerate(t_fragments):
-                        if i != j and f1.distance(f2) < 1e-3:
+                        if i != j and f1.distance(f2) < self.fudge_factor:
                             matches.add((i, j))
                 fragments_to_remove = set()
                 for i, j in matches:
@@ -123,8 +123,6 @@ class Tileable:
             None: 
         """
         self.vectors = self.get_vectors()
-        elements = []
-        element_ids = []
         self.regularised_tile.geometry = \
             self.regularised_tile.geometry.buffer(
                 self.fudge_factor, join_style = 2)
@@ -132,6 +130,7 @@ class Tileable:
         # Reordering ids might cause confusion when colour palettes
         # are not assigned explicitly to each id, but in the order
         # encountered in the element_id Series of the GeoDataFrame.
+        elements, element_ids = [], []
         ids = list(pd.Series.unique(self.elements.element_id))
         for id in ids:
             fragment_set = list(
@@ -149,32 +148,55 @@ class Tileable:
                 -self.fudge_factor, join_style = 2)
         self.regularised_tile.geometry = \
             self.regularised_tile.geometry.explode(index_parts = False,
-                                                   ignore_index = True)[:1]
+                                                   ignore_index = True)
+        if self.regularised_tile.geometry.shape[0] > 1:
+            self.regularised_tile.geometry = \
+                tiling_utils.get_largest_polygon(self.regularised_tile.geometry)
         return None
     
     
     def get_local_patch(self, r:int = 1, 
                         include_0:bool = False) -> gpd.GeoDataFrame:
-        ids = []
-        tiles = []
+        """Returns a GeoDataFrame with translated copies of the Tileable.
+
+        Args:
+            r (int, optional): the number of translation vector steps required. 
+                Defaults to 1.
+            include_0 (bool, optional): If True includes the Tileable itself at 
+                (0, 0). Defaults to False.
+
+        Returns:
+            gpd.GeoDataFrame: A GeoDataframe of the Tileable's elements extended
+                by a number of translation vectors.
+        """
+        # a dictionary of all the vectors we need, starting with (0, 0)
         vecs = ({(0, 0, 0): (0, 0)} 
                 if self.tile_shape in (TileShape.HEXAGON, )
                 else {(0, 0): (0, 0)})
+        # a dictionary of the last 'layer' of added vectors
         last_vecs = copy.deepcopy(vecs)
+        # get the translation vectors in a dictionary indexed by coordinates
+        # we keep track of the sum of vectors using the (integer) coordinates
+        # to avoid duplication of moves due to floating point inaccuracies 
         vectors = self.get_vectors(return_values = False)
         for i in range(r):
             new_vecs = {}
             for k1, v1 in last_vecs.items():
                 for k2, v2 in vectors.items():
+                    # add the coordinates to make a new key...
                     new_key = tuple([k1[i] + k2[i] for i in range(len(k1))])
+                    # ... and the vector components to make a new value
                     new_val = (v1[0] + v2[0], v1[1] + v2[1])
+                    # if we haven't reached here before store it
                     if not new_val in vecs: 
                         new_vecs[new_key] = new_val
+            # extend the vectors and set the last layer to the set just added
             vecs = vecs | new_vecs
             last_vecs = new_vecs
-        if not include_0:
+        if not include_0:  # throw away the identity vector
             vecs.pop((0, 0, 0) if self.tile_shape in (TileShape.HEXAGON, )
                      else (0, 0))
+        ids, tiles = [], []
         for v in vecs.values():
             ids.extend(self.elements.element_id)
             tiles.extend(self.elements.geometry.apply(
