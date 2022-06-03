@@ -317,58 +317,6 @@ class WeaveUnit(Tileable):
         return weave.clip(bb).set_crs(self.crs)
 
 
-    def plot_legend(self, ax, vars:dict, pals:dict, 
-                    data:dict[str:list], map_rotation:float, 
-                    rotate_text:bool = False, **kwargs):
-        ax.set_axis_off()
-        tiles, ids, vals, rots = [], [], [], []
-        legend_elements = self._get_legend_elements()
-        for id, t, r in zip(legend_elements.element_id,
-                            legend_elements.geometry,
-                            legend_elements.rotation):
-            data_vals = data[id]
-            data_vals.sort()
-            n = len(data_vals)
-            ramp = tiling_utils.get_colour_ramp(t, n, r)
-            tiles.extend(ramp)
-            ids.extend([id] * n)
-            rots.extend([r] * n)
-            vals.extend(data_vals)
-        
-        gdf = gpd.GeoDataFrame(
-            data = {"val": vals, "id": ids, "rotation": rots}, crs = self.crs,
-            geometry = gpd.GeoSeries(tiles))
-        gdf.geometry = gdf.rotate(map_rotation, origin = (0, 0))
-
-        bb = [1.1 * x for x in gdf.geometry.total_bounds]
-        ax.set_xlim(bb[0], bb[2])
-        ax.set_ylim(bb[1], bb[3])
-        ax.axhspan(bb[1], bb[3], fc = "lightgrey", lw = 0)
-        
-        self.get_local_patch(r = 2, include_0 = True) \
-            .geometry.rotate(map_rotation, origin = (0, 0)).plot(
-                ax = ax, fc = "w", ec = "grey", lw = 0.5)
-
-        groups = gdf.groupby("id")
-        for id in pd.Series.unique(gdf.id):
-            item = groups.get_group(id)
-            ax = item.plot(ax = ax, column = "val", 
-                           cmap = pals[id], lw = 0.5, **kwargs)
-            
-        legend_elements.geometry = legend_elements.geometry.rotate(
-            map_rotation, origin = (0, 0))
-        
-        for id, tile, rotn in zip(legend_elements.element_id, 
-                              legend_elements.geometry,
-                              legend_elements.rotation):
-            c = tile.centroid
-            ax.annotate(vars[id], xy = (c.x, c.y), ha = "center", va = "center",
-                        rotation = (rotn + map_rotation + 90) % 180 - 90, 
-                        rotation_mode = "anchor", 
-                        bbox = {"lw": 0, "fc": "#ffffff40"})
-        return None
-
-
     def _get_legend_elements(self):
         angles = ((0, 240, 120) 
                   if self.weave_type in ("hex", "cube") 
@@ -380,14 +328,12 @@ class WeaveUnit(Tileable):
         for ele in element_ids:
             candidates = groups.get_group(ele)
             axis = tiling_utils.get_axis_from_label(ele, self.strands)
-            the_one = self._get_most_central(candidates)  #, angles[axis])
-            elements.append(the_one[0])
-            x.append(the_one[1][0])
-            y.append(the_one[1][1]) 
+            the_one = self._get_most_central(candidates)
+            elements.append(self._get_most_central(candidates))
             rotations.append(-angles[axis])
         return gpd.GeoDataFrame(
-            data = {"element_id": element_ids, 
-                    "x": x, "y": y, "rotation": rotations}, crs = self.crs,
+            data = {"element_id": element_ids, "rotation": rotations}, 
+            crs = self.crs,
             geometry = gpd.GeoSeries(elements)
         )
         
@@ -403,5 +349,19 @@ class WeaveUnit(Tileable):
         centroids = [g.centroid for g in geoms]
         d = [c.distance(geom.Point(0, 0)) for c in centroids]
         idx = d.index(min(d))
-        return (geoms[idx], (centroids[idx].x, centroids[idx].y))
-        
+        return geoms[idx]
+
+
+    def _get_legend_key_shapes(self, geometry, n = 25, a = 0):
+        c = geometry.centroid
+        g = affine.rotate(geometry, -a, origin = c)
+        bb = g.bounds
+        cuts = np.linspace(bb[0], bb[2], n + 1)
+        slices = []
+        for l, r in zip(cuts[:-1], cuts[1:]):
+            slice = geom.Polygon([(l, bb[1] - 1), (r, bb[1] - 1), 
+                                (r, bb[3] + 1), (l, bb[3] + 1)])
+            slices.append(slice.intersection(g)) 
+        return [affine.rotate(s, a, origin = c) for s in slices]
+
+

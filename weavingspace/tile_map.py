@@ -18,9 +18,6 @@ from tile_units import TileShape
 
 import tiling_utils
 
-import matplotlib
-import matplotlib.colors
-
 
 @dataclass
 class TileGrid:
@@ -320,52 +317,17 @@ class Tiling:
             geometry = gpd.GeoSeries(tiles_to_keep))
     
     
-    def plot_map(self, fig, gdf, vars = {}, pals = {}, figsize = (15, 10),
-                 legend = True, zoom = 0.8, rotate_text = False, **kwargs):
+    def plot_map(self, fig, gdf, vars = {}, pals = {}, 
+                 legend = True, zoom = 0.8, **kwargs):
             
         ax = fig.add_subplot(111)
-        ids = pd.Series.unique(gdf.element_id)
-        groups = gdf.groupby("element_id")
-        val_lookup = {}
-        for id in ids:
-            # subset = gdf[gdf.element_id == id]
-            subset = groups.get_group(id)
-            val_lookup[id] = list(subset[vars[id]])
-            
-
-            # Handle custom color assignments via 'pals' parameter.
-            # Result is setting 'cmap' variable used in plot command afterwards.
-            if (isinstance(pals, 
-                           (str, matplotlib.colors.Colormap,
-                            matplotlib.colors.LinearSegmentedColormap,
-                            matplotlib.colors.ListedColormap))):
-                cmap=pals  # user wants one palette for all ids
-            elif (len(pals) == 0):
-                cmap = 'Reds'  # set a default... here, to Brewer's 'Reds'
-            elif (id not in pals):
-                cmap = 'Reds'  # id has no color specified in dict, use default
-            elif (isinstance(pals[id], 
-                             (str, matplotlib.colors.Colormap,
-                              matplotlib.colors.LinearSegmentedColormap,
-                              matplotlib.colors.ListedColormap))):
-                cmap = pals[id]  # user specified colors for this id so use it
-            elif (type(pals[id]) is dict):
-                colormap_dict = pals[id]
-                data_unique_sorted = subset[vars[id]].unique()
-                data_unique_sorted.sort()
-                cmap = matplotlib.colors.ListedColormap(
-                    [colormap_dict[x] for x in data_unique_sorted])
-            else:
-                raise Exception(f"Color map for '{id}' is not a known type, but is {str(type(pals[id]))}")
-            subset.plot(ax = ax, column = vars[id], cmap=cmap,
-                        figsize = figsize, **kwargs)
         ax.set_axis_off()
+        tiling_utils.plot_subsetted_gdf(ax, gdf, vars, pals, **kwargs)
         if legend:
             self.tile_unit.plot_legend(ax = ax.inset_axes([1, .5, .3, .5]),
-                                       vars = vars, pals = pals, 
-                                       data = val_lookup, zoom = zoom,
-                                       map_rotation = self.rotation,
-                                       rotate_text = rotate_text, **kwargs)
+                                       data = gdf, vars = vars, pals = pals, 
+                                       zoom = zoom, 
+                                       map_rotation = self.rotation, **kwargs)
         return ax
 
 

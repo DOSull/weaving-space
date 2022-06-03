@@ -241,6 +241,73 @@ class Tileable:
         return ax
     
     
+    # returns selected 
+    def get_legend_key_gdf(self, elements, data, vars, pals, map_rotation):
+        key_tiles, ids, unique_ids, vals, rots = [], [], [], [], []
+        subsets = data.groupby("element_id")
+        for id, geom, rot in zip(elements.element_id,
+                                 elements.geometry,
+                                 elements.rotation):
+            subset = subsets.get_group(id)
+            data_vals = subset[vars[id]]
+            n = len(data_vals)
+            key = self._get_legend_key_shapes(geom, n, rot)
+            key_tiles.extend(key)
+            ids.extend([id] * n)
+            unique_ids.append(id)
+            rots.extend([rot] * n)
+            vals.extend(data_vals)
+        key_data = {}
+        for id in unique_ids:
+            key_data[vars[id]] = vals
+        
+        key_gdf = gpd.GeoDataFrame(
+            data = key_data | {"element_id": ids, "rotation": rots}, 
+            crs = self.crs,
+            geometry = gpd.GeoSeries(key_tiles))
+        key_gdf.geometry = key_gdf.rotate(map_rotation, origin = (0, 0))
+        return key_gdf
+
+    
+    def plot_legend(self, ax, data:pd.DataFrame, vars:dict[str:str], 
+                    pals:dict[str:str], zoom:float = 1., 
+                    map_rotation:float = 0, **kwargs):
+        
+        ax.set_axis_off()
+
+        legend_elements = self._get_legend_elements()
+        if isinstance(self, TileUnit):
+            legend_elements.rotation = -map_rotation
+        legend_key = self.get_legend_key_gdf(legend_elements,
+                                             data, vars, pals, map_rotation)
+        
+        bb = [x / zoom for x in legend_key.geometry.total_bounds]
+        ax.set_xlim(bb[0], bb[2])
+        ax.set_ylim(bb[1], bb[3])
+        # ax.axhspan(bb[1], bb[3], fc = "w", lw = 0)
+
+        # now plot background
+        self.get_local_patch(r = 2, include_0 = True) \
+            .geometry.rotate(map_rotation, origin = (0, 0)).plot(
+                ax = ax, fc = "#efefef", ec = "w", lw = 0.5)
+
+        # plot the legend key elements (which include the data)
+        tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, pals)
+        
+        # now add the annotations - for this we go back to the legend elements
+        legend_elements.geometry = legend_elements.geometry.rotate(
+            map_rotation, origin = (0, 0))
+        
+        for id, tile, rotn in zip(legend_elements.element_id,
+                                  legend_elements.geometry,
+                                  legend_elements.rotation):
+            c = tile.centroid
+            ax.annotate(vars[id], xy = (c.x, c.y), ha = "center", va = "center",
+                        rotation = (rotn + map_rotation + 90) % 180 - 90, 
+                        rotation_mode = "anchor", 
+                        bbox = {"lw": 0, "fc": "#ffffff40"})
+        return ax
+    
 
 @dataclass
 class TileUnit(Tileable):
@@ -317,51 +384,23 @@ class TileUnit(Tileable):
         return gpd.GeoSeries([merged_tile])
                 
 
-    def plot_legend(self, ax, vars:dict[str:str], pals:dict[str:str], 
-                    data:dict[str:list], zoom:float = 1., 
-                    map_rotation:float = 0, rotate_text:bool = False, **kwargs):
-        ax.set_axis_off()
-        tiles, ids, vals = [], [], []
-        for id, t in zip(self.elements.element_id, 
-                         self.elements.geometry):
-            data_vals = data[id]
-            data_vals.sort()
-            n = len(data_vals)
-            tiles.extend(tiling_utils.get_insets(t, n))
-            ids.extend([id] * n)
-            vals.extend(data_vals)
-
-        gdf = gpd.GeoDataFrame(
-            data = {"val": vals, "id": ids}, crs = self.crs, 
-            geometry = gpd.GeoSeries(tiles))
-        gdf.geometry = gdf.geometry.rotate(map_rotation, origin = (0, 0)) 
-        
-        bb = [x / zoom for x in gdf.geometry.total_bounds]
-        ax.set_xlim(bb[0], bb[2])
-        ax.set_ylim(bb[1], bb[3])
-        ax.axhspan(bb[1], bb[3], fc = "lightgrey", lw = 0)
-
-        self.get_local_patch(r = 2) \
-            .geometry.rotate(map_rotation, origin = (0, 0)).plot(
-                ax = ax, fc = "w", ec = "grey", lw = 0.5)
-
-        groups = gdf.groupby("id")
-        for id in pd.Series.unique(gdf.id):
-            item = groups.get_group(id)
-            item.plot(ax = ax, column = "val", 
-                      cmap = pals[id], lw = 0, **kwargs)
-        
-        rotated_unit = copy.deepcopy(self)
-        rotated_unit.elements.geometry = \
-            rotated_unit.elements.geometry.rotate(map_rotation, origin = (0, 0))
-        for id, ele in zip(rotated_unit.elements.element_id, 
-                           rotated_unit.elements.geometry):
-            c = ele.centroid
-            rot = (0 if not rotate_text or c.x == 0
-                else (np.degrees(np.arctan2(c.y, c.x)) + 90) % 180 - 90)
-            ax.annotate(vars[id], xy = (c.x, c.y),
-                        ha = ("left" if c.x >= 0 else "right"), va = "center",
-                        rotation = rot, rotation_mode = "anchor",
-                        bbox = {"lw": 0, "fc": "#ffffff40"})
-        return None
+    
+    # returns the tile unit elements augmented with centroid x and y, and 
+    # rotation (which in this case will be 0)
+    def _get_legend_elements(self):
+        elements = copy.deepcopy(self.elements)
+        elements["rotation"] = 0
+        return elements
+    
+    
+    def _get_legend_key_shapes(self, polygon:geom.Polygon, n = 25, rot = 0):
+        radius = tiling_utils.get_collapse_distance(polygon)
+        bandwidths = range(n + 2)
+        # bandwidths = [1] * (n + 1)
+        distances = np.cumsum(bandwidths)
+        distances = distances * radius / distances[-1]
+        nested_polys = [polygon.buffer(-d, join_style = 2) 
+                        for d in distances[:-1]]
+        return [g1.difference(g2) 
+                for g1, g2 in zip(nested_polys[:-1], nested_polys[1:])]
     

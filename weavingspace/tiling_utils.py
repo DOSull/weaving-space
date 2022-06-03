@@ -4,9 +4,13 @@
 from enum import Enum
 import re
 import string
+
+import matplotlib
+import matplotlib.colors
+import numpy as np
+
 import geopandas as gpd
 import pandas as pd
-import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.wkt as wkt
@@ -252,3 +256,37 @@ def get_collapse_distance(geometry):
             upper = new_r 
             delta = new_r - lower
     return new_r
+
+
+def plot_subsetted_gdf(ax, gdf, vars = {}, pals = {}, **kwargs):
+    ids = pd.Series.unique(gdf.element_id)
+    groups = gdf.groupby("element_id")
+    for id in ids:
+        subset = groups.get_group(id)
+        # Handle custom color assignments via 'pals' parameter.
+        # Result is setting 'cmap' variable used in plot command afterwards.
+        if (isinstance(pals, 
+                        (str, matplotlib.colors.Colormap,
+                        matplotlib.colors.LinearSegmentedColormap,
+                        matplotlib.colors.ListedColormap))):
+            cmap=pals  # user wants one palette for all ids
+        elif (len(pals) == 0):
+            cmap = 'Reds'  # set a default... here, to Brewer's 'Reds'
+        elif (id not in pals):
+            cmap = 'Reds'  # id has no color specified in dict, use default
+        elif (isinstance(pals[id], 
+                            (str, matplotlib.colors.Colormap,
+                            matplotlib.colors.LinearSegmentedColormap,
+                            matplotlib.colors.ListedColormap))):
+            cmap = pals[id]  # user specified colors for this id so use it
+        elif (isinstance(pals[id], dict)):
+            colormap_dict = pals[id]
+            data_unique_sorted = subset[vars[id]].unique()
+            data_unique_sorted.sort()
+            cmap = matplotlib.colors.ListedColormap(
+                [colormap_dict[x] for x in data_unique_sorted])
+        else:
+            raise Exception(f"Color map for '{id}' is not a known type, but is {str(type(pals[id]))}")
+
+        subset.plot(ax = ax, column = vars[id], cmap=cmap, **kwargs)
+    return ax
