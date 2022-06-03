@@ -4,6 +4,7 @@
 from dataclasses import dataclass
 import copy
 import string
+import itertools
 
 import geopandas as gpd
 import pandas as pd
@@ -249,7 +250,19 @@ class Tileable:
                                  elements.geometry,
                                  elements.rotation):
             subset = subsets.get_group(id)
-            data_vals = sorted(subset[vars[id]])
+            d = subset[vars[id]]
+            if d.dtype == pd.CategoricalDtype:
+                val_order = dict(zip(pals[id].keys(),
+                                     range(len(pals[id]))))
+                coded_data_counts = [0] * len(pals[id])
+                for v in list(d):
+                    coded_data_counts[val_order[v]] += 1
+                order_val = dict(reversed(kv) for kv in val_order.items())
+                data_vals = []
+                for i, n in enumerate(coded_data_counts):
+                    data_vals.extend([order_val[i]] * n)
+            else:
+                data_vals = sorted(d)
             n = len(data_vals)
             key = self._get_legend_key_shapes(geom, n, rot)
             key_tiles.extend(key)
@@ -395,7 +408,8 @@ class TileUnit(Tileable):
     
     def _get_legend_key_shapes(self, polygon:geom.Polygon, n = 25, rot = 0):
         radius = tiling_utils.get_collapse_distance(polygon)
-        bandwidths = range(n + 2)
+        bandwidths = range(1, n + 2)
+        bandwidths = [np.sqrt(w) for w in bandwidths]
         # bandwidths = [1] * (n + 1)
         distances = np.cumsum(bandwidths)
         distances = distances * radius / distances[-1]
