@@ -249,7 +249,7 @@ class Tileable:
                                  elements.geometry,
                                  elements.rotation):
             subset = subsets.get_group(id)
-            data_vals = subset[vars[id]]
+            data_vals = sorted(subset[vars[id]])
             n = len(data_vals)
             key = self._get_legend_key_shapes(geom, n, rot)
             key_tiles.extend(key)
