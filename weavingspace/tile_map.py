@@ -10,9 +10,7 @@ import pandas as pd
 
 import shapely.affinity as affine
 import shapely.geometry as geom
-import shapely.wkt as wkt
 
-from weave_units import WeaveUnit
 from tile_units import Tileable
 from tile_units import TileShape
 
@@ -318,16 +316,16 @@ class Tiling:
     
     
     def plot_map(self, fig, gdf, vars = {}, pals = {}, 
-                 legend = True, zoom = 0.8, **kwargs):
+                 legend = True, legend_zoom = 0.8, **kwargs):
             
         ax = fig.add_subplot(111)
         ax.set_axis_off()
-        tiling_utils.plot_subsetted_gdf(ax, gdf, vars, pals, **kwargs)
+        ax = tiling_utils.plot_subsetted_gdf(ax, gdf, vars, pals, **kwargs)
         if legend:
-            self.tile_unit.plot_legend(ax = ax.inset_axes([1, .5, .3, .5]),
-                                       data = gdf, vars = vars, pals = pals, 
-                                       zoom = zoom, 
-                                       map_rotation = self.rotation, **kwargs)
-        return ax
+            ax2 = self.tile_unit.plot_legend(
+                ax = ax.inset_axes([1, .5, .3, .5]), data = gdf, vars = vars,
+                pals = pals, zoom = legend_zoom, map_rotation = self.rotation,
+                **kwargs)
+        return (ax, ax2) if legend else ax
 
 

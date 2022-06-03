@@ -4,14 +4,12 @@
 from dataclasses import dataclass
 import copy
 import string
-import itertools
 
 import geopandas as gpd
 import pandas as pd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
-import shapely.wkt as wkt
 
 import tiling_utils
 from tiling_utils import TileShape
