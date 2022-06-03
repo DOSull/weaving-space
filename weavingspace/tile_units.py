@@ -289,7 +289,7 @@ class Tileable:
         # now plot background
         self.get_local_patch(r = 2, include_0 = True) \
             .geometry.rotate(map_rotation, origin = (0, 0)).plot(
-                ax = ax, fc = "#efefef", ec = "w", lw = 0.5)
+                ax = ax, fc = "#efefef", ec = "#333333", lw = 0.5)
 
         # plot the legend key elements (which include the data)
         tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, pals)
