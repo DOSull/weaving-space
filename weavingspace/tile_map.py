@@ -3,6 +3,7 @@
 
 from dataclasses import dataclass
 import itertools
+from typing import Any
 
 import numpy as np
 import geopandas as gpd
@@ -156,6 +157,14 @@ class TileGrid:
     #     \/
     # 
     def _get_diamond_centres(self) -> np.ndarray:
+        """Reurns an diamond grid of translation vectors that will 'fill'
+        to_tile_gs polygon with the tile_gs polygon (which should be
+        rectangular).
+
+        Returns:
+            np.ndarray: A 2 column array each row being an x, y translation
+            vector.
+        """
         tt_w, tt_h, tt_x0, tt_y0  = \
             self._get_width_height_left_bottom(self.extent)
         tile_w, tile_h, tile_x0, tile_y0 = \
@@ -185,6 +194,14 @@ class Tiling:
 
     def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
                  id_var:str) -> None:
+        """A class to persist a tiling by filling an area relative to 
+        a region that is sufficient to apply the tiling at any rotation.
+
+        Args:
+            unit (Tileable): the tile_unit to use
+            region (gpd.GeoDataFrame): the region to be tiled
+            id_var (str): a unique identifier variable in the region
+        """
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         self.region = region
@@ -196,26 +213,43 @@ class Tiling:
 
     def get_tiled_map(self, id_var:str = None, rotation:float = 0.,             
                       prioritise_tiles:bool = False) -> gpd.GeoDataFrame:
-        id_var = (self.region_id_var
-                  if id_var is None
-                  else id_var)
+        """Returns a geodataframe filling a region at the requested rotation.
+
+        Args:
+            id_var (str, optional): the variable the distinguishes areas in the
+                region to be tiled. None will be overwritten by the variable    
+                name set on initialisation of the Tiling. Defaults to None.
+            rotation (float, optional): An optional rotation to apply. Defaults 
+                to 0. orientatijnto 
+            prioritise_tiles (bool, optional): When True tiles will not be 
+                broken at boundaries in the region dataset. Defaults to False.
+
+        Returns:
+            gpd.GeoDataFrame: a GeoDataFrame that contains the source region
+                data along with the tile unit element_id variable.
+        """
+        # if no id_var is supplied overwrite it with the class id_var
+        id_var = (self.region_id_var if id_var is None else id_var)
         tiled_map = self.rotated(rotation)
+        # compile a list of the variable names we are NOT going to change
+        # i.e. everything except the geometry and the id_var
         region_vars = list(self.region.columns)
         region_vars.remove("geometry")
         region_vars.remove(id_var)
         
-        if prioritise_tiles: # respect tile sides over zone boundaries
+        if prioritise_tiles: # maintain tile continuity across zone boundaries
             # make column with unique ID for every element in the tiling
             tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
             # overlay with the zones from the region to be tiled
             tiled_map = tiled_map.overlay(self.region)  
-            #, keep_geom_type = False)
             # determine areas of overlaid tile elements and drop the data
+            # we join the data back later, so dropping makes that easier
             tiled_map["area"] = tiled_map.geometry.area
             tiled_map = tiled_map.drop(columns = region_vars)
-            # make a lookup by largest area element to the zone ID
+            # make a lookup by largest area element to the region id variable
             lookup = tiled_map.iloc[tiled_map.groupby("tileUID")["area"].agg(
                 pd.Series.idxmax)][["tileUID", id_var]]
+            # remove the id_var before we replace it with a new one
             tiled_map = tiled_map.drop(columns = [id_var])
             # now join the lookup and from there the region data
             tiled_map = tiled_map \
@@ -244,7 +278,7 @@ class Tiling:
 
         Args:
             gdf (geopandas.GeoDataFrame): GeoDataFrame to rotate
-                angle (float): angle of rotation (degrees).
+            angle (float): angle of rotation (degrees).
             centre (tuple, optional): desired centre of rotation. Defaults 
                 to (0, 0).
 
@@ -278,15 +312,25 @@ class Tiling:
         # replicate the element ids
         ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
         tiles_gs = gpd.GeoSeries(tiles)
+        # assemble and return as a GeoDataFrame
         tiles_gdf = gpd.GeoDataFrame(data = {"element_id": ids},
                                      geometry = tiles_gs, 
                                      crs = self.tile_unit.crs)
-        # assemble and return as a GeoDataFrame
-        tiles_gdf.geometry = tiling_utils.gridify(tiles_gdf.geometry)
+        # unclear if we need the below or not...
+        # tiles_gdf.geometry = tiling_utils.gridify(tiles_gdf.geometry)
         return tiles_gdf
         
     
-    def rotated(self, rotation:float = None):
+    def rotated(self, rotation:float = None) -> gpd.GeoDataFrame:
+        """Returns the stored tiling rotated.
+
+        Args:
+            rotation (float, optional): Rotation angle in degrees. 
+                Defaults to None.
+
+        Returns:
+            gpd.GeoDataFrame: Rotated tiling.
+        """
         if self.tiles is None:
             self.tiles = self.make_tiling()
         self.rotation = rotation
@@ -298,26 +342,45 @@ class Tiling:
                                                   origin = self.grid.centre))
         
     
-    def get_local_patch(self, n:int = 3) -> gpd.GeoDataFrame:
-        patch_extent = gpd.GeoDataFrame(
-            data = {"id": [1]}, crs = self.tile_unit.crs,
-            geometry = self.tile_unit.tile.geometry.scale(n, n, origin = (0, 0))
-        )
-        patch = Tiling(self.tile_unit, patch_extent, id_var = "id")
-        tiles_to_keep = []
-        ids = []
-        for p, id in zip(patch.tiles.geometry, patch.tiles.element_id):
-            if p.within(patch_extent.geometry[0]):
-                tiles_to_keep.append(p)
-                ids.append(id)
-        return gpd.GeoDataFrame(
-            data = {"element_id": ids}, crs = self.tile_unit.crs,
-            geometry = gpd.GeoSeries(tiles_to_keep))
+    # def get_local_patch(self, n:int = 3) -> gpd.GeoDataFrame:
+    #     patch_extent = gpd.GeoDataFrame(
+    #         data = {"id": [1]}, crs = self.tile_unit.crs,
+    #         geometry = self.tile_unit.tile.geometry.scale(n, n, origin = (0, 0))
+    #     )
+    #     patch = Tiling(self.tile_unit, patch_extent, id_var = "id")
+    #     tiles_to_keep = []
+    #     ids = []
+    #     for p, id in zip(patch.tiles.geometry, patch.tiles.element_id):
+    #         if p.within(patch_extent.geometry[0]):
+    #             tiles_to_keep.append(p)
+    #             ids.append(id)
+    #     return gpd.GeoDataFrame(
+    #         data = {"element_id": ids}, crs = self.tile_unit.crs,
+    #         geometry = gpd.GeoSeries(tiles_to_keep))
     
     
-    def plot_map(self, fig, gdf, vars = {}, pals = {}, 
-                 legend = True, legend_zoom = 0.8, **kwargs):
-            
+    def plot_map(self, fig, gdf:gpd.GeoDataFrame, vars:dict[str:str] = {},
+                 pals:dict[str:Any] = {}, legend:bool = True, 
+                 legend_zoom:float = 1.0, **kwargs):
+        """Returns a matplotlib axis with a map consistent with supplied 
+        settings. 
+
+        Args:
+            fig (_type_): a matplotlib figure.
+            gdf (gpd.GeoDataFrame): a map with subsets designated by 
+                an element_id variable.
+            vars (dict): dictionary mapping element_id values to variable
+                names. Defaults to {}.
+            pals (dict): dictionary mapping variable names to palette
+                specifications. Defaults to {}.
+            legend (bool, optional): If True a legend is added to the map. 
+                Defaults to True.
+            legend_zoom (float, optional): Magnification applied to the legend. 
+                Defaults to 1.0.
+
+        Returns:
+            _type_: _description_
+        """
         ax = fig.add_subplot(111)
         ax.set_axis_off()
         ax = tiling_utils.plot_subsetted_gdf(ax, gdf, vars, pals, **kwargs)
