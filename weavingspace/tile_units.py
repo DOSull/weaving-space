@@ -441,6 +441,7 @@ class Tileable:
 class TileUnit(Tileable):
     tiling_type:str = None
     dissection_offset:int = 1
+    n:int = 3
     code:str = "3.3.4.3.4"
         
     def __init__(self, **kwargs) -> None:
