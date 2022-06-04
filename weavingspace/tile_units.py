@@ -118,9 +118,6 @@ class Tileable:
     def regularise_elements(self) -> None:
         """
         Combines separate elements that share an element_id value into single elements, if they would end up touching when tiled. Also adjusts the regularised_tile attribute according.
-
-        Returns:
-            None: 
         """
         self.vectors = self.get_vectors()
         self.regularised_tile.geometry = \
@@ -207,26 +204,62 @@ class Tileable:
         )
     
     
-    def fit_elements_to_tile(self, centre_tile:int = 0) -> None:
-        dxy = self.elements.geometry[centre_tile].centroid
+    def fit_elements_to_tile(self, centre_element:int = 0) -> None:
+        """Fits the tile elements so they sit inside the tile boundary.
+
+        Args:
+            centre_element (int, optional): the index position of the central 
+                element. Defaults to 0.
+        """
+        dxy = self.elements.geometry[centre_element].centroid
         self.elements.geometry = self.elements.translate(-dxy.x, -dxy.y)
+        # use r = 2 because rectangular tiles may need diagonal neighbours
         patch = (self.get_local_patch(r = 2, include_0 = True)
                  if self.tile_shape in (TileShape.RECTANGLE, )
                  else self.get_local_patch(r = 1, include_0 = True))
         self.elements = patch.clip(self.tile)
+        # repair any weirdness...
         self.elements.geometry = self.elements.geometry \
             .buffer(-self.fudge_factor) \
             .buffer(self.fudge_factor, join_style = 2)
         self.elements = self.elements[self.elements.geometry.area > 0]
         self.regularised_tile = copy.deepcopy(self.tile)
-        return
+        return None
     
         
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
              show_ids = True, show_vectors:bool = False, r:int = 0,
              tile_edgecolor:str = "k", reg_tile_edgcolor:str = "r", 
-             facecolor:str = "#00000000", cmap:list[str] = None, 
-             figsize:tuple[float] = (8, 8), **kwargs) -> None:
+             cmap:list[str] = None, figsize:tuple[float] = (8, 8), 
+             **kwargs) -> None:
+        """Plots a representation of the Tileable on the supplied axis. **wargs
+        are passed on to matplotlib.plot()
+
+        Args:
+            ax (_type_, optional): matplotlib axis to draw to. Defaults to None.
+            show_tile (bool, optional): if True show the tile outline. 
+                Defaults to True.
+            show_reg_tile (bool, optional): if True show the regularised tile 
+                outline. Defaults to True.
+            show_ids (bool, optional): if True show the element_ids. 
+                Defaults to True.
+            show_vectors (bool, optional): if true show the translation vectors 
+                (not the minimal pair, but those used by get_local_patch). 
+                Defaults to False.
+            r (int, optional): passed to get_local_patch to show context if 
+                greater than 0. Defaults to 0.
+            tile_edgecolor (str, optional): outline colour for the tile. 
+                Defaults to "k".
+            reg_tile_edgcolor (str, optional): outline colour for the 
+                regularised. Defaults to "r".
+            cmap (list[str], optional): colour map to apply to the central 
+                tiles. Defaults to None.
+            figsize (tuple[float], optional): size of the figure. 
+                Defaults to (8, 8).
+
+        Returns:
+            _type_: the axis.
+        """
         w = self.tile.geometry[0].bounds[2] - self.tile.geometry[0].bounds[0] 
         n_cols = len(set(self.elements.element_id))
         if cmap is None:
@@ -247,49 +280,88 @@ class Tileable:
                             bbox = {"lw": 0, "fc": "#ffffff40"})
         if r > 0:
             self.get_local_patch(r = r).plot(ax = ax, column = "element_id",
-                                             alpha = 0.25, cmap = cm, **kwargs)
+                                             alpha = 0.3, cmap = cm, **kwargs)
         if show_tile:
-            self.tile.plot(ax = ax, edgecolor = tile_edgecolor, lw = 0.5,
-                           facecolor = facecolor, **kwargs) 
-        if show_vectors:
+            self.tile.plot(ax = ax, ec = tile_edgecolor, lw = 0.5,
+                           fc = "#00000000", **kwargs) 
+        if show_vectors:  # note that arrows in mpl are dimensioned in plotspace
             for v in self.vectors[:len(self.vectors) // 2]:
                 ax.arrow(0, 0, v[0], v[1], color = "k", width = w * 0.002,
                          head_width = w * 0.05, length_includes_head = True)
         if show_reg_tile:
-            self.regularised_tile.plot(ax = ax, edgecolor = reg_tile_edgcolor,
-                                       facecolor = facecolor, linewidth = 2, 
-                                       **kwargs)
+            self.regularised_tile.plot(ax = ax, ec = reg_tile_edgcolor, 
+                                       fc = "#00000000", lw = 2, **kwargs)
         return ax
+
+    def _get_legend_elements(self):
+        """Returns the elements augmented by a rotation column.
+        """
+        elements = copy.deepcopy(self.elements)
+        elements["rotation"] = 0
+        return elements
     
     
-    # returns selected 
-    def get_legend_key_gdf(self, elements, data, vars, pals, map_rotation):
-        key_tiles, ids, unique_ids, vals, rots = [], [], [], [], []
+    def get_legend_key_gdf(self, elements:gpd.GeoDataFrame, 
+                           data:gpd.GeoDataFrame, vars:dict[str:str], 
+                           cmaps:dict[str:str], 
+                           map_rotation:float) -> gpd.GeoDataFrame:
+        """Returns a GeoDataFrame of tile elements dissected and with
+        data assigned to the slice so a map of them can stand for a legend.
+        The 'dissection' is handled differently by WeaveUnits and TileUnits
+        and delegated to get_legend_key_shapes().
+
+        Args:
+            elements (gpd.GeoDataFrame): the legend elements
+            data (gpd.GeoDataFrame): the tiled map data to assign to the keys
+            vars (dict): element_id:variable_name dictionary
+            cmaps (_type_): variable_name:colourmap dictionary
+            map_rotation (float): desired map rotation
+
+        Returns:
+            gpd.GeoDataFrame:  with element_id, variables and rotation
+                attributes, and geometries of Tileable elements sliced into a 
+                colour ramp or set of nested tiles.
+        """
+        key_tiles = []   # set of tiles to form a colour key (e.g. a ramp)
+        ids = []         # element_ids applied to the keys
+        unique_ids = []  # list of each element_id used in order 
+        vals = []        # values form the data assigned to the key tiles
+        rots = []        # rotation of each key tile
         subsets = data.groupby("element_id")
         for id, geom, rot in zip(elements.element_id,
                                  elements.geometry,
                                  elements.rotation):
             subset = subsets.get_group(id)
             d = subset[vars[id]]
+            # if the data are categorical then it's complicated...
             if d.dtype == pd.CategoricalDtype:
-                val_order = dict(zip(pals[id].keys(),
-                                     range(len(pals[id]))))
-                coded_data_counts = [0] * len(pals[id])
+                # desired order of categorical variable is the 
+                # color maps dictionary keys
+                num_cats = len(cmaps[id])
+                val_order = dict(zip(cmaps[id].keys(), range(num_cats)))
+                # compile counts of each category
+                coded_data_counts = [0] * num_cats
                 for v in list(d):
                     coded_data_counts[val_order[v]] += 1
-                order_val = dict(reversed(kv) for kv in val_order.items())
+                # make list of the categories containing appropriate 
+                # counts of each in the order needed using a reverse lookup
+                order_val = list(val_order.keys())
                 data_vals = []
                 for i, n in enumerate(coded_data_counts):
                     data_vals.extend([order_val[i]] * n)
-            else:
+            else: # any other data is easy!
                 data_vals = sorted(d)
+            vals.extend(data_vals)
             n = len(data_vals)
             key = self._get_legend_key_shapes(geom, n, rot)
             key_tiles.extend(key)
             ids.extend([id] * n)
             unique_ids.append(id)
             rots.extend([rot] * n)
-            vals.extend(data_vals)
+        # finally make up a data table with all the data in all the
+        # columns (each set of data only gets used in the subset it
+        # applies to). This allows us to reuse the tiling_utils.
+        # plot_subsetted_gdf() function
         key_data = {}
         for id in unique_ids:
             key_data[vars[id]] = vals
@@ -305,24 +377,46 @@ class Tileable:
     def plot_legend(self, ax, data:pd.DataFrame, vars:dict[str:str], 
                     pals:dict[str:str], zoom:float = 1., 
                     map_rotation:float = 0, **kwargs):
-        
+        """_summary_
+
+        Args:
+            ax (_type_): matplotlib axes
+            data (pd.DataFrame): a dataframe containing the element_id and 
+                atttributes in a map. Most obviously the GDF from get_tiled_map.
+            vars (dict): dictionary of element_id:var_names
+            pals (_type_): dictionary of var_names:colormaps
+            zoom (float, optional): zoom in or out of the legend. 
+                Defaults to 1..
+            map_rotation (float, optional): rotation of the map. Defaults to 0.
+
+        Returns:
+            _type_: the supplied axes
+        """
+        # turn off axes (which seems also to make it impossible
+        # to set a background colour)
         ax.set_axis_off()
 
         legend_elements = self._get_legend_elements()
+        # this is a bit hacky, but we will apply the rotation at the end
+        # so for TileUnits which don't need it, reverse that now
         if isinstance(self, TileUnit):
             legend_elements.rotation = -map_rotation
+        
         legend_key = self.get_legend_key_gdf(legend_elements,
                                              data, vars, pals, map_rotation)
-        
+        # set a zoom 
         bb = [x / zoom for x in legend_key.geometry.total_bounds]
         ax.set_xlim(bb[0], bb[2])
         ax.set_ylim(bb[1], bb[3])
+        # not using this at the moment, but if we want to colour the 
+        # background here is how when axes are set off
         # ax.axhspan(bb[1], bb[3], fc = "w", lw = 0)
 
-        # now plot background
+        # now plot background; we include the central tiles, since in
+        # the weave case these may not match the legend elements
         self.get_local_patch(r = 2, include_0 = True) \
             .geometry.rotate(map_rotation, origin = (0, 0)).plot(
-                ax = ax, fc = "#efefef", ec = "#333333", lw = 0.5)
+                ax = ax, fc = "#99999922", ec = "#333333", lw = 0.5)
 
         # plot the legend key elements (which include the data)
         tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, pals)
@@ -336,6 +430,7 @@ class Tileable:
                                   legend_elements.rotation):
             c = tile.centroid
             ax.annotate(vars[id], xy = (c.x, c.y), ha = "center", va = "center",
+                        # adjustment to favour text that reads left to right
                         rotation = (rotn + map_rotation + 90) % 180 - 90, 
                         rotation_mode = "anchor", 
                         bbox = {"lw": 0, "fc": "#ffffff40"})
@@ -368,6 +463,9 @@ class TileUnit(Tileable):
 
 
     def setup_tile_unit(self) -> None:
+        """Delegates setup of the unit to various functions depending
+        on self.tiling_type.
+        """
         if self.tiling_type == "cairo":
             tiling_geometries.setup_cairo(self)
         elif self.tiling_type == "hex-dissection":
@@ -381,12 +479,14 @@ class TileUnit(Tileable):
         return
 
     
-    # change the element in a triangle tile to either a hex or
-    # a diamond. Assumes the triangle is point up with centroid
-    # at (0, 0) 
     def _modify_elements(self) -> None:
+        """It is not trivial to tile a triangle, so this function augments
+        augments the elements of a triangular tile to a diamond by 180 degree 
+        rotation. Operation is 'in place'.
+        """
         elements = self.elements.geometry
         ids = list(self.elements.element_id)
+        
         new_ids = list(string.ascii_letters[:(len(ids) * 2)])
         elements = elements.translate(0, -elements.total_bounds[1])
         twins = [affine.rotate(element, a, origin = (0, 0)) 
@@ -395,46 +495,57 @@ class TileUnit(Tileable):
         self.elements = gpd.GeoDataFrame(
             data = {"element_id": new_ids},
             geometry = gpd.GeoSeries(twins), crs = self.elements.crs)
-        self.tile.geometry = self._modify_tile()
         return None
 
 
-    # make up a diamond from the supplied tile because it is a triangle
-    # and also change the grid_type to a diamond
-    # assume the triangle is point up with centroid at (0, 0)
     def _modify_tile(self) -> None:
+        """It is not trivial to tile a triangular tile so this function 
+        changes the tile to a diamond by copying and joining a 180 degree
+        rotated copy. Operation is 'in-place'.
+        """
         tile = self.tile.geometry[0]
         # translate to sit on x-axis
         tile = affine.translate(tile, 0, -tile.bounds[1])
         # make rotated copies
+        # buffering applied to ensure union 'sticks'
         twins = [affine.rotate(tile, a, origin = (0, 0)).buffer(
                                 self.fudge_factor, join_style = 2)
                  for a in range(0, 360, 180)]
+        # and here we undo the buffer
         merged_tile = \
             gpd.GeoSeries(twins).unary_union.buffer(
                 -self.fudge_factor, join_style = 2)
         self.tile_shape = TileShape.DIAMOND
-        return gpd.GeoSeries([merged_tile])
-                
+        self.tile.geometry = gpd.GeoSeries([merged_tile])
+        return None
 
     
-    # returns the tile unit elements augmented with centroid x and y, and 
-    # rotation (which in this case will be 0)
-    def _get_legend_elements(self):
-        elements = copy.deepcopy(self.elements)
-        elements["rotation"] = 0
-        return elements
-    
-    
-    def _get_legend_key_shapes(self, polygon:geom.Polygon, n = 25, rot = 0):
+    def _get_legend_key_shapes(self, polygon:geom.Polygon, 
+                               n_steps:int = 25, rot:float = 0) -> list[geom.Polygon]:
+        """Returns a set of shapes that can be used to make a legend key 
+        symbol for the supplied polygon. In TileUnit this is a set of 'nested
+        polygons.
+
+        Args:
+            polygon (geom.Polygon): the polygon to symbolise.
+            n (int, optional): number of steps. Defaults to 25.
+            rot (float, optional): rotation that may have to be applied.  
+                Not used in the TileUnit case. Defaults to 0.
+
+        Returns:
+            list[geom.Polygon]: a list of nested polygons.
+        """
+        # get the negative buffer distance that will 'collapse' the polygon
         radius = tiling_utils.get_collapse_distance(polygon)
-        bandwidths = range(1, n + 2)
+        # make buffer widths that will yield approx equal area 'annuli'
+        bandwidths = range(1, n_steps + 2)
+        # sqrt exaggerates outermost annuli, which can otherwise disappear
         bandwidths = [np.sqrt(w) for w in bandwidths]
-        # bandwidths = [1] * (n + 1)
         distances = np.cumsum(bandwidths)
         distances = distances * radius / distances[-1]
         nested_polys = [polygon.buffer(-d, join_style = 2) 
                         for d in distances[:-1]]
+        # return converted to annuli (who knows someone might set alpha < 1)
         return [g1.difference(g2) 
                 for g1, g2 in zip(nested_polys[:-1], nested_polys[1:])]
     
