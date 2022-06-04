@@ -89,25 +89,51 @@ def centre_offset(shape: geom.Polygon,
     return (target[0] - shape_c[0], target[1] - shape_c[1])
 
 
-def get_axis_from_label(label:str = "a", strands:str = "a|b|c"):
-    index = strands.index(label)
-    return strands[:index].count("|")
+def get_colour_ramp(geometry:geom.Polygon, 
+                    n:int = 25, a:float = 0) -> list[geom.Polygon]:
+    """Returns a series of 'slices' of the supplied polygon so that it
+    can be used as a legend colour ramp. 
+    
+    NOTE: Perhaps belongs in WeaveUnit?
 
+    Args:
+        geometry (geom.Polygon): the polygon (usually a weave element)
+        n (int, optional): the number of slices. Defaults to 25.
+        a (float, optional): orientation of the polygon, it will sliced
+            across this orientation. Defaults to 0.
 
-def get_colour_ramp(geometry, n = 10, a = 0):
+    Returns:
+        list[geom.Polygon]: list of geom.Polygons.
+    """
     c = geometry.centroid
     g = affine.rotate(geometry, -a, origin = c)
     bb = g.bounds
     cuts = np.linspace(bb[0], bb[2], n + 1)
+    # add a margin for error, since intersection operations can cause odd
+    # effects when parallel lines or other near-misses are involved...
+    # First, the y-axis
+    bb[1] = bb[1] - 1
+    bb[3] = bb[3] + 1
+    # and then the x-axis
+    cuts[0] = cuts[0] - 1
+    cuts[-1] = cuts[-1] + 1
     slices = []
     for l, r in zip(cuts[:-1], cuts[1:]):
-        slice = geom.Polygon([(l, bb[1] - 1), (r, bb[1] - 1), 
-                              (r, bb[3] + 1), (l, bb[3] + 1)])
+        slice = geom.Polygon([(l, bb[1]), (r, bb[1]), (r, bb[3]), (l, bb[3])])
         slices.append(slice.intersection(g)) 
     return [affine.rotate(s, a, origin = c) for s in slices]
 
 
-def get_regular_polygon(spacing, n) -> geom.Polygon: 
+def get_regular_polygon(spacing, n:int) -> geom.Polygon: 
+    """Returns regular polygon with n sides centered on (0, 0) with a horizontal base, and height given by spacing.
+
+    Args:
+        spacing (_type_): required height.
+        n (int): number of sides.
+
+    Returns:
+        geom.Polygon: required geom.Polygon.
+    """
     R = spacing / np.cos(np.radians(180 / n)) / 2
     a0 = -90 + 180 / n
     a_diff = 360 / n
@@ -118,6 +144,16 @@ def get_regular_polygon(spacing, n) -> geom.Polygon:
 
 
 def incentre(tri:geom.Polygon) -> geom.Point:
+    """A different triangle centre, which produces better results for some
+    of the dual tilings were triangles are not equilateral... see
+    https://en.wikipedia.org/wiki/Incenter
+
+    Args:
+        tri (geom.Polygon): the triangle.
+
+    Returns:
+        geom.Point: the incentre of the triangle.
+    """
     corners = [geom.Point(p[0], p[1]) 
                for p in list(tri.exterior.coords)]  # ABCA
     lengths = [p.distance(q) 

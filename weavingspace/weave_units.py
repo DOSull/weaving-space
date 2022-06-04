@@ -317,6 +317,23 @@ class WeaveUnit(Tileable):
         return weave.clip(bb).set_crs(self.crs)
 
 
+    def get_axis_from_label(self, label:str = "a", strands:str = None):
+        """Determines the axis of an element_id from the strands spec string.
+
+        Args:
+            label (str, optional): the element_id. Defaults to "a".
+            strands (str, optional): the strand spec. Defaults to the WeaveUnit
+                strands attribute.
+
+        Returns:
+            _type_: the axis in which the supplied element_is found.
+        """
+        if strands == None:
+            strands = self.strands
+        index = strands.index(label)
+        return strands[:index].count("|")
+
+
     def _get_legend_elements(self):
         angles = ((0, 240, 120) 
                   if self.weave_type in ("hex", "cube") 
@@ -327,8 +344,7 @@ class WeaveUnit(Tileable):
         elements, x, y, rotations = [], [], [], []
         for ele in element_ids:
             candidates = groups.get_group(ele)
-            axis = tiling_utils.get_axis_from_label(ele, self.strands)
-            the_one = self._get_most_central(candidates)
+            axis = self.get_axis_from_label(ele, self.strands)
             elements.append(self._get_most_central(candidates))
             rotations.append(-angles[axis])
         return gpd.GeoDataFrame(
