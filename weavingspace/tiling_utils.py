@@ -218,10 +218,10 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
         cycles.append(
             set([poly_id for poly_id, p in enumerate(local_patch.geometry) 
                  if pt.distance(p) < t.fudge_factor]))
-    # convert the polygon ID sequences to (centroid, ID) tuples
+    # convert the polygon ID sequences to (centroid.x, centroid.y, ID) tuples
     dual_faces = []
     for cycle in cycles:
-        ids, coords = [], []
+        ids, pts = [], []
         for poly_id in cycle:
             ids.append(local_patch.element_id[poly_id])
             poly = local_patch.geometry[poly_id]
@@ -229,12 +229,13 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
                 centroid = incentre(poly)
             else:
                 centroid = poly.centroid
-            coords.append([centroid.x, centroid.y])
+            pts.append([centroid.x, centroid.y])
         # sort them into CCW order so they are well formed
-        sorted_coords = sort_ccw([(p, i) for p, i in zip(coords, ids)])
+        sorted_coords = sort_ccw([(pt[0], pt[1], id) 
+                                  for pt, id in zip(pts, ids)])
         dual_faces.append(
-            (geom.Polygon([pt_id[0] for pt_id in sorted_coords]), 
-             "".join([pt_id[1] for pt_id in sorted_coords])))
+            (geom.Polygon([(pt_id[0], pt_id[1]) for pt_id in sorted_coords]), 
+             "".join([pt_id[2] for pt_id in sorted_coords])))
     # ensure the resulting face centroids are inside the original tile
     # displaced a little to avoid uncertainties at corners/edges
     dual_faces = [(f, id) for f, id in dual_faces
@@ -271,23 +272,19 @@ def relabel(data:Iterable) -> list:
     return [new_data[d] for d in data]
         
 
-    
-# sort supplied  points into CCW order - by measuring angles around
-# their centroid
-def sort_ccw(pts_ids:list[tuple[tuple[float, float], str]]):
-    """Sorts supplied tuple of a pair of floats (points) and an ID into
-    counterclockwise order.
+def sort_ccw(pts_ids:list[tuple[float, float, str]]):
+    """Sorts supplied tuple of x, y, ID into counterclockwise order.
 
     Args:
-        pts_ids (list[tuple[tuple[float, float], str]]): A tuple of a pair of 
+        pts_ids (list[tuple[float, float, str]]): A tuple of a pair of 
             floats and a string.
 
     Returns:
         list: a list in the same format as supplied sorted into 
-            counter-clockwise order.
+            counter-clockwise order of the point locations.
     """
-    x = [p[0][0] for p in pts_ids]
-    y = [p[0][1] for p in pts_ids]
+    x = [p[0] for p in pts_ids]
+    y = [p[1] for p in pts_ids]
     cx, cy = np.mean(x), np.mean(y)
     dx = [_ - cx for _ in x]
     dy = [_ - cy for _ in y]
@@ -296,25 +293,35 @@ def sort_ccw(pts_ids:list[tuple[tuple[float, float], str]]):
     return [pt_id for angle, pt_id in sorted(d.items())]
 
 
-def write_map_to_layers(gdf, fname = "output.gpkg", element_var = "element_id"):
+def write_map_to_layers(gdf:gpd.GeoDataFrame, fname:str = "output.gpkg",
+                        element_var:str = "element_id") -> None:
+    """Writes supplied GeoDataFrame to a GPKG file with layers based on 
+    the element_var attribute.
+
+    Args:
+        gdf (gpd.GeoDataFrame): the GeoDataFrame.
+        fname (str, optional): filename to write.
+        element_var (str, optional): the attribute to use to separate
+            output file into layers. Defaults to "element_id".
+    """
     grouped = gdf.groupby(element_var, as_index = False)
-    # for e in gdf[element_var].drop_duplicates():
     for e in pd.Series.unique(gdf[element_var]):
-        grouped.get_group(e).to_fule(fname, layer = e, driver = "GPKG")
+        grouped.get_group(e).to_file(fname, layer = e, driver = "GPKG")
         
 
-def get_insets(geometry:geom.Polygon, n = 25, equal_areas = True):
-    radius = get_collapse_distance(geometry)
-    bandwidths = range(1, n + 2) if equal_areas else [1] * (n + 1)
-    distances = np.cumsum(bandwidths)
-    distances = distances * radius / distances[-1]
-    nested_geoms = [geometry.buffer(-d, join_style = 2) 
-                    for d in distances]
-    return [g1.difference(g2) 
-            for g1, g2 in zip(nested_geoms[:-1], nested_geoms[1:])]
+def get_collapse_distance(geometry:geom.Polygon) -> float:
+    """Returns the distance under which the supplied polygon will shrink
+    to nothing if negatively buffered by that distance.
+    
+    Performs a binary search between an upper bound based on the radius of
+    the circle of equal area to the polygon, and 0.
 
+    Args:
+        geometry (geom.Polygon): the polygon.
 
-def get_collapse_distance(geometry):
+    Returns:
+        float: its collapse distance.
+    """
     radius = np.sqrt(geometry.area / np.pi)
     lower = 0
     upper = radius
@@ -331,41 +338,72 @@ def get_collapse_distance(geometry):
     return new_r
 
 
-def plot_subsetted_gdf(ax, gdf, vars = {}, pals = {}, **kwargs):
+def plot_subsetted_gdf(ax, gdf:gpd.GeoDataFrame, vars:dict[str:str], 
+                       cmaps:dict[str:str], **kwargs):
+    """Plots supplied GedDataFrame on the supplied matplotlib axes,
+    subsetting it into groups based on the variables in vars, and coloured
+    by the colour maps in cmaps.
+    
+    Colour maps in the cmaps dictionary are per variable to be mapped, i.e., 
+    {"var1": "Reds", "var2": "Blues"} and so one. They colour map be supplied 
+    in any format accepted by gpd.GeoDataFrame.plot() and additionally also as
+    a dictionary of attribute_value:colour key value pairs, in an order relevant
+    to the variable. E.g. {"low": "red", "medium": "#00000000", "high": "k"}.
+
+    Args:
+        ax (_type_): matplotlib axes to plot to.
+        gdf (gpd.GeoDataFrame): the data to plot.
+        vars (dict): lookup from element_id:variable name.
+        cmaps (dict): lookup from variable name:colour map (see details).
+
+    Raises:
+        Exception: if the colour map specification is not a recognised type.
+
+    Returns:
+        _type_: the supplied matplotlib axes.
+    """
     ids = pd.Series.unique(gdf.element_id)
     groups = gdf.groupby("element_id")
     for id in ids:
         subset = groups.get_group(id)
-        # Handle custom color assignments via 'pals' parameter.
+        # Handle custom color assignments via 'cmaps' parameter.
         # Result is setting 'cmap' variable used in plot command afterwards.
-        if (isinstance(pals, 
+        if (isinstance(cmaps, 
                         (str, matplotlib.colors.Colormap,
                         matplotlib.colors.LinearSegmentedColormap,
                         matplotlib.colors.ListedColormap))):
-            cmap=pals  # user wants one palette for all ids
-        elif (len(pals) == 0):
+            cmap=cmaps  # user wants one palette for all ids
+        elif (len(cmaps) == 0):
             cmap = 'Reds'  # set a default... here, to Brewer's 'Reds'
-        elif (id not in pals):
+        elif (id not in cmaps):
             cmap = 'Reds'  # id has no color specified in dict, use default
-        elif (isinstance(pals[id], 
+        elif (isinstance(cmaps[id], 
                             (str, matplotlib.colors.Colormap,
                             matplotlib.colors.LinearSegmentedColormap,
                             matplotlib.colors.ListedColormap))):
-            cmap = pals[id]  # user specified colors for this id so use it
-        elif (isinstance(pals[id], dict)):
-            colormap_dict = pals[id]
+            cmap = cmaps[id]  # user specified colors for this id so use it
+        elif (isinstance(cmaps[id], dict)):
+            colormap_dict = cmaps[id]
             data_unique_sorted = subset[vars[id]].unique()
             data_unique_sorted.sort()
             cmap = matplotlib.colors.ListedColormap(
                 [colormap_dict[x] for x in data_unique_sorted])
         else:
-            raise Exception(f"Color map for '{id}' is not a known type, but is {str(type(pals[id]))}")
+            raise Exception(f"Color map for '{id}' is not a known type, but is {str(type(cmaps[id]))}")
 
-        subset.plot(ax = ax, column = vars[id], cmap=cmap, **kwargs)
+        subset.plot(ax = ax, column = vars[id], cmap = cmap, **kwargs)
     return ax
 
 
 def get_largest_polygon(polygons:gpd.GeoSeries) -> gpd.GeoSeries:
+    """Returns the largest polygon in a GeoSeries as a GeoSeries of one polygon.
+
+    Args:
+        polygons (gpd.GeoSeries): the set of polygons to pick from.
+
+    Returns:
+        gpd.GeoSeries: the largest polygon.
+    """
     areas = list(polygons.area)
     max_area = max(areas)
     return gpd.GeoSeries([polygons[areas.index(max_area)]])

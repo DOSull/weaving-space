@@ -375,7 +375,7 @@ class Tileable:
 
     
     def plot_legend(self, ax, data:pd.DataFrame, vars:dict[str:str], 
-                    pals:dict[str:str], zoom:float = 1., 
+                    cmaps:dict[str:str], zoom:float = 1., 
                     map_rotation:float = 0, **kwargs):
         """_summary_
 
@@ -384,7 +384,7 @@ class Tileable:
             data (pd.DataFrame): a dataframe containing the element_id and 
                 atttributes in a map. Most obviously the GDF from get_tiled_map.
             vars (dict): dictionary of element_id:var_names
-            pals (_type_): dictionary of var_names:colormaps
+            cmaps (dict): dictionary of var_names:colormaps
             zoom (float, optional): zoom in or out of the legend. 
                 Defaults to 1..
             map_rotation (float, optional): rotation of the map. Defaults to 0.
@@ -403,7 +403,7 @@ class Tileable:
             legend_elements.rotation = -map_rotation
         
         legend_key = self.get_legend_key_gdf(legend_elements,
-                                             data, vars, pals, map_rotation)
+                                             data, vars, cmaps, map_rotation)
         # set a zoom 
         bb = [x / zoom for x in legend_key.geometry.total_bounds]
         ax.set_xlim(bb[0], bb[2])
@@ -419,7 +419,7 @@ class Tileable:
                 ax = ax, fc = "#99999922", ec = "#333333", lw = 0.5)
 
         # plot the legend key elements (which include the data)
-        tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, pals)
+        tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, cmaps)
         
         # now add the annotations - for this we go back to the legend elements
         legend_elements.geometry = legend_elements.geometry.rotate(

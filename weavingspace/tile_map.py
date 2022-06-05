@@ -359,19 +359,19 @@ class Tiling:
     #         geometry = gpd.GeoSeries(tiles_to_keep))
     
     
-    def plot_map(self, fig, gdf:gpd.GeoDataFrame, vars:dict[str:str] = {},
-                 pals:dict[str:Any] = {}, legend:bool = True, 
+    def plot_map(self, fig, gdf:gpd.GeoDataFrame, vars:dict[str:str],
+                 cmaps:dict[str:Any], legend:bool = True, 
                  legend_zoom:float = 1.0, **kwargs):
         """Returns a matplotlib axis with a map consistent with supplied 
         settings. 
 
         Args:
-            fig (_type_): a matplotlib figure.
+            fig: a matplotlib figure.
             gdf (gpd.GeoDataFrame): a map with subsets designated by 
                 an element_id variable.
             vars (dict): dictionary mapping element_id values to variable
                 names. Defaults to {}.
-            pals (dict): dictionary mapping variable names to palette
+            cmaps (dict): dictionary mapping variable names to palette
                 specifications. Defaults to {}.
             legend (bool, optional): If True a legend is added to the map. 
                 Defaults to True.
@@ -379,15 +379,16 @@ class Tiling:
                 Defaults to 1.0.
 
         Returns:
-            _type_: _description_
+            _type_: returns a tuple of matplotlib axes (if legend True) or a 
+                single axes if legend False.
         """
         ax = fig.add_subplot(111)
         ax.set_axis_off()
-        ax = tiling_utils.plot_subsetted_gdf(ax, gdf, vars, pals, **kwargs)
+        ax = tiling_utils.plot_subsetted_gdf(ax, gdf, vars, cmaps, **kwargs)
         if legend:
             ax2 = self.tile_unit.plot_legend(
                 ax = ax.inset_axes([1, .5, .3, .5]), data = gdf, vars = vars,
-                pals = pals, zoom = legend_zoom, map_rotation = self.rotation,
+                cmaps = cmaps, zoom = legend_zoom, map_rotation = self.rotation,
                 **kwargs)
         return (ax, ax2) if legend else ax
 
