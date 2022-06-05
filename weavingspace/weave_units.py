@@ -334,18 +334,27 @@ class WeaveUnit(Tileable):
         return strands[:index].count("|")
 
 
-    def _get_legend_elements(self):
+    def _get_legend_elements(self) -> gpd.GeoDataFrame:
+        """Returns elements suitable for use in a legend representation.
+        
+        One element for each element_id value will be chosen, close to the
+        centre of the tile extent, and not among the smallest elements present
+        (for example not a short length of strand mostly hidden by other 
+        elements)
+
+        Returns:
+            gpd.GeoDataFrame: the chosen elements.
+        """
         angles = ((0, 240, 120) 
                   if self.weave_type in ("hex", "cube") 
                   else (90, 0))
-        # element_ids = list(self.elements.element_id.drop_duplicates())
         element_ids = pd.Series.unique(self.elements.element_id)
         groups = self.elements.groupby("element_id")
-        elements, x, y, rotations = [], [], [], []
-        for ele in element_ids:
-            candidates = groups.get_group(ele)
-            axis = self.get_axis_from_label(ele, self.strands)
-            elements.append(self._get_most_central(candidates))
+        elements, rotations = [], []
+        for id in element_ids:
+            candidates = groups.get_group(id)
+            axis = self.get_axis_from_label(id, self.strands)
+            elements.append(self._get_most_central_large_element(candidates))
             rotations.append(-angles[axis])
         return gpd.GeoDataFrame(
             data = {"element_id": element_ids, "rotation": rotations}, 
@@ -354,7 +363,16 @@ class WeaveUnit(Tileable):
         )
         
 
-    def _get_most_central(self, elements):
+    def _get_most_central_large_element(self, elements:gpd.GeoDataFrame
+                                        ) -> geom.Polygon:
+        """Gets a large element close to the centre of the WeaveUnit.
+
+        Args:
+            elements (gpd.GeoDataFrame): the set of elements to choose from.
+
+        Returns:
+            geom.Polygon: the chosen, large central element.
+        """
         areas = [g.area for g in elements.geometry]
         min_area, max_area = min(areas), max(areas)
         if min_area / max_area > 0.5:
@@ -368,16 +386,37 @@ class WeaveUnit(Tileable):
         return geoms[idx]
 
 
-    def _get_legend_key_shapes(self, geometry, n = 25, a = 0):
-        c = geometry.centroid
-        g = affine.rotate(geometry, -a, origin = c)
-        bb = g.bounds
+    def _get_legend_key_shapes(self, polygon:geom.Polygon, 
+                               n:int = 25, angle:float = 0) -> list[geom.Polygon]:
+        """Returns a list of polygons obtained by slicing the supplied polygon
+        across its length inton n slices. Orientation of the polygon is 
+        indicated by the angle.
+        
+        The returned list of polygons can be used to form a colour ramp in a 
+        legend.
+
+        Args:
+            polygon (geom.Polygon): the weave strand polygon to slice.
+            n (int, optional): the number of slices required. Defaults to 25.
+            angle (float, optional): orientation of the polygon. Defaults to 0.
+
+        Returns:
+            list[geom.Polygon]: a list of polygons.
+        """
+        c = polygon.centroid
+        g = affine.rotate(polygon, -angle, origin = c)
+        bb = list(g.bounds)
         cuts = np.linspace(bb[0], bb[2], n + 1)
+        # add margin to avoid weird effects intersecting almost parallel lines.
+        cuts[0] = cuts[0] - 1
+        cuts[-1] = cuts[-1] + 1
+        bb[1] = bb[1] - 1
+        bb[3] = bb[3] + 1
         slices = []
         for l, r in zip(cuts[:-1], cuts[1:]):
-            slice = geom.Polygon([(l, bb[1] - 1), (r, bb[1] - 1), 
-                                (r, bb[3] + 1), (l, bb[3] + 1)])
+            slice = geom.Polygon([(l, bb[1]), (r, bb[1]),
+                                  (r, bb[3]), (l, bb[3])])
             slices.append(slice.intersection(g)) 
-        return [affine.rotate(s, a, origin = c) for s in slices]
+        return [affine.rotate(s, angle, origin = c) for s in slices]
 
 

@@ -90,41 +90,6 @@ def centre_offset(shape: geom.Polygon,
     return (target[0] - shape_c[0], target[1] - shape_c[1])
 
 
-def get_colour_ramp(geometry:geom.Polygon, 
-                    n:int = 25, a:float = 0) -> list[geom.Polygon]:
-    """Returns a series of 'slices' of the supplied polygon so that it
-    can be used as a legend colour ramp. 
-    
-    NOTE: Perhaps belongs in WeaveUnit?
-
-    Args:
-        geometry (geom.Polygon): the polygon (usually a weave element)
-        n (int, optional): the number of slices. Defaults to 25.
-        a (float, optional): orientation of the polygon, it will sliced
-            across this orientation. Defaults to 0.
-
-    Returns:
-        list[geom.Polygon]: list of geom.Polygons.
-    """
-    c = geometry.centroid
-    g = affine.rotate(geometry, -a, origin = c)
-    bb = g.bounds
-    cuts = np.linspace(bb[0], bb[2], n + 1)
-    # add a margin for error, since intersection operations can cause odd
-    # effects when parallel lines or other near-misses are involved...
-    # First, the y-axis
-    bb[1] = bb[1] - 1
-    bb[3] = bb[3] + 1
-    # and then the x-axis
-    cuts[0] = cuts[0] - 1
-    cuts[-1] = cuts[-1] + 1
-    slices = []
-    for l, r in zip(cuts[:-1], cuts[1:]):
-        slice = geom.Polygon([(l, bb[1]), (r, bb[1]), (r, bb[3]), (l, bb[3])])
-        slices.append(slice.intersection(g)) 
-    return [affine.rotate(s, a, origin = c) for s in slices]
-
-
 def get_regular_polygon(spacing, n:int) -> geom.Polygon: 
     """Returns regular polygon with n sides centered on (0, 0) with a horizontal base, and height given by spacing.
 
@@ -169,8 +134,17 @@ def incentre(tri:geom.Polygon) -> geom.Point:
     
 
 def get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
+    """Returns points not on the outer boundary of the supplied set 
+    of polygons.
+
+    Args:
+        polys (gpd.GeoDataFrame): a set of polygons.
+
+    Returns:
+        gpd.GeoSeries: interior vertices of the set of polygons.
+    """
     polygons = gridify(polys.geometry)
-    uu = polygons.unary_union.buffer(1e-3).buffer(-1e-3)
+    uu = polygons.unary_union.buffer(1e-3, join_style = 2).buffer(-1e-3)
     interior_pts = set()
     for poly in polygons:
         for pt in poly.exterior.coords:
@@ -179,7 +153,20 @@ def get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
     return gpd.GeoSeries([geom.Point(p) for p in interior_pts])
 
     
-def gridify(gs, precision = 6) -> gpd.GeoSeries:
+def gridify(gs:gpd.GeoSeries, precision:int = 6) -> gpd.GeoSeries:
+    """Returns the supplied GeoSeries rounded to the specified precision.
+    
+    Works by round-tripping through WKT, which seems like the easiest
+    way to do this given the variety of ways in which coordinates are
+    stored depending on the geometry.
+
+    Args:
+        gs (gpd.GeoSeries): geometries to gridify.
+        precision (int, optional): digits of precision. Defaults to 6.
+
+    Returns:
+        gpd.GeoSeries: the rounded geometries.
+    """
     return gpd.GeoSeries(
         list(gs.apply(
             wkt.dumps, rounding_precision = precision).apply(wkt.loads)))
