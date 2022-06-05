@@ -342,10 +342,10 @@ class Tiling:
                                                   origin = self.grid.centre))
         
     
-    # def get_local_patch(self, n:int = 3) -> gpd.GeoDataFrame:
+    # def get_local_patch(self, r:int = 3) -> gpd.GeoDataFrame:
     #     patch_extent = gpd.GeoDataFrame(
     #         data = {"id": [1]}, crs = self.tile_unit.crs,
-    #         geometry = self.tile_unit.tile.geometry.scale(n, n, origin = (0, 0))
+    #         geometry = self.tile_unit.tile.geometry.scale(r, r, origin = (0, 0))
     #     )
     #     patch = Tiling(self.tile_unit, patch_extent, id_var = "id")
     #     tiles_to_keep = []
