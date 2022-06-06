@@ -419,7 +419,7 @@ class Tileable:
                 ax = ax, fc = "#99999922", ec = "#333333", lw = 0.5)
 
         # plot the legend key elements (which include the data)
-        tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, cmaps)
+        tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, cmaps, **kwargs)
         
         # now add the annotations - for this we go back to the legend elements
         legend_elements.geometry = legend_elements.geometry.rotate(
