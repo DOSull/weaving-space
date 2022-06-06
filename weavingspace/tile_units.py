@@ -416,10 +416,11 @@ class Tileable:
         # the weave case these may not match the legend elements
         self.get_local_patch(r = 2, include_0 = True) \
             .geometry.rotate(map_rotation, origin = (0, 0)).plot(
-                ax = ax, fc = "#99999922", ec = "#333333", lw = 0.5)
+                ax = ax, fc = "#7F7F7F5F", ec = "#5F5F5F", lw = 0.5)
 
         # plot the legend key elements (which include the data)
-        tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, cmaps, **kwargs)
+        tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, cmaps, 
+                                        lw =0, **kwargs)
         
         # now add the annotations - for this we go back to the legend elements
         legend_elements.geometry = legend_elements.geometry.rotate(
