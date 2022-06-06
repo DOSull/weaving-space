@@ -87,8 +87,8 @@ def setup_cairo(unit) -> None:
     # note buffering before and after unary_union to 
     # clean up floating point inaccuracies
     unit.regularised_tile.geometry = gpd.GeoSeries([
-        unit.elements.geometry.buffer(1e-3, join_style = 2) \
-            .unary_union.buffer(-1e-3)])
+        unit.elements.geometry.buffer(
+            1e-3, join_style = 2).unary_union.buffer(-1e-3)])
     
         
     
@@ -260,8 +260,8 @@ def setup_laves_33336(unit) -> None:
         geometry = gpd.GeoSeries(petals))
     unit.regularised_tile = copy.deepcopy(unit.tile)
     unit.regularised_tile.geometry = gpd.GeoSeries([
-        unit.elements.geometry.buffer(1e-3, join_style = 2) \
-            .unary_union.buffer(-1e-3)])
+        unit.elements.geometry.buffer(
+            1e-3, join_style = 2).unary_union.buffer(-1e-3)])
         
 
 def setup_laves_488(unit) -> None:
@@ -279,8 +279,8 @@ def setup_laves_488(unit) -> None:
         # geometry = gpd.GeoSeries([tri1, tri2, tri3, tri4]))
     unit.regularised_tile = copy.deepcopy(unit.tile)
     unit.regularised_tile.geometry = gpd.GeoSeries([
-        unit.elements.geometry.buffer(1e-3, join_style = 2) \
-            .unary_union.buffer(-1e-3)])
+        unit.elements.geometry.buffer(
+            1e-3, join_style = 2).unary_union.buffer(-1e-3)])
         
         
 def setup_laves_31212(unit):
@@ -334,8 +334,8 @@ def setup_archimedean(unit) -> None:
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
         unit.regularised_tile = copy.deepcopy(unit.tile)
         unit.regularised_tile.geometry = gpd.GeoSeries([
-            unit.elements.geometry.buffer(1e-3, join_style = 2) \
-                .unary_union.buffer(-1e-3)])
+            unit.elements.geometry.buffer(
+                1e-3, join_style = 2).unary_union.buffer(-1e-3)])
         return
     elif unit.code == "3.12.12":
         # nice! we can make dodecagons without having to think too hard
@@ -348,8 +348,8 @@ def setup_archimedean(unit) -> None:
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
         unit.regularised_tile = copy.deepcopy(unit.tile)
         unit.regularised_tile.geometry = gpd.GeoSeries([
-            unit.elements.geometry.buffer(1e-3, join_style = 2) \
-                .unary_union.buffer(-1e-3)])
+            unit.elements.geometry.buffer(
+                1e-3, join_style = 2).unary_union.buffer(-1e-3)])
         return
     elif unit.code == "4.4.4":
         setup_base_tile(unit, TileShape.RECTANGLE)
@@ -361,8 +361,8 @@ def setup_archimedean(unit) -> None:
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
         unit.regularised_tile = copy.deepcopy(unit.tile)
         unit.regularised_tile.geometry = gpd.GeoSeries([
-            unit.elements.geometry.buffer(1e-3, join_style = 2) \
-                .unary_union.buffer(-1e-3)])
+            unit.elements.geometry.buffer(
+                1e-3, join_style = 2).unary_union.buffer(-1e-3)])
         return
     elif unit.code == "4.8.8":
         # this is the octagon and square tiling
@@ -370,8 +370,8 @@ def setup_archimedean(unit) -> None:
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
         unit.regularised_tile = copy.deepcopy(unit.tile)
         unit.regularised_tile.geometry = gpd.GeoSeries([
-            unit.elements.geometry.buffer(1e-3, join_style = 2) \
-                .unary_union.buffer(-1e-3)])
+            unit.elements.geometry.buffer(
+                1e-3, join_style = 2).unary_union.buffer(-1e-3)])
         return
     elif unit.code == "6.6.6":
         setup_base_tile(unit, TileShape.HEXAGON)
@@ -417,5 +417,5 @@ def setup_archimedean_3464(unit) -> None:
         geometry = gpd.GeoSeries([hex, square1, square2, square3, tri1, tri2]))
     unit.regularised_tile = copy.deepcopy(unit.tile)
     unit.regularised_tile.geometry = gpd.GeoSeries([
-        unit.elements.geometry.buffer(1e-3, join_style = 2) \
-            .unary_union.buffer(-1e-3)])
+        unit.elements.geometry.buffer(
+            1e-3, join_style = 2).unary_union.buffer(-1e-3)])

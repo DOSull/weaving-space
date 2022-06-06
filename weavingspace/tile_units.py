@@ -85,11 +85,15 @@ class Tileable:
                 next_frags = []
                 t_fragments = [affine.translate(f, v[0], v[1]) 
                                for f in fragments]
+                # build a set of any near matching pairs of 
+                # fragments and their translated copies
                 matches = set()
                 for i, f1 in enumerate(fragments):
                     for j, f2, in enumerate(t_fragments):
                         if i != j and f1.distance(f2) < self.fudge_factor:
                             matches.add((i, j))
+                # determine which of these when unioned has the 
+                # larger area in common with the base tile
                 fragments_to_remove = set()
                 for i, j in matches:
                     f1 = fragments[i]
@@ -414,8 +418,9 @@ class Tileable:
 
         # now plot background; we include the central tiles, since in
         # the weave case these may not match the legend elements
-        self.get_local_patch(r = 2, include_0 = True) \
-            .geometry.rotate(map_rotation, origin = (0, 0)).plot(
+        self.get_local_patch(
+            r = 2, include_0 = True).geometry.rotate(
+                map_rotation, origin = (0, 0)).plot(
                 ax = ax, fc = "#7F7F7F5F", ec = "#5F5F5F", lw = 0.5)
 
         # plot the legend key elements (which include the data)
@@ -514,16 +519,15 @@ class TileUnit(Tileable):
                                 self.fudge_factor, join_style = 2)
                  for a in range(0, 360, 180)]
         # and here we undo the buffer
-        merged_tile = \
-            gpd.GeoSeries(twins).unary_union.buffer(
+        merged_tile = gpd.GeoSeries(twins).unary_union.buffer(
                 -self.fudge_factor, join_style = 2)
         self.tile_shape = TileShape.DIAMOND
         self.tile.geometry = gpd.GeoSeries([merged_tile])
         return None
 
     
-    def _get_legend_key_shapes(self, polygon:geom.Polygon, 
-                               n_steps:int = 25, rot:float = 0) -> list[geom.Polygon]:
+    def _get_legend_key_shapes(self, polygon:geom.Polygon, n_steps:int = 25, 
+                               rot:float = 0) -> list[geom.Polygon]:
         """Returns a set of shapes that can be used to make a legend key 
         symbol for the supplied polygon. In TileUnit this is a set of 'nested
         polygons.

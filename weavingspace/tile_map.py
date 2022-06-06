@@ -165,7 +165,7 @@ class TileGrid:
             np.ndarray: A 2 column array each row being an x, y translation
             vector.
         """
-        tt_w, tt_h, tt_x0, tt_y0  = \
+        tt_w, tt_h, tt_x0, tt_y0 = \
             self._get_width_height_left_bottom(self.extent)
         tile_w, tile_h, tile_x0, tile_y0 = \
             self._get_width_height_left_bottom(self.tile)
@@ -253,7 +253,7 @@ class Tiling:
             tiled_map = tiled_map.drop(columns = [id_var])
             # now join the lookup and from there the region data
             tiled_map = tiled_map \
-                .merge(lookup, on = "tileUID")   \
+                .merge(lookup, on = "tileUID") \
                 .merge(self.region.drop(columns = ["geometry"]), on = id_var) 
         else:
             tiled_map = self.region.overlay(tiled_map)
