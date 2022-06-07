@@ -257,7 +257,7 @@ class WeaveGrid:
 
 
     def get_visible_cell_strands(
-            self, width :float= 1.0, coords:tuple[int] = None, 
+            self, width:float= 1.0, coords:tuple[int] = None, 
             strand_order:tuple[int] = (0, 1, 2), n_slices:tuple[int] = (1, 1, 1)
         ) -> list[Union[Polygon, MultiPolygon]]:
         """Returns visible strands in grid cell based on layer order.

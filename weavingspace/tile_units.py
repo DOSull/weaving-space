@@ -90,7 +90,7 @@ class Tileable:
                 matches = set()
                 for i, f1 in enumerate(fragments):
                     for j, f2, in enumerate(t_fragments):
-                        if i != j and f1.distance(f2) < self.fudge_factor:
+                        if i != j and tiling_utils.touch_along_an_edge(f1, f2):
                             matches.add((i, j))
                 # determine which of these when unioned has the 
                 # larger area in common with the base tile
@@ -380,8 +380,9 @@ class Tileable:
     
     def plot_legend(self, ax, data:pd.DataFrame, vars:dict[str:str], 
                     cmaps:dict[str:str], zoom:float = 1., 
-                    map_rotation:float = 0, **kwargs):
-        """_summary_
+                    map_rotation:float = 0, return_key_gdf:bool = False,
+                    **kwargs):
+        """Plots a legend for this tile unit in a particular map. 
 
         Args:
             ax (_type_): matplotlib axes
@@ -392,6 +393,8 @@ class Tileable:
             zoom (float, optional): zoom in or out of the legend. 
                 Defaults to 1..
             map_rotation (float, optional): rotation of the map. Defaults to 0.
+            return_key_gdf (bool, optional): if True will return the key 
+                GeoDataFrame. Defaults to False.
 
         Returns:
             _type_: the supplied axes
@@ -425,7 +428,7 @@ class Tileable:
 
         # plot the legend key elements (which include the data)
         tiling_utils.plot_subsetted_gdf(ax, legend_key, vars, cmaps, 
-                                        lw =0, **kwargs)
+                                        lw = 0, **kwargs)
         
         # now add the annotations - for this we go back to the legend elements
         legend_elements.geometry = legend_elements.geometry.rotate(
@@ -440,7 +443,7 @@ class Tileable:
                         rotation = (rotn + map_rotation + 90) % 180 - 90, 
                         rotation_mode = "anchor", 
                         bbox = {"lw": 0, "fc": "#ffffff40"})
-        return ax
+        return legend_key if return_key_gdf else ax
     
 
 @dataclass

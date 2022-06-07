@@ -394,3 +394,20 @@ def get_largest_polygon(polygons:gpd.GeoSeries) -> gpd.GeoSeries:
     areas = list(polygons.area)
     max_area = max(areas)
     return gpd.GeoSeries([polygons[areas.index(max_area)]])
+
+
+def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -> bool:
+    """Tests if two polygons touch along an edge.
+    
+    Checks that the distance between negative buffered versions of each polygon
+    is less than or equal to twice the buffer distance. If not then they only
+    touch at a corner.
+
+    Args:
+        p1 (geom.Polygon): First polygon
+        p2 (geom.Polygon): Second polygon
+
+    Returns:
+        bool: True if they neighbour along an edge
+    """
+    return p1.buffer(-1e-6).distance(p2.buffer(-1e-6)) <= 2e-6

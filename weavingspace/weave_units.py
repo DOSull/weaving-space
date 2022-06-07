@@ -262,19 +262,18 @@ class WeaveUnit(Tileable):
         for coords, strand_order in zip(loom.indices, loom.orderings):
             ids = [thread[coord] for coord, thread in zip(coords, labels)]
             cell = grid.get_grid_cell_at(coords)
-            # bb_polys.append(cell)
-            # bb_polys.append(cell.buffer(self.fudge_factor, join_style = 2))
             bb_polys.append(grid._gridify(cell))
             if strand_order is None: continue  # No strands present
             if strand_order == "NA": continue  # Inconsistency in layer order
             n_slices = [len(id) for id in ids]
-            next_polys = grid.get_visible_cell_strands(self.aspect, coords, 
-                                                    strand_order, n_slices)
+            next_polys = grid.get_visible_cell_strands(
+                width = self.aspect, coords = coords,
+                strand_order = strand_order, n_slices = n_slices)
             weave_polys.extend(next_polys)
             next_labels = [list(ids[i]) for i in strand_order]  # list of lists
             next_labels = list(itertools.chain(*next_labels))  # flatten 
             strand_ids.extend(next_labels)
-        tile = shapely.ops.unary_union(bb_polys)  #.buffer(-self.fudge_factor)
+        tile = shapely.ops.unary_union(bb_polys)
         shift = tiling_utils.centre_offset(tile)
         tile = affine.translate(tile, shift[0], shift[1])
         self.elements = self.get_weave_elements_gdf(
