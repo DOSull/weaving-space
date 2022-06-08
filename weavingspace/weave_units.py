@@ -145,9 +145,8 @@ class WeaveUnit(Tileable):
             th (np.ndarray, optional): threading matrix for the "this" 
                 case. Defaults to None.
         """    
-        warp_threads, weft_threads, drop = \
+        warp_threads, weft_threads, _ = \
             tiling_utils.get_strand_ids(self.strands)
-        drop = None  # don't need this so throw it away
         
         if self.weave_type == "basket" and isinstance(self.n, (list, tuple)):
             self.n = self.n[0]

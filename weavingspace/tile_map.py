@@ -382,15 +382,15 @@ class TiledMap:
         if self.legend:
             # this sizing stuff is rough and ready for now
             # and possibly forever... 
-            reg_w, reg_h, l, r = \
+            reg_w, reg_h, *_ = \
                 tiling_utils.get_width_height_left_bottom(
                     self.tiled_map.geometry)
-            tile_w, tile_h, l, r = \
+            tile_w, tile_h, *_ = \
                 tiling_utils.get_width_height_left_bottom(
                     self.tiling.tile_unit.elements.geometry)
             approx_count = reg_w / tile_w * reg_h / tile_h
             sf = np.sqrt(approx_count) / 2
-            gskw = {"height_ratios": [sf * tile_h, sf * tile_h],
+            gskw = {"height_ratios": [sf * tile_h, reg_h],
                     "width_ratios": [reg_w + sf * tile_w, sf * tile_w]}
 
             fig, axes = pyplot.subplot_mosaic(
