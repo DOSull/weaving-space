@@ -402,6 +402,8 @@ class TiledMap:
             fig, axes = pyplot.subplots(
                 1, 1, figsize = self.figsize, 
                 layout = "tight", **kwargs)
+            
+        print(f"{fig=}")
 
         if self.variables is None:
             # get any floating point columns available
