@@ -21,7 +21,7 @@ from tile_units import Tileable
 from tile_units import TileUnit
 from tile_units import TileShape
 
-# import tiling_utils
+import tiling_utils
 
 
 @dataclass
@@ -116,9 +116,9 @@ class TileGrid:
             vector.
         """    
         tt_w, tt_h, tt_x0, tt_y0 = \
-            self._get_width_height_left_bottom(self.extent)
+            tiling_utils.get_width_height_left_bottom(self.extent)
         tile_w, tile_h, tile_x0, tile_y0 = \
-            self._get_width_height_left_bottom(self.tile)
+            tiling_utils.get_width_height_left_bottom(self.tile)
         # number of tiles in each direction
         nx = int(np.ceil(tt_w / tile_w))
         ny = int(np.ceil(tt_h / tile_h))
@@ -137,9 +137,9 @@ class TileGrid:
             vector.
         """    
         tt_w, tt_h, tt_x0, tt_y0  = \
-            self._get_width_height_left_bottom(self.extent)
+            tiling_utils.get_width_height_left_bottom(self.extent)
         tile_w, tile_h, tile_x0, tile_y0 = \
-            self._get_width_height_left_bottom(self.tile)
+            tiling_utils.get_width_height_left_bottom(self.tile)
         nx = int(np.ceil(tt_w / (tile_w * 3 / 2)))
         ny = int(np.ceil(tt_h / tile_h))
         # the effective width of two columns of hexagonal tiles is 3w/2
@@ -172,9 +172,9 @@ class TileGrid:
             vector.
         """
         tt_w, tt_h, tt_x0, tt_y0 = \
-            self._get_width_height_left_bottom(self.extent)
+            tiling_utils.get_width_height_left_bottom(self.extent)
         tile_w, tile_h, tile_x0, tile_y0 = \
-            self._get_width_height_left_bottom(self.tile)
+            tiling_utils.get_width_height_left_bottom(self.tile)
         nx = int(np.ceil(tt_w / tile_w))
         ny = int(np.ceil(tt_h / tile_h))
         x0 = (tt_w - (nx * tile_w)) / 2 + tt_x0
@@ -380,14 +380,28 @@ class TiledMap:
             del kwargs[k]
 
         if self.legend:
+            # this sizing stuff is rough and ready for now
+            # and possibly forever... 
+            reg_w, reg_h, l, r = \
+                tiling_utils.get_width_height_left_bottom(
+                    self.tiled_map.geometry)
+            tile_w, tile_h, l, r = \
+                tiling_utils.get_width_height_left_bottom(
+                    self.tiling.tile_unit.elements.geometry)
+            approx_count = reg_w / tile_w * reg_h / tile_h
+            sf = np.sqrt(approx_count) / 2
+            gskw = {"height_ratios": [sf * tile_h, sf * tile_h],
+                    "width_ratios": [reg_w + sf * tile_w, sf * tile_w]}
+
             fig, axes = pyplot.subplot_mosaic(
-                [["map", "map", "map", "legend"], 
-                    ["map", "map", "map", "."], 
-                    ["map", "map", "map", "."]], 
-                figsize = self.figsize, **kwargs)
+                [["map", "legend"],
+                 ["map", "."]], 
+                gridspec_kw = gskw, figsize = self.figsize, 
+                constrained_layout = True, **kwargs)
         else:
             fig, axes = pyplot.subplots(
-                1, 1, figsize = self.figsize, **kwargs)
+                1, 1, figsize = self.figsize, 
+                constrained_layout = True, **kwargs)
 
         if self.variables is None:
             # get any floating point columns available

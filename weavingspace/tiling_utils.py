@@ -325,61 +325,61 @@ def get_collapse_distance(geometry:geom.Polygon) -> float:
     return new_r
 
 
-def plot_subsetted_gdf(ax, gdf:gpd.GeoDataFrame, vars:dict[str:str], 
-                       cmaps:dict[str:str], **kwargs):
-    """Plots supplied GedDataFrame on the supplied matplotlib axes,
-    subsetting it into groups based on the variables in vars, and coloured
-    by the colour maps in cmaps.
+# def plot_subsetted_gdf(ax, gdf:gpd.GeoDataFrame, vars:dict[str:str], 
+#                        cmaps:dict[str:str], **kwargs):
+#     """Plots supplied GedDataFrame on the supplied matplotlib axes,
+#     subsetting it into groups based on the variables in vars, and coloured
+#     by the colour maps in cmaps.
     
-    Colour maps in the cmaps dictionary are per variable to be mapped, i.e., 
-    {"var1": "Reds", "var2": "Blues"} and so one. They colour map be supplied 
-    in any format accepted by gpd.GeoDataFrame.plot() and additionally also as
-    a dictionary of attribute_value:colour key value pairs, in an order relevant
-    to the variable. E.g. {"low": "red", "medium": "#00000000", "high": "k"}.
+#     Colour maps in the cmaps dictionary are per variable to be mapped, i.e., 
+#     {"var1": "Reds", "var2": "Blues"} and so one. They colour map be supplied 
+#     in any format accepted by gpd.GeoDataFrame.plot() and additionally also as
+#     a dictionary of attribute_value:colour key value pairs, in an order relevant
+#     to the variable. E.g. {"low": "red", "medium": "#00000000", "high": "k"}.
 
-    Args:
-        ax (_type_): matplotlib axes to plot to.
-        gdf (gpd.GeoDataFrame): the data to plot.
-        vars (dict): lookup from element_id:variable name.
-        cmaps (dict): lookup from variable name:colour map (see details).
+#     Args:
+#         ax (_type_): matplotlib axes to plot to.
+#         gdf (gpd.GeoDataFrame): the data to plot.
+#         vars (dict): lookup from element_id:variable name.
+#         cmaps (dict): lookup from variable name:colour map (see details).
 
-    Raises:
-        Exception: if the colour map specification is not a recognised type.
+#     Raises:
+#         Exception: if the colour map specification is not a recognised type.
 
-    Returns:
-        _type_: the supplied matplotlib axes.
-    """
-    ids = pd.Series.unique(gdf.element_id)
-    groups = gdf.groupby("element_id")
-    for id in ids:
-        subset = groups.get_group(id)
-        # Handle custom color assignments via 'cmaps' parameter.
-        # Result is setting 'cmap' variable used in plot command afterwards.
-        if (isinstance(cmaps, 
-                        (str, matplotlib.colors.Colormap,
-                        matplotlib.colors.LinearSegmentedColormap,
-                        matplotlib.colors.ListedColormap))):
-            cmap=cmaps  # user wants one palette for all ids
-        elif (len(cmaps) == 0):
-            cmap = 'Reds'  # set a default... here, to Brewer's 'Reds'
-        elif (id not in cmaps):
-            cmap = 'Reds'  # id has no color specified in dict, use default
-        elif (isinstance(cmaps[id], 
-                            (str, matplotlib.colors.Colormap,
-                            matplotlib.colors.LinearSegmentedColormap,
-                            matplotlib.colors.ListedColormap))):
-            cmap = cmaps[id]  # user specified colors for this id so use it
-        elif (isinstance(cmaps[id], dict)):
-            colormap_dict = cmaps[id]
-            data_unique_sorted = subset[vars[id]].unique()
-            data_unique_sorted.sort()
-            cmap = matplotlib.colors.ListedColormap(
-                [colormap_dict[x] for x in data_unique_sorted])
-        else:
-            raise Exception(f"Color map for '{id}' is not a known type, but is {str(type(cmaps[id]))}")
+#     Returns:
+#         _type_: the supplied matplotlib axes.
+#     """
+#     ids = pd.Series.unique(gdf.element_id)
+#     groups = gdf.groupby("element_id")
+#     for id in ids:
+#         subset = groups.get_group(id)
+#         # Handle custom color assignments via 'cmaps' parameter.
+#         # Result is setting 'cmap' variable used in plot command afterwards.
+#         if (isinstance(cmaps, 
+#                         (str, matplotlib.colors.Colormap,
+#                         matplotlib.colors.LinearSegmentedColormap,
+#                         matplotlib.colors.ListedColormap))):
+#             cmap=cmaps  # user wants one palette for all ids
+#         elif (len(cmaps) == 0):
+#             cmap = 'Reds'  # set a default... here, to Brewer's 'Reds'
+#         elif (id not in cmaps):
+#             cmap = 'Reds'  # id has no color specified in dict, use default
+#         elif (isinstance(cmaps[id], 
+#                             (str, matplotlib.colors.Colormap,
+#                             matplotlib.colors.LinearSegmentedColormap,
+#                             matplotlib.colors.ListedColormap))):
+#             cmap = cmaps[id]  # user specified colors for this id so use it
+#         elif (isinstance(cmaps[id], dict)):
+#             colormap_dict = cmaps[id]
+#             data_unique_sorted = subset[vars[id]].unique()
+#             data_unique_sorted.sort()
+#             cmap = matplotlib.colors.ListedColormap(
+#                 [colormap_dict[x] for x in data_unique_sorted])
+#         else:
+#             raise Exception(f"Color map for '{id}' is not a known type, but is {str(type(cmaps[id]))}")
 
-        subset.plot(ax = ax, column = vars[id], cmap = cmap, **kwargs)
-    return ax
+#         subset.plot(ax = ax, column = vars[id], cmap = cmap, **kwargs)
+#     return ax
 
 
 def get_largest_polygon(polygons:gpd.GeoSeries) -> gpd.GeoSeries:
@@ -411,3 +411,19 @@ def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -> bool:
         bool: True if they neighbour along an edge
     """
     return p1.buffer(-1e-6).distance(p2.buffer(-1e-6)) <= 2e-6
+
+
+def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
+    """Returns width, height, left and bottom limits of a GeoSeries
+
+    Args:
+        gs (geopandas.GeoSeries): GeoSeries for which limits are required.
+
+    Returns:
+        tuple: four float values of width, height, left and bottom of gs.
+    """    
+    extent = gs.total_bounds
+    return (extent[2] - extent[0], extent[3] - extent[1], 
+            extent[0], extent[1])
+
+
