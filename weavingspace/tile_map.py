@@ -366,11 +366,11 @@ class TiledMap:
     scheme: str = "equalinterval"
     k: int = 7
     bins: list[Any] = None
-    figsize: tuple[float] = (24, 15)
+    figsize: tuple[float] = (20, 15)
     dpi: float = 72
         
 
-    def render(self, ax:pyplot.Axes = None, **kwargs) -> tuple[pyplot.Axes]:
+    def render(self, **kwargs) -> tuple[pyplot.Axes]:
         to_remove = set()  # keep track of kwargs we use to setup TiledMap
         for k, v in kwargs.items():
             if k in self.__dict__:
@@ -379,9 +379,15 @@ class TiledMap:
         for k in to_remove:
             del kwargs[k]
 
-        if ax is None:
-            fig = pyplot.figure(figsize = self.figsize, dpi = self.dpi)
-            ax = fig.add_subplot(111)
+        if self.legend:
+            fig, axes = pyplot.subplot_mosaic(
+                [["map", "map", "map", "legend"], 
+                    ["map", "map", "map", "."], 
+                    ["map", "map", "map", "."]], 
+                figsize = self.figsize, **kwargs)
+        else:
+            fig, axes = pyplot.subplots(
+                1, 1, figsize = self.figsize, **kwargs)
 
         if self.variables is None:
             # get any floating point columns available
@@ -407,17 +413,19 @@ class TiledMap:
                 else:
                     self.colourmaps[var] = "Reds"
         
-        return self.plot_map(ax, **kwargs)
+        self.plot_map(axes, **kwargs)
+        return fig
     
     
-    def plot_map(self, ax, **kwargs):
-        ax.set_axis_off()
-        ax = self.plot_subsetted_gdf(ax, self.tiled_map, **kwargs)
+    def plot_map(self, axes, **kwargs):
         if self.legend:
-            ax2 = self.get_legend(ax = ax.inset_axes([1, .5, .3, .5]), **kwargs)
+            axes["map"].set_axis_off()
+            self.plot_subsetted_gdf(axes["map"], self.tiled_map, **kwargs)
+            self.get_legend(ax = axes["legend"], **kwargs)
         else:
-            ax2 = None
-        return (ax, ax2)
+            axes.set_axis_off()
+            self.plot_subsetted_gdf(axes, self.tiled_map, **kwargs)
+        return None
     
     
     def plot_subsetted_gdf(self, ax, gdf, **kwargs):
@@ -450,14 +458,13 @@ class TiledMap:
                 raise Exception(f"Color map for '{var}' is not a known type, but is {str(type(self.colourmaps[var]))}")
 
             subset.plot(ax = ax, column = var, cmap = cmap, **kwargs)
-        return ax
     
     
     def to_file(self, fname:str = None) -> str:
         return fname
     
     
-    def get_legend(self, ax: pyplot.Axes = None, **kwargs) -> pyplot.Axes:
+    def get_legend(self, ax: pyplot.Axes = None, **kwargs) -> None:
         # turn off axes (which seems also to make it impossible
         # to set a background colour)
         ax.set_axis_off()
@@ -482,7 +489,7 @@ class TiledMap:
         self.tiling.tile_unit.get_local_patch(
             r = 2, include_0 = True).geometry.rotate(
                 self.tiling.rotation, origin = (0, 0)).plot(
-                ax = ax, fc = "#7F7F7F5F", ec = "#5F5F5F", lw = 0.5)
+                ax = ax, fc = "#9F9F9F3F", ec = "#5F5F5F", lw = 0.5)
 
         # plot the legend key elements (which include the data)
         self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
@@ -500,7 +507,6 @@ class TiledMap:
                     # adjust rotation to favour text reading left to right
                     rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
                     bbox = {"lw": 0, "fc": "#ffffff40"})
-        return ax
 
 
     def get_legend_key_gdf(self, elements:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
