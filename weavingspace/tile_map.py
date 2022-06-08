@@ -397,11 +397,11 @@ class TiledMap:
                 [["map", "legend"],
                  ["map", "."]], 
                 gridspec_kw = gskw, figsize = self.figsize, 
-                constrained_layout = True, **kwargs)
+                layout = "tight", **kwargs)
         else:
             fig, axes = pyplot.subplots(
                 1, 1, figsize = self.figsize, 
-                constrained_layout = True, **kwargs)
+                layout = "tight", **kwargs)
 
         if self.variables is None:
             # get any floating point columns available
