@@ -4,18 +4,24 @@
 from dataclasses import dataclass
 import itertools
 from typing import Any
+from typing import Union
 
 import numpy as np
 import geopandas as gpd
 import pandas as pd
 
+import matplotlib
+import matplotlib.colors
+import matplotlib.pyplot as pyplot
+
 import shapely.affinity as affine
 import shapely.geometry as geom
 
 from tile_units import Tileable
+from tile_units import TileUnit
 from tile_units import TileShape
 
-import tiling_utils
+# import tiling_utils
 
 
 @dataclass
@@ -261,9 +267,14 @@ class Tiling:
         # make a dissolve variable from element_id and id_var
         tiled_map["diss_var"] = (tiled_map.element_id + 
                                  tiled_map[id_var].astype(str))
-        return tiled_map \
+        tiled_map = tiled_map \
             .dissolve(by = "diss_var", as_index = False) \
             .drop(["diss_var"], axis = 1)
+        
+        tm = TiledMap()
+        tm.tiling = self
+        tm.tiled_map = tiled_map
+        return tm
     
     
     def _rotate_gdf_to_geoseries(
@@ -340,56 +351,225 @@ class Tiling:
             data = {"element_id": self.tiles.element_id}, crs = self.tiles.crs,
             geometry = self.tiles.geometry.rotate(rotation, 
                                                   origin = self.grid.centre))
+
+
+@dataclass
+class TiledMap:
+    tiling: Tiling = None
+    tiled_map: gpd.GeoDataFrame = None
+    legend_elements: gpd.GeoDataFrame = None
+    legend_key_gdf: gpd.GeoDataFrame = None
+    variables: dict[str] = None
+    colourmaps: dict[str:Union[str,dict]] = None
+    legend: bool = True
+    legend_zoom: float = 1.0
+    scheme: str = "equalinterval"
+    k: int = 7
+    bins: list[Any] = None
+    figsize: tuple[float] = (24, 15)
+    dpi: float = 72
         
+
+    def render(self, ax:pyplot.Axes = None, **kwargs) -> tuple[pyplot.Axes]:
+        to_remove = set()  # keep track of kwargs we use to setup TiledMap
+        for k, v in kwargs.items():
+            if k in self.__dict__:
+                self.__dict__[k] = v
+                to_remove.add(k)
+        for k in to_remove:
+            del kwargs[k]
+
+        if ax is None:
+            fig = pyplot.figure(figsize = self.figsize, dpi = self.dpi)
+            ax = fig.add_subplot(111)
+
+        if self.variables is None:
+            # get any floating point columns available
+            default_columns = \
+                self.tiled_map.select_dtypes(
+                    include = ("float64", "int64")).columns
+            self.variables = dict(zip(
+                self.tiled_map.element_id.unique(), 
+                list(default_columns)))
+            print(f"No variables specified, picked the first {len(self.variables)} numeric ones available.")        
+        elif isinstance(self.variables, (list, tuple)):
+            self.variables = dict(zip(
+                self.tiling.tile_unit.elements.element_id.unique(),
+                self.variables))
+            print(f"Only a list of variables specified, assigning to available element_ids.")
+                    
+        if self.colourmaps is None:
+            self.colourmaps = {}
+            for var in self.variables.values():
+                if self.tiled_map[var].dtype == pd.CategoricalDtype:
+                    self.colourmaps[var] = "tab20"
+                    print(f"For categorical data, you should specify colour mapping explicitly.")
+                else:
+                    self.colourmaps[var] = "Reds"
+        
+        return self.plot_map(ax, **kwargs)
     
-    # def get_local_patch(self, r:int = 3) -> gpd.GeoDataFrame:
-    #     patch_extent = gpd.GeoDataFrame(
-    #         data = {"id": [1]}, crs = self.tile_unit.crs,
-    #         geometry = self.tile_unit.tile.geometry.scale(r, r, origin = (0, 0))
-    #     )
-    #     patch = Tiling(self.tile_unit, patch_extent, id_var = "id")
-    #     tiles_to_keep = []
-    #     ids = []
-    #     for p, id in zip(patch.tiles.geometry, patch.tiles.element_id):
-    #         if p.within(patch_extent.geometry[0]):
-    #             tiles_to_keep.append(p)
-    #             ids.append(id)
-    #     return gpd.GeoDataFrame(
-    #         data = {"element_id": ids}, crs = self.tile_unit.crs,
-    #         geometry = gpd.GeoSeries(tiles_to_keep))
+    
+    def plot_map(self, ax, **kwargs):
+        ax.set_axis_off()
+        ax = self.plot_subsetted_gdf(ax, self.tiled_map, **kwargs)
+        if self.legend:
+            ax2 = self.get_legend(ax = ax.inset_axes([1, .5, .3, .5]), **kwargs)
+        else:
+            ax2 = None
+        return (ax, ax2)
     
     
-    def plot_map(self, fig, gdf:gpd.GeoDataFrame, vars:dict[str:str],
-                 cmaps:dict[str:Any], legend:bool = True, 
-                 legend_zoom:float = 1.0, **kwargs):
-        """Returns a matplotlib axis with a map consistent with supplied 
-        settings. 
+    def plot_subsetted_gdf(self, ax, gdf, **kwargs):
+        groups = gdf.groupby("element_id")
+        for id, var in self.variables.items():
+            subset = groups.get_group(id)
+            # Handle custom color assignments via 'cmaps' parameter.
+            # Result is setting 'cmap' variable used in plot command afterwards.
+            if (isinstance(self.colourmaps, 
+                           (str, matplotlib.colors.Colormap,
+                            matplotlib.colors.LinearSegmentedColormap,
+                            matplotlib.colors.ListedColormap))):
+                cmap = self.colourmaps   # user wants one palette for all ids
+            elif (len(self.colourmaps) == 0):
+                cmap = 'Reds'  # set a default... here, to Brewer's 'Reds'
+            elif (var not in self.colourmaps):
+                cmap = 'Reds'  # var has no color specified in dict, use default
+            elif (isinstance(self.colourmaps[var],
+                             (str, matplotlib.colors.Colormap,
+                              matplotlib.colors.LinearSegmentedColormap,
+                              matplotlib.colors.ListedColormap))):
+                cmap = self.colourmaps[var]  # user speced colors for this var
+            elif (isinstance(self.colourmaps[var], dict)):
+                colormap_dict = self.colourmaps[var]
+                data_unique_sorted = subset[var].unique()
+                data_unique_sorted.sort()
+                cmap = matplotlib.colors.ListedColormap(
+                    [colormap_dict[x] for x in data_unique_sorted])
+            else:
+                raise Exception(f"Color map for '{var}' is not a known type, but is {str(type(self.colourmaps[var]))}")
+
+            subset.plot(ax = ax, column = var, cmap = cmap, **kwargs)
+        return ax
+    
+    
+    def to_file(self, fname:str = None) -> str:
+        return fname
+    
+    
+    def get_legend(self, ax: pyplot.Axes = None, **kwargs) -> pyplot.Axes:
+        # turn off axes (which seems also to make it impossible
+        # to set a background colour)
+        ax.set_axis_off()
+
+        legend_elements = self.tiling.tile_unit._get_legend_elements()
+        # this is a bit hacky, but we will apply the rotation at the end
+        # so for TileUnits which don't need it, reverse that now
+        if isinstance(self.tiling.tile_unit, TileUnit):
+            legend_elements.rotation = -self.tiling.rotation
+        
+        legend_key = self.get_legend_key_gdf(legend_elements)
+        # set a zoom 
+        bb = [x / self.legend_zoom for x in legend_key.geometry.total_bounds]
+        ax.set_xlim(bb[0], bb[2])
+        ax.set_ylim(bb[1], bb[3])
+        # not using this at the moment, but if we want to colour the 
+        # background here is how when axes are set off
+        # ax.axhspan(bb[1], bb[3], fc = "w", lw = 0)
+
+        # now plot background; we include the central tiles, since in
+        # the weave case these may not match the legend elements
+        self.tiling.tile_unit.get_local_patch(
+            r = 2, include_0 = True).geometry.rotate(
+                self.tiling.rotation, origin = (0, 0)).plot(
+                ax = ax, fc = "#7F7F7F5F", ec = "#5F5F5F", lw = 0.5)
+
+        # plot the legend key elements (which include the data)
+        self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
+        
+        # now add the annotations - for this we go back to the legend elements
+        legend_elements.geometry = legend_elements.geometry.rotate(
+            self.tiling.rotation, origin = (0, 0))
+        
+        for id, tile, rotn in zip(legend_elements.element_id,
+                                  legend_elements.geometry,
+                                  legend_elements.rotation):
+            c = tile.centroid
+            ax.annotate(self.variables[id], xy = (c.x, c.y), 
+                    ha = "center", va = "center", rotation_mode = "anchor", 
+                    # adjust rotation to favour text reading left to right
+                    rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
+                    bbox = {"lw": 0, "fc": "#ffffff40"})
+        return ax
+
+
+    def get_legend_key_gdf(self, elements:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+        """Returns a GeoDataFrame of tile elements dissected and with
+        data assigned to the slice so a map of them can stand for a legend.
+        The 'dissection' is handled differently by WeaveUnits and TileUnits
+        and delegated to get_legend_key_shapes().
 
         Args:
-            fig: a matplotlib figure.
-            gdf (gpd.GeoDataFrame): a map with subsets designated by 
-                an element_id variable.
-            vars (dict): dictionary mapping element_id values to variable
-                names. Defaults to {}.
-            cmaps (dict): dictionary mapping variable names to palette
-                specifications. Defaults to {}.
-            legend (bool, optional): If True a legend is added to the map. 
-                Defaults to True.
-            legend_zoom (float, optional): Magnification applied to the legend. 
-                Defaults to 1.0.
+            elements (gpd.GeoDataFrame): the legend elements
 
         Returns:
-            _type_: returns a tuple of matplotlib axes (if legend True) or a 
-                single axes if legend False.
+            gpd.GeoDataFrame:  with element_id, variables and rotation
+                attributes, and geometries of Tileable elements sliced into a 
+                colour ramp or set of nested tiles.
         """
-        ax = fig.add_subplot(111)
-        ax.set_axis_off()
-        ax = tiling_utils.plot_subsetted_gdf(ax, gdf, vars, cmaps, **kwargs)
-        if legend:
-            ax2 = self.tile_unit.plot_legend(
-                ax = ax.inset_axes([1, .5, .3, .5]), data = gdf, vars = vars,
-                cmaps = cmaps, zoom = legend_zoom, map_rotation = self.rotation,
-                **kwargs)
-        return (ax, ax2) if legend else ax
-
-
+        key_tiles = []   # set of tiles to form a colour key (e.g. a ramp)
+        ids = []         # element_ids applied to the keys
+        unique_ids = []  # list of each element_id used in order 
+        vals = []        # values form the data assigned to the key tiles
+        rots = []        # rotation of each key tile
+        subsets = self.tiled_map.groupby("element_id")
+        for id, geom, rot in zip(elements.element_id,
+                                 elements.geometry,
+                                 elements.rotation):
+            subset = subsets.get_group(id)
+            d = subset[self.variables[id]]
+            # if the data are categorical then it's complicated...
+            if d.dtype == pd.CategoricalDtype:
+                # desired order of categorical variable is the 
+                # color maps dictionary keys
+                num_cats = len(self.colourmaps[self.variables[id]])
+                val_order = dict(zip(
+                    self.colourmaps[self.variables[id]].keys(),
+                    range(num_cats)))
+                # compile counts of each category
+                coded_data_counts = [0] * num_cats
+                for v in list(d):
+                    coded_data_counts[val_order[v]] += 1
+                # make list of the categories containing appropriate 
+                # counts of each in the order needed using a reverse lookup
+                order_val = list(val_order.keys())
+                data_vals = []
+                for i, n in enumerate(coded_data_counts):
+                    data_vals.extend([order_val[i]] * n)
+            else: # any other data is easy!
+                data_vals = sorted(d)
+            vals.extend(data_vals)
+            n = len(data_vals)
+            key = self.tiling.tile_unit._get_legend_key_shapes(geom, n, rot)
+            key_tiles.extend(key)
+            ids.extend([id] * n)
+            unique_ids.append(id)
+            rots.extend([rot] * n)
+        # finally make up a data table with all the data in all the
+        # columns (each set of data only gets used in the subset it
+        # applies to). This allows us to reuse the tiling_utils.
+        # plot_subsetted_gdf() function
+        key_data = {}
+        for id in unique_ids:
+            key_data[self.variables[id]] = vals
+        
+        key_gdf = gpd.GeoDataFrame(
+            data = key_data | {"element_id": ids, "rotation": rots}, 
+            crs = self.tiled_map.crs,
+            geometry = gpd.GeoSeries(key_tiles))
+        key_gdf.geometry = key_gdf.rotate(self.tiling.rotation, origin = (0, 0))
+        return key_gdf
+        
+        
+    def explore(self) -> None:
+        return None
