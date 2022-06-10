@@ -4,6 +4,7 @@
 from dataclasses import dataclass
 import copy
 import string
+from typing import Iterable
 
 import geopandas as gpd
 import pandas as pd
@@ -388,8 +389,8 @@ class TileUnit(Tileable):
         return None
 
     
-    def _get_legend_key_shapes(self, polygon:geom.Polygon, n_steps:int = 25, 
-                               rot:float = 0) -> list[geom.Polygon]:
+    def _get_legend_key_shapes(self, polygon:geom.Polygon, counts:int = 25, 
+                               angle:float = 0, ) -> list[geom.Polygon]:
         """Returns a set of shapes that can be used to make a legend key 
         symbol for the supplied polygon. In TileUnit this is a set of 'nested
         polygons.
@@ -403,17 +404,65 @@ class TileUnit(Tileable):
         Returns:
             list[geom.Polygon]: a list of nested polygons.
         """
-        # get the negative buffer distance that will 'collapse' the polygon
-        radius = tiling_utils.get_collapse_distance(polygon)
-        # make buffer widths that will yield approx equal area 'annuli'
-        bandwidths = range(1, n_steps + 2)
-        # sqrt exaggerates outermost annuli, which can otherwise disappear
-        bandwidths = [np.sqrt(w) for w in bandwidths]
-        distances = np.cumsum(bandwidths)
-        distances = distances * radius / distances[-1]
-        nested_polys = [polygon.buffer(-d, join_style = 2) 
-                        for d in distances[:-1]]
-        # return converted to annuli (who knows someone might set alpha < 1)
-        return [g1.difference(g2) 
-                for g1, g2 in zip(nested_polys[:-1], nested_polys[1:])]
+        c = polygon.centroid
+        corners = [geom.Point(p) for p in polygon.exterior.coords]
+        ls = geom.LinearRing(corners[:-1])
+        corners = corners[1:]
+        corner_posns = [ls.project(c, normalized = True) for c in corners]
+        corner_posns[-1] = 1.0
+        slice_posns = list(np.cumsum(counts))
+        total = slice_posns[-1]
+        slice_posns = [0] + [p / total for p in slice_posns]
+        # positions = np.linspace(0, 1, counts + 1, endpoint = True)
+        pie_slices = []
+        for f1, f2 in zip(slice_posns[:-1], slice_posns[1:]):
+            segment = [f1] + [f for f in corner_posns if f < f2] + [f2]
+            segment = [ls.interpolate(f, normalized = True)
+                       for f in segment]
+            pie_slices.append(geom.Polygon(segment + [c]))
+            corner_posns = [f for f in corner_posns if f > f2]
+        
+        # next_corner = corners.pop(0)
+        # next_corner_posn = ls.project(next_corner, normalized = True)
+        # pie_slices = []
+        # for f1, f2 in zip(positions[:-1], positions[1:]):
+        #     if next_corner_posn > f1 and next_corner_posn < f2:
+        #         pie_slices.append(
+        #             geom.Polygon([ls.interpolate(f1, normalized = True),
+        #                           next_corner, 
+        #                           ls.interpolate(f2, normalized = True), c]))
+        #         next_corner = corners.pop(0)
+        #         next_corner_posn = ls.project(next_corner, normalized = True)
+        #     elif next_corner_posn == f1: 
+        #         pie_slices.append(
+        #             geom.Polygon([ls.interpolate(f1, normalized = True),
+        #                           ls.interpolate(f2, normalized = True), c]))
+        #         next_corner = corners.pop(0)
+        #         next_corner_posn = ls.project(next_corner, normalized = True)
+        #     else: 
+        #         pie_slices.append(
+        #             geom.Polygon([ls.interpolate(f1, normalized = True),
+        #                           ls.interpolate(f2, normalized = True), c]))
+        return pie_slices
+        # if isinstance(n_steps, Iterable):
+        #     n = sum(n_steps)
+        #     bandwidths = [f / n for f in n_steps]
+        #     bandwidths = [f if f > 0.05 else 0.05 for f in bandwidths]
+        #     total = sum(bandwidths)
+        #     bandwidths = [0] + [f / total for f in bandwidths]
+        # else:
+        #     bandwidths = range(n_steps + 1)
+        # # # make buffer widths that will yield approx equal area 'annuli'
+        # # bandwidths = range(n_steps + 1)
+        # # sqrt exaggerates outermost annuli, which can otherwise disappear
+        # bandwidths = [np.sqrt(w) for w in bandwidths]
+        # distances = np.cumsum(bandwidths)
+        # # get the negative buffer distance that will 'collapse' the polygon
+        # radius = tiling_utils.get_collapse_distance(polygon)
+        # distances = distances * radius / distances[-1]
+        # nested_polys = [polygon.buffer(-d, join_style = 2)   
+        #                 for d in distances]
+        # # return converted to annuli (who knows someone might set alpha < 1)
+        # return [g1.difference(g2)
+        #         for g1, g2 in zip(nested_polys[:-1], nested_polys[1:])]
     

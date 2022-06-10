@@ -371,6 +371,10 @@ class TiledMap:
         
 
     def render(self, **kwargs) -> tuple[pyplot.Axes]:
+        pyplot.rcParams['pdf.fonttype'] = 42
+        pyplot.rcParams['pdf.use14corefonts'] = True
+        matplotlib.rcParams['pdf.fonttype'] = 42
+
         to_remove = set()  # keep track of kwargs we use to setup TiledMap
         for k, v in kwargs.items():
             if k in self.__dict__:
@@ -387,21 +391,23 @@ class TiledMap:
                     self.tiled_map.geometry)
             tile_w, tile_h, *_ = \
                 tiling_utils.get_width_height_left_bottom(
-                    self.tiling.tile_unit.elements.geometry)
-            approx_count = reg_w / tile_w * reg_h / tile_h
-            sf = np.sqrt(approx_count) / 2
-            gskw = {"height_ratios": [sf * tile_h, reg_h],
-                    "width_ratios": [reg_w + sf * tile_w, sf * tile_w]}
+                    self.tiling.tile_unit._get_legend_elements().rotate(
+                        self.tiling.rotation, origin = (0, 0)))
+            # approx_count = reg_w / tile_w * reg_h / tile_h
+            # sf = np.sqrt(approx_count) / 2
+            sf_w, sf_h = reg_w / tile_w / 3, reg_h / tile_h / 3
+            gskw = {"height_ratios": [sf_h * tile_h, reg_h - sf_h * tile_h],
+                    "width_ratios": [reg_w, sf_w * tile_w]}
 
             fig, axes = pyplot.subplot_mosaic(
                 [["map", "legend"],
                  ["map", "."]], 
                 gridspec_kw = gskw, figsize = self.figsize, 
-                layout = "tight", **kwargs)
+                layout = "constrained", **kwargs)
         else:
             fig, axes = pyplot.subplots(
                 1, 1, figsize = self.figsize, 
-                layout = "tight", **kwargs)
+                layout = "constrained", **kwargs)
             
         print(f"{fig=}")
 
@@ -493,9 +499,12 @@ class TiledMap:
         
         legend_key = self.get_legend_key_gdf(legend_elements)
         # set a zoom 
-        bb = [x / self.legend_zoom for x in legend_key.geometry.total_bounds]
-        ax.set_xlim(bb[0], bb[2])
-        ax.set_ylim(bb[1], bb[3])
+        bb = legend_key.geometry.total_bounds
+        c = legend_key.geometry.unary_union.centroid
+        ax.set_xlim(c.x + (bb[0] - c.x) / self.legend_zoom, 
+                    c.x + (bb[2] - c.x) / self.legend_zoom)
+        ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
+                    c.y + (bb[3] - c.y) / self.legend_zoom)
         # not using this at the moment, but if we want to colour the 
         # background here is how when axes are set off
         # ax.axhspan(bb[1], bb[3], fc = "w", lw = 0)
@@ -513,6 +522,9 @@ class TiledMap:
         # now add the annotations - for this we go back to the legend elements
         legend_elements.geometry = legend_elements.geometry.rotate(
             self.tiling.rotation, origin = (0, 0))
+        
+        legend_elements.plot(ax = ax, fc = "#00000000", 
+                             ec = "#999999", lw = 0.5)
         
         for id, tile, rotn in zip(legend_elements.element_id,
                                   legend_elements.geometry,
@@ -554,26 +566,27 @@ class TiledMap:
             if d.dtype == pd.CategoricalDtype:
                 # desired order of categorical variable is the 
                 # color maps dictionary keys
-                num_cats = len(self.colourmaps[self.variables[id]])
-                val_order = dict(zip(
-                    self.colourmaps[self.variables[id]].keys(),
-                    range(num_cats)))
+                cmap = self.colourmaps[self.variables[id]]
+                num_cats = len(cmap)
+                val_order = dict(zip(cmap.keys(), range(num_cats)))
                 # compile counts of each category
                 coded_data_counts = [0] * num_cats
                 for v in list(d):
                     coded_data_counts[val_order[v]] += 1
                 # make list of the categories containing appropriate 
                 # counts of each in the order needed using a reverse lookup
-                order_val = list(val_order.keys())
-                data_vals = []
-                for i, n in enumerate(coded_data_counts):
-                    data_vals.extend([order_val[i]] * n)
+                data_vals = list(val_order.keys())
+                freqs = coded_data_counts
+                # order_val = list(val_order.keys())
+                # for i, n in enumerate(coded_data_counts):
+                #     data_vals.extend([order_val[i]] * n)
             else: # any other data is easy!
                 data_vals = sorted(d)
+                freqs = [1] * len(data_vals)
+            key = self.tiling.tile_unit._get_legend_key_shapes(geom, freqs, rot)
+            key_tiles.extend(key)
             vals.extend(data_vals)
             n = len(data_vals)
-            key = self.tiling.tile_unit._get_legend_key_shapes(geom, n, rot)
-            key_tiles.extend(key)
             ids.extend([id] * n)
             unique_ids.append(id)
             rots.extend([rot] * n)

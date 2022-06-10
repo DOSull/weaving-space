@@ -4,7 +4,7 @@
 import logging
 import itertools
 from dataclasses import dataclass
-from typing import Union
+from typing import Iterable, Union
 import copy
 
 import pandas as pd
@@ -376,20 +376,16 @@ class WeaveUnit(Tileable):
         if min_area / max_area > 0.5:
             geoms = list(elements.geometry)
         else:
-            if self.aspect == 1:
-                geoms = [g for g, a in zip(elements.geometry, areas)
-                         if a > 2 * min_area / self.aspect]
-            else:
-                geoms = [g for g, a in zip(elements.geometry, areas)
-                         if a > 4 * min_area / (1 - self.aspect)]
+            geoms = [g for g, a in zip(elements.geometry, areas)
+                        if a > 2 * min_area / self.aspect]
         centroids = [g.centroid for g in geoms]
         d = [c.distance(geom.Point(0, 0)) for c in centroids]
         idx = d.index(min(d))
         return geoms[idx]
 
 
-    def _get_legend_key_shapes(self, polygon:geom.Polygon, 
-                               n:int = 25, angle:float = 0) -> list[geom.Polygon]:
+    def _get_legend_key_shapes(self, polygon:geom.Polygon, counts:Iterable,
+                               angle:float = 0) -> list[geom.Polygon]:
         """Returns a list of polygons obtained by slicing the supplied polygon
         across its length inton n slices. Orientation of the polygon is 
         indicated by the angle.
@@ -407,17 +403,22 @@ class WeaveUnit(Tileable):
         """
         c = polygon.centroid
         g = affine.rotate(polygon, -angle, origin = c)
-        bb = list(g.bounds)
-        cuts = np.linspace(bb[0], bb[2], n + 1)
+        width, height, left, bottom = \
+            tiling_utils.get_width_height_left_bottom(gpd.GeoSeries([g]))
+        total = sum(counts)
+        cuts = list(np.cumsum(counts))
+        cuts = [0] + [c / total for c in cuts]
+        cuts = [left + c * width for c in cuts]
+        # cuts = np.linspace(bb[0], bb[2], n + 1)
         # add margin to avoid weird effects intersecting almost parallel lines.
         cuts[0] = cuts[0] - 1
         cuts[-1] = cuts[-1] + 1
-        bb[1] = bb[1] - 1
-        bb[3] = bb[3] + 1
+        bottom = bottom - 1
+        top = bottom + height + 1
         slices = []
         for l, r in zip(cuts[:-1], cuts[1:]):
-            slice = geom.Polygon([(l, bb[1]), (r, bb[1]),
-                                  (r, bb[3]), (l, bb[3])])
+            slice = geom.Polygon([(l, bottom), (r, bottom),
+                                  (r, top), (l, top)])
             slices.append(slice.intersection(g)) 
         return [affine.rotate(s, angle, origin = c) for s in slices]
 
