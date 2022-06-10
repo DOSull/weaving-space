@@ -376,8 +376,15 @@ class WeaveUnit(Tileable):
         if min_area / max_area > 0.5:
             geoms = list(elements.geometry)
         else:
+            mean_a = sum(areas) / len(areas)
             geoms = [g for g, a in zip(elements.geometry, areas)
-                        if a > 2 * min_area / self.aspect]
+                            if a > mean_a]
+            # if self.aspect == 1:
+            #     geoms = [g for g, a in zip(elements.geometry, areas)
+            #                 if a > 2 * min_area]
+            # else:
+            #     geoms = [g for g, a in zip(elements.geometry, areas)
+            #                 if a > 2 * min_area / (1 - self.aspect)]
         centroids = [g.centroid for g in geoms]
         d = [c.distance(geom.Point(0, 0)) for c in centroids]
         idx = d.index(min(d))
