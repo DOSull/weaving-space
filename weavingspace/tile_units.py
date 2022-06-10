@@ -116,7 +116,7 @@ class Tileable:
                 fragments = [f for i, f in enumerate(fragments) 
                             if not (i in fragments_to_remove)]
                 fragments = next_frags + fragments
-        self.regularised_tile.geometry[0] = reg_tile
+        self.regularised_tile.geometry[0] = reg_tile.buffer(-self.fudge_factor)
         return fragments
 
 
@@ -145,9 +145,9 @@ class Tileable:
             geometry = gpd.GeoSeries(elements)
         )
         self.elements = new_elements
-        self.regularised_tile.geometry = \
-            self.regularised_tile.geometry.buffer(
-                -self.fudge_factor, join_style = 2)
+        # self.regularised_tile.geometry = \
+        #     self.regularised_tile.geometry.buffer(
+        #         -self.fudge_factor, join_style = 2)
         self.regularised_tile.geometry = \
             self.regularised_tile.geometry.explode(index_parts = False,
                                                    ignore_index = True)
@@ -421,29 +421,8 @@ class TileUnit(Tileable):
                        for f in segment]
             pie_slices.append(geom.Polygon(segment + [c]))
             corner_posns = [f for f in corner_posns if f > f2]
-        
-        # next_corner = corners.pop(0)
-        # next_corner_posn = ls.project(next_corner, normalized = True)
-        # pie_slices = []
-        # for f1, f2 in zip(positions[:-1], positions[1:]):
-        #     if next_corner_posn > f1 and next_corner_posn < f2:
-        #         pie_slices.append(
-        #             geom.Polygon([ls.interpolate(f1, normalized = True),
-        #                           next_corner, 
-        #                           ls.interpolate(f2, normalized = True), c]))
-        #         next_corner = corners.pop(0)
-        #         next_corner_posn = ls.project(next_corner, normalized = True)
-        #     elif next_corner_posn == f1: 
-        #         pie_slices.append(
-        #             geom.Polygon([ls.interpolate(f1, normalized = True),
-        #                           ls.interpolate(f2, normalized = True), c]))
-        #         next_corner = corners.pop(0)
-        #         next_corner_posn = ls.project(next_corner, normalized = True)
-        #     else: 
-        #         pie_slices.append(
-        #             geom.Polygon([ls.interpolate(f1, normalized = True),
-        #                           ls.interpolate(f2, normalized = True), c]))
         return pie_slices
+
         # if isinstance(n_steps, Iterable):
         #     n = sum(n_steps)
         #     bandwidths = [f / n for f in n_steps]
