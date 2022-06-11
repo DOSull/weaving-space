@@ -498,9 +498,13 @@ class TiledMap:
             legend_elements.rotation = -self.tiling.rotation
         
         legend_key = self.get_legend_key_gdf(legend_elements)
+
+        legend_elements.geometry = legend_elements.geometry.rotate(
+            self.tiling.rotation, origin = (0, 0))
+        
         # set a zoom 
-        bb = legend_key.geometry.total_bounds
-        c = legend_key.geometry.unary_union.centroid
+        bb = legend_elements.geometry.total_bounds
+        c = legend_elements.geometry.unary_union.centroid
         ax.set_xlim(c.x + (bb[0] - c.x) / self.legend_zoom, 
                     c.x + (bb[2] - c.x) / self.legend_zoom)
         ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
@@ -520,9 +524,6 @@ class TiledMap:
         self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
         
         # now add the annotations - for this we go back to the legend elements
-        legend_elements.geometry = legend_elements.geometry.rotate(
-            self.tiling.rotation, origin = (0, 0))
-        
         legend_elements.plot(ax = ax, fc = "#00000000", 
                              ec = "#999999", lw = 0.5)
         
