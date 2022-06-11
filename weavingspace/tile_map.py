@@ -363,6 +363,8 @@ class TiledMap:
     colourmaps: dict[str:Union[str,dict]] = None
     legend: bool = True
     legend_zoom: float = 1.0
+    legend_dx:float = 0.
+    legend_dy:float = 0.
     scheme: str = "equalinterval"
     k: int = 7
     bins: list[Any] = None
@@ -411,8 +413,6 @@ class TiledMap:
                 1, 1, figsize = self.figsize, 
                 layout = "constrained", **kwargs)
             
-        print(f"{fig=}")
-
         if self.variables is None:
             # get any floating point columns available
             default_columns = \
@@ -438,6 +438,13 @@ class TiledMap:
                     self.colourmaps[var] = "Reds"
         
         self.plot_map(axes, **kwargs)
+        if self.legend:
+            box = axes["legend"].get_position()
+            box.x0 = box.x0 + self.legend_dx
+            box.x1 = box.x1 + self.legend_dx
+            box.y0 = box.y0 + self.legend_dy
+            box.y1 = box.y1 + self.legend_dy
+            axes["legend"].set_position(box)
         return fig
     
     
