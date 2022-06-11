@@ -444,3 +444,18 @@ def get_bounding_ellipse(shapes:gpd.GeoSeries,
 def get_boundaries(shapes:gpd.GeoSeries) -> gpd.GeoSeries:
     bdys = [geom.LineString(p.exterior.coords) for p in shapes]
     return gpd.GeoSeries(bdys, crs = shapes.crs)
+
+
+def get_polygon_sector(shape:geom.Polygon, start:float = 0.0, 
+               end:float = 1.0) -> geom.Polygon:
+    bdy = geom.LineString(shape.exterior.coords)
+    corners = []
+    for p in list(shape.exterior.coords)[1:-1]:
+        pt = geom.Point(p)
+        posn = bdy.project(pt, normalized = True)
+        if posn > start and posn < end:
+            corners.append(pt)
+    corners = ([shape.centroid, bdy.interpolate(start, normalized = True)] +
+               corners + [bdy.interpolate(end, normalized = True)])
+    return geom.Polygon(corners)
+    

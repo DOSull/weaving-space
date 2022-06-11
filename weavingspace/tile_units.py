@@ -404,24 +404,11 @@ class TileUnit(Tileable):
         Returns:
             list[geom.Polygon]: a list of nested polygons.
         """
-        c = polygon.centroid
-        corners = [geom.Point(p) for p in polygon.exterior.coords]
-        ls = geom.LinearRing(corners[:-1])
-        corners = corners[1:]
-        corner_posns = [ls.project(c, normalized = True) for c in corners]
-        corner_posns[-1] = 1.0
         slice_posns = list(np.cumsum(counts))
         total = slice_posns[-1]
         slice_posns = [0] + [p / total for p in slice_posns]
-        # positions = np.linspace(0, 1, counts + 1, endpoint = True)
-        pie_slices = []
-        for f1, f2 in zip(slice_posns[:-1], slice_posns[1:]):
-            segment = [f1] + [f for f in corner_posns if f < f2] + [f2]
-            segment = [ls.interpolate(f, normalized = True)
-                       for f in segment]
-            pie_slices.append(geom.Polygon(segment + [c]))
-            corner_posns = [f for f in corner_posns if f > f2]
-        return pie_slices
+        return [tiling_utils.get_polygon_sector(polygon, i, j) 
+                for i, j in zip(slice_posns[:-1], slice_posns[1:])]
 
         # if isinstance(n_steps, Iterable):
         #     n = sum(n_steps)
