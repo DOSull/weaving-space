@@ -366,8 +366,7 @@ class TiledMap:
     legend_dx:float = 0.
     legend_dy:float = 0.
     scheme: str = "equalinterval"
-    k: int = 7
-    bins: list[Any] = None
+    k: int = 100
     figsize: tuple[float] = (20, 15)
     dpi: float = 72
     use_ellipse:bool = False
@@ -438,6 +437,7 @@ class TiledMap:
                     self.colourmaps[var] = "Reds"
         
         self.plot_map(axes, **kwargs)
+
         if self.legend:
             box = axes["legend"].get_position()
             box.x0 = box.x0 + self.legend_dx
@@ -488,7 +488,8 @@ class TiledMap:
             else:
                 raise Exception(f"Color map for '{var}' is not a known type, but is {str(type(self.colourmaps[var]))}")
 
-            subset.plot(ax = ax, column = var, cmap = cmap, **kwargs)
+            subset.plot(ax = ax, column = var, cmap = cmap, 
+                        scheme = self.scheme, k = self.k, **kwargs)
     
     
     def to_file(self, fname:str = None) -> str:
