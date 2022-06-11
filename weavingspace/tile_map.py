@@ -368,6 +368,8 @@ class TiledMap:
     bins: list[Any] = None
     figsize: tuple[float] = (20, 15)
     dpi: float = 72
+    use_ellipse:bool = False
+    ellipse_magnification:float = 1.0
         
 
     def render(self, **kwargs) -> tuple[pyplot.Axes]:
@@ -498,13 +500,21 @@ class TiledMap:
             legend_elements.rotation = -self.tiling.rotation
         
         legend_key = self.get_legend_key_gdf(legend_elements)
-
+        
         legend_elements.geometry = legend_elements.geometry.rotate(
             self.tiling.rotation, origin = (0, 0))
-        
+                
         # set a zoom 
-        bb = legend_elements.geometry.total_bounds
-        c = legend_elements.geometry.unary_union.centroid
+        if self.use_ellipse:
+            ellipse = tiling_utils.get_bounding_ellipse(
+                legend_elements.geometry, 
+                mag = self.ellipse_magnification).rotate(
+                    self.tiling.rotation, origin = (0, 0))
+            bb = ellipse.geometry.total_bounds
+            c = ellipse.geometry.unary_union.centroid
+        else:
+            bb = legend_elements.geometry.total_bounds
+            c = legend_elements.geometry.unary_union.centroid
         ax.set_xlim(c.x + (bb[0] - c.x) / self.legend_zoom, 
                     c.x + (bb[2] - c.x) / self.legend_zoom)
         ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
@@ -515,17 +525,27 @@ class TiledMap:
 
         # now plot background; we include the central tiles, since in
         # the weave case these may not match the legend elements
-        self.tiling.tile_unit.get_local_patch(
+        context_tiles = self.tiling.tile_unit.get_local_patch(
             r = 2, include_0 = True).geometry.rotate(
-                self.tiling.rotation, origin = (0, 0)).plot(
-                ax = ax, fc = "#9F9F9F3F", ec = "#5F5F5F", lw = 0.5)
+                self.tiling.rotation, origin = (0, 0))
+        if self.use_ellipse:
+            context_tiles.clip(ellipse, keep_geom_type = True).plot(
+                    ax = ax, fc = "#9F9F9F3F", lw = 0.0)
+            tiling_utils.get_boundaries(context_tiles.geometry).clip(
+                ellipse, keep_geom_type = True).plot(
+                    ax = ax, ec = "#5F5F5F", lw = 1)
+        else:
+            context_tiles.plot(ax = ax, fc = "#9F9F9F3F", 
+                               ec = "#5F5F5F", lw = 0.0)
+            tiling_utils.get_boundaries(context_tiles.geometry).plot(
+                ax = ax, ec = "#5F5F5F", lw = 1)
 
         # plot the legend key elements (which include the data)
         self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
         
-        # now add the annotations - for this we go back to the legend elements
-        legend_elements.plot(ax = ax, fc = "#00000000", 
-                             ec = "#999999", lw = 0.5)
+        # # now add the annotations - for this we go back to the legend elements
+        # legend_elements.plot(ax = ax, fc = "#00000000", 
+        #                      ec = "#999999", lw = 0.5)
         
         for id, tile, rotn in zip(legend_elements.element_id,
                                   legend_elements.geometry,

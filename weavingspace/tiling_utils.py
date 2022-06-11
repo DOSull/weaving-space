@@ -430,24 +430,15 @@ def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
 
 
 def get_bounding_ellipse(shapes:gpd.GeoSeries, 
-                         zoom:float = 1.0) -> gpd.GeoSeries:
+                         mag:float = 1.0) -> gpd.GeoSeries:
 
-    mrr = shapes.unary_union.minimum_rotated_rectangle
-    pts = [geom.Point(p) for p in mrr.exterior.coords]
-    dim1 = pts[0].distance(pts[1])
-    dim2 = pts[1].distance(pts[2])
-    mid1 = geom.Point(((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2))
-    mid2 = geom.Point(((pts[2].x + pts[3].x) / 2, (pts[2].y + pts[3].y) / 2))
-    angle = np.arctan2(mid2.x - mid1.x, mid2.y - mid1.y)
+    w, h, *_ = get_width_height_left_bottom(shapes)
     
     c = shapes.unary_union.centroid
-    r = min(dim1, dim2) * np.sqrt(2)
-    sf_x = dim1 / np.sqrt(dim1 * dim2)
-    sf_y = dim2 / np.sqrt(dim1 * dim2)
+    r = min(w, h) * np.sqrt(2)
     circle = [c.buffer(r)]
     return gpd.GeoSeries(circle, crs = shapes.crs).scale(
-        sf_x / zoom / 2, sf_y / zoom / 2, origin = c).rotate(
-            np.degrees(-angle), origin = c)
+        w / r * mag / np.sqrt(2), h / r * mag / np.sqrt(2), origin = c)
     
     
 def get_boundaries(shapes:gpd.GeoSeries) -> gpd.GeoSeries:
