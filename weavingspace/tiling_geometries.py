@@ -151,14 +151,21 @@ def setup_hex_dissection(unit):
         slices = [affine.rotate(s, a, origin = (0, 0)) 
                     for a in range(0, 360, 60)]
     elif unit.n == 12:
-        # like 4 they are not rotationally symmetric
-        s1 = geom.Polygon([p[0], p[1], (0, 0)])
-        s2 = geom.Polygon([p[1], p[2], (0, 0)])
-        slices1 = [affine.rotate(s1, a, origin = (0, 0)) 
-                    for a in range(0, 360, 60)]
-        slices2 = [affine.rotate(s2, a, origin = (0, 0)) 
-                    for a in range(0, 360, 60)]
-        slices = itertools.chain(slices1, slices2)
+        # if unit.dissection_offset == 0:
+        #     # like 4 they are not rotationally symmetric
+        #     s1 = geom.Polygon([p[0], p[1], (0, 0)])
+        #     s2 = geom.Polygon([p[1], p[2], (0, 0)])
+        #     slices1 = [affine.rotate(s1, a, origin = (0, 0)) 
+        #                 for a in range(0, 360, 60)]
+        #     slices2 = [affine.rotate(s2, a, origin = (0, 0)) 
+        #                 for a in range(0, 360, 60)]
+        #     slices = itertools.chain(slices1, slices2)
+        # else:
+        steps = np.linspace(0, 1, unit.n + 1) - \
+            unit.dissection_offset / (unit.n * 2)
+        slices = [tiling_utils.get_polygon_sector(hex, p1, p2)
+                for p1, p2 in zip(steps[:-1], steps[1:])]    
+            
     
     unit.elements = gpd.GeoDataFrame(
         data = {"element_id": list(string.ascii_letters)[:unit.n]}, 
@@ -217,6 +224,7 @@ def setup_laves(unit) -> None:
     elif unit.code == "4.6.12":
         # hex 12-dissection 
         unit.n = 12
+        unit.dissection_offset = 0
         setup_hex_dissection(unit)
         return
     elif unit.code == "4.8.8":

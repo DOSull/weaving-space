@@ -15,6 +15,7 @@ import pandas as pd
 import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.wkt as wkt
+import shapely.ops
 
 
 class TileShape(Enum):
@@ -448,14 +449,20 @@ def get_boundaries(shapes:gpd.GeoSeries) -> gpd.GeoSeries:
 
 def get_polygon_sector(shape:geom.Polygon, start:float = 0.0, 
                end:float = 1.0) -> geom.Polygon:
-    bdy = geom.LineString(shape.exterior.coords)
-    corners = []
-    for p in list(shape.exterior.coords)[1:-1]:
-        pt = geom.Point(p)
-        posn = bdy.project(pt, normalized = True)
-        if posn > start and posn < end:
-            corners.append(pt)
-    corners = ([shape.centroid, bdy.interpolate(start, normalized = True)] +
-               corners + [bdy.interpolate(end, normalized = True)])
-    return geom.Polygon(corners)
+    # NOTE: need to handle cases where start and end fall either
+    # side of 0, so that the sector could include 'corner 0' of
+    # the supplied shape.
+    if start * end < 0:
+        e1, e2 = min(start, end), max(start, end)
+        arc1 = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
+                                     np.mod(e1, 1), 1, normalized = True) 
+        arc2 = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
+                                     0, e2, normalized = True) 
+        sector = geom.Polygon([shape.centroid] + 
+                            list(arc1.coords) + list(arc2.coords)[1:])
+    else:
+        arc = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
+                                    start, end, normalized = True)
+        sector = geom.Polygon([shape.centroid] + list(arc.coords))
+    return sector.buffer(1e-3, join_style = 2).buffer(-1e-3)
     
