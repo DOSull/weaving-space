@@ -449,17 +449,21 @@ def get_boundaries(shapes:gpd.GeoSeries) -> gpd.GeoSeries:
 
 def get_polygon_sector(shape:geom.Polygon, start:float = 0.0, 
                end:float = 1.0) -> geom.Polygon:
-    # NOTE: need to handle cases where start and end fall either
-    # side of 0, so that the sector could include 'corner 0' of
-    # the supplied shape.
+    if start == end:
+        # must return a null polygon since the calling context
+        # expects to get something back... which most likely 
+        # is needed to align with other data
+        return geom.Polygon()
     if start * end < 0:
+        # either side of 0/1 so assume required sector includes 0
         e1, e2 = min(start, end), max(start, end)
         arc1 = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
                                      np.mod(e1, 1), 1, normalized = True) 
         arc2 = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
                                      0, e2, normalized = True) 
         sector = geom.Polygon([shape.centroid] + 
-                            list(arc1.coords) + list(arc2.coords)[1:])
+                              list(arc1.coords) + 
+                              list(arc2.coords)[1:])
     else:
         arc = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
                                     start, end, normalized = True)

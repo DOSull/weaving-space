@@ -465,31 +465,33 @@ class TiledMap:
             subset = groups.get_group(id)
             # Handle custom color assignments via 'cmaps' parameter.
             # Result is setting 'cmap' variable used in plot command afterwards.
-            if (isinstance(self.colourmaps, 
-                           (str, matplotlib.colors.Colormap,
-                            matplotlib.colors.LinearSegmentedColormap,
-                            matplotlib.colors.ListedColormap))):
-                cmap = self.colourmaps   # user wants one palette for all ids
-            elif (len(self.colourmaps) == 0):
-                cmap = 'Reds'  # set a default... here, to Brewer's 'Reds'
-            elif (var not in self.colourmaps):
-                cmap = 'Reds'  # var has no color specified in dict, use default
-            elif (isinstance(self.colourmaps[var],
-                             (str, matplotlib.colors.Colormap,
-                              matplotlib.colors.LinearSegmentedColormap,
-                              matplotlib.colors.ListedColormap))):
-                cmap = self.colourmaps[var]  # user speced colors for this var
-            elif (isinstance(self.colourmaps[var], dict)):
+            if (isinstance(self.colourmaps[var], dict)):
                 colormap_dict = self.colourmaps[var]
                 data_unique_sorted = subset[var].unique()
                 data_unique_sorted.sort()
                 cmap = matplotlib.colors.ListedColormap(
                     [colormap_dict[x] for x in data_unique_sorted])
+                subset.plot(ax = ax, column = var, cmap = cmap, **kwargs)
             else:
-                raise Exception(f"Color map for '{var}' is not a known type, but is {str(type(self.colourmaps[var]))}")
+                if (isinstance(self.colourmaps, 
+                            (str, matplotlib.colors.Colormap,
+                                matplotlib.colors.LinearSegmentedColormap,
+                                matplotlib.colors.ListedColormap))):
+                    cmap = self.colourmaps   # one palette for all ids
+                elif (len(self.colourmaps) == 0):
+                    cmap = 'Reds'  # set a default... here, to Brewer's 'Reds'
+                elif (var not in self.colourmaps):
+                    cmap = 'Reds'  # no color specified in dict, use default
+                elif (isinstance(self.colourmaps[var],
+                                (str, matplotlib.colors.Colormap,
+                                matplotlib.colors.LinearSegmentedColormap,
+                                matplotlib.colors.ListedColormap))):
+                    cmap = self.colourmaps[var]  # specified colors for this var
+                else:
+                    raise Exception(f"Color map for '{var}' is not a known type, but is {str(type(self.colourmaps[var]))}")
 
-            subset.plot(ax = ax, column = var, cmap = cmap, 
-                        scheme = self.scheme, k = self.k, **kwargs)
+                subset.plot(ax = ax, column = var, cmap = cmap, 
+                            scheme = self.scheme, k = self.k, **kwargs)
     
     
     def to_file(self, fname:str = None) -> str:
