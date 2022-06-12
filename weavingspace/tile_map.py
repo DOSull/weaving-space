@@ -449,12 +449,17 @@ class TiledMap:
     
     
     def plot_map(self, axes, **kwargs):
+        bb = self.tiled_map.geometry.total_bounds
         if self.legend:
             axes["map"].set_axis_off()
+            axes["map"].set_xlim(bb[0], bb[2])
+            axes["map"].set_ylim(bb[1], bb[3])
             self.plot_subsetted_gdf(axes["map"], self.tiled_map, **kwargs)
             self.get_legend(ax = axes["legend"], **kwargs)
         else:
             axes.set_axis_off()
+            axes.set_xlim(bb[0], bb[2])
+            axes.set_ylim(bb[1], bb[3])
             self.plot_subsetted_gdf(axes, self.tiled_map, **kwargs)
         return None
     
