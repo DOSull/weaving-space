@@ -118,10 +118,10 @@ class WeaveUnit(Tileable):
         if self.aspect < 0 or self.aspect > 1:
             logging.warning("""Values of aspect outside the range 0 to 1 won't produce tiles that will look like weaves, but they might be pretty anyway! Values less than -1 seem particularly promising, especially with opacity set less than 1.""")
 
-        # maximum margin that will produce a weave-able tile
-        max_margin = (1 - self.aspect) / 2
-        if self.margin > max_margin:
-            logging.warning(f"""With aspect set to {self.aspect:.3f} the largest margin that will work is {max_margin:.3f}. Lower values are required to produce proper tileable weaves. Specifically, with too wide a margin, strands in adjacent tiles will not 'join up' when tiled. Higher values will make nice tilings with broken strands, which aren't 'proper' weaves. The best alternative is to make the weave unit with margin = 0, then apply a negative buffer after you have tiled your map.""")   
+        # # maximum margin that will produce a weave-able tile
+        # max_margin = (1 - self.aspect) / 2
+        # if self.margin > max_margin:
+        #     logging.warning(f"""With aspect set to {self.aspect:.3f} the largest margin that will work is {max_margin:.3f}. Lower values are required to produce proper tileable weaves. Specifically, with too wide a margin, strands in adjacent tiles will not 'join up' when tiled. Higher values will make nice tilings with broken strands, which aren't 'proper' weaves. The best alternative is to make the weave unit with margin = 0, then apply a negative buffer after you have tiled your map.""")   
         return None
 
 
@@ -308,10 +308,13 @@ class WeaveUnit(Tileable):
         weave = weave.dissolve(by = "element_id", as_index = False)
         weave = weave.explode(index_parts = False, ignore_index = True)
         # this buffer operation cleans up some geometry issues
-        weave.geometry = weave.buffer(
-            -self.fudge_factor * self.spacing, join_style = 2)
-        weave.geometry = weave.buffer(
-            (self.fudge_factor - self.margin) * self.spacing, join_style = 2)
+        # weave.geometry = weave.buffer(
+        #     -self.fudge_factor * self.spacing, join_style = 2)
+        # weave.geometry = weave.buffer(
+        #     (self.fudge_factor - self.margin) * self.spacing, join_style = 2)
+        weave.geometry = weave \
+            .buffer(-self.fudge_factor * self.spacing) \
+            .buffer(self.fudge_factor * self.spacing, join_style = 2)
         return weave.clip(bb).set_crs(self.crs)
 
 
@@ -391,8 +394,9 @@ class WeaveUnit(Tileable):
         return geoms[idx]
 
 
-    def _get_legend_key_shapes(self, polygon:geom.Polygon, counts:Iterable,
-                               angle:float = 0) -> list[geom.Polygon]:
+    def _get_legend_key_shapes(self, polygon:geom.Polygon, 
+                               counts:Iterable, angle:float = 0,
+                               categorical:bool = False) -> list[geom.Polygon]:
         """Returns a list of polygons obtained by slicing the supplied polygon
         across its length inton n slices. Orientation of the polygon is 
         indicated by the angle.
@@ -404,6 +408,7 @@ class WeaveUnit(Tileable):
             polygon (geom.Polygon): the weave strand polygon to slice.
             n (int, optional): the number of slices required. Defaults to 25.
             angle (float, optional): orientation of the polygon. Defaults to 0.
+            categorical (bool, optional): ignored by WeaveUnit.
 
         Returns:
             list[geom.Polygon]: a list of polygons.

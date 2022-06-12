@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import itertools
 from typing import Any
 from typing import Union
+import copy
 
 import numpy as np
 import geopandas as gpd
@@ -199,7 +200,8 @@ class Tiling:
     rotation:float = 0.
 
     def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
-                 id_var:str) -> None:
+                 id_var:str, tile_sf:float = 1, 
+                 elements_margin:float = 0) -> None:
         """A class to persist a tiling by filling an area relative to 
         a region that is sufficient to apply the tiling at any rotation.
 
@@ -210,6 +212,14 @@ class Tiling:
         """
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
+        if elements_margin > 0:
+            self.tile_unit = copy.deepcopy(self.tile_unit)
+            self.tile_unit.inset_elements(elements_margin) 
+        if tile_sf < 1:
+            self.tile_unit = copy.deepcopy(self.tile_unit)
+            self.tile_unit.elements.geometry = \
+                self.tile_unit.elements.geometry.scale(
+                    tile_sf, tile_sf, origin = (0, 0))
         self.region = region
         self.region_id_var = ("ID" if id_var is None else id_var)
         self.grid = TileGrid(self.tile_unit.tile.geometry,
@@ -217,7 +227,8 @@ class Tiling:
         self.tiles = self.make_tiling()
 
 
-    def get_tiled_map(self, id_var:str = None, rotation:float = 0.,             
+    def get_tiled_map(self, id_var:str = None, 
+                      rotation:float = 0., inset:float = 0,            
                       prioritise_tiles:bool = False) -> gpd.GeoDataFrame:
         """Returns a geodataframe filling a region at the requested rotation.
 
@@ -237,6 +248,9 @@ class Tiling:
         # if no id_var is supplied overwrite it with the class id_var
         id_var = (self.region_id_var if id_var is None else id_var)
         tiled_map = self.rotated(rotation)
+        if inset > 0:
+            tiled_map.geometry = \
+                tiled_map.geometry.buffer(-inset, join_style = 2)
         # compile a list of the variable names we are NOT going to change
         # i.e. everything except the geometry and the id_var
         region_vars = list(self.region.columns)
@@ -598,8 +612,10 @@ class TiledMap:
                                  elements.rotation):
             subset = subsets.get_group(id)
             d = subset[self.variables[id]]
+            categorical = False
             # if the data are categorical then it's complicated...
             if d.dtype == pd.CategoricalDtype:
+                categorical = True
                 # desired order of categorical variable is the 
                 # color maps dictionary keys
                 cmap = self.colourmaps[self.variables[id]]
@@ -619,7 +635,8 @@ class TiledMap:
             else: # any other data is easy!
                 data_vals = sorted(d)
                 freqs = [1] * len(data_vals)
-            key = self.tiling.tile_unit._get_legend_key_shapes(geom, freqs, rot)
+            key = self.tiling.tile_unit._get_legend_key_shapes(
+                geom, freqs, rot, categorical)
             key_tiles.extend(key)
             vals.extend(data_vals)
             n = len(data_vals)

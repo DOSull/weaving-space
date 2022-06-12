@@ -28,7 +28,7 @@ class Tileable:
     vectors:list[tuple[float]] = None
     elements:gpd.GeoDataFrame = None
     regularised_tile:gpd.GeoDataFrame = None
-    margin:float = 0.
+    # margin:float = 0.
         
         
     def get_vectors(self, return_values:bool = True) -> list[tuple[float]]:
@@ -62,6 +62,19 @@ class Tileable:
         return (list(vec_dict.values())
                 if return_values
                 else vec_dict)
+        
+        
+    def inset_elements(self, inset:float = 1) -> None:
+        inset_elements, inset_ids = [], []
+        for p, id in zip(self.elements.geometry, self.elements.element_id):
+            b = p.buffer(-inset, join_style = 2)
+            if not b.area <= 0:
+                inset_elements.append(b)
+                inset_ids.append(id)
+        self.elements = gpd.GeoDataFrame(
+            data = {"element_id": inset_ids}, crs = self.crs,
+            geometry = gpd.GeoSeries(inset_elements))
+        return
         
     
     def merge_fragments(
@@ -324,12 +337,12 @@ class TileUnit(Tileable):
         if self.regularised_tile is None: 
             self.regularised_tile = copy.deepcopy(self.tile)
             self.regularise_elements()
-        if self.margin > 0:
-            self.regularised_tile = self.regularised_tile.scale(
-                xfact = 1 - self.margin, yfact = 1 - self.margin)
-            self.elements.geometry = self.elements.geometry.scale(
-                xfact = 1 - self.margin, yfact = 1 - self.margin,
-                origin = self.regularised_tile.geometry[0].centroid)
+        # if self.margin > 0:
+        #     self.regularised_tile = self.regularised_tile.scale(
+        #         xfact = 1 - self.margin, yfact = 1 - self.margin)
+        #     self.elements.geometry = self.elements.geometry.scale(
+        #         xfact = 1 - self.margin, yfact = 1 - self.margin,
+        #         origin = self.regularised_tile.geometry[0].centroid)
 
 
     def setup_tile_unit(self) -> None:
@@ -389,8 +402,9 @@ class TileUnit(Tileable):
         return None
 
     
-    def _get_legend_key_shapes(self, polygon:geom.Polygon, counts:int = 25, 
-                               angle:float = 0, ) -> list[geom.Polygon]:
+    def _get_legend_key_shapes(self, polygon:geom.Polygon, 
+                               counts:int = 25, angle:float = 0, 
+                               categorical:bool = False) -> list[geom.Polygon]:
         """Returns a set of shapes that can be used to make a legend key 
         symbol for the supplied polygon. In TileUnit this is a set of 'nested
         polygons.
@@ -404,31 +418,32 @@ class TileUnit(Tileable):
         Returns:
             list[geom.Polygon]: a list of nested polygons.
         """
-        slice_posns = list(np.cumsum(counts))
-        total = slice_posns[-1]
-        slice_posns = [0] + [p / total for p in slice_posns]
-        return [tiling_utils.get_polygon_sector(polygon, i, j) 
-                for i, j in zip(slice_posns[:-1], slice_posns[1:])]
+        if not categorical:
+            n = sum(counts)
+            bandwidths = list(np.cumsum(counts))
+            bandwidths = [bw / n for bw in bandwidths]
+            bandwidths = [bw if bw > 0.05 else 0.05 for bw in bandwidths]
+            n = sum(bandwidths)
+            bandwidths = [0] + [bw / n for bw in bandwidths]
+            # # make buffer widths that will yield approx equal area 'annuli'
+            # bandwidths = range(n_steps + 1)
+            # sqrt exaggerates outermost annuli, which can otherwise disappear
+            bandwidths = [np.sqrt(bw) for bw in bandwidths]
+            distances = np.cumsum(bandwidths)
+            # get the negative buffer distance that will 'collapse' the polygon
+            radius = tiling_utils.get_collapse_distance(polygon)
+            distances = distances * radius / distances[-1]
+            nested_polys = [polygon.buffer(-d, join_style = 2)   
+                            for d in distances]
+            # return converted to annuli (who knows someone might set alpha < 1)
+            return [g1.difference(g2) for g1, g2 in 
+                    zip(nested_polys[:-1], nested_polys[1:])]      
+        else:
+            n = sum(counts)
+            slice_posns = list(np.cumsum(counts))
+            slice_posns = [0] + [p / n for p in slice_posns]
+            return [tiling_utils.get_polygon_sector(polygon, i, j) 
+                    for i, j in zip(slice_posns[:-1], slice_posns[1:])]
 
-        # if isinstance(n_steps, Iterable):
-        #     n = sum(n_steps)
-        #     bandwidths = [f / n for f in n_steps]
-        #     bandwidths = [f if f > 0.05 else 0.05 for f in bandwidths]
-        #     total = sum(bandwidths)
-        #     bandwidths = [0] + [f / total for f in bandwidths]
-        # else:
-        #     bandwidths = range(n_steps + 1)
-        # # # make buffer widths that will yield approx equal area 'annuli'
-        # # bandwidths = range(n_steps + 1)
-        # # sqrt exaggerates outermost annuli, which can otherwise disappear
-        # bandwidths = [np.sqrt(w) for w in bandwidths]
-        # distances = np.cumsum(bandwidths)
-        # # get the negative buffer distance that will 'collapse' the polygon
-        # radius = tiling_utils.get_collapse_distance(polygon)
-        # distances = distances * radius / distances[-1]
-        # nested_polys = [polygon.buffer(-d, join_style = 2)   
-        #                 for d in distances]
-        # # return converted to annuli (who knows someone might set alpha < 1)
-        # return [g1.difference(g2)
-        #         for g1, g2 in zip(nested_polys[:-1], nested_polys[1:])]
+
     
