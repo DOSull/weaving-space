@@ -14,7 +14,7 @@ from shapely.geometry import MultiPolygon
 from shapely.ops import unary_union
 from shapely.wkt import dumps
 from shapely.wkt import loads
-
+import shapely.ops
 
 @dataclass
 class WeaveGrid:
@@ -138,7 +138,8 @@ class WeaveGrid:
             R = self.spacing / (1 + np.cos(np.pi / n_sides))
         angles = self.__get_angles(n_sides)
         corners = [(R * np.cos(a), R * np.sin(a)) for a in angles]
-        return Polygon(corners)
+        # return Polygon(corners)
+        return self._gridify(Polygon(corners), precision = 6)
 
 
     def __get_angles(self, n: int = 4) -> list[float]:
@@ -291,3 +292,21 @@ class WeaveGrid:
                 mask = mask.union(unary_union(next_polys))
         return all_polys
 
+
+    def get_tile_from_cells(self, approx_tile:Polygon) -> Polygon:
+        xmin, ymin, xmax, ymax = approx_tile.bounds
+        if self.n_axes == 2:
+            w = np.round((xmax - xmin) / self.spacing) * self.spacing
+        else:
+            h_spacing = self.spacing * 2 / np.sqrt(3)
+            w = np.round((xmax - xmin) / h_spacing) * h_spacing
+        h = np.round((ymax - ymin) / self.spacing) * self.spacing
+        if self.n_axes == 2:
+            return Polygon([(-w/2, -h/2), (w/2, -h/2), (w/2, h/2), (-w/2, h/2)])
+        else:
+            return Polygon([( w/4, -h/2), ( w/2,    0), ( w/4,  h/2), 
+                            (-w/4,  h/2), (-w/2,    0), (-w/4, -h/2)])
+            
+        
+        
+        

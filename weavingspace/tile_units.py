@@ -3,6 +3,7 @@
 
 from dataclasses import dataclass
 import copy
+from ntpath import join
 import string
 from typing import Iterable
 
@@ -11,6 +12,7 @@ import pandas as pd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
+import shapely.ops
 
 import tiling_utils
 from tiling_utils import TileShape
@@ -29,7 +31,21 @@ class Tileable:
     elements:gpd.GeoDataFrame = None
     regularised_tile:gpd.GeoDataFrame = None
     # margin:float = 0.
+    
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            self.__dict__[k] = v
+        self.setup_tile_and_elements()
+        self.setup_vectors()
+        if self.regularised_tile is None:
+            self.regularise_elements()
+        return
         
+        
+    def setup_vectors(self) -> None:
+        self.vectors = self.get_vectors()
+        return None
+    
         
     def get_vectors(self, return_values:bool = True) -> list[tuple[float]]:
         """
@@ -64,21 +80,19 @@ class Tileable:
                 else vec_dict)
         
         
-    def inset_elements(self, inset:float = 1) -> None:
-        inset_elements, inset_ids = [], []
-        for p, id in zip(self.elements.geometry, self.elements.element_id):
-            b = p.buffer(-inset, join_style = 2)
-            if not b.area <= 0:
-                inset_elements.append(b)
-                inset_ids.append(id)
-        self.elements = gpd.GeoDataFrame(
-            data = {"element_id": inset_ids}, crs = self.crs,
-            geometry = gpd.GeoSeries(inset_elements))
+    # Make up a regularised tile by carefully unioning the elements
+    def make_regularised_tile_from_elements(self) -> None:
+        self.regularised_tile = copy.deepcopy(self.tile)
+        self.regularised_tile.geometry = gpd.GeoSeries([
+            self.elements.geometry \
+                .buffer(self.fudge_factor, resolution = 1, join_style = 2)\
+                .unary_union \
+                .buffer(-self.fudge_factor, resolution = 1, join_style = 2)])
         return
         
     
-    def merge_fragments(
-            self, fragments:list[geom.Polygon]) -> list[geom.Polygon]:
+    def merge_fragments(self, 
+                        fragments:list[geom.Polygon]) -> list[geom.Polygon]:
         """
         Merges a set of polygons based on testing if they touch when subjected to the translation vectors provided by the get_vectors() method. Called by regularise_elements() method to combine elements in a tile that may be fragmented as supplied but will combine when tiled into single elements. This step makes for more efficient implementation of the tiling of map regions.
 
@@ -89,7 +103,8 @@ class Tileable:
             list[geom.Polygon]: A minimal list of merged polygons.
         """
         tile = self.tile.geometry[0]
-        reg_tile = self.regularised_tile.geometry[0]
+        reg_tile = self.regularised_tile.geometry[0].buffer(
+            self.fudge_factor, resolution = 1, join_style = 2)
         if len(fragments) == 1:
             return fragments
         changes_made = True
@@ -112,24 +127,25 @@ class Tileable:
                 for i, j in matches:
                     f1 = fragments[i]
                     f2 = t_fragments[j]
-                    u1 = (f1.buffer(self.fudge_factor, join_style = 2) | 
-                          f2.buffer(self.fudge_factor, join_style = 2))
+                    u1 = (f1.buffer(self.fudge_factor, 
+                                    resolution = 1, join_style = 2) | 
+                          f2.buffer(self.fudge_factor, 
+                                    resolution = 1, join_style = 2))
                     u2 = affine.translate(u1, -v[0], -v[1])
                     if tile.intersection(u1).area > tile.intersection(u2).area:
                         next_frags.append(u1)
-                        reg_tile = reg_tile | u1
-                        reg_tile = reg_tile - u2
+                        reg_tile = (reg_tile | u1) - u2
                     else:
                         next_frags.append(u2)
-                        reg_tile = reg_tile | u2
-                        reg_tile = reg_tile - u1
+                        reg_tile = (reg_tile | u2) - u1
                     changes_made = True
                     fragments_to_remove.add(i)
                     fragments_to_remove.add(j)
                 fragments = [f for i, f in enumerate(fragments) 
                             if not (i in fragments_to_remove)]
                 fragments = next_frags + fragments
-        self.regularised_tile.geometry[0] = reg_tile.buffer(-self.fudge_factor)
+        self.regularised_tile.geometry[0] = \
+            reg_tile.buffer(-self.fudge_factor, resolution = 1, join_style = 2)
         return fragments
 
 
@@ -137,36 +153,35 @@ class Tileable:
         """
         Combines separate elements that share an element_id value into single elements, if they would end up touching when tiled. Also adjusts the regularised_tile attribute according.
         """
-        self.vectors = self.get_vectors()
+        self.regularised_tile = copy.deepcopy(self.tile)
         self.regularised_tile.geometry = \
             self.regularised_tile.geometry.buffer(
-                self.fudge_factor, join_style = 2)
+                self.fudge_factor, resolution = 1, join_style = 2)
         # This preserves order while finding uniques, unlike list(set()).
         # Reordering ids might cause confusion when colour palettes
         # are not assigned explicitly to each id, but in the order
         # encountered in the element_id Series of the GeoDataFrame.
         elements, element_ids = [], []
-        ids = list(pd.Series.unique(self.elements.element_id))
+        ids = list(self.elements.element_id.unique())
         for id in ids:
             fragment_set = list(
                 self.elements[self.elements.element_id == id].geometry)
             merge_result = self.merge_fragments(fragment_set)
             elements.extend(merge_result)
             element_ids.extend([id] * len(merge_result))
-        new_elements = gpd.GeoDataFrame(
+
+        self.elements = gpd.GeoDataFrame(
             data = {"element_id": element_ids}, crs = self.crs,
-            geometry = gpd.GeoSeries(elements)
-        )
-        self.elements = new_elements
-        # self.regularised_tile.geometry = \
-        #     self.regularised_tile.geometry.buffer(
-        #         -self.fudge_factor, join_style = 2)
+            geometry = gpd.GeoSeries(elements))
+
         self.regularised_tile.geometry = \
             self.regularised_tile.geometry.explode(index_parts = False,
                                                    ignore_index = True)
         if self.regularised_tile.geometry.shape[0] > 1:
             self.regularised_tile.geometry = \
                 tiling_utils.get_largest_polygon(self.regularised_tile.geometry)
+        self.regularised_tile.geometry[0] = \
+            self.regularised_tile.geometry[0].simplify(self.spacing / 100)
         return None
     
     
@@ -239,12 +254,26 @@ class Tileable:
         # repair any weirdness...
         self.elements.geometry = self.elements.geometry \
             .buffer(-self.fudge_factor) \
-            .buffer(self.fudge_factor, join_style = 2)
+            .buffer(self.fudge_factor, resolution = 1)
         self.elements = self.elements[self.elements.geometry.area > 0]
         self.regularised_tile = copy.deepcopy(self.tile)
         return None
     
-        
+
+    # applicable to both TileUnits and WeaveUnits
+    def inset_elements(self, inset:float = 1) -> None:
+        inset_elements, inset_ids = [], []
+        for p, id in zip(self.elements.geometry, self.elements.element_id):
+            b = p.buffer(-inset, resolution = 1)
+            if not b.area <= 0:
+                inset_elements.append(b)
+                inset_ids.append(id)
+        self.elements = gpd.GeoDataFrame(
+            data = {"element_id": inset_ids}, crs = self.crs,
+            geometry = gpd.GeoSeries(inset_elements))
+        return
+    
+
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
              show_ids = True, show_vectors:bool = False, r:int = 0,
              tile_edgecolor:str = "k", reg_tile_edgcolor:str = "r", 
@@ -327,25 +356,10 @@ class TileUnit(Tileable):
     code:str = "3.3.4.3.4"
         
     def __init__(self, **kwargs) -> None:
-        for k, v in kwargs.items():
-            self.__dict__[k] = v
-        self.setup_tile_unit()
-        self.vectors = self.get_vectors()
-        if self.tile_shape == TileShape.TRIANGLE:
-            self._modify_tile()
-            self._modify_elements()
-        if self.regularised_tile is None: 
-            self.regularised_tile = copy.deepcopy(self.tile)
-            self.regularise_elements()
-        # if self.margin > 0:
-        #     self.regularised_tile = self.regularised_tile.scale(
-        #         xfact = 1 - self.margin, yfact = 1 - self.margin)
-        #     self.elements.geometry = self.elements.geometry.scale(
-        #         xfact = 1 - self.margin, yfact = 1 - self.margin,
-        #         origin = self.regularised_tile.geometry[0].centroid)
+        super().__init__(**kwargs)
 
 
-    def setup_tile_unit(self) -> None:
+    def setup_tile_and_elements(self) -> None:
         """Delegates setup of the unit to various functions depending
         on self.tiling_type.
         """
@@ -392,11 +406,11 @@ class TileUnit(Tileable):
         # make rotated copies
         # buffering applied to ensure union 'sticks'
         twins = [affine.rotate(tile, a, origin = (0, 0)).buffer(
-                                self.fudge_factor, join_style = 2)
+                                self.fudge_factor, resolution = 1)
                  for a in range(0, 360, 180)]
         # and here we undo the buffer
         merged_tile = gpd.GeoSeries(twins).unary_union.buffer(
-                -self.fudge_factor, join_style = 2)
+                -self.fudge_factor, resolution = 1)
         self.tile_shape = TileShape.DIAMOND
         self.tile.geometry = gpd.GeoSeries([merged_tile])
         return None
@@ -433,7 +447,7 @@ class TileUnit(Tileable):
             # get the negative buffer distance that will 'collapse' the polygon
             radius = tiling_utils.get_collapse_distance(polygon)
             distances = distances * radius / distances[-1]
-            nested_polys = [polygon.buffer(-d, join_style = 2)   
+            nested_polys = [polygon.buffer(-d, resolution = 1)   
                             for d in distances]
             # return converted to annuli (who knows someone might set alpha < 1)
             return [g1.difference(g2) for g1, g2 in 
@@ -446,4 +460,16 @@ class TileUnit(Tileable):
                     for i, j in zip(slice_posns[:-1], slice_posns[1:])]
 
 
+    def inset_tile(self, d:float = 0) -> None:
+        self.elements = self.elements.clip(
+            self.regularised_tile.geometry.buffer(
+                -d, resolution = 1, join_style = 2))
+        return
     
+    
+    def scale_elements(self, sf:float = 1) -> None:
+        self.elements.geometry = self.elements.geometry.scale(
+            sf, sf, origin = (0, 0))
+        return
+
+

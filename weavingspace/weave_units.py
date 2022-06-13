@@ -42,40 +42,43 @@ class WeaveUnit(Tileable):
     th:np.ndarray = None
     
     def __init__(self, **kwargs):
-        """Constructor for WeaveUnit. Parameters are passed through to get_weave_unit function and also stored as instance attributes.
+        super().__init__(**kwargs)
+    
+    # def __init__(self, **kwargs):
+    #     """Constructor for WeaveUnit. Parameters are passed through to get_weave_unit function and also stored as instance attributes.
         
-        Args:
-            weave_type (str, optional): the type of weave pattern, one of 
-                "plain",  "twill", "basket", "this", "cube" or "hex". Defaults
-                to "plain".
-            aspect (float, optional): width of strands relative to the spacing. 
-                Defaults to 1.
-            n (tuple of ints): number of over-under strands in biaxial weaves. 
-                Only one item is required in a plain weave. Twill and basket 
-                patterns expect an even number of elements in the tuple. 
-                Defaults to (2, 2).
-            strands (str, optional): specification of the strand labels 
-                along each axis. Defaults to "a|b|c".
-            tie_up (numpy.ndarray, optional): used when type is "this" to
-                specify a desired weave pattern. See: Glassner A, 2002, 
-                “Digital weaving. 1” IEEE Computer Graphics and Applications 22
-                (6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
-            tr (numpy.ndarray, optional): used when type is "this" to specify 
-                the treadling matrix. See: Glassner 2002. Defaults to None.
-            th (numpy.ndarray, optional): used when type is "this" to specify
-                the threading matrix. See: Glassner 2002. Defaults to None.
-        """
-        for k, v in kwargs.items():
-            self.__dict__[k] = v
-        self.setup_weave_unit(**kwargs)
-        self.tile_shape = (TileShape.HEXAGON 
-                           if self.weave_type in ("hex", "cube")
-                           else TileShape.RECTANGLE) 
-        self.regularised_tile = copy.deepcopy(self.tile)
-        self.regularise_elements()
+    #     Args:
+    #         weave_type (str, optional): the type of weave pattern, one of 
+    #             "plain",  "twill", "basket", "this", "cube" or "hex". Defaults
+    #             to "plain".
+    #         aspect (float, optional): width of strands relative to the spacing. 
+    #             Defaults to 1.
+    #         n (tuple of ints): number of over-under strands in biaxial weaves. 
+    #             Only one item is required in a plain weave. Twill and basket 
+    #             patterns expect an even number of elements in the tuple. 
+    #             Defaults to (2, 2).
+    #         strands (str, optional): specification of the strand labels 
+    #             along each axis. Defaults to "a|b|c".
+    #         tie_up (numpy.ndarray, optional): used when type is "this" to
+    #             specify a desired weave pattern. See: Glassner A, 2002, 
+    #             “Digital weaving. 1” IEEE Computer Graphics and Applications 22
+    #             (6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
+    #         tr (numpy.ndarray, optional): used when type is "this" to specify 
+    #             the treadling matrix. See: Glassner 2002. Defaults to None.
+    #         th (numpy.ndarray, optional): used when type is "this" to specify
+    #             the threading matrix. See: Glassner 2002. Defaults to None.
+    #     """
+    #     for k, v in kwargs.items():
+    #         self.__dict__[k] = v
+    #     self.setup_weave_unit(**kwargs)
+    #     self.tile_shape = (TileShape.HEXAGON 
+    #                        if self.weave_type in ("hex", "cube")
+    #                        else TileShape.RECTANGLE) 
+    #     self.regularised_tile = copy.deepcopy(self.tile)
+    #     self.regularise_elements()
 
 
-    def setup_weave_unit(self, **kwargs) -> None:
+    def setup_tile_and_elements(self, **kwargs) -> None:
         """Returns dictionary with weave unit and tile GeoDataFrames
         
         Args:
@@ -103,8 +106,10 @@ class WeaveUnit(Tileable):
 
         if self.weave_type in ("hex", "cube"):
             self.setup_triaxial_weave_unit(**kwargs)
+            self.tile_shape = TileShape.HEXAGON
         else:
             self.setup_biaxial_weave_unit(**kwargs)
+            self.tile_shape = TileShape.RECTANGLE
         return
 
 
@@ -256,12 +261,11 @@ class WeaveUnit(Tileable):
         for dim, thread in zip(loom.dimensions, strand_labels):
             labels.append(thread * int(np.ceil(dim // len(thread))))
         weave_polys = []
-        bb_polys = []
+        cells = []
         strand_ids = []
         for coords, strand_order in zip(loom.indices, loom.orderings):
             ids = [thread[coord] for coord, thread in zip(coords, labels)]
-            cell = grid.get_grid_cell_at(coords)
-            bb_polys.append(grid._gridify(cell))
+            cells.append(grid.get_grid_cell_at(coords))
             if strand_order is None: continue  # No strands present
             if strand_order == "NA": continue  # Inconsistency in layer order
             n_slices = [len(id) for id in ids]
@@ -272,9 +276,15 @@ class WeaveUnit(Tileable):
             next_labels = [list(ids[i]) for i in strand_order]  # list of lists
             next_labels = list(itertools.chain(*next_labels))  # flatten 
             strand_ids.extend(next_labels)
-        tile = shapely.ops.unary_union(bb_polys)
-        shift = tiling_utils.centre_offset(tile)
-        tile = affine.translate(tile, shift[0], shift[1])
+        # tile = tiling_utils.union_polygons_with_snap(bb_polys)
+        # bb_polys = tiling_utils.gridify(gpd.GeoSeries(bb_polys))
+        approx_tile = shapely.ops.unary_union(cells)
+        tile = grid.get_tile_from_cells(approx_tile)
+        atc = approx_tile.centroid
+        shift = (-atc.x, -atc.y)
+        # shift = tiling_utils.centre_offset()
+        # tile = affine.translate(tile, shift[0], shift[1])
+        # tile = tile.buffer(-1e-3, resolution = 1, join_style = 2)
         self.elements = self.get_weave_elements_gdf(
             weave_polys, strand_ids, tile, shift)
         self.tile = gpd.GeoDataFrame(
@@ -309,12 +319,12 @@ class WeaveUnit(Tileable):
         weave = weave.explode(index_parts = False, ignore_index = True)
         # this buffer operation cleans up some geometry issues
         # weave.geometry = weave.buffer(
-        #     -self.fudge_factor * self.spacing, join_style = 2)
+        #     -self.fudge_factor * self.spacing, resolution = 1)
         # weave.geometry = weave.buffer(
-        #     (self.fudge_factor - self.margin) * self.spacing, join_style = 2)
+        #     (self.fudge_factor - self.margin) * self.spacing, resolution = 1)
         weave.geometry = weave \
             .buffer(-self.fudge_factor * self.spacing) \
-            .buffer(self.fudge_factor * self.spacing, join_style = 2)
+            .buffer(self.fudge_factor * self.spacing, resolution = 1)
         return weave.clip(bb).set_crs(self.crs)
 
 

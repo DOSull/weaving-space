@@ -33,6 +33,7 @@ def setup_none_tile(unit) -> None:
     unit.elements = gpd.GeoDataFrame(
         data = {"element_id": ["a"]}, crs = unit.crs,
         geometry = copy.deepcopy(unit.tile.geometry))
+    return
 
 
 def setup_base_tile(unit, shape:TileShape) -> None: 
@@ -83,12 +84,7 @@ def setup_cairo(unit) -> None:
     unit.elements = gpd.GeoDataFrame(
         data = {"element_id": list("abcd")}, crs = unit.crs,
         geometry = gpd.GeoSeries([p1, p2, p3, p4]))
-    unit.regularised_tile = copy.deepcopy(unit.tile)
-    # note buffering before and after unary_union to 
-    # clean up floating point inaccuracies
-    unit.regularised_tile.geometry = gpd.GeoSeries([
-        unit.elements.geometry.buffer(
-            1e-3, join_style = 2).unary_union.buffer(-1e-3)])
+    unit.make_regularised_tile_from_elements()
     
         
     
@@ -151,26 +147,26 @@ def setup_hex_dissection(unit):
         slices = [affine.rotate(s, a, origin = (0, 0)) 
                     for a in range(0, 360, 60)]
     elif unit.n == 12:
-        # if unit.dissection_offset == 0:
-        #     # like 4 they are not rotationally symmetric
-        #     s1 = geom.Polygon([p[0], p[1], (0, 0)])
-        #     s2 = geom.Polygon([p[1], p[2], (0, 0)])
-        #     slices1 = [affine.rotate(s1, a, origin = (0, 0)) 
-        #                 for a in range(0, 360, 60)]
-        #     slices2 = [affine.rotate(s2, a, origin = (0, 0)) 
-        #                 for a in range(0, 360, 60)]
-        #     slices = itertools.chain(slices1, slices2)
-        # else:
-        steps = np.linspace(0, 1, unit.n + 1) - \
-            unit.dissection_offset / (unit.n * 2)
-        slices = [tiling_utils.get_polygon_sector(hex, p1, p2)
-                for p1, p2 in zip(steps[:-1], steps[1:])]    
-            
+        if unit.dissection_offset == 0:
+            # like 4 they are not rotationally symmetric
+            s1 = geom.Polygon([p[0], p[1], (0, 0)])
+            s2 = geom.Polygon([p[1], p[2], (0, 0)])
+            slices1 = [affine.rotate(s1, a, origin = (0, 0)) 
+                        for a in range(0, 360, 60)]
+            slices2 = [affine.rotate(s2, a, origin = (0, 0)) 
+                        for a in range(0, 360, 60)]
+            slices = itertools.chain(slices1, slices2)
+        else:
+            steps = np.linspace(0, 1, unit.n + 1) - \
+                unit.dissection_offset / (unit.n * 2)
+            slices = [tiling_utils.get_polygon_sector(hex, p1, p2)
+                    for p1, p2 in zip(steps[:-1], steps[1:])]    
     
     unit.elements = gpd.GeoDataFrame(
         data = {"element_id": list(string.ascii_letters)[:unit.n]}, 
         crs = unit.crs,
         geometry = gpd.GeoSeries(slices))
+    unit.regularised_tile = copy.deepcopy(unit.tile)
 
 
 def setup_laves(unit) -> None:
@@ -266,10 +262,7 @@ def setup_laves_33336(unit) -> None:
         data = {"element_id": list("abcdef")}, 
         crs = unit.crs,
         geometry = gpd.GeoSeries(petals))
-    unit.regularised_tile = copy.deepcopy(unit.tile)
-    unit.regularised_tile.geometry = gpd.GeoSeries([
-        unit.elements.geometry.buffer(
-            1e-3, join_style = 2).unary_union.buffer(-1e-3)])
+    unit.make_regularised_tile_from_elements()
         
 
 def setup_laves_488(unit) -> None:
@@ -284,11 +277,7 @@ def setup_laves_488(unit) -> None:
         data = {"element_id": list("abcd")}, 
         crs = unit.crs,
         geometry = gpd.GeoSeries(tris))
-        # geometry = gpd.GeoSeries([tri1, tri2, tri3, tri4]))
-    unit.regularised_tile = copy.deepcopy(unit.tile)
-    unit.regularised_tile.geometry = gpd.GeoSeries([
-        unit.elements.geometry.buffer(
-            1e-3, join_style = 2).unary_union.buffer(-1e-3)])
+    unit.make_regularised_tile_from_elements()
         
         
 def setup_laves_31212(unit):
@@ -304,6 +293,8 @@ def setup_laves_31212(unit):
         data = {"element_id": list("abc")}, crs = unit.crs,
         geometry = gpd.GeoSeries(tris)
     )
+    unit._modify_tile()
+    unit._modify_elements()
 
 
 def setup_archimedean(unit) -> None:
@@ -319,8 +310,8 @@ def setup_archimedean(unit) -> None:
     bothered with it. Perhaps as a 5-element option we'll get to it in time.
     """
     if unit.code == "3.3.3.3.3.3":
-        setup_none_tile(unit, TileShape.TRIANGLE)
-        return
+        setup_base_tile(unit, TileShape.TRIANGLE)
+        setup_none_tile(unit)
     if unit.code == "3.3.3.3.6":
         print(f"The code [{unit.code}] is unsupported.")
     elif unit.code == "3.3.3.4.4":
@@ -329,9 +320,7 @@ def setup_archimedean(unit) -> None:
         # this is an attractive 6-colourable triangles and squares tiling
         setup_laves(unit)
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.regularised_tile = \
-            gpd.GeoSeries([unit.elements.geometry.buffer(
-                1e-3, 1).unary_union.buffer(-1e-3, 1)])
+        unit.make_regularised_tile_from_elements()
         return
     elif unit.code == "3.4.6.4":
         # our dual tiling code isn't correct for this one
@@ -340,10 +329,7 @@ def setup_archimedean(unit) -> None:
     elif unit.code == "3.6.3.6":
         setup_laves(unit)
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.regularised_tile = copy.deepcopy(unit.tile)
-        unit.regularised_tile.geometry = gpd.GeoSeries([
-            unit.elements.geometry.buffer(
-                1e-3, join_style = 2).unary_union.buffer(-1e-3)])
+        unit.make_regularised_tile_from_elements()
         return
     elif unit.code == "3.12.12":
         # nice! we can make dodecagons without having to think too hard
@@ -351,13 +337,9 @@ def setup_archimedean(unit) -> None:
         # would've been easier to make the dodecagon... other than
         # calculating the scale relative to the hexagon base tile!)
         setup_laves(unit)
-        unit._modify_tile()
-        unit._modify_elements()
+        unit.setup_vectors()
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.regularised_tile = copy.deepcopy(unit.tile)
-        unit.regularised_tile.geometry = gpd.GeoSeries([
-            unit.elements.geometry.buffer(
-                1e-3, join_style = 2).unary_union.buffer(-1e-3)])
+        unit.make_regularised_tile_from_elements()
         return
     elif unit.code == "4.4.4":
         setup_base_tile(unit, TileShape.RECTANGLE)
@@ -366,20 +348,15 @@ def setup_archimedean(unit) -> None:
     elif unit.code == "4.6.12":
         # more dodecagons for free!
         setup_laves(unit)
+        unit.setup_vectors()
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.regularised_tile = copy.deepcopy(unit.tile)
-        unit.regularised_tile.geometry = gpd.GeoSeries([
-            unit.elements.geometry.buffer(
-                1e-3, join_style = 2).unary_union.buffer(-1e-3)])
+        unit.make_regularised_tile_from_elements()
         return
     elif unit.code == "4.8.8":
         # this is the octagon and square tiling
         setup_laves(unit)
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.regularised_tile = copy.deepcopy(unit.tile)
-        unit.regularised_tile.geometry = gpd.GeoSeries([
-            unit.elements.geometry.buffer(
-                1e-3, join_style = 2).unary_union.buffer(-1e-3)])
+        unit.make_regularised_tile_from_elements()
         return
     elif unit.code == "6.6.6":
         setup_base_tile(unit, TileShape.HEXAGON)
@@ -423,7 +400,4 @@ def setup_archimedean_3464(unit) -> None:
         data = {"element_id": list("abcdef")}, 
         crs = unit.crs,
         geometry = gpd.GeoSeries([hex, square1, square2, square3, tri1, tri2]))
-    unit.regularised_tile = copy.deepcopy(unit.tile)
-    unit.regularised_tile.geometry = gpd.GeoSeries([
-        unit.elements.geometry.buffer(
-            1e-3, join_style = 2).unary_union.buffer(-1e-3)])
+    unit.make_regularised_tile_from_elements()

@@ -200,7 +200,7 @@ class Tiling:
     rotation:float = 0.
 
     def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
-                 id_var:str, tile_sf:float = 1, 
+                 id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
                  elements_margin:float = 0) -> None:
         """A class to persist a tiling by filling an area relative to 
         a region that is sufficient to apply the tiling at any rotation.
@@ -215,11 +215,12 @@ class Tiling:
         if elements_margin > 0:
             self.tile_unit = copy.deepcopy(self.tile_unit)
             self.tile_unit.inset_elements(elements_margin) 
-        if tile_sf < 1:
+        if elements_sf != 1:
             self.tile_unit = copy.deepcopy(self.tile_unit)
-            self.tile_unit.elements.geometry = \
-                self.tile_unit.elements.geometry.scale(
-                    tile_sf, tile_sf, origin = (0, 0))
+            self.tile_unit.scale_elements(elements_sf)
+        if tile_margin > 0:
+            self.tile_unit = copy.deepcopy(self.tile_unit)
+            self.tile_unit.inset_tile(tile_margin)
         self.region = region
         self.region_id_var = ("ID" if id_var is None else id_var)
         self.grid = TileGrid(self.tile_unit.tile.geometry,
@@ -250,7 +251,7 @@ class Tiling:
         tiled_map = self.rotated(rotation)
         if inset > 0:
             tiled_map.geometry = \
-                tiled_map.geometry.buffer(-inset, join_style = 2)
+                tiled_map.geometry.buffer(-inset, resolution = 1)
         # compile a list of the variable names we are NOT going to change
         # i.e. everything except the geometry and the id_var
         region_vars = list(self.region.columns)
@@ -539,8 +540,8 @@ class TiledMap:
                 legend_elements.geometry, 
                 mag = self.ellipse_magnification).rotate(
                     self.tiling.rotation, origin = (0, 0))
-            bb = ellipse.geometry.total_bounds
-            c = ellipse.geometry.unary_union.centroid
+            bb = ellipse.total_bounds
+            c = ellipse.unary_union.centroid
         else:
             bb = legend_elements.geometry.total_bounds
             c = legend_elements.geometry.unary_union.centroid
@@ -557,8 +558,14 @@ class TiledMap:
         context_tiles = self.tiling.tile_unit.get_local_patch(
             r = 2, include_0 = True).geometry.rotate(
                 self.tiling.rotation, origin = (0, 0))
+        # for reasons unknown... invalid polygons sometimes show up here
+        # I think because of the rotation /shrug... in any case, this 
+        # sledgehammer should fix it
+        context_tiles = gpd.GeoSeries([g.simplify(1e-6) 
+                                       for g in context_tiles.geometry],
+                                      crs = self.tiling.tile_unit.crs)
         if self.use_ellipse:
-            context_tiles.clip(ellipse, keep_geom_type = True).plot(
+            context_tiles.clip(ellipse, keep_geom_type = False).plot(
                     ax = ax, fc = "#9F9F9F3F", lw = 0.0)
             tiling_utils.get_boundaries(context_tiles.geometry).clip(
                 ellipse, keep_geom_type = True).plot(

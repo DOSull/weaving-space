@@ -145,7 +145,7 @@ def get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
         gpd.GeoSeries: interior vertices of the set of polygons.
     """
     polygons = gridify(polys.geometry)
-    uu = polygons.unary_union.buffer(1e-3, join_style = 2).buffer(-1e-3)
+    uu = polygons.unary_union.buffer(1e-3, resolution = 1).buffer(-1e-3)
     interior_pts = set()
     for poly in polygons:
         for pt in poly.exterior.coords:
@@ -326,63 +326,6 @@ def get_collapse_distance(geometry:geom.Polygon) -> float:
     return new_r
 
 
-# def plot_subsetted_gdf(ax, gdf:gpd.GeoDataFrame, vars:dict[str:str], 
-#                        cmaps:dict[str:str], **kwargs):
-#     """Plots supplied GedDataFrame on the supplied matplotlib axes,
-#     subsetting it into groups based on the variables in vars, and coloured
-#     by the colour maps in cmaps.
-    
-#     Colour maps in the cmaps dictionary are per variable to be mapped, i.e., 
-#     {"var1": "Reds", "var2": "Blues"} and so one. They colour map be supplied 
-#     in any format accepted by gpd.GeoDataFrame.plot() and additionally also as
-#     a dictionary of attribute_value:colour key value pairs, in an order relevant
-#     to the variable. E.g. {"low": "red", "medium": "#00000000", "high": "k"}.
-
-#     Args:
-#         ax (_type_): matplotlib axes to plot to.
-#         gdf (gpd.GeoDataFrame): the data to plot.
-#         vars (dict): lookup from element_id:variable name.
-#         cmaps (dict): lookup from variable name:colour map (see details).
-
-#     Raises:
-#         Exception: if the colour map specification is not a recognised type.
-
-#     Returns:
-#         _type_: the supplied matplotlib axes.
-#     """
-#     ids = pd.Series.unique(gdf.element_id)
-#     groups = gdf.groupby("element_id")
-#     for id in ids:
-#         subset = groups.get_group(id)
-#         # Handle custom color assignments via 'cmaps' parameter.
-#         # Result is setting 'cmap' variable used in plot command afterwards.
-#         if (isinstance(cmaps, 
-#                         (str, matplotlib.colors.Colormap,
-#                         matplotlib.colors.LinearSegmentedColormap,
-#                         matplotlib.colors.ListedColormap))):
-#             cmap=cmaps  # user wants one palette for all ids
-#         elif (len(cmaps) == 0):
-#             cmap = 'Reds'  # set a default... here, to Brewer's 'Reds'
-#         elif (id not in cmaps):
-#             cmap = 'Reds'  # id has no color specified in dict, use default
-#         elif (isinstance(cmaps[id], 
-#                             (str, matplotlib.colors.Colormap,
-#                             matplotlib.colors.LinearSegmentedColormap,
-#                             matplotlib.colors.ListedColormap))):
-#             cmap = cmaps[id]  # user specified colors for this id so use it
-#         elif (isinstance(cmaps[id], dict)):
-#             colormap_dict = cmaps[id]
-#             data_unique_sorted = subset[vars[id]].unique()
-#             data_unique_sorted.sort()
-#             cmap = matplotlib.colors.ListedColormap(
-#                 [colormap_dict[x] for x in data_unique_sorted])
-#         else:
-#             raise Exception(f"Color map for '{id}' is not a known type, but is {str(type(cmaps[id]))}")
-
-#         subset.plot(ax = ax, column = vars[id], cmap = cmap, **kwargs)
-#     return ax
-
-
 def get_largest_polygon(polygons:gpd.GeoSeries) -> gpd.GeoSeries:
     """Returns the largest polygon in a GeoSeries as a GeoSeries of one polygon.
 
@@ -411,9 +354,8 @@ def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -> bool:
     Returns:
         bool: True if they neighbour along an edge
     """
-    return p1.buffer(1e-3, join_style = 2).intersection(
-        p2.buffer(1e-3, join_style = 2)).area > 4e-6
-    # return p1.buffer(-1e-6).distance(p2.buffer(-1e-6)) <= 2e-6
+    return p1.buffer(1e-3, resolution = 1).intersection(
+        p2.buffer(1e-3, resolution = 1)).area > 4e-6
 
 
 def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
@@ -452,7 +394,7 @@ def get_polygon_sector(shape:geom.Polygon, start:float = 0.0,
     if start == end:
         # must return a null polygon since the calling context
         # expects to get something back... which most likely 
-        # is needed to align with other data
+        # is needed to align with other data 
         return geom.Polygon()
     if start * end < 0:
         # either side of 0/1 so assume required sector includes 0
@@ -468,5 +410,11 @@ def get_polygon_sector(shape:geom.Polygon, start:float = 0.0,
         arc = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
                                     start, end, normalized = True)
         sector = geom.Polygon([shape.centroid] + list(arc.coords))
-    return sector.buffer(1e-3, join_style = 2).buffer(-1e-3)
-    
+    return sector.buffer(1e-3, resolution = 1).buffer(-1e-3)
+
+
+# def union_polygons_with_snap(polygons:list[geom.Polygon]) -> geom.Polygon:
+#     u = geom.Polygon()
+#     for p in polygons:
+#         u = u.union(p)
+#     return u.buffer(-1e-3)
