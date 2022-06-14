@@ -538,8 +538,7 @@ class TiledMap:
         if self.use_ellipse:
             ellipse = tiling_utils.get_bounding_ellipse(
                 legend_elements.geometry, 
-                mag = self.ellipse_magnification).rotate(
-                    self.tiling.rotation, origin = (0, 0))
+                mag = self.ellipse_magnification)
             bb = ellipse.total_bounds
             c = ellipse.unary_union.centroid
         else:
