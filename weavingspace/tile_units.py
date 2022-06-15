@@ -88,6 +88,9 @@ class Tileable:
                 .buffer(self.fudge_factor, resolution = 1, join_style = 2)\
                 .unary_union \
                 .buffer(-self.fudge_factor, resolution = 1, join_style = 2)])
+        # This simplification seems very crude but fixes all kinds of issues...
+        self.regularised_tile.geometry[0] = \
+            self.regularised_tile.geometry[0].simplify(self.spacing / 100)
         return
         
     
@@ -381,6 +384,8 @@ class TileUnit(Tileable):
             tiling_geometries.setup_archimedean(self)
         elif self.tiling_type in ("hex-colouring", "hex-coloring"):
             tiling_geometries.setup_hex_colouring(self)
+        elif self.tiling_type in ("square-colouring", "square-coloring"):
+            tiling_geometries.setup_square_colouring(self)
         else:
             # tiling_geometries.setup_base_tile(self, self.tile_shape)
             tiling_geometries.setup_none_tile(self)

@@ -458,3 +458,32 @@ def setup_hex_colouring(unit):
         geometry = gpd.GeoSeries(hexes))
     unit.make_regularised_tile_from_elements()
 
+
+def setup_square_colouring(unit):
+    """Colourings of a regular array of squares. Only supports n = 5 at present
+    but we need a n=5 option
+    """
+    sq = tiling_utils.get_regular_polygon(unit.spacing, 4)
+    if unit.n == 5:
+        setup_base_tile(unit, TileShape.RECTANGLE)
+        
+        # Copy and translate square
+        tr = [(0, 0), (unit.spacing, 0), (0, unit.spacing), 
+              (-unit.spacing, 0), (0, -unit.spacing)]
+        squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+        squares = [affine.scale(sq, 1 / np.sqrt(5), 1 / np.sqrt(5),
+                                origin = (0, 0)) for sq in squares]
+        rotation = np.degrees(np.arctan2(1, 2))
+        squares = [affine.rotate(sq, rotation, origin = (0, 0)) 
+                   for sq in squares]
+    else:
+        setup_base_tile(unit, TileShape.RECTANGLE)
+        setup_none_tile(unit)
+        return
+    
+    unit.elements = gpd.GeoDataFrame(
+        data = {"element_id": list(string.ascii_letters)[:unit.n]}, 
+        crs = unit.crs,
+        geometry = gpd.GeoSeries(squares))
+    unit.make_regularised_tile_from_elements()
+
