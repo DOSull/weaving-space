@@ -80,6 +80,12 @@ def setup_cairo(unit) -> None:
     p2 = affine.rotate(p1, 90, (0, 0))
     p3 = affine.rotate(p2, 90, (0, 0))
     p4 = affine.rotate(p3, 90, (0, 0))
+    
+    # now move them
+    p1 = affine.translate(p1, -unit.spacing / 2, 0)
+    p2 = affine.translate(p2, unit.spacing / 2, 0)
+    p3 = affine.translate(p3, unit.spacing / 2, 0)
+    p4 = affine.translate(p4, -unit.spacing / 2, 0)
 
     unit.elements = gpd.GeoDataFrame(
         data = {"element_id": list("abcd")}, crs = unit.crs,
