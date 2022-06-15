@@ -488,8 +488,7 @@ class TiledMap:
             # Result is setting 'cmap' variable used in plot command afterwards.
             if (isinstance(self.colourmaps[var], dict)):
                 colormap_dict = self.colourmaps[var]
-                data_unique_sorted = subset[var].unique()
-                data_unique_sorted.sort()
+                data_unique_sorted = sorted(subset[var].unique())
                 cmap = matplotlib.colors.ListedColormap(
                     [colormap_dict[x] for x in data_unique_sorted])
                 subset.plot(ax = ax, column = var, cmap = cmap, **kwargs)
