@@ -251,7 +251,8 @@ class Tiling:
         tiled_map = self.rotated(rotation)
         if inset > 0:
             tiled_map.geometry = \
-                tiled_map.geometry.buffer(-inset, resolution = 1)
+                tiled_map.geometry.buffer(
+                    -inset, resolution = 1, join_style = 2)
         # compile a list of the variable names we are NOT going to change
         # i.e. everything except the geometry and the id_var
         region_vars = list(self.region.columns)

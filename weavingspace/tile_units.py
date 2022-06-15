@@ -180,6 +180,7 @@ class Tileable:
         if self.regularised_tile.geometry.shape[0] > 1:
             self.regularised_tile.geometry = \
                 tiling_utils.get_largest_polygon(self.regularised_tile.geometry)
+        # This simplification seems very crude but fixes all kinds of issues...
         self.regularised_tile.geometry[0] = \
             self.regularised_tile.geometry[0].simplify(self.spacing / 100)
         return None
@@ -253,8 +254,8 @@ class Tileable:
         self.elements = patch.clip(self.tile)
         # repair any weirdness...
         self.elements.geometry = self.elements.geometry \
-            .buffer(-self.fudge_factor) \
-            .buffer(self.fudge_factor, resolution = 1)
+            .buffer(-self.fudge_factor, resolution = 1, join_style = 2) \
+            .buffer(self.fudge_factor, resolution = 1, join_style = 2)
         self.elements = self.elements[self.elements.geometry.area > 0]
         self.regularised_tile = copy.deepcopy(self.tile)
         return None
@@ -264,7 +265,7 @@ class Tileable:
     def inset_elements(self, inset:float = 1) -> None:
         inset_elements, inset_ids = [], []
         for p, id in zip(self.elements.geometry, self.elements.element_id):
-            b = p.buffer(-inset, resolution = 1)
+            b = p.buffer(-inset, resolution = 1, join_style = 2)
             if not b.area <= 0:
                 inset_elements.append(b)
                 inset_ids.append(id)
@@ -357,6 +358,13 @@ class TileUnit(Tileable):
         
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
+        if self.tile_shape == TileShape.TRIANGLE:
+            self._modify_tile()
+            self._modify_elements()
+            self.setup_vectors()
+            self.make_regularised_tile_from_elements()
+        if self.regularised_tile is None:
+            self.make_regularised_tile_from_elements()
 
 
     def setup_tile_and_elements(self) -> None:
@@ -374,6 +382,7 @@ class TileUnit(Tileable):
         elif self.tiling_type in ("hex-colouring", "hex-coloring"):
             tiling_geometries.setup_hex_colouring(self)
         else:
+            # tiling_geometries.setup_base_tile(self, self.tile_shape)
             tiling_geometries.setup_none_tile(self)
         return
 
@@ -407,12 +416,12 @@ class TileUnit(Tileable):
         tile = affine.translate(tile, 0, -tile.bounds[1])
         # make rotated copies
         # buffering applied to ensure union 'sticks'
-        twins = [affine.rotate(tile, a, origin = (0, 0)).buffer(
-                                self.fudge_factor, resolution = 1)
+        twins = [affine.rotate(tile, a, origin = (0, 0)) \
+                    .buffer(self.fudge_factor, resolution = 1, join_style = 2) 
                  for a in range(0, 360, 180)]
         # and here we undo the buffer
         merged_tile = gpd.GeoSeries(twins).unary_union.buffer(
-                -self.fudge_factor, resolution = 1)
+                -self.fudge_factor, resolution = 1, join_style = 2)
         self.tile_shape = TileShape.DIAMOND
         self.tile.geometry = gpd.GeoSeries([merged_tile])
         return None
@@ -449,8 +458,8 @@ class TileUnit(Tileable):
             # get the negative buffer distance that will 'collapse' the polygon
             radius = tiling_utils.get_collapse_distance(polygon)
             distances = distances * radius / distances[-1]
-            nested_polys = [polygon.buffer(-d, resolution = 1)   
-                            for d in distances]
+            nested_polys = [polygon.buffer(-d, resolution = 1, 
+                                           join_style = 2) for d in distances]
             # return converted to annuli (who knows someone might set alpha < 1)
             return [g1.difference(g2) for g1, g2 in 
                     zip(nested_polys[:-1], nested_polys[1:])]      

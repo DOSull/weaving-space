@@ -145,11 +145,14 @@ def get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
         gpd.GeoSeries: interior vertices of the set of polygons.
     """
     polygons = gridify(polys.geometry)
-    uu = polygons.unary_union.buffer(1e-3, resolution = 1).buffer(-1e-3)
+    uu = polygons.unary_union \
+        .buffer(1e-3, resolution = 1, join_style = 2) \
+        .buffer(-1e-3, resolution = 1, join_style = 2)
     interior_pts = set()
     for poly in polygons:
         for pt in poly.exterior.coords:
-            if uu.contains(geom.Point(pt).buffer(1e-3)):
+            if uu.contains(
+                geom.Point(pt).buffer(1e-3, resolution = 1, join_style = 2)):
                 interior_pts.add(pt)
     return gpd.GeoSeries([geom.Point(p) for p in interior_pts])
 
@@ -354,8 +357,8 @@ def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -> bool:
     Returns:
         bool: True if they neighbour along an edge
     """
-    return p1.buffer(1e-3, resolution = 1).intersection(
-        p2.buffer(1e-3, resolution = 1)).area > 4e-6
+    return p1.buffer(1e-3, resolution = 1, join_style = 2).intersection(
+        p2.buffer(1e-3, resolution = 1, join_style = 2)).area > 4e-6
 
 
 def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
@@ -410,11 +413,6 @@ def get_polygon_sector(shape:geom.Polygon, start:float = 0.0,
         arc = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
                                     start, end, normalized = True)
         sector = geom.Polygon([shape.centroid] + list(arc.coords))
-    return sector.buffer(1e-3, resolution = 1).buffer(-1e-3)
+    return sector.buffer(1e-3, resolution = 1, join_style = 2).buffer(
+                            -1e-3, resolution = 1, join_style = 2)
 
-
-# def union_polygons_with_snap(polygons:list[geom.Polygon]) -> geom.Polygon:
-#     u = geom.Polygon()
-#     for p in polygons:
-#         u = u.union(p)
-#     return u.buffer(-1e-3)

@@ -260,9 +260,7 @@ class WeaveUnit(Tileable):
         labels = []
         for dim, thread in zip(loom.dimensions, strand_labels):
             labels.append(thread * int(np.ceil(dim // len(thread))))
-        weave_polys = []
-        cells = []
-        strand_ids = []
+        weave_polys, cells, strand_ids = [], [], []
         for coords, strand_order in zip(loom.indices, loom.orderings):
             ids = [thread[coord] for coord, thread in zip(coords, labels)]
             cells.append(grid.get_grid_cell_at(coords))
@@ -276,15 +274,10 @@ class WeaveUnit(Tileable):
             next_labels = [list(ids[i]) for i in strand_order]  # list of lists
             next_labels = list(itertools.chain(*next_labels))  # flatten 
             strand_ids.extend(next_labels)
-        # tile = tiling_utils.union_polygons_with_snap(bb_polys)
-        # bb_polys = tiling_utils.gridify(gpd.GeoSeries(bb_polys))
         approx_tile = shapely.ops.unary_union(cells)
         tile = grid.get_tile_from_cells(approx_tile)
         atc = approx_tile.centroid
         shift = (-atc.x, -atc.y)
-        # shift = tiling_utils.centre_offset()
-        # tile = affine.translate(tile, shift[0], shift[1])
-        # tile = tile.buffer(-1e-3, resolution = 1, join_style = 2)
         self.elements = self.get_weave_elements_gdf(
             weave_polys, strand_ids, tile, shift)
         self.tile = gpd.GeoDataFrame(
@@ -309,7 +302,7 @@ class WeaveUnit(Tileable):
         Returns:
             geopandas.GeoDataFrame: GeoDataFrame clipped to the tile, with 
                 margin applied.
-        """    
+        """
         weave = gpd.GeoDataFrame(
             data = {"element_id": strand_ids},
             geometry = gpd.GeoSeries(
@@ -317,14 +310,11 @@ class WeaveUnit(Tileable):
         weave = weave[weave.element_id != "-"]
         weave = weave.dissolve(by = "element_id", as_index = False)
         weave = weave.explode(index_parts = False, ignore_index = True)
-        # this buffer operation cleans up some geometry issues
-        # weave.geometry = weave.buffer(
-        #     -self.fudge_factor * self.spacing, resolution = 1)
-        # weave.geometry = weave.buffer(
-        #     (self.fudge_factor - self.margin) * self.spacing, resolution = 1)
         weave.geometry = weave \
-            .buffer(-self.fudge_factor * self.spacing) \
-            .buffer(self.fudge_factor * self.spacing, resolution = 1)
+            .buffer(-self.fudge_factor * self.spacing, 
+                    resolution = 1, join_style = 2) \
+            .buffer(self.fudge_factor * self.spacing, 
+                    resolution = 1, join_style = 2)
         return weave.clip(bb).set_crs(self.crs)
 
 
