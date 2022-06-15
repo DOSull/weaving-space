@@ -371,6 +371,8 @@ class TileUnit(Tileable):
             tiling_geometries.setup_laves(self)
         elif self.tiling_type == "archimedean":
             tiling_geometries.setup_archimedean(self)
+        elif self.tiling_type in ("hex-colouring", "hex-coloring"):
+            tiling_geometries.setup_hex_colouring(self)
         else:
             tiling_geometries.setup_none_tile(self)
         return

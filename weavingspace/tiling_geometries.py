@@ -401,3 +401,60 @@ def setup_archimedean_3464(unit) -> None:
         crs = unit.crs,
         geometry = gpd.GeoSeries([hex, square1, square2, square3, tri1, tri2]))
     unit.make_regularised_tile_from_elements()
+
+
+def setup_hex_colouring(unit):
+    """Several colourings of a regular array of hexagons
+    """
+    hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
+    if unit.n == 3:
+        setup_base_tile(unit, TileShape.HEXAGON)
+
+        hex = affine.rotate(hex, 30, origin = (0, 0))
+        hex = affine.scale(hex, 1 / np.sqrt(3), 1 / np.sqrt(3), origin = (0, 0))
+        # Copy and translate to alternate corners
+        corners = [p for i, p in enumerate(hex.exterior.coords) 
+                   if i in (0, 2, 4)]
+        hexes = [affine.translate(hex, p[0], p[1]) for p in corners]
+    elif unit.n == 4:
+        unit.tile_shape = TileShape.DIAMOND
+        unit.tile = gpd.GeoDataFrame(
+            crs = unit.crs,
+            geometry = gpd.GeoSeries([
+                geom.Polygon([(unit.spacing / 2, 0), 
+                              (0, unit.spacing * np.sqrt(3) / 2), 
+                              (-unit.spacing / 2, 0), 
+                              (0, -unit.spacing * np.sqrt(3) / 2)])
+            ]))
+        hex = affine.scale(hex, 0.5, 0.5, origin = (0, 0))
+        hex = affine.rotate(hex, 30, origin = (0, 0))
+        hex1 = affine.translate(hex, unit.spacing / 4, 0)
+        hex2 = affine.translate(
+            hex1, -unit.spacing / 4, unit.spacing * np.sqrt(3) / 4)
+        hex3 = affine.translate(hex, -unit.spacing / 4, 0)
+        hex4 = affine.translate(
+            hex3, unit.spacing / 4, -unit.spacing * np.sqrt(3) / 4)
+        hexes = [hex1, hex2, hex3, hex4]
+    elif unit.n == 7:  # the 'H3' tile
+        setup_base_tile(unit, TileShape.HEXAGON)
+        sf = 1 / np.sqrt(7)  
+        rotation = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
+
+        hex = affine.scale(hex, sf, sf)
+        corners = [p for p in hex.exterior.coords]
+        hex = affine.rotate(hex, 30)
+        hexes = [hex] + [affine.translate(
+            hex, x * np.sqrt(3), y * np.sqrt(3)) for x, y in corners[:-1]]
+        hexes = [affine.rotate(h, rotation, origin = (0, 0))
+                 for h in hexes]
+    else:
+        setup_base_tile(unit, TileShape.HEXAGON)
+        setup_none_tile(unit)
+        return
+    
+    unit.elements = gpd.GeoDataFrame(
+        data = {"element_id": list(string.ascii_letters)[:unit.n]}, 
+        crs = unit.crs,
+        geometry = gpd.GeoSeries(hexes))
+    unit.make_regularised_tile_from_elements()
+
