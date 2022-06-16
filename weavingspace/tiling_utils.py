@@ -145,9 +145,7 @@ def get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
         gpd.GeoSeries: interior vertices of the set of polygons.
     """
     polygons = gridify(polys.geometry)
-    uu = polygons.unary_union \
-        .buffer(1e-3, resolution = 1, join_style = 2) \
-        .buffer(-1e-3, resolution = 1, join_style = 2)
+    uu = safe_union(polygons, as_polygon = True)
     interior_pts = set()
     for poly in polygons:
         for pt in poly.exterior.coords:
@@ -413,6 +411,28 @@ def get_polygon_sector(shape:geom.Polygon, start:float = 0.0,
         arc = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
                                     start, end, normalized = True)
         sector = geom.Polygon([shape.centroid] + list(arc.coords))
-    return sector.buffer(1e-3, resolution = 1, join_style = 2).buffer(
-                            -1e-3, resolution = 1, join_style = 2)
+    return clean_polygon(sector)
 
+
+def clean_polygon(p:Union[geom.Polygon, gpd.GeoSeries], 
+                      res:float = 1e-3, shrink_then_grow:bool = True
+                  ) -> Union[geom.Polygon, gpd.GeoSeries]:
+    if shrink_then_grow:
+        return p.buffer(
+            -res, resolution = 1, join_style = 2).buffer(
+                res, resolution = 1, join_style = 2)
+    else:
+        return p.buffer(
+            res, resolution = 1, join_style = 2).buffer(
+                -res, resolution = 1, join_style = 2)
+    
+
+def safe_union(gs:gpd.GeoSeries, res:float = 1e-3, 
+               as_polygon:bool = False) -> Union[gpd.GeoSeries, geom.Polygon]:
+    union = gs.buffer(res, resolution = 1, join_style = 2) \
+                .unary_union \
+                .buffer(-res, resolution = 1, join_style = 2)
+    if as_polygon:
+        return union
+    else:
+        return gpd.GeoSeries([union], crs = gs.crs)

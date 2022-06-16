@@ -3,16 +3,12 @@
 
 from dataclasses import dataclass
 import copy
-from ntpath import join
 import string
-from typing import Iterable
 
 import geopandas as gpd
-import pandas as pd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
-import shapely.ops
 
 import tiling_utils
 from tiling_utils import TileShape
@@ -83,11 +79,8 @@ class Tileable:
     # Make up a regularised tile by carefully unioning the elements
     def make_regularised_tile_from_elements(self) -> None:
         self.regularised_tile = copy.deepcopy(self.tile)
-        self.regularised_tile.geometry = gpd.GeoSeries([
-            self.elements.geometry \
-                .buffer(self.fudge_factor, resolution = 1, join_style = 2)\
-                .unary_union \
-                .buffer(-self.fudge_factor, resolution = 1, join_style = 2)])
+        self.regularised_tile.geometry = tiling_utils.safe_union(
+            self.elements.geometry)
         # This simplification seems very crude but fixes all kinds of issues...
         self.regularised_tile.geometry[0] = \
             self.regularised_tile.geometry[0].simplify(self.spacing / 100)
@@ -256,9 +249,8 @@ class Tileable:
                  else self.get_local_patch(r = 1, include_0 = True))
         self.elements = patch.clip(self.tile)
         # repair any weirdness...
-        self.elements.geometry = self.elements.geometry \
-            .buffer(-self.fudge_factor, resolution = 1, join_style = 2) \
-            .buffer(self.fudge_factor, resolution = 1, join_style = 2)
+        self.elements.geometry = tiling_utils.clean_polygon(
+            self.elements.geometry)
         self.elements = self.elements[self.elements.geometry.area > 0]
         self.regularised_tile = copy.deepcopy(self.tile)
         return None
@@ -387,7 +379,6 @@ class TileUnit(Tileable):
         elif self.tiling_type in ("square-colouring", "square-coloring"):
             tiling_geometries.setup_square_colouring(self)
         else:
-            # tiling_geometries.setup_base_tile(self, self.tile_shape)
             tiling_geometries.setup_none_tile(self)
         return
 

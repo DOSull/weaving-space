@@ -2,9 +2,8 @@
 # coding: utf-8
 
 from dataclasses import dataclass
-import itertools
-from typing import Any
 from typing import Union
+import itertools
 import copy
 
 import numpy as np
@@ -332,7 +331,6 @@ class Tiling:
             self.region.rename_geometry("geometry", inplace = True)
 
         # chain list of lists of GeoSeries geometries to list of geometries 
-        # previously used self._translate_geoms, but I don't think we need it
         tiles = itertools.chain(*[
             self.tile_unit.elements.geometry.translate(p.x, p.y)
             for p in self.grid.points])
@@ -344,7 +342,6 @@ class Tiling:
                                      geometry = tiles_gs, 
                                      crs = self.tile_unit.crs)
         # unclear if we need the below or not...
-        # tiles_gdf.geometry = tiling_utils.gridify(tiles_gdf.geometry)
         return tiles_gdf
         
     
@@ -399,6 +396,7 @@ class TiledMap:
             if k in self.__dict__:
                 self.__dict__[k] = v
                 to_remove.add(k)
+        # remove them so we don't pass them on to pyplot and get errors
         for k in to_remove:
             del kwargs[k]
 
@@ -412,8 +410,6 @@ class TiledMap:
                 tiling_utils.get_width_height_left_bottom(
                     self.tiling.tile_unit._get_legend_elements().rotate(
                         self.tiling.rotation, origin = (0, 0)))
-            # approx_count = reg_w / tile_w * reg_h / tile_h
-            # sf = np.sqrt(approx_count) / 2
             sf_w, sf_h = reg_w / tile_w / 3, reg_h / tile_h / 3
             gskw = {"height_ratios": [sf_h * tile_h, reg_h - sf_h * tile_h],
                     "width_ratios": [reg_w, sf_w * tile_w]}
@@ -557,8 +553,8 @@ class TiledMap:
         context_tiles = self.tiling.tile_unit.get_local_patch(
             r = 2, include_0 = True).geometry.rotate(
                 self.tiling.rotation, origin = (0, 0))
-        # for reasons unknown... invalid polygons sometimes show up here
-        # I think because of the rotation /shrug... in any case, this 
+        # for reasons escaping all reason... invalid polygons sometimes show up 
+        # here I think because of the rotation /shrug... in any case, this 
         # sledgehammer should fix it
         context_tiles = gpd.GeoSeries([g.simplify(1e-6) 
                                        for g in context_tiles.geometry],
@@ -577,10 +573,6 @@ class TiledMap:
 
         # plot the legend key elements (which include the data)
         self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
-        
-        # # now add the annotations - for this we go back to the legend elements
-        # legend_elements.plot(ax = ax, fc = "#00000000", 
-        #                      ec = "#999999", lw = 0.5)
         
         for id, tile, rotn in zip(legend_elements.element_id,
                                   legend_elements.geometry,
@@ -635,9 +627,6 @@ class TiledMap:
                 # counts of each in the order needed using a reverse lookup
                 data_vals = list(val_order.keys())
                 freqs = coded_data_counts
-                # order_val = list(val_order.keys())
-                # for i, n in enumerate(coded_data_counts):
-                #     data_vals.extend([order_val[i]] * n)
             else: # any other data is easy!
                 data_vals = sorted(d)
                 freqs = [1] * len(data_vals)
