@@ -425,7 +425,7 @@ class TileUnit(Tileable):
     
     def _get_legend_key_shapes(self, polygon:geom.Polygon, 
                                counts:int = 25, angle:float = 0, 
-                               categorical:bool = False) -> list[geom.Polygon]:
+                               radial:bool = False) -> list[geom.Polygon]:
         """Returns a set of shapes that can be used to make a legend key 
         symbol for the supplied polygon. In TileUnit this is a set of 'nested
         polygons.
@@ -439,11 +439,12 @@ class TileUnit(Tileable):
         Returns:
             list[geom.Polygon]: a list of nested polygons.
         """
-        if not categorical:
+        if not radial:
             n = sum(counts)
-            bandwidths = list(np.cumsum(counts))
-            bandwidths = [bw / n for bw in bandwidths]
-            bandwidths = [bw if bw > 0.05 else 0.05 for bw in bandwidths]
+            # bandwidths = list(np.cumsum(counts))
+            bandwidths = [c / n for c in counts]
+            bandwidths = [bw if bw > 0.05 or bw == 0 else 0.05 
+                          for bw in bandwidths]
             n = sum(bandwidths)
             bandwidths = [0] + [bw / n for bw in bandwidths]
             # # make buffer widths that will yield approx equal area 'annuli'
@@ -457,8 +458,9 @@ class TileUnit(Tileable):
             nested_polys = [polygon.buffer(-d, resolution = 1, 
                                            join_style = 2) for d in distances]
             # return converted to annuli (who knows someone might set alpha < 1)
-            return [g1.difference(g2) for g1, g2 in 
-                    zip(nested_polys[:-1], nested_polys[1:])]      
+            nested_polys = [g1.difference(g2) for g1, g2 in 
+                            zip(nested_polys[:-1], nested_polys[1:])]
+            return [p for c, p in zip(counts, nested_polys) if c > 0]      
         else:
             n = sum(counts)
             slice_posns = list(np.cumsum(counts))
@@ -467,10 +469,14 @@ class TileUnit(Tileable):
                     for i, j in zip(slice_posns[:-1], slice_posns[1:])]
 
 
+    # Note that geopandas clip is not order preserving hence we do this
+    # one polygon at a time...
     def inset_tile(self, d:float = 0) -> None:
-        self.elements = self.elements.clip(
-            self.regularised_tile.geometry.buffer(
-                -d, resolution = 1, join_style = 2))
+        inset_tile = self.regularised_tile.geometry.buffer(
+                -d, resolution = 1, join_style = 2)[0]
+        new_elements = [inset_tile.intersection(e)
+                        for e in self.elements.geometry]
+        self.elements.geometry = gpd.GeoSeries(new_elements)
         return
     
     

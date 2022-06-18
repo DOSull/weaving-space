@@ -19,6 +19,7 @@ import shapely.geometry as geom
 
 from tile_units import Tileable
 from tile_units import TileUnit
+from weave_units import WeaveUnit
 from tile_units import TileShape
 
 import tiling_utils
@@ -384,6 +385,7 @@ class TiledMap:
     dpi: float = 72
     use_ellipse:bool = False
     ellipse_magnification:float = 1.0
+    radial_key = False
         
 
     def render(self, **kwargs) -> tuple[pyplot.Axes]:
@@ -490,7 +492,7 @@ class TiledMap:
                 subset.plot(ax = ax, column = var, cmap = cmap, **kwargs)
             else:
                 if (isinstance(self.colourmaps, 
-                            (str, matplotlib.colors.Colormap,
+                                (str, matplotlib.colors.Colormap,
                                 matplotlib.colors.LinearSegmentedColormap,
                                 matplotlib.colors.ListedColormap))):
                     cmap = self.colourmaps   # one palette for all ids
@@ -526,10 +528,10 @@ class TiledMap:
             legend_elements.rotation = -self.tiling.rotation
         
         legend_key = self.get_legend_key_gdf(legend_elements)
-        
+                
         legend_elements.geometry = legend_elements.geometry.rotate(
             self.tiling.rotation, origin = (0, 0))
-                
+        
         # set a zoom 
         if self.use_ellipse:
             ellipse = tiling_utils.get_bounding_ellipse(
@@ -550,13 +552,13 @@ class TiledMap:
 
         # now plot background; we include the central tiles, since in
         # the weave case these may not match the legend elements
-        context_tiles = self.tiling.tile_unit.get_local_patch(
-            r = 2, include_0 = True).geometry.rotate(
-                self.tiling.rotation, origin = (0, 0))
+        context_tiles = self.tiling.tile_unit.get_local_patch(r = 2, 
+            include_0 = isinstance(self.tiling.tile_unit, WeaveUnit)) \
+                .geometry.rotate(self.tiling.rotation, origin = (0, 0))
         # for reasons escaping all reason... invalid polygons sometimes show up 
         # here I think because of the rotation /shrug... in any case, this 
         # sledgehammer should fix it
-        context_tiles = gpd.GeoSeries([g.simplify(1e-6) 
+        context_tiles = gpd.GeoSeries([g.simplify(1e-6)
                                        for g in context_tiles.geometry],
                                       crs = self.tiling.tile_unit.crs)
         if self.use_ellipse:
@@ -574,7 +576,7 @@ class TiledMap:
         # plot the legend key elements (which include the data)
         self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
         
-        for id, tile, rotn in zip(legend_elements.element_id,
+        for id, tile, rotn in zip(self.variables.keys(),
                                   legend_elements.geometry,
                                   legend_elements.rotation):
             c = tile.centroid
@@ -605,33 +607,33 @@ class TiledMap:
         vals = []        # values form the data assigned to the key tiles
         rots = []        # rotation of each key tile
         subsets = self.tiled_map.groupby("element_id")
-        for id, geom, rot in zip(elements.element_id,
+        for (id, var), geom, rot in zip(self.variables.items(),
                                  elements.geometry,
                                  elements.rotation):
             subset = subsets.get_group(id)
-            d = subset[self.variables[id]]
-            categorical = False
+            d = subset[var]
+            radial = False
             # if the data are categorical then it's complicated...
             if d.dtype == pd.CategoricalDtype:
-                categorical = True
+                radial = True and self.radial_key
                 # desired order of categorical variable is the 
                 # color maps dictionary keys
-                cmap = self.colourmaps[self.variables[id]]
+                cmap = self.colourmaps[var]
                 num_cats = len(cmap)
                 val_order = dict(zip(cmap.keys(), range(num_cats)))
                 # compile counts of each category
-                coded_data_counts = [0] * num_cats
+                freqs = [0] * num_cats
                 for v in list(d):
-                    coded_data_counts[val_order[v]] += 1
+                    freqs[val_order[v]] += 1
                 # make list of the categories containing appropriate 
                 # counts of each in the order needed using a reverse lookup
                 data_vals = list(val_order.keys())
-                freqs = coded_data_counts
+                data_vals = [data_vals[i] for i, f in enumerate(freqs) if f > 0]
             else: # any other data is easy!
                 data_vals = sorted(d)
                 freqs = [1] * len(data_vals)
             key = self.tiling.tile_unit._get_legend_key_shapes(
-                geom, freqs, rot, categorical)
+                geom, freqs, rot, radial)
             key_tiles.extend(key)
             vals.extend(data_vals)
             n = len(data_vals)

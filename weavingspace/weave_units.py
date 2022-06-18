@@ -275,10 +275,11 @@ class WeaveUnit(Tileable):
             geometry = gpd.GeoSeries(
                 [affine.translate(p, offset[0], offset[1]) for p in polys]))
         weave = weave[weave.element_id != "-"]
+        weave.geometry = tiling_utils.clean_polygon(weave.geometry)
         weave = weave.dissolve(by = "element_id", as_index = False)
         weave = weave.explode(index_parts = False, ignore_index = True)
         weave.geometry = tiling_utils.clean_polygon(weave.geometry)
-        return weave.clip(bb).set_crs(self.crs)
+        return weave.set_crs(self.crs)
 
 
     def get_axis_from_label(self, label:str = "a", strands:str = None):
@@ -345,12 +346,6 @@ class WeaveUnit(Tileable):
             mean_a = sum(areas) / len(areas)
             geoms = [g for g, a in zip(elements.geometry, areas)
                             if a > mean_a]
-            # if self.aspect == 1:
-            #     geoms = [g for g, a in zip(elements.geometry, areas)
-            #                 if a > 2 * min_area]
-            # else:
-            #     geoms = [g for g, a in zip(elements.geometry, areas)
-            #                 if a > 2 * min_area / (1 - self.aspect)]
         centroids = [g.centroid for g in geoms]
         d = [c.distance(geom.Point(0, 0)) for c in centroids]
         idx = d.index(min(d))
@@ -359,7 +354,7 @@ class WeaveUnit(Tileable):
 
     def _get_legend_key_shapes(self, polygon:geom.Polygon, 
                                counts:Iterable, angle:float = 0,
-                               categorical:bool = False) -> list[geom.Polygon]:
+                               radial:bool = False) -> list[geom.Polygon]:
         """Returns a list of polygons obtained by slicing the supplied polygon
         across its length inton n slices. Orientation of the polygon is 
         indicated by the angle.
@@ -384,7 +379,6 @@ class WeaveUnit(Tileable):
         cuts = list(np.cumsum(counts))
         cuts = [0] + [c / total for c in cuts]
         cuts = [left + c * width for c in cuts]
-        # cuts = np.linspace(bb[0], bb[2], n + 1)
         # add margin to avoid weird effects intersecting almost parallel lines.
         cuts[0] = cuts[0] - 1
         cuts[-1] = cuts[-1] + 1
