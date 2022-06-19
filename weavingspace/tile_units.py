@@ -353,6 +353,8 @@ class TileUnit(Tileable):
         
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
+        if not self.tiling_type is None:
+            self.tiling_type = self.tiling_type.lower()
         if self.tile_shape == TileShape.TRIANGLE:
             self._modify_tile()
             self._modify_elements()

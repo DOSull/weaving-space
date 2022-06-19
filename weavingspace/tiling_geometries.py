@@ -38,12 +38,17 @@ def setup_none_tile(unit) -> None:
 
 def setup_base_tile(unit, shape:TileShape) -> None: 
     unit.tile_shape = shape
-    tile = tiling_utils.get_regular_polygon(
-        unit.spacing, n = (4 
-                        if unit.tile_shape in (TileShape.RECTANGLE, )
-                        else (6 
-                            if unit.tile_shape in (TileShape.HEXAGON, )
-                            else 3)))
+    if unit.tile_shape == TileShape.DIAMOND:
+        tile = geom.Polygon([
+            (unit.spacing / 2, 0), (0, unit.spacing * np.sqrt(3) / 2), 
+            (-unit.spacing / 2, 0), (0, -unit.spacing * np.sqrt(3) / 2)])
+    else:
+        tile = tiling_utils.get_regular_polygon(
+            unit.spacing, n = (4 
+                            if unit.tile_shape in (TileShape.RECTANGLE, )
+                            else (6 
+                                if unit.tile_shape in (TileShape.HEXAGON, )
+                                else 3)))
     unit.tile = gpd.GeoDataFrame(
         geometry = gpd.GeoSeries([tile]), crs = unit.crs)
     return
@@ -382,9 +387,7 @@ def setup_archimedean_3464(unit) -> None:
     """
     setup_base_tile(unit, TileShape.HEXAGON)
     sf = np.sqrt(3) / (1 + np.sqrt(3))
-    tile = tiling_utils.get_regular_polygon(unit.spacing, 6)
-
-    hex = affine.scale(tile, sf, sf)
+    hex = tiling_utils.get_regular_polygon(unit.spacing * sf, 6)
     corners = [p for p in hex.exterior.coords]
     p1 = corners[1]
     p2 = corners[0]
@@ -412,27 +415,24 @@ def setup_archimedean_3464(unit) -> None:
 def setup_hex_colouring(unit):
     """Several colourings of a regular array of hexagons
     """
-    hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
+    hex = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 6)
     if unit.n == 3:
+        # Point up hex at '*' displaced to 3 positions:
+        #      2
+        #      *
+        #    3   1
         setup_base_tile(unit, TileShape.HEXAGON)
-
         hex = affine.rotate(hex, 30, origin = (0, 0))
-        hex = affine.scale(hex, 1 / np.sqrt(3), 1 / np.sqrt(3), origin = (0, 0))
         # Copy and translate to alternate corners
         corners = [p for i, p in enumerate(hex.exterior.coords) 
                    if i in (0, 2, 4)]
         hexes = [affine.translate(hex, p[0], p[1]) for p in corners]
     elif unit.n == 4:
-        unit.tile_shape = TileShape.DIAMOND
-        unit.tile = gpd.GeoDataFrame(
-            crs = unit.crs,
-            geometry = gpd.GeoSeries([
-                geom.Polygon([(unit.spacing / 2, 0), 
-                              (0, unit.spacing * np.sqrt(3) / 2), 
-                              (-unit.spacing / 2, 0), 
-                              (0, -unit.spacing * np.sqrt(3) / 2)])
-            ]))
-        hex = affine.scale(hex, 0.5, 0.5, origin = (0, 0))
+        # Point up hex at '*' displaced to 4 positions:
+        #      2
+        #     3*1
+        #      4
+        setup_base_tile(unit, TileShape.DIAMOND)
         hex = affine.rotate(hex, 30, origin = (0, 0))
         hex1 = affine.translate(hex, unit.spacing / 4, 0)
         hex2 = affine.translate(
@@ -442,15 +442,14 @@ def setup_hex_colouring(unit):
             hex3, unit.spacing / 4, -unit.spacing * np.sqrt(3) / 4)
         hexes = [hex1, hex2, hex3, hex4]
     elif unit.n == 7:  # the 'H3' tile
+        # Make a hexagon and displace in the direction of its
+        # own 6 corners, scaled as needed
         setup_base_tile(unit, TileShape.HEXAGON)
-        sf = 1 / np.sqrt(7)  
         rotation = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
-
-        hex = affine.scale(hex, sf, sf)
-        corners = [p for p in hex.exterior.coords]
+        corners = [p for p in hex.exterior.coords][:-1]
         hex = affine.rotate(hex, 30)
         hexes = [hex] + [affine.translate(
-            hex, x * np.sqrt(3), y * np.sqrt(3)) for x, y in corners[:-1]]
+            hex, x * np.sqrt(3), y * np.sqrt(3)) for x, y in corners]
         hexes = [affine.rotate(h, rotation, origin = (0, 0))
                  for h in hexes]
     else:

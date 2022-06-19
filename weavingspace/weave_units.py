@@ -45,6 +45,7 @@ class WeaveUnit(Tileable):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.weave_type = self.weave_type.lower()
     
 
     def setup_tile_and_elements(self, **kwargs) -> None:

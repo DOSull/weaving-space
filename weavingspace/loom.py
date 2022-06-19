@@ -50,68 +50,6 @@ combined_orderings = {
            (2, 1): {(2, 0): (2, 1, 0)}}    # 10 21 20 --> 2 > 1 > 0
 }
 
-# convenience wrapper for the combined_orderings dictionary
-# missing values return "NA"
-def _combine_orders(orders):
-    # print(f"orders: {orders}")
-    try:
-        result = combined_orderings[orders[0]][orders[1]][orders[2]]
-    except:
-        print(f"Unable to determine unique ordering on {orders}")
-        return "NA"
-    else:
-        return result 
-
-
-# NOT USED
-# checks for head to tail match of 2-tuples
-# and returns merged 3-tuple if found
-# else returns a 4-tuple
-def combine_pairs(p1, p2):
-    if p1[1] == p2[0]:
-        return p1 + p2[1:]
-    if p2[1] == p1[0]:
-        return p2 + p1[1:]
-    return p1 + p2
-
-
-# NOT USED: this 'works', but it is hard to get it to detech
-# inconsistent inputs, unlike the dictionary approach, which
-# only knows about legitimate combinations...
-#
-# combines 3 2-tuple partial orders on 0, 1, 2
-# into a tuple ordered consistent with the partial orders
-# partial orders may be empty, 1 or 2 long 
-def combine_partial_orders(orders):
-    lengths = [len(o) for o in orders]
-    n = sum(lengths)
-    # the total lengths should be even
-    if n % 2 == 0:
-        if n == 0:  # result is empty tuple
-            return ()
-        if n == 2:
-            # lengths should be 1 1 0
-            if max(lengths) == 1:
-                i = lengths.index(0)
-                if i == 0:
-                    return orders[2]
-                if i == 1:
-                    return orders[0]
-                return orders[1]
-        if n == 4:  # lengths should be 2 1 1
-            if min(lengths) == 1 and max(lengths) == 2:
-                return orders[lengths.index(2)]
-        if n == 6:
-            for o in [orders, orders[1:] + orders[:1], orders[2:] + orders[:2]]:
-                combo = combine_pairs(o[0], o[1])
-                if len(combo) == 3:
-                    if combo.index(o[2][0]) < combo.index(o[2][1]):
-                        return combo
-    print(f"{orders} not consistent")
-    return None
-
-
-
 
 @dataclass
 class Loom:
@@ -183,6 +121,18 @@ class Loom:
             ordCA = [decode_orders[3][mCA[ij]] 
                      for ij in [(x[0], x[2]) for x in self.indices]]
             # # combine orders from the three matrices stacked 
-            self.orderings = [_combine_orders(abc) 
+            self.orderings = [self._combine_orders(abc) 
                               for abc in zip(ordAB, ordBC, ordCA)]
 
+
+    # convenience wrapper for the combined_orderings dictionary
+    # missing values return "NA"
+    def _combine_orders(self, orders):
+        # print(f"orders: {orders}")
+        try:
+            result = combined_orderings[orders[0]][orders[1]][orders[2]]
+        except:
+            print(f"Unable to determine unique ordering on {orders}")
+            return "NA"
+        else:
+            return result 
