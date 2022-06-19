@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import Iterable, Union
 import copy
 
+from math import fsum
+
 import pandas as pd
 import geopandas as gpd
 import numpy as np
@@ -319,7 +321,8 @@ class WeaveUnit(Tileable):
         for id in element_ids:
             candidates = groups.get_group(id)
             axis = self.get_axis_from_label(id, self.strands)
-            elements.append(self._get_most_central_large_element(candidates))
+            elements.append(self._get_most_central_large_element(
+                candidates, elements))
             rotations.append(-angles[axis])
         return gpd.GeoDataFrame(
             data = {"element_id": element_ids, "rotation": rotations}, 
@@ -328,7 +331,8 @@ class WeaveUnit(Tileable):
         )
         
 
-    def _get_most_central_large_element(self, elements:gpd.GeoDataFrame
+    def _get_most_central_large_element(self, elements:gpd.GeoDataFrame,
+                                        other_elements:list[geom.Polygon],
                                         ) -> geom.Polygon:
         """Gets a large element close to the centre of the WeaveUnit.
 
@@ -343,13 +347,16 @@ class WeaveUnit(Tileable):
         if min_area / max_area > 0.5:
             geoms = list(elements.geometry)
         else:
-            mean_a = sum(areas) / len(areas)
+            mean_log_a = np.mean(np.log(areas))
             geoms = [g for g, a in zip(elements.geometry, areas)
-                            if a > mean_a]
-        centroids = [g.centroid for g in geoms]
-        d = [c.distance(geom.Point(0, 0)) for c in centroids]
-        idx = d.index(min(d))
-        return geoms[idx]
+                            if np.log(a) > mean_log_a]
+        if len(other_elements) == 0 or self.weave_type in ("cube", "hex"):
+            d = [g.centroid.distance(geom.Point(0, 0)) for g in geoms]
+        else:
+            c = geom.MultiPolygon(other_elements).centroid
+            d = [geom.MultiPolygon([g] + other_elements).centroid.distance(c)
+                 for g in geoms]
+        return geoms[d.index(min(d))]
 
 
     def _get_legend_key_shapes(self, polygon:geom.Polygon, 

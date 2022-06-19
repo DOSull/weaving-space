@@ -6,6 +6,8 @@ from typing import Iterable, Union
 import re
 import string
 
+from math import fsum
+
 import matplotlib
 import matplotlib.colors
 import numpy as np
@@ -126,7 +128,7 @@ def incentre(tri:geom.Polygon) -> geom.Point:
     lengths = [p.distance(q) 
                for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
     lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
-    perimeter = np.sum(lengths)
+    perimeter = fsum(lengths)
     incentre = [0, 0]
     for p, l in zip(corners[:-1], lengths):
         incentre[0] = incentre[0] + p.x * l / perimeter
