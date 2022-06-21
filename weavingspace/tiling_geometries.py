@@ -11,11 +11,11 @@ import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
+from tileable import TileShape
 import tiling_utils
-from tiling_utils import TileShape
 
 if TYPE_CHECKING:
-    from tile_units import TileUnit
+    from tile_unit import TileUnit
 
 """A bunch of functions for etting up a TileUnit with various 
 element geometries.

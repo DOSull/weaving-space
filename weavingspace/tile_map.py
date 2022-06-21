@@ -10,17 +10,17 @@ import numpy as np
 import geopandas as gpd
 import pandas as pd
 
-import matplotlib
+from matplotlib.figure import Figure
 import matplotlib.colors
 import matplotlib.pyplot as pyplot
 
 import shapely.affinity as affine
 import shapely.geometry as geom
 
-from tile_units import Tileable
-from tile_units import TileUnit
-from weave_units import WeaveUnit
-from tile_units import TileShape
+from tileable import Tileable
+from tileable import TileShape
+from tile_unit import TileUnit
+from weave_unit import WeaveUnit
 
 import tiling_utils
 
@@ -381,14 +381,15 @@ class TiledMap:
     legend_dy:float = 0.
     scheme: str = "equalinterval"
     k: int = 100
-    figsize: tuple[float] = (20, 15)
+    figsize:tuple[float] = (20, 15)
     dpi: float = 72
     use_ellipse:bool = False
     ellipse_magnification:float = 1.0
-    radial_key = False
+    radial_key:bool = False
+    draft_mode:bool = False
         
 
-    def render(self, **kwargs) -> tuple[pyplot.Axes]:
+    def render(self, **kwargs) -> Figure:
         pyplot.rcParams['pdf.fonttype'] = 42
         pyplot.rcParams['pdf.use14corefonts'] = True
         matplotlib.rcParams['pdf.fonttype'] = 42
@@ -401,6 +402,13 @@ class TiledMap:
         # remove them so we don't pass them on to pyplot and get errors
         for k in to_remove:
             del kwargs[k]
+            
+        if self.draft_mode:
+            fig = pyplot.figure(figsize = self.figsize) 
+            ax = fig.add_subplot(111)
+            self.tiled_map.plot(ax = ax, column = "element_id", 
+                                cmap = "tab20", **kwargs)
+            return fig
 
         if self.legend:
             # this sizing stuff is rough and ready for now

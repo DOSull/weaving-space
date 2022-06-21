@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from enum import Enum
 from typing import Iterable, Union
 import re
 import string
@@ -18,13 +17,6 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.wkt as wkt
 import shapely.ops
-
-
-class TileShape(Enum):
-    RECTANGLE = "rectangle"
-    HEXAGON = "hexagon"
-    TRIANGLE = "triangle"
-    DIAMOND = "diamond"
 
 
 def _parse_strand_label(s:str) -> list[str]:

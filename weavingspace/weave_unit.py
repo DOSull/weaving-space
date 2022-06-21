@@ -5,7 +5,6 @@ import logging
 import itertools
 from dataclasses import dataclass
 from typing import Iterable, Union
-import copy
 
 from math import fsum
 
@@ -22,8 +21,8 @@ import tiling_utils
 from loom import Loom
 from weave_grids import WeaveGrid
 
-from tile_units import TileShape
-from tile_units import Tileable
+from tileable import TileShape
+from tileable import Tileable
 
 
 @dataclass
