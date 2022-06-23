@@ -35,13 +35,11 @@ class TileGrid:
     points:gpd.GeoSeries = None
     
     def __init__(self, tile:gpd.GeoSeries, to_tile:gpd.GeoSeries, 
-                 grid_type:TileShape = TileShape.RECTANGLE, 
-                 to_hex:bool = True) -> None:
+                 grid_type:TileShape = TileShape.RECTANGLE) -> None:
         self.grid_type = grid_type
         self.tile = tile
-        if self.grid_type == TileShape.TRIANGLE:
-            self.tile, self.grid_type = self._modify_triangle_tile(to_hex)
-        self.to_tile = gpd.GeoSeries([to_tile.unary_union])
+        self.to_tile = tiling_utils.clean_polygon(
+            gpd.GeoSeries([to_tile.unary_union]))
         self.extent, self.centre = self._get_extent()
         self.points = self._get_points()
         
@@ -61,11 +59,15 @@ class TileGrid:
             pts = self._get_hex_centres()
         elif self.grid_type in (TileShape.DIAMOND, ):
             pts = self._get_diamond_centres()
-        tr = affine.translate  # for efficiency here
-        tiles = [tr(self.tile.geometry[0], p[0], p[1]) 
-                 for p in list(pts)]
-        tiles = [t for t in tiles if self.extent[0].intersects(t)]
-        return gpd.GeoSeries([t.centroid for t in tiles])
+        pts = [geom.Point(p[0], p[1]) for p in pts]
+        return gpd.GeoSeries([p for p in pts if p.within(self.extent[0])])
+        # for efficiency get direct reference to the translate function so
+        # we aren't retrieving it from the affine module in the comprehension
+        # tr = affine.translate
+        # tiles = [tr(self.tile.geometry[0], p[0], p[1]) 
+        #          for p in list(pts)]
+        # tiles = [t for t in tiles if self.extent[0].intersects(t)]
+        # return gpd.GeoSeries([t.centroid for t in tiles])
     
         
 
@@ -250,9 +252,8 @@ class Tiling:
         id_var = (self.region_id_var if id_var is None else id_var)
         tiled_map = self.rotated(rotation)
         if inset > 0:
-            tiled_map.geometry = \
-                tiled_map.geometry.buffer(
-                    -inset, resolution = 1, join_style = 2)
+            tiled_map.geometry = tiled_map.geometry.buffer(
+                -inset, resolution = 1, join_style = 2)
         # compile a list of the variable names we are NOT going to change
         # i.e. everything except the geometry and the id_var
         region_vars = list(self.region.columns)
