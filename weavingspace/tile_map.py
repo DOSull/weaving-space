@@ -27,6 +27,21 @@ import tiling_utils
 
 @dataclass
 class TileGrid:
+    """A class to represent the translation centres of a tiling.
+    
+    Note that we store the grid as a GeoSeries of Point objects to make it
+    simple to plot it in map views if required.
+
+    Attributes:
+        tile (gpd.GeoSeries): the geometry of the base tile.
+        to_tile (gpd.GeoSeries): the geometry of the region to be tiled.
+        grid_type (TileShape): the type of tiling grid, RECTANGLE, 
+            HEXAGON or DIAMOND.
+        extent (gpd.GeoSeries): geometry of the (circular) extent of the tiling.
+        centre (tuple[float]): centre point of the extent.
+        points (gpd.GeoSeries): shapely.geometry.Points recording the
+            translation vectors of the grid.
+    """
     tile:gpd.GeoSeries = None
     to_tile:gpd.GeoSeries = None
     grid_type:TileShape = None
@@ -36,6 +51,14 @@ class TileGrid:
     
     def __init__(self, tile:gpd.GeoSeries, to_tile:gpd.GeoSeries, 
                  grid_type:TileShape = TileShape.RECTANGLE) -> None:
+        """Class constructor.
+
+        Args:
+            tile (gpd.GeoSeries): geometry of the tiling base tile.
+            to_tile (gpd.GeoSeries): geometry of the region to be tiled.
+            grid_type (TileShape, optional): the type of the tiling in terms of
+                the TileShape of the base tile. Defaults to TileShape.RECTANGLE.
+        """
         self.grid_type = grid_type
         self.tile = tile
         self.to_tile = tiling_utils.clean_polygon(
@@ -44,7 +67,13 @@ class TileGrid:
         self.points = self._get_points()
         
     
-    def _get_extent(self) -> gpd.GeoSeries:
+    def _get_extent(self) -> tuple[gpd.GeoSeries, geom.Point]:
+        """Returns the extent and centre of the grid.
+
+        Returns:
+            tuple[gpd.GeoSeries, geom.Point]: the extent of the grid and its 
+                centre.
+        """
         mrr = self.to_tile.geometry[0].minimum_rotated_rectangle
         mrr_centre = geom.Point(mrr.centroid.coords[0])
         mrr_corner = geom.Point(mrr.exterior.coords[0])
@@ -53,6 +82,13 @@ class TileGrid:
     
         
     def _get_points(self) -> gpd.GeoSeries:
+        """Returns the translation vectors of the grid as GeoSeries of Point
+        geometries.
+
+        Returns:
+            gpd.GeoSeries: GeoSeries of shapely.geometry.Point objects, whose 
+                coordinates are the translation vectors of the grid.
+        """
         if self.grid_type in (TileShape.RECTANGLE, ):
             pts = self._get_rect_centres()
         elif self.grid_type in (TileShape.HEXAGON, ):
@@ -70,23 +106,6 @@ class TileGrid:
         # return gpd.GeoSeries([t.centroid for t in tiles])
     
         
-
-    def _get_width_height_left_bottom(self, 
-                                      gs:gpd.GeoSeries
-                                    ) -> tuple[float]:
-        """Returns width, height, left and bottom limits of a GeoSeries
-
-        Args:
-            gs (geopandas.GeoSeries): GeoSeries for which limits are required.
-
-        Returns:
-            tuple: four float values of width, height, left and bottom of gs.
-        """    
-        extent = gs.total_bounds
-        return (extent[2] - extent[0], extent[3] - extent[1], 
-                extent[0], extent[1])
-
-
     def _get_grid(self, ll: tuple[float], nums: tuple[int], 
                   tdim: tuple[float]) -> np.ndarray:
         """Returns rectilinear grid of x,y coordinate pairs.
@@ -110,13 +129,11 @@ class TileGrid:
         
 
     def _get_rect_centres(self) -> np.ndarray:
-        """Returns a rectangular grid of translation vectors that will 'fill'
-        to_tile_gs polygon with the tile_gs polygon (which should be
-        rectangular).
+        """Returns a grid of translation vectors for a rectangular tiling.
 
         Returns:
             np.ndarray: A 2 column array each row being an x, y translation
-            vector.
+                vector.
         """    
         tt_w, tt_h, tt_x0, tt_y0 = \
             tiling_utils.get_width_height_left_bottom(self.extent)
@@ -125,19 +142,22 @@ class TileGrid:
         # number of tiles in each direction
         nx = int(np.ceil(tt_w / tile_w))
         ny = int(np.ceil(tt_h / tile_h))
-        # origin is inset from the lower lwft corner based
-        x0 = (tt_w - (nx * tile_w)) / 2 + tt_x0
-        y0 = (tt_h - (ny * tile_h)) / 2 + tt_y0
+        grid_w, grid_h = nx * tile_w, ny * tile_h
+        margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
+        x0 = tt_x0 + margin_w / 2
+        y0 = tt_y0 + margin_h / 2
         return self._get_grid((x0, y0), (nx + 1, ny + 1), (tile_w, tile_h))
 
 
     def _get_hex_centres(self) -> np.ndarray:
-        """Returns a hexagonal grid of translation vectors that will 'fill' 
-        to_tile_gs with the tile_gs polygon (which should be hexagonal).
+        """Returns a grid of translation vectors for a hexagonal tiling.
+        
+        This is implemented by making two appropriately scaled and offset
+        rectangular grids.
         
         Returns:
             np.ndarray: A 2 column array each row being an x, y translation
-            vector.
+                vector.
         """    
         tt_w, tt_h, tt_x0, tt_y0  = \
             tiling_utils.get_width_height_left_bottom(self.extent)
@@ -146,8 +166,10 @@ class TileGrid:
         nx = int(np.ceil(tt_w / (tile_w * 3 / 2)))
         ny = int(np.ceil(tt_h / tile_h))
         # the effective width of two columns of hexagonal tiles is 3w/2
-        x0 = (tt_w - (nx * tile_w * 3 / 2)) / 2 + tt_x0
-        y0 = (tt_h - (ny * tile_h)) / 2 + tt_y0
+        grid_w, grid_h = nx * tile_w * 3 / 2, ny * tile_h
+        margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
+        x0 = tt_x0 + margin_w / 2
+        y0 = tt_y0 + margin_h / 2
         # get two offset rectangular grids and combine them
         g1 = self._get_grid((x0, y0 + tile_h / 4), 
                             (nx + 1, ny + 1), 
@@ -158,21 +180,15 @@ class TileGrid:
         return np.append(g1, g2).reshape((g1.shape[0] + g2.shape[0], 2))
 
     
-    # Actually returns rhombus centres
-    # 
-    #     /\
-    #    /  \
-    #    \  /
-    #     \/
-    # 
     def _get_diamond_centres(self) -> np.ndarray:
-        """Reurns an diamond grid of translation vectors that will 'fill'
-        to_tile_gs polygon with the tile_gs polygon (which should be
-        rectangular).
+        """Reurns a grid of translation vectors for a diamond tiling.
 
+        This is implemented by making two appropriately scaled and offset
+        rectangular grids.
+        
         Returns:
             np.ndarray: A 2 column array each row being an x, y translation
-            vector.
+                vector.
         """
         tt_w, tt_h, tt_x0, tt_y0 = \
             tiling_utils.get_width_height_left_bottom(self.extent)
@@ -180,8 +196,10 @@ class TileGrid:
             tiling_utils.get_width_height_left_bottom(self.tile)
         nx = int(np.ceil(tt_w / tile_w))
         ny = int(np.ceil(tt_h / tile_h))
-        x0 = (tt_w - (nx * tile_w)) / 2 + tt_x0
-        y0 = (tt_h - (ny * tile_h)) / 2 + tt_y0
+        grid_w, grid_h = nx * tile_w, ny * tile_h
+        margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
+        x0 = tt_x0 + margin_w / 2
+        y0 = tt_y0 + margin_h / 2
         g1 = self._get_grid((x0, y0), 
                             (nx + 1, ny + 1), 
                             (tile_w, tile_h))
@@ -208,9 +226,12 @@ class Tiling:
         a region that is sufficient to apply the tiling at any rotation.
 
         Args:
-            unit (Tileable): the tile_unit to use
-            region (gpd.GeoDataFrame): the region to be tiled
-            id_var (str): a unique identifier variable in the region
+            unit (Tileable): the tile_unit to use.
+            region (gpd.GeoDataFrame): the region to be tiled.
+            id_var (str): a unique identifier variable in the region.
+            tile_margin (float, optional): _description_. Defaults to 0.
+            elements_sf (float, optional): _description_. Defaults to 1.
+            elements_margin (float, optional): _description_. Defaults to 0.
         """
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
@@ -218,11 +239,17 @@ class Tiling:
             self.tile_unit = copy.deepcopy(self.tile_unit)
             self.tile_unit.inset_elements(elements_margin) 
         if elements_sf != 1:
-            self.tile_unit = copy.deepcopy(self.tile_unit)
-            self.tile_unit.scale_elements(elements_sf)
+            if isinstance(self.tile_unit, TileUnit):
+                self.tile_unit = copy.deepcopy(self.tile_unit)
+                self.tile_unit.scale_elements(elements_sf)
+            else:
+                print(f"""Applying scaling to elements of a WeaveUnit does not make sense. Ignoring elements_sf setting of {elements_sf}.""")
         if tile_margin > 0:
-            self.tile_unit = copy.deepcopy(self.tile_unit)
-            self.tile_unit.inset_tile(tile_margin)
+            if isinstance(self.tile_unit, TileUnit):
+                self.tile_unit = copy.deepcopy(self.tile_unit)
+                self.tile_unit.inset_tile(tile_margin)
+            else:
+                print(f"""Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.""")        
         self.region = region
         self.region_id_var = ("ID" if id_var is None else id_var)
         self.grid = TileGrid(self.tile_unit.tile.geometry,
@@ -230,10 +257,14 @@ class Tiling:
         self.tiles = self.make_tiling()
 
 
-    def get_tiled_map(self, id_var:str = None, 
-                      rotation:float = 0., inset:float = 0,            
+    def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
                       prioritise_tiles:bool = False) -> gpd.GeoDataFrame:
         """Returns a geodataframe filling a region at the requested rotation.
+        
+        HERE BE DRAGONS! This function took a long time and a lot of trial and 
+        error to get right, so modify with EXTREME CAUTION. As should be 
+        apparent from the volume of code, the prioritise_tiles = True option is
+        where the tricky bits are mostly found, but 
 
         Args:
             id_var (str, optional): the variable the distinguishes areas in the
@@ -251,16 +282,13 @@ class Tiling:
         # if no id_var is supplied overwrite it with the class id_var
         id_var = (self.region_id_var if id_var is None else id_var)
         tiled_map = self.rotated(rotation)
-        if inset > 0:
-            tiled_map.geometry = tiled_map.geometry.buffer(
-                -inset, resolution = 1, join_style = 2)
         # compile a list of the variable names we are NOT going to change
         # i.e. everything except the geometry and the id_var
         region_vars = list(self.region.columns)
         region_vars.remove("geometry")
         region_vars.remove(id_var)
         
-        if prioritise_tiles: # maintain tile continuity across zone boundaries
+        if prioritise_tiles:  # maintain tile continuity across zone boundaries
             # make column with unique ID for every element in the tiling
             tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
             # overlay with the zones from the region to be tiled
@@ -270,18 +298,19 @@ class Tiling:
             tiled_map["area"] = tiled_map.geometry.area
             tiled_map = tiled_map.drop(columns = region_vars)
             # make a lookup by largest area element to the region id variable
-            lookup = tiled_map.iloc[tiled_map.groupby("tileUID")["area"].agg(
-                pd.Series.idxmax)][["tileUID", id_var]]
+            lookup = tiled_map \
+                .iloc[tiled_map.groupby("tileUID")["area"] \
+                .agg(pd.Series.idxmax)][["tileUID", id_var]]
             # remove the id_var before we replace it with a new one
             tiled_map = tiled_map.drop(columns = [id_var])
             # now join the lookup and from there the region data
             tiled_map = tiled_map \
                 .merge(lookup, on = "tileUID") \
                 .merge(self.region.drop(columns = ["geometry"]), on = id_var) 
-        else:
+        else:  # much simpler, we just overlay
             tiled_map = self.region.overlay(tiled_map)
         
-        # make a dissolve variable from element_id and id_var
+        # make a dissolve variable from element_id and id_var, dissolve and drop
         tiled_map["diss_var"] = (tiled_map.element_id + 
                                  tiled_map[id_var].astype(str))
         tiled_map = tiled_map \
@@ -290,7 +319,7 @@ class Tiling:
         
         tm = TiledMap()
         tm.tiling = self
-        tm.tiled_map = tiled_map
+        tm.map = tiled_map
         return tm
     
     
@@ -300,9 +329,9 @@ class Tiling:
         ) -> tuple[gpd.GeoSeries, tuple[float]]:
         """Rotates the geometries in a GeoDataFrame as a single collection.
         
-        Rotation is about the supplied centre (if supplied) or about the
-        centroid of the GeoDataFrame (if not). This allows for reversal of 
-        a rotation. [Note that this might not be a required precaution!]
+        Rotation is about the supplied centre or about the centroid of the 
+        GeoDataFrame (if not). This allows for reversal of  a rotation. [Note 
+        that this might not be a required precaution!]
 
         Args:
             gdf (geopandas.GeoDataFrame): GeoDataFrame to rotate
@@ -371,7 +400,7 @@ class Tiling:
 @dataclass
 class TiledMap:
     tiling: Tiling = None
-    tiled_map: gpd.GeoDataFrame = None
+    map: gpd.GeoDataFrame = None
     legend_elements: gpd.GeoDataFrame = None
     legend_key_gdf: gpd.GeoDataFrame = None
     variables: dict[str] = None
@@ -407,7 +436,7 @@ class TiledMap:
         if self.draft_mode:
             fig = pyplot.figure(figsize = self.figsize) 
             ax = fig.add_subplot(111)
-            self.tiled_map.plot(ax = ax, column = "element_id", 
+            self.map.plot(ax = ax, column = "element_id", 
                                 cmap = "tab20", **kwargs)
             return fig
 
@@ -416,7 +445,7 @@ class TiledMap:
             # and possibly forever... 
             reg_w, reg_h, *_ = \
                 tiling_utils.get_width_height_left_bottom(
-                    self.tiled_map.geometry)
+                    self.map.geometry)
             tile_w, tile_h, *_ = \
                 tiling_utils.get_width_height_left_bottom(
                     self.tiling.tile_unit._get_legend_elements().rotate(
@@ -438,10 +467,10 @@ class TiledMap:
         if self.variables is None:
             # get any floating point columns available
             default_columns = \
-                self.tiled_map.select_dtypes(
+                self.map.select_dtypes(
                     include = ("float64", "int64")).columns
             self.variables = dict(zip(
-                self.tiled_map.element_id.unique(), 
+                self.map.element_id.unique(), 
                 list(default_columns)))
             print(f"No variables specified, picked the first {len(self.variables)} numeric ones available.")        
         elif isinstance(self.variables, (list, tuple)):
@@ -453,7 +482,7 @@ class TiledMap:
         if self.colourmaps is None:
             self.colourmaps = {}
             for var in self.variables.values():
-                if self.tiled_map[var].dtype == pd.CategoricalDtype:
+                if self.map[var].dtype == pd.CategoricalDtype:
                     self.colourmaps[var] = "tab20"
                     print(f"For categorical data, you should specify colour mapping explicitly.")
                 else:
@@ -472,18 +501,18 @@ class TiledMap:
     
     
     def plot_map(self, axes, **kwargs):
-        bb = self.tiled_map.geometry.total_bounds
+        bb = self.map.geometry.total_bounds
         if self.legend:
             axes["map"].set_axis_off()
             axes["map"].set_xlim(bb[0], bb[2])
             axes["map"].set_ylim(bb[1], bb[3])
-            self.plot_subsetted_gdf(axes["map"], self.tiled_map, **kwargs)
+            self.plot_subsetted_gdf(axes["map"], self.map, **kwargs)
             self.get_legend(ax = axes["legend"], **kwargs)
         else:
             axes.set_axis_off()
             axes.set_xlim(bb[0], bb[2])
             axes.set_ylim(bb[1], bb[3])
-            self.plot_subsetted_gdf(axes, self.tiled_map, **kwargs)
+            self.plot_subsetted_gdf(axes, self.map, **kwargs)
         return None
     
     
@@ -600,7 +629,7 @@ class TiledMap:
         """Returns a GeoDataFrame of tile elements dissected and with
         data assigned to the slice so a map of them can stand for a legend.
         The 'dissection' is handled differently by WeaveUnits and TileUnits
-        and delegated to get_legend_key_shapes().
+        and delegated to _get_legend_key_shapes().
 
         Args:
             elements (gpd.GeoDataFrame): the legend elements
@@ -615,7 +644,7 @@ class TiledMap:
         unique_ids = []  # list of each element_id used in order 
         vals = []        # values form the data assigned to the key tiles
         rots = []        # rotation of each key tile
-        subsets = self.tiled_map.groupby("element_id")
+        subsets = self.map.groupby("element_id")
         for (id, var), geom, rot in zip(self.variables.items(),
                                  elements.geometry,
                                  elements.rotation):
@@ -659,7 +688,7 @@ class TiledMap:
         
         key_gdf = gpd.GeoDataFrame(
             data = key_data | {"element_id": ids, "rotation": rots}, 
-            crs = self.tiled_map.crs,
+            crs = self.map.crs,
             geometry = gpd.GeoSeries(key_tiles))
         key_gdf.geometry = key_gdf.rotate(self.tiling.rotation, origin = (0, 0))
         return key_gdf

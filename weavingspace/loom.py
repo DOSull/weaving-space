@@ -79,7 +79,8 @@ class Loom:
     n_axes: int
     
     def __init__(self, *matrices:np.ndarray):
-        """Constructor for a Loom.
+        """Constructor for a Loom. Takes either one or three weave matrices
+        as input and initialises the loom based on these.
         """        
         if len(matrices) == 1:
             m = matrices[0]
