@@ -425,6 +425,36 @@ class TiledMap:
         
 
     def render(self, **kwargs) -> Figure:
+        """Renders the current state to a map.
+        
+        Note that TiledMap objects will usually be created by calling 
+        Tiling.get_tiled_map()
+        
+        Args:
+            variables (dict[str:str]). Mapping from element_id values to
+                variable names. Defaults to None.
+            colourmaps (dict[str:Union(str,dict)]). Mapping from variable
+                names to colour map, either a colour palette as used by
+                geopandas/matplotlib, a fixed colour, or a dictionary mapping
+                categorical data values to colours. Defaults to None.
+            legend (bool). If True a legend will be drawn. Defaults to True.
+            legend_zoom (float). Zoom factor to apply to the legend. Values <1 
+                will show more of the tile context. Defaults to 1.0.
+            legend_dx and legend_dy (float). x and y shift to apply to the 
+                legend position. Defaults to 0.0.
+            use_ellipse (bool). If True applies an elliptical clip to the   
+                legend. Defaults to False.
+            ellipse_magnification (float). Magnification to apply to ellipse
+                clipped legend. Defaults to 1.0.
+            radial_key (bool): If True legend key for TileUnit maps will be
+                based on radially dissecting the tiles. Defaults to False.
+            draft_mode (bool): If True a map of the tiled map coloured by
+                tile element_ids (and with no legend) is returned. Defaults
+                to False.
+            scheme, k, figsize, dpi: these pyplot/geopandas.plot parameters
+                are intercepted to ensure they are applied correctly.
+            **kwargs: other settings to pass to pyplot/geopandas.plot. 
+        """
         pyplot.rcParams['pdf.fonttype'] = 42
         pyplot.rcParams['pdf.use14corefonts'] = True
         matplotlib.rcParams['pdf.fonttype'] = 42
@@ -495,18 +525,15 @@ class TiledMap:
                     self.colourmaps[var] = "Reds"
         
         self.plot_map(axes, **kwargs)
-
-        if self.legend and (self.legend_dx != 0 or self.legend_dx != 0):
-            box = axes["legend"].get_position()
-            box.x0 = box.x0 + self.legend_dx
-            box.x1 = box.x1 + self.legend_dx
-            box.y0 = box.y0 + self.legend_dy
-            box.y1 = box.y1 + self.legend_dy
-            axes["legend"].set_position(box)
         return fig
     
     
-    def plot_map(self, axes, **kwargs):
+    def plot_map(self, axes:pyplot.Axes, **kwargs) -> None:
+        """Plots map to the supplied axes.
+
+        Args:
+            axes (pyplot.Axes): axes on which maps will be drawn.
+        """
         bb = self.map.geometry.total_bounds
         if self.legend:
             axes["map"].set_axis_off()
@@ -514,6 +541,13 @@ class TiledMap:
             axes["map"].set_ylim(bb[1], bb[3])
             self.plot_subsetted_gdf(axes["map"], self.map, **kwargs)
             self.plot_legend(ax = axes["legend"], **kwargs)
+            if (self.legend_dx != 0 or self.legend_dx != 0):
+                box = axes["legend"].get_position()
+                box.x0 = box.x0 + self.legend_dx
+                box.x1 = box.x1 + self.legend_dx
+                box.y0 = box.y0 + self.legend_dy
+                box.y1 = box.y1 + self.legend_dy
+                axes["legend"].set_position(box)
         else:
             axes.set_axis_off()
             axes.set_xlim(bb[0], bb[2])
@@ -522,7 +556,20 @@ class TiledMap:
         return None
     
     
-    def plot_subsetted_gdf(self, ax, gdf, **kwargs):
+    def plot_subsetted_gdf(self, ax:pyplot.Axes, 
+                           gdf:gpd.GeoDataFrame, **kwargs) -> None:
+        """Plots a gpd.GeoDataFrame multiple times based on a subsetting
+        attribute (assumed to be "element_id").
+        
+        NOTE: used to plot both the main map _and_ the legend.
+
+        Args:
+            ax (pyplot.Axes): axes to plot to.
+            gdf (gpd.GeoDataFrame): the GeoDataFrame to plot.
+
+        Raises:
+            Exception: if self.colourmaps cannot be parsed exception is raised.
+        """
         groups = gdf.groupby("element_id")
         for id, var in self.variables.items():
             subset = groups.get_group(id)
@@ -550,25 +597,39 @@ class TiledMap:
                                 matplotlib.colors.ListedColormap))):
                     cmap = self.colourmaps[var]  # specified colors for this var
                 else:
-                    raise Exception(f"Color map for '{var}' is not a known type, but is {str(type(self.colourmaps[var]))}")
+                    raise Exception(f"""Color map for '{var}' is not a known 
+                                    type, but is {str(type(self.colourmaps[var])
+                                    )}""")
 
                 subset.plot(ax = ax, column = var, cmap = cmap, 
                             scheme = self.scheme, k = self.k, **kwargs)
     
     
     def to_file(self, fname:str = None) -> None:
+        """Outputs the tiled map to a layered GPKG file. 
+        
+        Currently delegates to tiling_utils.write_map_to_layers.
+
+        Args:
+            fname (str, optional): Filename to write. Defaults to None.
+        """
         tiling_utils.write_map_to_layers(self.map, fname)
         return None
 
     
     def plot_legend(self, ax: pyplot.Axes = None, **kwargs) -> None:
+        """Plots a legend for this tiled map.
+
+        Args:
+            ax (pyplot.Axes, optional): axes to draw legend. Defaults to None.
+        """
         # turn off axes (which seems also to make it impossible
         # to set a background colour)
         ax.set_axis_off()
 
         legend_elements = self.tiling.tile_unit._get_legend_elements()
-        # this is a bit hacky, but we will apply the rotation at the end
-        # so for TileUnits which don't need it, reverse that now
+        # this is a bit hacky, but we will apply the rotation to text 
+        # annotation so for TileUnits which don't need it, reverse that now
         if isinstance(self.tiling.tile_unit, TileUnit):
             legend_elements.rotation = -self.tiling.rotation
         
@@ -587,12 +648,12 @@ class TiledMap:
             bb = legend_elements.geometry.total_bounds
             c = legend_elements.geometry.unary_union.centroid
 
-        # apply legend zoom
-        if self.legend_zoom != 1: 
-            ax.set_xlim(c.x + (bb[0] - c.x) / self.legend_zoom, 
-                        c.x + (bb[2] - c.x) / self.legend_zoom)
-            ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
-                        c.y + (bb[3] - c.y) / self.legend_zoom)
+        # apply legend zoom - NOTE that this must be applied even
+        # if self.legend_zoom is not == 1...
+        ax.set_xlim(c.x + (bb[0] - c.x) / self.legend_zoom, 
+                    c.x + (bb[2] - c.x) / self.legend_zoom)
+        ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
+                    c.y + (bb[3] - c.y) / self.legend_zoom)
 
         # now plot background; we include the central tiles, since in
         # the weave case these may not match the legend elements
@@ -633,12 +694,13 @@ class TiledMap:
 
     def get_legend_key_gdf(self, elements:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         """Returns a GeoDataFrame of tile elements dissected and with
-        data assigned to the slice so a map of them can stand for a legend.
-        The 'dissection' is handled differently by WeaveUnits and TileUnits
-        and delegated to _get_legend_key_shapes().
+        data assigned to the slice so a map of them can stand be a legend.
+        
+        'Dissection' is handled differently by WeaveUnits and TileUnits
+        and delegated to their respective _get_legend_key_shapes() methods.
 
         Args:
-            elements (gpd.GeoDataFrame): the legend elements
+            elements (gpd.GeoDataFrame): the legend elements.
 
         Returns:
             gpd.GeoDataFrame:  with element_id, variables and rotation
@@ -701,4 +763,6 @@ class TiledMap:
         
         
     def explore(self) -> None:
+        """TODO: add wrapper to make tiled web map via geopandas.explore.
+        """
         return None
