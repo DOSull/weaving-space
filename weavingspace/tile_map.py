@@ -399,24 +399,29 @@ class Tiling:
 
 @dataclass
 class TiledMap:
-    tiling: Tiling = None
-    map: gpd.GeoDataFrame = None
-    legend_elements: gpd.GeoDataFrame = None
-    legend_key_gdf: gpd.GeoDataFrame = None
-    variables: dict[str] = None
-    colourmaps: dict[str:Union[str,dict]] = None
-    legend: bool = True
-    legend_zoom: float = 1.0
+    # these will be set at instantion by Tiling.get_tiled_map()
+    tiling:Tiling = None
+    map:gpd.GeoDataFrame = None
+    # variables and colourmaps should be set before calling self.render()
+    variables:dict[str] = None
+    colourmaps:dict[str:Union[str,dict]] = None
+    # the below parameters can be set either before calling self.render() 
+    # or passed in as parameters to self.render()
+    # these are solely TiledMap.render() options
+    legend:bool = True
+    legend_zoom:float = 1.0
     legend_dx:float = 0.
     legend_dy:float = 0.
-    scheme: str = "equalinterval"
-    k: int = 100
-    figsize:tuple[float] = (20, 15)
-    dpi: float = 72
     use_ellipse:bool = False
     ellipse_magnification:float = 1.0
     radial_key:bool = False
     draft_mode:bool = False
+    # the parameters below are geopandas.plot options which we intercept to
+    # ensure they are applied appropriately when we plot a GDF
+    scheme:str = "equalinterval"
+    k:int = 100
+    figsize:tuple[float] = (20, 15)
+    dpi:float = 72
         
 
     def render(self, **kwargs) -> Figure:
@@ -490,7 +495,7 @@ class TiledMap:
         
         self.plot_map(axes, **kwargs)
 
-        if self.legend:
+        if self.legend and (self.legend_dx != 0 or self.legend_dx != 0):
             box = axes["legend"].get_position()
             box.x0 = box.x0 + self.legend_dx
             box.x1 = box.x1 + self.legend_dx
