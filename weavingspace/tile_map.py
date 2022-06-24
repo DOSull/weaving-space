@@ -441,16 +441,14 @@ class TiledMap:
         if self.draft_mode:
             fig = pyplot.figure(figsize = self.figsize) 
             ax = fig.add_subplot(111)
-            self.map.plot(ax = ax, column = "element_id", 
-                                cmap = "tab20", **kwargs)
+            self.map.plot(ax = ax, column = "element_id", cmap = "tab20", 
+                          **kwargs)
             return fig
 
         if self.legend:
-            # this sizing stuff is rough and ready for now
-            # and possibly forever... 
+            # this sizing stuff is rough and ready for now, possibly forever... 
             reg_w, reg_h, *_ = \
-                tiling_utils.get_width_height_left_bottom(
-                    self.map.geometry)
+                tiling_utils.get_width_height_left_bottom(self.map.geometry)
             tile_w, tile_h, *_ = \
                 tiling_utils.get_width_height_left_bottom(
                     self.tiling.tile_unit._get_legend_elements().rotate(
@@ -477,19 +475,22 @@ class TiledMap:
             self.variables = dict(zip(
                 self.map.element_id.unique(), 
                 list(default_columns)))
-            print(f"No variables specified, picked the first {len(self.variables)} numeric ones available.")        
+            print(f"""No variables specified, picked the first
+                  {len(self.variables)} numeric ones available.""")        
         elif isinstance(self.variables, (list, tuple)):
             self.variables = dict(zip(
                 self.tiling.tile_unit.elements.element_id.unique(),
                 self.variables))
-            print(f"Only a list of variables specified, assigning to available element_ids.")
+            print(f"""Only a list of variables specified, assigning to 
+                  available element_ids.""")
                     
         if self.colourmaps is None:
             self.colourmaps = {}
             for var in self.variables.values():
                 if self.map[var].dtype == pd.CategoricalDtype:
                     self.colourmaps[var] = "tab20"
-                    print(f"For categorical data, you should specify colour mapping explicitly.")
+                    print(f"""For categorical data, you should specify colour 
+                          mapping explicitly.""")
                 else:
                     self.colourmaps[var] = "Reds"
         
@@ -512,7 +513,7 @@ class TiledMap:
             axes["map"].set_xlim(bb[0], bb[2])
             axes["map"].set_ylim(bb[1], bb[3])
             self.plot_subsetted_gdf(axes["map"], self.map, **kwargs)
-            self.get_legend(ax = axes["legend"], **kwargs)
+            self.plot_legend(ax = axes["legend"], **kwargs)
         else:
             axes.set_axis_off()
             axes.set_xlim(bb[0], bb[2])
@@ -555,11 +556,12 @@ class TiledMap:
                             scheme = self.scheme, k = self.k, **kwargs)
     
     
-    def to_file(self, fname:str = None) -> str:
-        return fname
+    def to_file(self, fname:str = None) -> None:
+        tiling_utils.write_map_to_layers(self.map, fname)
+        return None
+
     
-    
-    def get_legend(self, ax: pyplot.Axes = None, **kwargs) -> None:
+    def plot_legend(self, ax: pyplot.Axes = None, **kwargs) -> None:
         # turn off axes (which seems also to make it impossible
         # to set a background colour)
         ax.set_axis_off()
@@ -575,7 +577,6 @@ class TiledMap:
         legend_elements.geometry = legend_elements.geometry.rotate(
             self.tiling.rotation, origin = (0, 0))
         
-        # set a zoom 
         if self.use_ellipse:
             ellipse = tiling_utils.get_bounding_ellipse(
                 legend_elements.geometry, 
@@ -585,13 +586,13 @@ class TiledMap:
         else:
             bb = legend_elements.geometry.total_bounds
             c = legend_elements.geometry.unary_union.centroid
-        ax.set_xlim(c.x + (bb[0] - c.x) / self.legend_zoom, 
-                    c.x + (bb[2] - c.x) / self.legend_zoom)
-        ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
-                    c.y + (bb[3] - c.y) / self.legend_zoom)
-        # not using this at the moment, but if we want to colour the 
-        # background here is how when axes are set off
-        # ax.axhspan(bb[1], bb[3], fc = "w", lw = 0)
+
+        # apply legend zoom
+        if self.legend_zoom != 1: 
+            ax.set_xlim(c.x + (bb[0] - c.x) / self.legend_zoom, 
+                        c.x + (bb[2] - c.x) / self.legend_zoom)
+            ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
+                        c.y + (bb[3] - c.y) / self.legend_zoom)
 
         # now plot background; we include the central tiles, since in
         # the weave case these may not match the legend elements
@@ -647,7 +648,7 @@ class TiledMap:
         key_tiles = []   # set of tiles to form a colour key (e.g. a ramp)
         ids = []         # element_ids applied to the keys
         unique_ids = []  # list of each element_id used in order 
-        vals = []        # values form the data assigned to the key tiles
+        vals = []        # the data assigned to the key tiles
         rots = []        # rotation of each key tile
         subsets = self.map.groupby("element_id")
         for (id, var), geom, rot in zip(self.variables.items(),
