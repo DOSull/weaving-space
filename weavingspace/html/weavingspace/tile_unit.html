@@ -41,7 +41,7 @@ from tileable import Tileable
 from tileable import TileShape
 
 import tiling_utils
-import tiling_geometries
+import _tiling_geometries
 
 
 @dataclass
@@ -69,19 +69,19 @@ class TileUnit(Tileable):
         on self.tiling_type.
         &#34;&#34;&#34;
         if self.tiling_type == &#34;cairo&#34;:
-            tiling_geometries.setup_cairo(self)
+            _tiling_geometries.setup_cairo(self)
         elif self.tiling_type == &#34;hex-dissection&#34;:
-            tiling_geometries.setup_hex_dissection(self)
+            _tiling_geometries.setup_hex_dissection(self)
         elif self.tiling_type == &#34;laves&#34;:
-            tiling_geometries.setup_laves(self)
+            _tiling_geometries.setup_laves(self)
         elif self.tiling_type == &#34;archimedean&#34;:
-            tiling_geometries.setup_archimedean(self)
+            _tiling_geometries.setup_archimedean(self)
         elif self.tiling_type in (&#34;hex-colouring&#34;, &#34;hex-coloring&#34;):
-            tiling_geometries.setup_hex_colouring(self)
+            _tiling_geometries.setup_hex_colouring(self)
         elif self.tiling_type in (&#34;square-colouring&#34;, &#34;square-coloring&#34;):
-            tiling_geometries.setup_square_colouring(self)
+            _tiling_geometries.setup_square_colouring(self)
         else:
-            tiling_geometries.setup_none_tile(self)
+            _tiling_geometries.setup_none_tile(self)
         return
 
     
@@ -233,19 +233,19 @@ class TileUnit(Tileable):
         on self.tiling_type.
         &#34;&#34;&#34;
         if self.tiling_type == &#34;cairo&#34;:
-            tiling_geometries.setup_cairo(self)
+            _tiling_geometries.setup_cairo(self)
         elif self.tiling_type == &#34;hex-dissection&#34;:
-            tiling_geometries.setup_hex_dissection(self)
+            _tiling_geometries.setup_hex_dissection(self)
         elif self.tiling_type == &#34;laves&#34;:
-            tiling_geometries.setup_laves(self)
+            _tiling_geometries.setup_laves(self)
         elif self.tiling_type == &#34;archimedean&#34;:
-            tiling_geometries.setup_archimedean(self)
+            _tiling_geometries.setup_archimedean(self)
         elif self.tiling_type in (&#34;hex-colouring&#34;, &#34;hex-coloring&#34;):
-            tiling_geometries.setup_hex_colouring(self)
+            _tiling_geometries.setup_hex_colouring(self)
         elif self.tiling_type in (&#34;square-colouring&#34;, &#34;square-coloring&#34;):
-            tiling_geometries.setup_square_colouring(self)
+            _tiling_geometries.setup_square_colouring(self)
         else:
-            tiling_geometries.setup_none_tile(self)
+            _tiling_geometries.setup_none_tile(self)
         return
 
     
@@ -426,19 +426,19 @@ on self.tiling_type.</p></div>
     on self.tiling_type.
     &#34;&#34;&#34;
     if self.tiling_type == &#34;cairo&#34;:
-        tiling_geometries.setup_cairo(self)
+        _tiling_geometries.setup_cairo(self)
     elif self.tiling_type == &#34;hex-dissection&#34;:
-        tiling_geometries.setup_hex_dissection(self)
+        _tiling_geometries.setup_hex_dissection(self)
     elif self.tiling_type == &#34;laves&#34;:
-        tiling_geometries.setup_laves(self)
+        _tiling_geometries.setup_laves(self)
     elif self.tiling_type == &#34;archimedean&#34;:
-        tiling_geometries.setup_archimedean(self)
+        _tiling_geometries.setup_archimedean(self)
     elif self.tiling_type in (&#34;hex-colouring&#34;, &#34;hex-coloring&#34;):
-        tiling_geometries.setup_hex_colouring(self)
+        _tiling_geometries.setup_hex_colouring(self)
     elif self.tiling_type in (&#34;square-colouring&#34;, &#34;square-coloring&#34;):
-        tiling_geometries.setup_square_colouring(self)
+        _tiling_geometries.setup_square_colouring(self)
     else:
-        tiling_geometries.setup_none_tile(self)
+        _tiling_geometries.setup_none_tile(self)
     return</code></pre>
 </details>
 </dd>

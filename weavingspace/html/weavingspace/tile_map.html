@@ -234,7 +234,10 @@ class _TileGrid:
 @dataclass
 class Tiling:
     &#34;&#34;&#34;Class that applies a `Tileable` object to a region to be mapped.
-
+    
+    The result of the tiling procedure is stored in the `tiles` variable and
+    covers a region sufficient that the tiling can be rotated to any desired 
+    angle. 
     &#34;&#34;&#34;
     tile_unit:Tileable = None
     tile_shape:str = &#34;&#34;
@@ -247,8 +250,21 @@ class Tiling:
     def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
                  id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
                  elements_margin:float = 0) -&gt; None:
-        &#34;&#34;&#34;A class to persist a tiling by filling an area relative to 
-        a region that is sufficient to apply the tiling at any rotation.
+        &#34;&#34;&#34;Class to persist a tiling by filling an area relative to 
+        a region sufficient to apply the tiling at any rotation.
+        
+        The Tiling constructor allows a number of adjustments to the supplied
+        `Tileable` object:
+        
+        + `tile_margin` values greater than 0 will introduce spacing of half 
+        the specified distance between elements on the boundary of each tile.
+        Note that this operation does not make sense for `WeaveUnit` objects,
+        and may not preserve the equality of tile element areas.
+        + `elements_sf` values less than one scale down tile elements 
+        accordingly. Does not make sense for `WeaveUnit` objects.
+        + `elements_margin` values greater than one apply a negative buffer of
+        the specified distance to every element in the tile. This option is
+        applicable to both `WeaveUnit` and `TileUnit` objects.
 
         Args:
             unit (Tileable): the tile_unit to use.
@@ -286,8 +302,14 @@ class Tiling:
                       prioritise_tiles:bool = False) -&gt; &#34;TiledMap&#34;:
         &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
         
-        HERE BE DRAGONS! This function took a long time and a lot of trial and 
-        error to get right, so modify with EXTREME CAUTION. 
+        HERE BE DRAGONS! This function took a lot of trial and error to get 
+        right, so modify with CAUTION!
+        
+        The `proritise_tiles = True` option means that the tiling will not 
+        break up the elements in `TileUnit`s at the boundaries between areas 
+        in the mapped region, but will instead ensure that tile elements remain
+        complete, picking up their data from the region zone which they overlap
+        the most. 
         
         As should be apparent from the volume of code, the prioritise_tiles = 
         True option is where the tricky bits are mostly found.
@@ -736,10 +758,24 @@ class TiledMap:
         ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
                     c.y + (bb[3] - c.y) / self.legend_zoom)
 
+        # plot the legend key elements (which include the data)
+        self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
+        
+        for id, tile, rotn in zip(self.variables.keys(),
+                                  legend_elements.geometry,
+                                  legend_elements.rotation):
+            c = tile.centroid
+            ax.annotate(self.variables[id], xy = (c.x, c.y), 
+                    ha = &#34;center&#34;, va = &#34;center&#34;, rotation_mode = &#34;anchor&#34;, 
+                    # adjust rotation to favour text reading left to right
+                    rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
+                    bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
+
         # now plot background; we include the central tiles, since in
         # the weave case these may not match the legend elements
         context_tiles = self.tiling.tile_unit.get_local_patch(r = 2, 
-            include_0 = isinstance(self.tiling.tile_unit, WeaveUnit)) \
+            # include_0 = isinstance(self.tiling.tile_unit, WeaveUnit)) \
+            include_0 = True) \
                 .geometry.rotate(self.tiling.rotation, origin = (0, 0))
         # for reasons escaping all reason... invalid polygons sometimes show up 
         # here I think because of the rotation /shrug... in any case, this 
@@ -758,19 +794,6 @@ class TiledMap:
                                ec = &#34;#5F5F5F&#34;, lw = 0.0)
             tiling_utils.get_boundaries(context_tiles.geometry).plot(
                 ax = ax, ec = &#34;#5F5F5F&#34;, lw = 1)
-
-        # plot the legend key elements (which include the data)
-        self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
-        
-        for id, tile, rotn in zip(self.variables.keys(),
-                                  legend_elements.geometry,
-                                  legend_elements.rotation):
-            c = tile.centroid
-            ax.annotate(self.variables[id], xy = (c.x, c.y), 
-                    ha = &#34;center&#34;, va = &#34;center&#34;, rotation_mode = &#34;anchor&#34;, 
-                    # adjust rotation to favour text reading left to right
-                    rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
-                    bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
 
 
     def get_legend_key_gdf(self, elements:gpd.GeoDataFrame) -&gt; gpd.GeoDataFrame:
@@ -1215,10 +1238,24 @@ class TiledMap:
         ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
                     c.y + (bb[3] - c.y) / self.legend_zoom)
 
+        # plot the legend key elements (which include the data)
+        self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
+        
+        for id, tile, rotn in zip(self.variables.keys(),
+                                  legend_elements.geometry,
+                                  legend_elements.rotation):
+            c = tile.centroid
+            ax.annotate(self.variables[id], xy = (c.x, c.y), 
+                    ha = &#34;center&#34;, va = &#34;center&#34;, rotation_mode = &#34;anchor&#34;, 
+                    # adjust rotation to favour text reading left to right
+                    rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
+                    bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
+
         # now plot background; we include the central tiles, since in
         # the weave case these may not match the legend elements
         context_tiles = self.tiling.tile_unit.get_local_patch(r = 2, 
-            include_0 = isinstance(self.tiling.tile_unit, WeaveUnit)) \
+            # include_0 = isinstance(self.tiling.tile_unit, WeaveUnit)) \
+            include_0 = True) \
                 .geometry.rotate(self.tiling.rotation, origin = (0, 0))
         # for reasons escaping all reason... invalid polygons sometimes show up 
         # here I think because of the rotation /shrug... in any case, this 
@@ -1237,19 +1274,6 @@ class TiledMap:
                                ec = &#34;#5F5F5F&#34;, lw = 0.0)
             tiling_utils.get_boundaries(context_tiles.geometry).plot(
                 ax = ax, ec = &#34;#5F5F5F&#34;, lw = 1)
-
-        # plot the legend key elements (which include the data)
-        self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
-        
-        for id, tile, rotn in zip(self.variables.keys(),
-                                  legend_elements.geometry,
-                                  legend_elements.rotation):
-            c = tile.centroid
-            ax.annotate(self.variables[id], xy = (c.x, c.y), 
-                    ha = &#34;center&#34;, va = &#34;center&#34;, rotation_mode = &#34;anchor&#34;, 
-                    # adjust rotation to favour text reading left to right
-                    rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
-                    bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
 
 
     def get_legend_key_gdf(self, elements:gpd.GeoDataFrame) -&gt; gpd.GeoDataFrame:
@@ -1557,10 +1581,24 @@ colour ramp or set of nested tiles.</dd>
     ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
                 c.y + (bb[3] - c.y) / self.legend_zoom)
 
+    # plot the legend key elements (which include the data)
+    self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
+    
+    for id, tile, rotn in zip(self.variables.keys(),
+                              legend_elements.geometry,
+                              legend_elements.rotation):
+        c = tile.centroid
+        ax.annotate(self.variables[id], xy = (c.x, c.y), 
+                ha = &#34;center&#34;, va = &#34;center&#34;, rotation_mode = &#34;anchor&#34;, 
+                # adjust rotation to favour text reading left to right
+                rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
+                bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
+
     # now plot background; we include the central tiles, since in
     # the weave case these may not match the legend elements
     context_tiles = self.tiling.tile_unit.get_local_patch(r = 2, 
-        include_0 = isinstance(self.tiling.tile_unit, WeaveUnit)) \
+        # include_0 = isinstance(self.tiling.tile_unit, WeaveUnit)) \
+        include_0 = True) \
             .geometry.rotate(self.tiling.rotation, origin = (0, 0))
     # for reasons escaping all reason... invalid polygons sometimes show up 
     # here I think because of the rotation /shrug... in any case, this 
@@ -1578,20 +1616,7 @@ colour ramp or set of nested tiles.</dd>
         context_tiles.plot(ax = ax, fc = &#34;#9F9F9F3F&#34;, 
                            ec = &#34;#5F5F5F&#34;, lw = 0.0)
         tiling_utils.get_boundaries(context_tiles.geometry).plot(
-            ax = ax, ec = &#34;#5F5F5F&#34;, lw = 1)
-
-    # plot the legend key elements (which include the data)
-    self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
-    
-    for id, tile, rotn in zip(self.variables.keys(),
-                              legend_elements.geometry,
-                              legend_elements.rotation):
-        c = tile.centroid
-        ax.annotate(self.variables[id], xy = (c.x, c.y), 
-                ha = &#34;center&#34;, va = &#34;center&#34;, rotation_mode = &#34;anchor&#34;, 
-                # adjust rotation to favour text reading left to right
-                rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
-                bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})</code></pre>
+            ax = ax, ec = &#34;#5F5F5F&#34;, lw = 1)</code></pre>
 </details>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.plot_map"><code class="name flex">
@@ -1919,8 +1944,24 @@ plot. Defaults to (20,15).</dd>
 </code></dt>
 <dd>
 <div class="desc"><p>Class that applies a <code>Tileable</code> object to a region to be mapped.</p>
-<p>A class to persist a tiling by filling an area relative to
-a region that is sufficient to apply the tiling at any rotation.</p>
+<p>The result of the tiling procedure is stored in the <code>tiles</code> variable and
+covers a region sufficient that the tiling can be rotated to any desired
+angle. </p>
+<p>Class to persist a tiling by filling an area relative to
+a region sufficient to apply the tiling at any rotation.</p>
+<p>The Tiling constructor allows a number of adjustments to the supplied
+<code>Tileable</code> object:</p>
+<ul>
+<li><code>tile_margin</code> values greater than 0 will introduce spacing of half
+the specified distance between elements on the boundary of each tile.
+Note that this operation does not make sense for <code>WeaveUnit</code> objects,
+and may not preserve the equality of tile element areas.</li>
+<li><code>elements_sf</code> values less than one scale down tile elements
+accordingly. Does not make sense for <code>WeaveUnit</code> objects.</li>
+<li><code>elements_margin</code> values greater than one apply a negative buffer of
+the specified distance to every element in the tile. This option is
+applicable to both <code>WeaveUnit</code> and <code>TileUnit</code> objects.</li>
+</ul>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>unit</code></strong> :&ensp;<code>Tileable</code></dt>
@@ -1943,7 +1984,10 @@ a region that is sufficient to apply the tiling at any rotation.</p>
 <pre><code class="python">@dataclass
 class Tiling:
     &#34;&#34;&#34;Class that applies a `Tileable` object to a region to be mapped.
-
+    
+    The result of the tiling procedure is stored in the `tiles` variable and
+    covers a region sufficient that the tiling can be rotated to any desired 
+    angle. 
     &#34;&#34;&#34;
     tile_unit:Tileable = None
     tile_shape:str = &#34;&#34;
@@ -1956,8 +2000,21 @@ class Tiling:
     def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
                  id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
                  elements_margin:float = 0) -&gt; None:
-        &#34;&#34;&#34;A class to persist a tiling by filling an area relative to 
-        a region that is sufficient to apply the tiling at any rotation.
+        &#34;&#34;&#34;Class to persist a tiling by filling an area relative to 
+        a region sufficient to apply the tiling at any rotation.
+        
+        The Tiling constructor allows a number of adjustments to the supplied
+        `Tileable` object:
+        
+        + `tile_margin` values greater than 0 will introduce spacing of half 
+        the specified distance between elements on the boundary of each tile.
+        Note that this operation does not make sense for `WeaveUnit` objects,
+        and may not preserve the equality of tile element areas.
+        + `elements_sf` values less than one scale down tile elements 
+        accordingly. Does not make sense for `WeaveUnit` objects.
+        + `elements_margin` values greater than one apply a negative buffer of
+        the specified distance to every element in the tile. This option is
+        applicable to both `WeaveUnit` and `TileUnit` objects.
 
         Args:
             unit (Tileable): the tile_unit to use.
@@ -1995,8 +2052,14 @@ class Tiling:
                       prioritise_tiles:bool = False) -&gt; &#34;TiledMap&#34;:
         &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
         
-        HERE BE DRAGONS! This function took a long time and a lot of trial and 
-        error to get right, so modify with EXTREME CAUTION. 
+        HERE BE DRAGONS! This function took a lot of trial and error to get 
+        right, so modify with CAUTION!
+        
+        The `proritise_tiles = True` option means that the tiling will not 
+        break up the elements in `TileUnit`s at the boundaries between areas 
+        in the mapped region, but will instead ensure that tile elements remain
+        complete, picking up their data from the region zone which they overlap
+        the most. 
         
         As should be apparent from the volume of code, the prioritise_tiles = 
         True option is where the tricky bits are mostly found.
@@ -2168,8 +2231,13 @@ class Tiling:
 </code></dt>
 <dd>
 <div class="desc"><p>Returns a <code><a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></code> filling a region at the requested rotation.</p>
-<p>HERE BE DRAGONS! This function took a long time and a lot of trial and
-error to get right, so modify with EXTREME CAUTION. </p>
+<p>HERE BE DRAGONS! This function took a lot of trial and error to get
+right, so modify with CAUTION!</p>
+<p>The <code>proritise_tiles = True</code> option means that the tiling will not
+break up the elements in <code>TileUnit</code>s at the boundaries between areas
+in the mapped region, but will instead ensure that tile elements remain
+complete, picking up their data from the region zone which they overlap
+the most. </p>
 <p>As should be apparent from the volume of code, the prioritise_tiles =
 True option is where the tricky bits are mostly found.</p>
 <h2 id="args">Args</h2>
@@ -2199,8 +2267,14 @@ broken at boundaries in the region dataset. Defaults to False.</dd>
                   prioritise_tiles:bool = False) -&gt; &#34;TiledMap&#34;:
     &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
     
-    HERE BE DRAGONS! This function took a long time and a lot of trial and 
-    error to get right, so modify with EXTREME CAUTION. 
+    HERE BE DRAGONS! This function took a lot of trial and error to get 
+    right, so modify with CAUTION!
+    
+    The `proritise_tiles = True` option means that the tiling will not 
+    break up the elements in `TileUnit`s at the boundaries between areas 
+    in the mapped region, but will instead ensure that tile elements remain
+    complete, picking up their data from the region zone which they overlap
+    the most. 
     
     As should be apparent from the volume of code, the prioritise_tiles = 
     True option is where the tricky bits are mostly found.

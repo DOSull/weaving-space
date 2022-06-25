@@ -434,6 +434,9 @@ def get_polygon_sector(shape:geom.Polygon, start:float = 0.0,
             0.
         end (float): normalized start position along the boundary. Defaults to 
             1.
+            
+    Returns:
+        geom.Polygon: the requested polygon sector.
     """
     if start == end:
         # must return a null polygon since the calling context
@@ -505,11 +508,12 @@ def safe_union(gs:gpd.GeoSeries, res:float = 1e-3,
     Args:
         gs (gpd.GeoSeries): the Polygons to union.
         res (float, optional): size of the buffer to use. Defaults to 1e-3.
-        as_polygon (bool, optional): if True returns a Polygon, otherwise   
+        as_polygon (bool, optional): if True returns a Polygon, otherwise 
             returns a one Polygon GeoSeries. Defaults to False.
 
     Returns:
-        Union[gpd.GeoSeries, geom.Polygon]: _description_
+        Union[gpd.GeoSeries, geom.Polygon]: the resulting union of supplied 
+            polygons.
     """
     union = gs.buffer(res, resolution = 1, join_style = 2) \
                 .unary_union \

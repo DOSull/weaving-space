@@ -13,11 +13,11 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.ops
 
-import weave_matrices
+import _weave_matrices
 import tiling_utils
 
-from loom import Loom
-from weave_grids import WeaveGrid
+from _loom import Loom
+from _weave_grids import WeaveGrid
 
 from tileable import TileShape
 from tileable import Tileable
@@ -103,7 +103,7 @@ class WeaveUnit(Tileable):
         Args:
             weave_type (str, optional): one of "plain", "twill", "basket" or
                 "this". Defaults to "twill".
-            n (int | tuple[int], optional): over under pattern. See 
+            n (Union[int,tuple[int]], optional): over under pattern. See 
                 make_over_under_row() for details. Defaults to 2.
             aspect (float, optional): width of strands relative to the spacing. 
                 Defaults to 1.
@@ -123,7 +123,7 @@ class WeaveUnit(Tileable):
         if self.weave_type == "basket" and isinstance(self.n, (list, tuple)):
             self.n = self.n[0]
         
-        p = weave_matrices.get_weave_pattern_matrix(
+        p = _weave_matrices.get_weave_pattern_matrix(
             weave_type = self.weave_type, n = self.n, warp = warp_threads,
             weft = weft_threads, tie_up = self.tie_up, tr = self.tr, 
             th = self.th)
@@ -133,9 +133,9 @@ class WeaveUnit(Tileable):
 
 
     def get_triaxial_weave_matrices(self, 
-            strands_1:Union[list[str], tuple[str]] = ["a"], 
-            strands_2:Union[list[str], tuple[str]] = ["b"], 
-            strands_3:Union[list[str], tuple[str]] = ["c"]
+            strands_1:Union[list[str],tuple[str]] = ["a"], 
+            strands_2:Union[list[str],tuple[str]] = ["b"], 
+            strands_3:Union[list[str],tuple[str]] = ["c"]
         ) -> Loom:
         """Returns encoded weave pattern matrix as Loom of three biaxial matrices.
         
@@ -150,12 +150,12 @@ class WeaveUnit(Tileable):
         Defaults will produce 'mad weave'.
     
         Args:
-            strands_1 (list[str] | tuple[str], optional): list of labels for 
-                warp strands. Defaults to ["a"].
-            strands_2 (list[str] | tuple[str], optional): list of labels for 
-                weft strands. Defaults to ["b"].
-            strands_3 (list[str] | tuple[str], optional): list of labels for 
-                weft strands. Defaults to ["c"].
+            strands_1 (Union[list[str],tuple[str]], optional): list of labels 
+                for warp strands. Defaults to ["a"].
+            strands_2 (Union[list[str],tuple[str]], optional): list of labels 
+                for weft strands. Defaults to ["b"].
+            strands_3 (Union[list[str],tuple[str]], optional): list of labels 
+                for weft strands. Defaults to ["c"].
 
         Returns:
             Loom: which combines the three biaxial weaves 12, 23 and 31 implied 
@@ -163,26 +163,26 @@ class WeaveUnit(Tileable):
         """
         if self.weave_type == "hex":
             loom = Loom(
-                weave_matrices.get_weave_pattern_matrix(
+                _weave_matrices.get_weave_pattern_matrix(
                     weave_type = "this", tie_up = np.ones((6, 6)), 
                     warp = strands_1, weft = strands_2),
-                weave_matrices.get_weave_pattern_matrix(
+                _weave_matrices.get_weave_pattern_matrix(
                     weave_type = "this", tie_up = np.ones((6, 6)), 
                     warp = strands_2, weft = strands_3),
-                weave_matrices.get_weave_pattern_matrix(
+                _weave_matrices.get_weave_pattern_matrix(
                     weave_type = "this", tie_up = np.ones((6, 6)), 
                     warp = strands_3, weft = strands_1),
             )
         else: # "cube"
             loom = Loom(  
                 # Note n = (1,2,1,2) is required here to force 6x6 twill
-                weave_matrices.get_weave_pattern_matrix(
+                _weave_matrices.get_weave_pattern_matrix(
                     weave_type = "twill", n = (1, 2, 1, 2), 
                     warp = strands_1, weft = strands_2),
-                weave_matrices.get_weave_pattern_matrix(
+                _weave_matrices.get_weave_pattern_matrix(
                     weave_type = "twill", n = (1, 2, 1, 2), 
                     warp = strands_2, weft = strands_3),
-                weave_matrices.get_weave_pattern_matrix(
+                _weave_matrices.get_weave_pattern_matrix(
                     weave_type = "twill", n = (1, 2, 1, 2), 
                     warp = strands_3, weft = strands_1),
             )

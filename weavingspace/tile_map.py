@@ -730,10 +730,24 @@ class TiledMap:
         ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom, 
                     c.y + (bb[3] - c.y) / self.legend_zoom)
 
+        # plot the legend key elements (which include the data)
+        self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
+        
+        for id, tile, rotn in zip(self.variables.keys(),
+                                  legend_elements.geometry,
+                                  legend_elements.rotation):
+            c = tile.centroid
+            ax.annotate(self.variables[id], xy = (c.x, c.y), 
+                    ha = "center", va = "center", rotation_mode = "anchor", 
+                    # adjust rotation to favour text reading left to right
+                    rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
+                    bbox = {"lw": 0, "fc": "#ffffff40"})
+
         # now plot background; we include the central tiles, since in
         # the weave case these may not match the legend elements
         context_tiles = self.tiling.tile_unit.get_local_patch(r = 2, 
-            include_0 = isinstance(self.tiling.tile_unit, WeaveUnit)) \
+            # include_0 = isinstance(self.tiling.tile_unit, WeaveUnit)) \
+            include_0 = True) \
                 .geometry.rotate(self.tiling.rotation, origin = (0, 0))
         # for reasons escaping all reason... invalid polygons sometimes show up 
         # here I think because of the rotation /shrug... in any case, this 
@@ -752,19 +766,6 @@ class TiledMap:
                                ec = "#5F5F5F", lw = 0.0)
             tiling_utils.get_boundaries(context_tiles.geometry).plot(
                 ax = ax, ec = "#5F5F5F", lw = 1)
-
-        # plot the legend key elements (which include the data)
-        self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
-        
-        for id, tile, rotn in zip(self.variables.keys(),
-                                  legend_elements.geometry,
-                                  legend_elements.rotation):
-            c = tile.centroid
-            ax.annotate(self.variables[id], xy = (c.x, c.y), 
-                    ha = "center", va = "center", rotation_mode = "anchor", 
-                    # adjust rotation to favour text reading left to right
-                    rotation = (rotn + self.tiling.rotation + 90) % 180 - 90, 
-                    bbox = {"lw": 0, "fc": "#ffffff40"})
 
 
     def get_legend_key_gdf(self, elements:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
