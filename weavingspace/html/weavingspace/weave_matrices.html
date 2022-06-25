@@ -172,8 +172,8 @@ def make_twill_pattern(n:Union[int, tuple[int]] = 2,
     n is the number of over-unders. With n = 1 we get a plain weave.
 
     Args:
-        n (int, optional): specifies over-under sequence in the weave. 
-            Defaults to 2.
+        n (Union[int,tuple[int]], optional): specifies over-under sequence in
+            the weave. Defaults to 2.
         warp_n (int, optional): number of warp thread labels. Defaults to 2.
         weft_n (int, optional): number of weft thread labels. Defaults to 2.
 
@@ -186,7 +186,7 @@ def make_twill_pattern(n:Union[int, tuple[int]] = 2,
     return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
 
 
-def make_over_under_row(n:Union[int, tuple[int]]) -&gt; list[int]:
+def make_over_under_row(n:Union[int,tuple[int]]) -&gt; list[int]:
     &#34;&#34;&#34;Returns a tuple of runs of 1s and 0s.
 
     Returns a tuple of runs of 1s and 0s per supplied n. 
@@ -200,7 +200,7 @@ def make_over_under_row(n:Union[int, tuple[int]]) -&gt; list[int]:
     pattern. Repeating it yields 100111011000 which is the requested pattern.
 
     Args:
-        n (int | tuple[int]): requested over-under sequence. See details.
+        n (Union[int,tuple[int]]): requested over-under sequence. See details.
 
     Returns:
         list[int]: list of runs of 1s and 0s in the requested pattern. 
@@ -248,7 +248,7 @@ def make_twill_matrix(over_under:Union[int, tuple[int]]) -&gt; np.ndarray:
     make_over_under_rown(n)
 
     Args:
-        over_under (int | tuple[int]): over-under run specification. See
+        over_under (Union[int,tuple[int]]): over-under run specification. See
             make_over_under_row().
 
     Returns:
@@ -263,8 +263,8 @@ def make_twill_matrix(over_under:Union[int, tuple[int]]) -&gt; np.ndarray:
     return np.array(out).reshape(d, d)
 
 
-def make_basket_pattern(
-    n:int = 2, warp_n:int = 2, weft_n:int = 2) -&gt; np.ndarray: 
+def make_basket_pattern(n:int = 2, warp_n:int = 2, 
+                        weft_n:int = 2) -&gt; np.ndarray: 
     &#34;&#34;&#34;Returns basket pattern matrix extended for warp and weft patterns.
 
     Args:
@@ -311,8 +311,8 @@ def make_this_pattern(tie_up:np.ndarray,
 
     This is just a pass through function which applies suitable size identity. Could try to enforce
     
-      treadling.shape[1] == tie_up.shape[0] and 
-      tie_up.shape[1] == threading.shape[0]
+        treadling.shape[1] == tie_up.shape[0] and 
+        tie_up.shape[1] == threading.shape[0]
     
     but unsure what would be an appropriate way to do this...
 
@@ -344,7 +344,7 @@ def get_weave_pattern_matrix(weave_type:str = &#34;plain&#34;,
                              th:np.ndarray = None) -&gt; np.ndarray:
     &#34;&#34;&#34;Returns encoded weave pattern matrix.
     
-    See encode_biaxial_weave() for the encoding.
+    See `encode_biaxial_weave()` for the encoding.
 
     Allowed weave_types: &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34;, and &#34;this&#34; (pass-thru).
     These are explained in the respective functions to which this function
@@ -353,11 +353,11 @@ def get_weave_pattern_matrix(weave_type:str = &#34;plain&#34;,
     Args:
         weave_type (str, optional): one of &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34; or
             &#34;this&#34;. Defaults to &#34;plain&#34;.
-        n (int | tuple[int], optional): over under pattern. See 
+        n (Union[int,tuple[int]], optional): over under pattern. See 
             make_over_under_row() for details. Defaults to 2.
-        warp (list[str] | tuple[str], optional): list of labels for warp 
+        warp (Union[list[str],tuple[str]], optional): list of labels for warp 
             strands. Defaults to [&#34;a&#34;, &#34;b&#34;].
-        weft (list[str] | tuple[str], optional): list of labels for weft 
+        weft (Union[list[str],tuple[str]], optional): list of labels for weft 
             strands. Defaults to [&#34;c&#34;, &#34;d&#34;].
         tie_up (np.ndarray, optional): a weave pattern matrix to pass thru in 
             the &#34;this&#34; case. Defaults to make_twill_matrix((2, 2)).
@@ -540,7 +540,7 @@ applied in both directions. Defaults to 1.</dd>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns encoded weave pattern matrix.</p>
-<p>See encode_biaxial_weave() for the encoding.</p>
+<p>See <code><a title="weavingspace.weave_matrices.encode_biaxial_weave" href="#weavingspace.weave_matrices.encode_biaxial_weave">encode_biaxial_weave()</a></code> for the encoding.</p>
 <p>Allowed weave_types: "plain", "twill", "basket", and "this" (pass-thru).
 These are explained in the respective functions to which this function
 delegates construction of the base matrices before applying the encoding.</p>
@@ -549,12 +549,15 @@ delegates construction of the base matrices before applying the encoding.</p>
 <dt><strong><code>weave_type</code></strong> :&ensp;<code>str</code>, optional</dt>
 <dd>one of "plain", "twill", "basket" or
 "this". Defaults to "plain".</dd>
-<dt>n (int | tuple[int], optional): over under pattern. See</dt>
-<dt>make_over_under_row() for details. Defaults to 2.</dt>
-<dt>warp (list[str] | tuple[str], optional): list of labels for warp</dt>
-<dt>strands. Defaults to ["a", "b"].</dt>
-<dt>weft (list[str] | tuple[str], optional): list of labels for weft</dt>
-<dt>strands. Defaults to ["c", "d"].</dt>
+<dt><strong><code>n</code></strong> :&ensp;<code>Union[int,tuple[int]]</code>, optional</dt>
+<dd>over under pattern. See
+make_over_under_row() for details. Defaults to 2.</dd>
+<dt><strong><code>warp</code></strong> :&ensp;<code>Union[list[str],tuple[str]]</code>, optional</dt>
+<dd>list of labels for warp
+strands. Defaults to ["a", "b"].</dd>
+<dt><strong><code>weft</code></strong> :&ensp;<code>Union[list[str],tuple[str]]</code>, optional</dt>
+<dd>list of labels for weft
+strands. Defaults to ["c", "d"].</dd>
 <dt><strong><code>tie_up</code></strong> :&ensp;<code>np.ndarray</code>, optional</dt>
 <dd>a weave pattern matrix to pass thru in
 the "this" case. Defaults to make_twill_matrix((2, 2)).</dd>
@@ -585,7 +588,7 @@ Defaults to None.</dd>
                              th:np.ndarray = None) -&gt; np.ndarray:
     &#34;&#34;&#34;Returns encoded weave pattern matrix.
     
-    See encode_biaxial_weave() for the encoding.
+    See `encode_biaxial_weave()` for the encoding.
 
     Allowed weave_types: &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34;, and &#34;this&#34; (pass-thru).
     These are explained in the respective functions to which this function
@@ -594,11 +597,11 @@ Defaults to None.</dd>
     Args:
         weave_type (str, optional): one of &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34; or
             &#34;this&#34;. Defaults to &#34;plain&#34;.
-        n (int | tuple[int], optional): over under pattern. See 
+        n (Union[int,tuple[int]], optional): over under pattern. See 
             make_over_under_row() for details. Defaults to 2.
-        warp (list[str] | tuple[str], optional): list of labels for warp 
+        warp (Union[list[str],tuple[str]], optional): list of labels for warp 
             strands. Defaults to [&#34;a&#34;, &#34;b&#34;].
-        weft (list[str] | tuple[str], optional): list of labels for weft 
+        weft (Union[list[str],tuple[str]], optional): list of labels for weft 
             strands. Defaults to [&#34;c&#34;, &#34;d&#34;].
         tie_up (np.ndarray, optional): a weave pattern matrix to pass thru in 
             the &#34;this&#34; case. Defaults to make_twill_matrix((2, 2)).
@@ -704,8 +707,8 @@ Defaults to None.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def make_basket_pattern(
-    n:int = 2, warp_n:int = 2, weft_n:int = 2) -&gt; np.ndarray: 
+<pre><code class="python">def make_basket_pattern(n:int = 2, warp_n:int = 2, 
+                        weft_n:int = 2) -&gt; np.ndarray: 
     &#34;&#34;&#34;Returns basket pattern matrix extended for warp and weft patterns.
 
     Args:
@@ -735,7 +738,10 @@ length over-under sequence. This is required to avoid cases such as
 e.g, (1,2,3) -&gt; 100111 which repeated is 1001111001111, i.e. a (2,4)
 pattern. Repeating it yields 100111011000 which is the requested pattern.</p>
 <h2 id="args">Args</h2>
-<p>n (int | tuple[int]): requested over-under sequence. See details.</p>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>Union[int,tuple[int]]</code></dt>
+<dd>requested over-under sequence. See details.</dd>
+</dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>list[int]</code></dt>
@@ -745,7 +751,7 @@ pattern. Repeating it yields 100111011000 which is the requested pattern.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def make_over_under_row(n:Union[int, tuple[int]]) -&gt; list[int]:
+<pre><code class="python">def make_over_under_row(n:Union[int,tuple[int]]) -&gt; list[int]:
     &#34;&#34;&#34;Returns a tuple of runs of 1s and 0s.
 
     Returns a tuple of runs of 1s and 0s per supplied n. 
@@ -759,7 +765,7 @@ pattern. Repeating it yields 100111011000 which is the requested pattern.</p>
     pattern. Repeating it yields 100111011000 which is the requested pattern.
 
     Args:
-        n (int | tuple[int]): requested over-under sequence. See details.
+        n (Union[int,tuple[int]]): requested over-under sequence. See details.
 
     Returns:
         list[int]: list of runs of 1s and 0s in the requested pattern. 
@@ -817,8 +823,9 @@ pattern. Repeating it yields 100111011000 which is the requested pattern.</p>
 <dd>
 <div class="desc"><p>Pass through returns weave pattern matrix from supplied input.</p>
 <p>This is just a pass through function which applies suitable size identity. Could try to enforce</p>
-<p>treadling.shape[1] == tie_up.shape[0] and
-tie_up.shape[1] == threading.shape[0]</p>
+<pre><code>treadling.shape[1] == tie_up.shape[0] and 
+tie_up.shape[1] == threading.shape[0]
+</code></pre>
 <p>but unsure what would be an appropriate way to do this&hellip;</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -850,8 +857,8 @@ tie_up.shape[1] == threading.shape[0]</p>
 
     This is just a pass through function which applies suitable size identity. Could try to enforce
     
-      treadling.shape[1] == tie_up.shape[0] and 
-      tie_up.shape[1] == threading.shape[0]
+        treadling.shape[1] == tie_up.shape[0] and 
+        tie_up.shape[1] == threading.shape[0]
     
     but unsure what would be an appropriate way to do this...
 
@@ -888,8 +895,11 @@ tie_up.shape[1] == threading.shape[0]</p>
 <p>where the repeat runs in each row are lengths returned by
 make_over_under_rown(n)</p>
 <h2 id="args">Args</h2>
-<p>over_under (int | tuple[int]): over-under run specification. See
-make_over_under_row().</p>
+<dl>
+<dt><strong><code>over_under</code></strong> :&ensp;<code>Union[int,tuple[int]]</code></dt>
+<dd>over-under run specification. See
+make_over_under_row().</dd>
+</dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>np.ndarray</code></dt>
@@ -913,7 +923,7 @@ make_over_under_row().</p>
     make_over_under_rown(n)
 
     Args:
-        over_under (int | tuple[int]): over-under run specification. See
+        over_under (Union[int,tuple[int]]): over-under run specification. See
             make_over_under_row().
 
     Returns:
@@ -936,9 +946,9 @@ make_over_under_row().</p>
 <p>n is the number of over-unders. With n = 1 we get a plain weave.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>n</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>specifies over-under sequence in the weave.
-Defaults to 2.</dd>
+<dt><strong><code>n</code></strong> :&ensp;<code>Union[int,tuple[int]]</code>, optional</dt>
+<dd>specifies over-under sequence in
+the weave. Defaults to 2.</dd>
 <dt><strong><code>warp_n</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>number of warp thread labels. Defaults to 2.</dd>
 <dt><strong><code>weft_n</code></strong> :&ensp;<code>int</code>, optional</dt>
@@ -960,8 +970,8 @@ Defaults to 2.</dd>
     n is the number of over-unders. With n = 1 we get a plain weave.
 
     Args:
-        n (int, optional): specifies over-under sequence in the weave. 
-            Defaults to 2.
+        n (Union[int,tuple[int]], optional): specifies over-under sequence in
+            the weave. Defaults to 2.
         warp_n (int, optional): number of warp thread labels. Defaults to 2.
         weft_n (int, optional): number of weft thread labels. Defaults to 2.
 

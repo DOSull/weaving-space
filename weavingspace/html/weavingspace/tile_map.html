@@ -85,7 +85,8 @@ class TileGrid:
             tile (gpd.GeoSeries): geometry of the tiling base tile.
             to_tile (gpd.GeoSeries): geometry of the region to be tiled.
             grid_type (TileShape, optional): the type of the tiling in terms of
-                the TileShape of the base tile. Defaults to TileShape.RECTANGLE.
+                the TileShape of the base tile. Defaults to 
+                `TileShape.RECTANGLE`.
         &#34;&#34;&#34;
         self.grid_type = grid_type
         self.tile = tile
@@ -125,17 +126,10 @@ class TileGrid:
             pts = self._get_diamond_centres()
         pts = [geom.Point(p[0], p[1]) for p in pts]
         return gpd.GeoSeries([p for p in pts if p.within(self.extent[0])])
-        # for efficiency get direct reference to the translate function so
-        # we aren&#39;t retrieving it from the affine module in the comprehension
-        # tr = affine.translate
-        # tiles = [tr(self.tile.geometry[0], p[0], p[1]) 
-        #          for p in list(pts)]
-        # tiles = [t for t in tiles if self.extent[0].intersects(t)]
-        # return gpd.GeoSeries([t.centroid for t in tiles])
     
         
     def _get_grid(self, ll: tuple[float], nums: tuple[int], 
-                  tdim: tuple[float]) -&gt; np.ndarray:
+                  dim: tuple[float]) -&gt; np.ndarray:
         &#34;&#34;&#34;Returns rectilinear grid of x,y coordinate pairs.
 
         Args:
@@ -151,8 +145,8 @@ class TileGrid:
                 each row
             containing an x, y coordinate pair.
         &#34;&#34;&#34;    
-        return np.array(np.meshgrid(np.arange(nums[0]) * tdim[0] + ll[0],
-                                    np.arange(nums[1]) * tdim[1] + ll[1])
+        return np.array(np.meshgrid(np.arange(nums[0]) * dim[0] + ll[0],
+                                    np.arange(nums[1]) * dim[1] + ll[1])
                         ).reshape(2, nums[0] * nums[1]).transpose()
         
 
@@ -286,8 +280,8 @@ class Tiling:
 
 
     def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                      prioritise_tiles:bool = False) -&gt; gpd.GeoDataFrame:
-        &#34;&#34;&#34;Returns a geodataframe filling a region at the requested rotation.
+                      prioritise_tiles:bool = False) -&gt; &#34;TiledMap&#34;:
+        &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
         
         HERE BE DRAGONS! This function took a long time and a lot of trial and 
         error to get right, so modify with EXTREME CAUTION. As should be 
@@ -304,8 +298,7 @@ class Tiling:
                 broken at boundaries in the region dataset. Defaults to False.
 
         Returns:
-            gpd.GeoDataFrame: a GeoDataFrame that contains the source region
-                data along with the tile unit element_id variable.
+            TiledMap: a TiledMap of the source region.
         &#34;&#34;&#34;
         # if no id_var is supplied overwrite it with the class id_var
         id_var = (self.region_id_var if id_var is None else id_var)
@@ -427,23 +420,66 @@ class Tiling:
 
 @dataclass
 class TiledMap:
+    &#34;&#34;&#34;Class representing a tiled map. Should not be accessed directly, but 
+    will be created by calling `Tiling.get_tiled_map()`. After creation the 
+    variables and colourmaps attributes can be set, and then 
+    `TiledMap.render()` called to make a map. Settable attributes are explained 
+    in documentation of the `TiledMap.render()` method. Recommended usage is as 
+    follows.
+    
+    First, make a TiledMap from a Tiling object.
+    
+        tm = tiling.get_tiled_map(...)
+        
+    Some options in this method call affect the map appearance. See 
+    `Tiling.get_tiled_map()` for details.
+    
+    Once a `TiledMap` object exists, set options on it, either when calling 
+    `TiledMap.render()` or explicitly, i.e.
+    
+        tm.render(opt1 = val1, opt2 = val2, ...)
+        
+    or
+    
+        tm.opt1 = val1
+        tm.opt2 = val2
+        tm.render()
+    
+    Option settings are persistent, i.e. unless a new `TiledMap` object is 
+    created the option settings have to be explicitly reset to default values 
+    on subsequent calls to `TiledMap.render()`.
+    
+    The most important options are the `variables` and `colourmaps` settings.
+    
+    `variables` is a dictionary mapping `TileUnit` element_ids (usually &#34;a&#34;, 
+    &#34;b&#34;, etc.) to variable names in the data. For example, 
+    
+        tm.variables = dict(zip([&#34;a&#34;, &#34;b&#34;], [&#34;population&#34;, &#34;income&#34;]))
+        
+    `colourmaps` is a dictionary mapping dataset variable names to the 
+    matplotlib colourmap to be used for each. See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. This TODO: more complicated example shows how 
+    categorical maps can be created.
+     &#34;&#34;&#34;
     # these will be set at instantion by Tiling.get_tiled_map()
     tiling:Tiling = None
     map:gpd.GeoDataFrame = None
+    
     # variables and colourmaps should be set before calling self.render()
-    variables:dict[str] = None
-    colourmaps:dict[str:Union[str,dict]] = None
+    variables:dict[str,str] = None 
+    colourmaps:dict[str,Union[str,dict]] = None
+    
     # the below parameters can be set either before calling self.render() 
     # or passed in as parameters to self.render()
     # these are solely TiledMap.render() options
     legend:bool = True
     legend_zoom:float = 1.0
     legend_dx:float = 0.
-    legend_dy:float = 0.
+    legend_dy:float = 0.  
     use_ellipse:bool = False
     ellipse_magnification:float = 1.0
     radial_key:bool = False
     draft_mode:bool = False
+    
     # the parameters below are geopandas.plot options which we intercept to
     # ensure they are applied appropriately when we plot a GDF
     scheme:str = &#34;equalinterval&#34;
@@ -456,32 +492,41 @@ class TiledMap:
         &#34;&#34;&#34;Renders the current state to a map.
         
         Note that TiledMap objects will usually be created by calling 
-        Tiling.get_tiled_map()
+        `Tiling.get_tiled_map()`.
         
         Args:
-            variables (dict[str:str]). Mapping from element_id values to
+            variables (dict[str,str]): Mapping from element_id values to
                 variable names. Defaults to None.
-            colourmaps (dict[str:Union(str,dict)]). Mapping from variable
+            colourmaps (dict[str,Union[str,dict]]): Mapping from variable
                 names to colour map, either a colour palette as used by
                 geopandas/matplotlib, a fixed colour, or a dictionary mapping
                 categorical data values to colours. Defaults to None.
-            legend (bool). If True a legend will be drawn. Defaults to True.
-            legend_zoom (float). Zoom factor to apply to the legend. Values &lt;1 
+            legend (bool): If True a legend will be drawn. Defaults to True.
+            legend_zoom (float): Zoom factor to apply to the legend. Values &lt;1 
                 will show more of the tile context. Defaults to 1.0.
-            legend_dx and legend_dy (float). x and y shift to apply to the 
-                legend position. Defaults to 0.0.
-            use_ellipse (bool). If True applies an elliptical clip to the   
+            legend_dx (float): x shift to apply to the legend position.
+                Defaults to 0.0.
+            legend_dy (float): x and y shift to apply to the legend position. 
+                Defaults to 0.0.
+            use_ellipse (bool): If True applies an elliptical clip to the   
                 legend. Defaults to False.
-            ellipse_magnification (float). Magnification to apply to ellipse
+            ellipse_magnification (float): Magnification to apply to ellipse
                 clipped legend. Defaults to 1.0.
             radial_key (bool): If True legend key for TileUnit maps will be
                 based on radially dissecting the tiles. Defaults to False.
             draft_mode (bool): If True a map of the tiled map coloured by
                 tile element_ids (and with no legend) is returned. Defaults
                 to False.
-            scheme, k, figsize, dpi: these pyplot/geopandas.plot parameters
-                are intercepted to ensure they are applied correctly.
+            scheme (str): passed to geopandas.plot for numeric data. Defaults to
+                &#34;equalinterval&#34;.
+            k (int): passed to geopandas.plot for numeric data. Defaults to 100.
+            figsize (tuple[float,floar]): plot dimensions passed to geopandas.
+                plot. Defaults to (20,15).
+            dpi (float): passed to pyplot.plot. Defaults to 72.
             **kwargs: other settings to pass to pyplot/geopandas.plot. 
+            
+        Returns:
+            matplotlib.figure.Figure: figure on which map is plotted.
         &#34;&#34;&#34;
         pyplot.rcParams[&#39;pdf.fonttype&#39;] = 42
         pyplot.rcParams[&#39;pdf.use14corefonts&#39;] = True
@@ -839,7 +884,8 @@ translation vectors of the grid.</dd>
 <dd>geometry of the region to be tiled.</dd>
 <dt><strong><code>grid_type</code></strong> :&ensp;<code>TileShape</code>, optional</dt>
 <dd>the type of the tiling in terms of
-the TileShape of the base tile. Defaults to TileShape.RECTANGLE.</dd>
+the TileShape of the base tile. Defaults to
+<code>TileShape.RECTANGLE</code>.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -877,7 +923,8 @@ class TileGrid:
             tile (gpd.GeoSeries): geometry of the tiling base tile.
             to_tile (gpd.GeoSeries): geometry of the region to be tiled.
             grid_type (TileShape, optional): the type of the tiling in terms of
-                the TileShape of the base tile. Defaults to TileShape.RECTANGLE.
+                the TileShape of the base tile. Defaults to 
+                `TileShape.RECTANGLE`.
         &#34;&#34;&#34;
         self.grid_type = grid_type
         self.tile = tile
@@ -917,17 +964,10 @@ class TileGrid:
             pts = self._get_diamond_centres()
         pts = [geom.Point(p[0], p[1]) for p in pts]
         return gpd.GeoSeries([p for p in pts if p.within(self.extent[0])])
-        # for efficiency get direct reference to the translate function so
-        # we aren&#39;t retrieving it from the affine module in the comprehension
-        # tr = affine.translate
-        # tiles = [tr(self.tile.geometry[0], p[0], p[1]) 
-        #          for p in list(pts)]
-        # tiles = [t for t in tiles if self.extent[0].intersects(t)]
-        # return gpd.GeoSeries([t.centroid for t in tiles])
     
         
     def _get_grid(self, ll: tuple[float], nums: tuple[int], 
-                  tdim: tuple[float]) -&gt; np.ndarray:
+                  dim: tuple[float]) -&gt; np.ndarray:
         &#34;&#34;&#34;Returns rectilinear grid of x,y coordinate pairs.
 
         Args:
@@ -943,8 +983,8 @@ class TileGrid:
                 each row
             containing an x, y coordinate pair.
         &#34;&#34;&#34;    
-        return np.array(np.meshgrid(np.arange(nums[0]) * tdim[0] + ll[0],
-                                    np.arange(nums[1]) * tdim[1] + ll[1])
+        return np.array(np.meshgrid(np.arange(nums[0]) * dim[0] + ll[0],
+                                    np.arange(nums[1]) * dim[1] + ll[1])
                         ).reshape(2, nums[0] * nums[1]).transpose()
         
 
@@ -1058,33 +1098,106 @@ class TileGrid:
 </dd>
 <dt id="weavingspace.tile_map.TiledMap"><code class="flex name class">
 <span>class <span class="ident">TiledMap</span></span>
-<span>(</span><span>tiling: <a title="weavingspace.tile_map.Tiling" href="#weavingspace.tile_map.Tiling">Tiling</a> = None, map: geopandas.geodataframe.GeoDataFrame = None, variables: dict[str] = None, colourmaps: dict[slice(<class 'str'>, typing.Union[str, dict], None)] = None, legend: bool = True, legend_zoom: float = 1.0, legend_dx: float = 0.0, legend_dy: float = 0.0, use_ellipse: bool = False, ellipse_magnification: float = 1.0, radial_key: bool = False, draft_mode: bool = False, scheme: str = 'equalinterval', k: int = 100, figsize: tuple[float] = (20, 15), dpi: float = 72)</span>
+<span>(</span><span>tiling: <a title="weavingspace.tile_map.Tiling" href="#weavingspace.tile_map.Tiling">Tiling</a> = None, map: geopandas.geodataframe.GeoDataFrame = None, variables: dict[str, str] = None, colourmaps: dict[str, typing.Union[str, dict]] = None, legend: bool = True, legend_zoom: float = 1.0, legend_dx: float = 0.0, legend_dy: float = 0.0, use_ellipse: bool = False, ellipse_magnification: float = 1.0, radial_key: bool = False, draft_mode: bool = False, scheme: str = 'equalinterval', k: int = 100, figsize: tuple[float] = (20, 15), dpi: float = 72)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>TiledMap(tiling: weavingspace.tile_map.Tiling = None, map: geopandas.geodataframe.GeoDataFrame = None, variables: dict[str] = None, colourmaps: dict[slice(<class 'str'>, typing.Union[str, dict], None)] = None, legend: bool = True, legend_zoom: float = 1.0, legend_dx: float = 0.0, legend_dy: float = 0.0, use_ellipse: bool = False, ellipse_magnification: float = 1.0, radial_key: bool = False, draft_mode: bool = False, scheme: str = 'equalinterval', k: int = 100, figsize: tuple[float] = (20, 15), dpi: float = 72)</p></div>
+<div class="desc"><p>Class representing a tiled map. Should not be accessed directly, but
+will be created by calling <code><a title="weavingspace.tile_map.Tiling.get_tiled_map" href="#weavingspace.tile_map.Tiling.get_tiled_map">Tiling.get_tiled_map()</a></code>. After creation the
+variables and colourmaps attributes can be set, and then
+<code><a title="weavingspace.tile_map.TiledMap.render" href="#weavingspace.tile_map.TiledMap.render">TiledMap.render()</a></code> called to make a map. Settable attributes are explained
+in documentation of the <code><a title="weavingspace.tile_map.TiledMap.render" href="#weavingspace.tile_map.TiledMap.render">TiledMap.render()</a></code> method. Recommended usage is as
+follows.</p>
+<p>First, make a TiledMap from a Tiling object.</p>
+<pre><code>tm = tiling.get_tiled_map(...)
+</code></pre>
+<p>Some options in this method call affect the map appearance. See
+<code><a title="weavingspace.tile_map.Tiling.get_tiled_map" href="#weavingspace.tile_map.Tiling.get_tiled_map">Tiling.get_tiled_map()</a></code> for details.</p>
+<p>Once a <code><a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></code> object exists, set options on it, either when calling
+<code><a title="weavingspace.tile_map.TiledMap.render" href="#weavingspace.tile_map.TiledMap.render">TiledMap.render()</a></code> or explicitly, i.e.</p>
+<pre><code>tm.render(opt1 = val1, opt2 = val2, ...)
+</code></pre>
+<p>or</p>
+<pre><code>tm.opt1 = val1
+tm.opt2 = val2
+tm.render()
+</code></pre>
+<p>Option settings are persistent, i.e. unless a new <code><a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></code> object is
+created the option settings have to be explicitly reset to default values
+on subsequent calls to <code><a title="weavingspace.tile_map.TiledMap.render" href="#weavingspace.tile_map.TiledMap.render">TiledMap.render()</a></code>.</p>
+<p>The most important options are the <code>variables</code> and <code>colourmaps</code> settings.</p>
+<p><code>variables</code> is a dictionary mapping <code>TileUnit</code> element_ids (usually "a",
+"b", etc.) to variable names in the data. For example, </p>
+<pre><code>tm.variables = dict(zip(["a", "b"], ["population", "income"]))
+</code></pre>
+<p><code>colourmaps</code> is a dictionary mapping dataset variable names to the
+matplotlib colourmap to be used for each. See <a href="https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb">this notebook</a> for simple usage. This TODO: more complicated example shows how
+categorical maps can be created.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@dataclass
 class TiledMap:
+    &#34;&#34;&#34;Class representing a tiled map. Should not be accessed directly, but 
+    will be created by calling `Tiling.get_tiled_map()`. After creation the 
+    variables and colourmaps attributes can be set, and then 
+    `TiledMap.render()` called to make a map. Settable attributes are explained 
+    in documentation of the `TiledMap.render()` method. Recommended usage is as 
+    follows.
+    
+    First, make a TiledMap from a Tiling object.
+    
+        tm = tiling.get_tiled_map(...)
+        
+    Some options in this method call affect the map appearance. See 
+    `Tiling.get_tiled_map()` for details.
+    
+    Once a `TiledMap` object exists, set options on it, either when calling 
+    `TiledMap.render()` or explicitly, i.e.
+    
+        tm.render(opt1 = val1, opt2 = val2, ...)
+        
+    or
+    
+        tm.opt1 = val1
+        tm.opt2 = val2
+        tm.render()
+    
+    Option settings are persistent, i.e. unless a new `TiledMap` object is 
+    created the option settings have to be explicitly reset to default values 
+    on subsequent calls to `TiledMap.render()`.
+    
+    The most important options are the `variables` and `colourmaps` settings.
+    
+    `variables` is a dictionary mapping `TileUnit` element_ids (usually &#34;a&#34;, 
+    &#34;b&#34;, etc.) to variable names in the data. For example, 
+    
+        tm.variables = dict(zip([&#34;a&#34;, &#34;b&#34;], [&#34;population&#34;, &#34;income&#34;]))
+        
+    `colourmaps` is a dictionary mapping dataset variable names to the 
+    matplotlib colourmap to be used for each. See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. This TODO: more complicated example shows how 
+    categorical maps can be created.
+     &#34;&#34;&#34;
     # these will be set at instantion by Tiling.get_tiled_map()
     tiling:Tiling = None
     map:gpd.GeoDataFrame = None
+    
     # variables and colourmaps should be set before calling self.render()
-    variables:dict[str] = None
-    colourmaps:dict[str:Union[str,dict]] = None
+    variables:dict[str,str] = None 
+    colourmaps:dict[str,Union[str,dict]] = None
+    
     # the below parameters can be set either before calling self.render() 
     # or passed in as parameters to self.render()
     # these are solely TiledMap.render() options
     legend:bool = True
     legend_zoom:float = 1.0
     legend_dx:float = 0.
-    legend_dy:float = 0.
+    legend_dy:float = 0.  
     use_ellipse:bool = False
     ellipse_magnification:float = 1.0
     radial_key:bool = False
     draft_mode:bool = False
+    
     # the parameters below are geopandas.plot options which we intercept to
     # ensure they are applied appropriately when we plot a GDF
     scheme:str = &#34;equalinterval&#34;
@@ -1097,32 +1210,41 @@ class TiledMap:
         &#34;&#34;&#34;Renders the current state to a map.
         
         Note that TiledMap objects will usually be created by calling 
-        Tiling.get_tiled_map()
+        `Tiling.get_tiled_map()`.
         
         Args:
-            variables (dict[str:str]). Mapping from element_id values to
+            variables (dict[str,str]): Mapping from element_id values to
                 variable names. Defaults to None.
-            colourmaps (dict[str:Union(str,dict)]). Mapping from variable
+            colourmaps (dict[str,Union[str,dict]]): Mapping from variable
                 names to colour map, either a colour palette as used by
                 geopandas/matplotlib, a fixed colour, or a dictionary mapping
                 categorical data values to colours. Defaults to None.
-            legend (bool). If True a legend will be drawn. Defaults to True.
-            legend_zoom (float). Zoom factor to apply to the legend. Values &lt;1 
+            legend (bool): If True a legend will be drawn. Defaults to True.
+            legend_zoom (float): Zoom factor to apply to the legend. Values &lt;1 
                 will show more of the tile context. Defaults to 1.0.
-            legend_dx and legend_dy (float). x and y shift to apply to the 
-                legend position. Defaults to 0.0.
-            use_ellipse (bool). If True applies an elliptical clip to the   
+            legend_dx (float): x shift to apply to the legend position.
+                Defaults to 0.0.
+            legend_dy (float): x and y shift to apply to the legend position. 
+                Defaults to 0.0.
+            use_ellipse (bool): If True applies an elliptical clip to the   
                 legend. Defaults to False.
-            ellipse_magnification (float). Magnification to apply to ellipse
+            ellipse_magnification (float): Magnification to apply to ellipse
                 clipped legend. Defaults to 1.0.
             radial_key (bool): If True legend key for TileUnit maps will be
                 based on radially dissecting the tiles. Defaults to False.
             draft_mode (bool): If True a map of the tiled map coloured by
                 tile element_ids (and with no legend) is returned. Defaults
                 to False.
-            scheme, k, figsize, dpi: these pyplot/geopandas.plot parameters
-                are intercepted to ensure they are applied correctly.
+            scheme (str): passed to geopandas.plot for numeric data. Defaults to
+                &#34;equalinterval&#34;.
+            k (int): passed to geopandas.plot for numeric data. Defaults to 100.
+            figsize (tuple[float,floar]): plot dimensions passed to geopandas.
+                plot. Defaults to (20,15).
+            dpi (float): passed to pyplot.plot. Defaults to 72.
             **kwargs: other settings to pass to pyplot/geopandas.plot. 
+            
+        Returns:
+            matplotlib.figure.Figure: figure on which map is plotted.
         &#34;&#34;&#34;
         pyplot.rcParams[&#39;pdf.fonttype&#39;] = 42
         pyplot.rcParams[&#39;pdf.use14corefonts&#39;] = True
@@ -1438,7 +1560,7 @@ class TiledMap:
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="weavingspace.tile_map.TiledMap.colourmaps"><code class="name">var <span class="ident">colourmaps</span> : dict[slice(<class 'str'>, typing.Union[str, dict], None)]</code></dt>
+<dt id="weavingspace.tile_map.TiledMap.colourmaps"><code class="name">var <span class="ident">colourmaps</span> : dict[str, typing.Union[str, dict]]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1498,7 +1620,7 @@ class TiledMap:
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="weavingspace.tile_map.TiledMap.variables"><code class="name">var <span class="ident">variables</span> : dict[str]</code></dt>
+<dt id="weavingspace.tile_map.TiledMap.variables"><code class="name">var <span class="ident">variables</span> : dict[str, str]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1823,24 +1945,34 @@ attribute (assumed to be "element_id").</p>
 <dd>
 <div class="desc"><p>Renders the current state to a map.</p>
 <p>Note that TiledMap objects will usually be created by calling
-Tiling.get_tiled_map()</p>
+<code><a title="weavingspace.tile_map.Tiling.get_tiled_map" href="#weavingspace.tile_map.Tiling.get_tiled_map">Tiling.get_tiled_map()</a></code>.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt>variables (dict[str:str]). Mapping from element_id values to</dt>
-<dt>variable names. Defaults to None.</dt>
-<dt>colourmaps (dict[str:Union(str,dict)]). Mapping from variable</dt>
-<dt>names to colour map, either a colour palette as used by</dt>
-<dt>geopandas/matplotlib, a fixed colour, or a dictionary mapping</dt>
-<dt>categorical data values to colours. Defaults to None.</dt>
-<dt>legend (bool). If True a legend will be drawn. Defaults to True.</dt>
-<dt>legend_zoom (float). Zoom factor to apply to the legend. Values &lt;1</dt>
-<dt>will show more of the tile context. Defaults to 1.0.</dt>
-<dt>legend_dx and legend_dy (float). x and y shift to apply to the</dt>
-<dt>legend position. Defaults to 0.0.</dt>
-<dt>use_ellipse (bool). If True applies an elliptical clip to the</dt>
-<dt>legend. Defaults to False.</dt>
-<dt>ellipse_magnification (float). Magnification to apply to ellipse</dt>
-<dt>clipped legend. Defaults to 1.0.</dt>
+<dt><strong><code>variables</code></strong> :&ensp;<code>dict[str,str]</code></dt>
+<dd>Mapping from element_id values to
+variable names. Defaults to None.</dd>
+<dt><strong><code>colourmaps</code></strong> :&ensp;<code>dict[str,Union[str,dict]]</code></dt>
+<dd>Mapping from variable
+names to colour map, either a colour palette as used by
+geopandas/matplotlib, a fixed colour, or a dictionary mapping
+categorical data values to colours. Defaults to None.</dd>
+<dt><strong><code>legend</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If True a legend will be drawn. Defaults to True.</dd>
+<dt><strong><code>legend_zoom</code></strong> :&ensp;<code>float</code></dt>
+<dd>Zoom factor to apply to the legend. Values &lt;1
+will show more of the tile context. Defaults to 1.0.</dd>
+<dt><strong><code>legend_dx</code></strong> :&ensp;<code>float</code></dt>
+<dd>x shift to apply to the legend position.
+Defaults to 0.0.</dd>
+<dt><strong><code>legend_dy</code></strong> :&ensp;<code>float</code></dt>
+<dd>x and y shift to apply to the legend position.
+Defaults to 0.0.</dd>
+<dt><strong><code>use_ellipse</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If True applies an elliptical clip to the <br>
+legend. Defaults to False.</dd>
+<dt><strong><code>ellipse_magnification</code></strong> :&ensp;<code>float</code></dt>
+<dd>Magnification to apply to ellipse
+clipped legend. Defaults to 1.0.</dd>
 <dt><strong><code>radial_key</code></strong> :&ensp;<code>bool</code></dt>
 <dd>If True legend key for TileUnit maps will be
 based on radially dissecting the tiles. Defaults to False.</dd>
@@ -1848,10 +1980,23 @@ based on radially dissecting the tiles. Defaults to False.</dd>
 <dd>If True a map of the tiled map coloured by
 tile element_ids (and with no legend) is returned. Defaults
 to False.</dd>
-<dt>scheme, k, figsize, dpi: these pyplot/geopandas.plot parameters</dt>
-<dt>are intercepted to ensure they are applied correctly.</dt>
+<dt><strong><code>scheme</code></strong> :&ensp;<code>str</code></dt>
+<dd>passed to geopandas.plot for numeric data. Defaults to
+"equalinterval".</dd>
+<dt><strong><code>k</code></strong> :&ensp;<code>int</code></dt>
+<dd>passed to geopandas.plot for numeric data. Defaults to 100.</dd>
+<dt><strong><code>figsize</code></strong> :&ensp;<code>tuple[float,floar]</code></dt>
+<dd>plot dimensions passed to geopandas.
+plot. Defaults to (20,15).</dd>
+<dt><strong><code>dpi</code></strong> :&ensp;<code>float</code></dt>
+<dd>passed to pyplot.plot. Defaults to 72.</dd>
 <dt><strong><code>**kwargs</code></strong></dt>
-<dd>other settings to pass to pyplot/geopandas.plot.</dd>
+<dd>other settings to pass to pyplot/geopandas.plot. </dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>matplotlib.figure.Figure</code></dt>
+<dd>figure on which map is plotted.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1861,32 +2006,41 @@ to False.</dd>
     &#34;&#34;&#34;Renders the current state to a map.
     
     Note that TiledMap objects will usually be created by calling 
-    Tiling.get_tiled_map()
+    `Tiling.get_tiled_map()`.
     
     Args:
-        variables (dict[str:str]). Mapping from element_id values to
+        variables (dict[str,str]): Mapping from element_id values to
             variable names. Defaults to None.
-        colourmaps (dict[str:Union(str,dict)]). Mapping from variable
+        colourmaps (dict[str,Union[str,dict]]): Mapping from variable
             names to colour map, either a colour palette as used by
             geopandas/matplotlib, a fixed colour, or a dictionary mapping
             categorical data values to colours. Defaults to None.
-        legend (bool). If True a legend will be drawn. Defaults to True.
-        legend_zoom (float). Zoom factor to apply to the legend. Values &lt;1 
+        legend (bool): If True a legend will be drawn. Defaults to True.
+        legend_zoom (float): Zoom factor to apply to the legend. Values &lt;1 
             will show more of the tile context. Defaults to 1.0.
-        legend_dx and legend_dy (float). x and y shift to apply to the 
-            legend position. Defaults to 0.0.
-        use_ellipse (bool). If True applies an elliptical clip to the   
+        legend_dx (float): x shift to apply to the legend position.
+            Defaults to 0.0.
+        legend_dy (float): x and y shift to apply to the legend position. 
+            Defaults to 0.0.
+        use_ellipse (bool): If True applies an elliptical clip to the   
             legend. Defaults to False.
-        ellipse_magnification (float). Magnification to apply to ellipse
+        ellipse_magnification (float): Magnification to apply to ellipse
             clipped legend. Defaults to 1.0.
         radial_key (bool): If True legend key for TileUnit maps will be
             based on radially dissecting the tiles. Defaults to False.
         draft_mode (bool): If True a map of the tiled map coloured by
             tile element_ids (and with no legend) is returned. Defaults
             to False.
-        scheme, k, figsize, dpi: these pyplot/geopandas.plot parameters
-            are intercepted to ensure they are applied correctly.
+        scheme (str): passed to geopandas.plot for numeric data. Defaults to
+            &#34;equalinterval&#34;.
+        k (int): passed to geopandas.plot for numeric data. Defaults to 100.
+        figsize (tuple[float,floar]): plot dimensions passed to geopandas.
+            plot. Defaults to (20,15).
+        dpi (float): passed to pyplot.plot. Defaults to 72.
         **kwargs: other settings to pass to pyplot/geopandas.plot. 
+        
+    Returns:
+        matplotlib.figure.Figure: figure on which map is plotted.
     &#34;&#34;&#34;
     pyplot.rcParams[&#39;pdf.fonttype&#39;] = 42
     pyplot.rcParams[&#39;pdf.use14corefonts&#39;] = True
@@ -2066,8 +2220,8 @@ class Tiling:
 
 
     def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                      prioritise_tiles:bool = False) -&gt; gpd.GeoDataFrame:
-        &#34;&#34;&#34;Returns a geodataframe filling a region at the requested rotation.
+                      prioritise_tiles:bool = False) -&gt; &#34;TiledMap&#34;:
+        &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
         
         HERE BE DRAGONS! This function took a long time and a lot of trial and 
         error to get right, so modify with EXTREME CAUTION. As should be 
@@ -2084,8 +2238,7 @@ class Tiling:
                 broken at boundaries in the region dataset. Defaults to False.
 
         Returns:
-            gpd.GeoDataFrame: a GeoDataFrame that contains the source region
-                data along with the tile unit element_id variable.
+            TiledMap: a TiledMap of the source region.
         &#34;&#34;&#34;
         # if no id_var is supplied overwrite it with the class id_var
         id_var = (self.region_id_var if id_var is None else id_var)
@@ -2238,10 +2391,10 @@ class Tiling:
 <h3>Methods</h3>
 <dl>
 <dt id="weavingspace.tile_map.Tiling.get_tiled_map"><code class="name flex">
-<span>def <span class="ident">get_tiled_map</span></span>(<span>self, id_var: str = None, rotation: float = 0.0, prioritise_tiles: bool = False) ‑> geopandas.geodataframe.GeoDataFrame</span>
+<span>def <span class="ident">get_tiled_map</span></span>(<span>self, id_var: str = None, rotation: float = 0.0, prioritise_tiles: bool = False) ‑> <a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Returns a geodataframe filling a region at the requested rotation.</p>
+<div class="desc"><p>Returns a <code><a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></code> filling a region at the requested rotation.</p>
 <p>HERE BE DRAGONS! This function took a long time and a lot of trial and
 error to get right, so modify with EXTREME CAUTION. As should be
 apparent from the volume of code, the prioritise_tiles = True option is
@@ -2262,17 +2415,16 @@ broken at boundaries in the region dataset. Defaults to False.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>gpd.GeoDataFrame</code></dt>
-<dd>a GeoDataFrame that contains the source region
-data along with the tile unit element_id variable.</dd>
+<dt><code><a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></code></dt>
+<dd>a TiledMap of the source region.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                  prioritise_tiles:bool = False) -&gt; gpd.GeoDataFrame:
-    &#34;&#34;&#34;Returns a geodataframe filling a region at the requested rotation.
+                  prioritise_tiles:bool = False) -&gt; &#34;TiledMap&#34;:
+    &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
     
     HERE BE DRAGONS! This function took a long time and a lot of trial and 
     error to get right, so modify with EXTREME CAUTION. As should be 
@@ -2289,8 +2441,7 @@ data along with the tile unit element_id variable.</dd>
             broken at boundaries in the region dataset. Defaults to False.
 
     Returns:
-        gpd.GeoDataFrame: a GeoDataFrame that contains the source region
-            data along with the tile unit element_id variable.
+        TiledMap: a TiledMap of the source region.
     &#34;&#34;&#34;
     # if no id_var is supplied overwrite it with the class id_var
     id_var = (self.region_id_var if id_var is None else id_var)

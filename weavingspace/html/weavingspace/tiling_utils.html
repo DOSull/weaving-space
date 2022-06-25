@@ -79,11 +79,13 @@ def get_strand_ids(strands_spec: str) -&gt; tuple[list[str]]:
     &#34;&#34;&#34;Strands label string to split into strand labels.
 
     Args:
+
         strands_spec (str): string format &#34;a|bc|(de)f&#34; | separates strands in
-            each direction and () designates combining labels into a single strand that will be sliced lengthwise. Example output:
+            each direction and () designates combining labels into a single 
+            strand that will be sliced lengthwise. Example output:
 
                 &#34;a|bc|(de)f&#34; -&gt; ([&#34;a&#34;], [&#34;b&#34;, &#34;c&#34;], [&#34;de&#34;, &#34;f&#34;])
-            
+
             Superflous parentheses are removed, but no other error-checks are
             applied.
 
@@ -1094,7 +1096,8 @@ Should (probably) only be applied to convex polygons.</p>
 <dt><strong><code>strands_spec</code></strong> :&ensp;<code>str</code></dt>
 <dd>
 <p>string format "a|bc|(de)f" | separates strands in
-each direction and () designates combining labels into a single strand that will be sliced lengthwise. Example output:</p>
+each direction and () designates combining labels into a single
+strand that will be sliced lengthwise. Example output:</p>
 <pre><code>"a|bc|(de)f" -&gt; (["a"], ["b", "c"], ["de", "f"])
 </code></pre>
 <p>Superflous parentheses are removed, but no other error-checks are
@@ -1114,11 +1117,13 @@ applied.</p>
     &#34;&#34;&#34;Strands label string to split into strand labels.
 
     Args:
+
         strands_spec (str): string format &#34;a|bc|(de)f&#34; | separates strands in
-            each direction and () designates combining labels into a single strand that will be sliced lengthwise. Example output:
+            each direction and () designates combining labels into a single 
+            strand that will be sliced lengthwise. Example output:
 
                 &#34;a|bc|(de)f&#34; -&gt; ([&#34;a&#34;], [&#34;b&#34;, &#34;c&#34;], [&#34;de&#34;, &#34;f&#34;])
-            
+
             Superflous parentheses are removed, but no other error-checks are
             applied.
 

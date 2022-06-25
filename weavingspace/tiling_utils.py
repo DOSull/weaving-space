@@ -51,11 +51,13 @@ def get_strand_ids(strands_spec: str) -> tuple[list[str]]:
     """Strands label string to split into strand labels.
 
     Args:
+
         strands_spec (str): string format "a|bc|(de)f" | separates strands in
-            each direction and () designates combining labels into a single strand that will be sliced lengthwise. Example output:
+            each direction and () designates combining labels into a single 
+            strand that will be sliced lengthwise. Example output:
 
                 "a|bc|(de)f" -> (["a"], ["b", "c"], ["de", "f"])
-            
+
             Superflous parentheses are removed, but no other error-checks are
             applied.
 

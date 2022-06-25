@@ -6,29 +6,26 @@ from dataclasses import dataclass
 import numpy as np
 
 
-# initially in a biaxial weave intersection sites are encoded numerically: 
-# 1 = warp is absent
-# 2 = weft is absent
-# 3 = both threads are absent
-# 4 = weft is on top
-# 5 = warp is on top 
-# this dictionary translates these to tuples listing the 'layer' order
-# depending on the input axis, where 0 is the biaxial case with layers 0 and 1
-# only, and 1 is layers 0 and 1, 2 is layers 1 and 2, and 3 is layers 2 and 0.
-decode_orders = (
+_decode_orders = (
     {1: (0,  ), 2: (1,  ), 3: (   ), 4: (0, 1), 5: (1, 0)},
     {1: (1,  ), 2: (0,  ), 3: (   ), 4: (1, 0), 5: (0, 1)},
     {1: (2,  ), 2: (1,  ), 3: (   ), 4: (2, 1), 5: (1, 2)},
     {1: (0,  ), 2: (2,  ), 3: (   ), 4: (0, 2), 5: (2, 0)}
 )
+"""Initially in a biaxial weave intersection sites are encoded numerically: 
 
+    1 = warp is absent
+    2 = weft is absent
+    3 = both threads are absent
+    4 = weft is on top
+    5 = warp is on top 
 
-# Nested dictionary to combine layer orders from 3 biaxial weaves
-# into a single consistent order of layers. Inconsistent combinations
-# will not return a value. 
-# Various other if-elif-else types of approach were tried here, but
-# overall, I think this is the cleanest option. 
-combined_orderings = {
+this dictionary translates these to tuples listing the 'layer' order
+depending on the input axis, where 0 is the biaxial case with layers 0 and 1
+only, and 1 is layers 0 and 1, 2 is layers 1 and 2, and 3 is layers 2 and 0.
+"""
+
+_combined_orderings = {
   (    ): {(    ): {(    ): None,          # All absent
                     (2,  ): (2,  )},       # Only 2 present
            (1,  ): {(    ): (1,  )},       # Only 1 present
@@ -49,6 +46,10 @@ combined_orderings = {
                     (0, 2): (1, 0, 2)},    # 10 12 02 --> 1 > 0 > 2
            (2, 1): {(2, 0): (2, 1, 0)}}    # 10 21 20 --> 2 > 1 > 0
 }
+"""Nested dictionary to combine layer orders from 3 biaxial weaves
+into a single consistent order of layers. Inconsistent combinations
+will not return a value. 
+"""
 
 
 @dataclass
@@ -90,7 +91,7 @@ class Loom:
             self.orientations = (0, -90)
             self.indices = [(i, j) for i in range(m.shape[0])
                                    for j in range(m.shape[1])]
-            self.orderings = [decode_orders[0][m[ij]] for ij in self.indices]
+            self.orderings = [_decode_orders[0][m[ij]] for ij in self.indices]
         else:
             nA, nB, nC = [max(m.shape) for m in matrices]
             self.dimensions = (nA, nB, nC)
@@ -115,11 +116,11 @@ class Loom:
             mCA = np.tile(m3, (np.lcm(nC, m3.shape[0]) // m3.shape[0],
                                np.lcm(nC, m3.shape[1]) // m3.shape[1]))
             # get the layer orders in each using 2 of the 3 coordinates
-            ordAB = [decode_orders[1][mAB[ij]] 
+            ordAB = [_decode_orders[1][mAB[ij]] 
                      for ij in [(x[1], x[0]) for x in self.indices]]
-            ordBC = [decode_orders[2][mBC[ij]] 
+            ordBC = [_decode_orders[2][mBC[ij]] 
                      for ij in [(x[2], x[1]) for x in self.indices]]
-            ordCA = [decode_orders[3][mCA[ij]] 
+            ordCA = [_decode_orders[3][mCA[ij]] 
                      for ij in [(x[0], x[2]) for x in self.indices]]
             # # combine orders from the three matrices stacked 
             self.orderings = [self._combine_orders(abc) 
@@ -131,7 +132,7 @@ class Loom:
     def _combine_orders(self, orders):
         # print(f"orders: {orders}")
         try:
-            result = combined_orderings[orders[0]][orders[1]][orders[2]]
+            result = _combined_orderings[orders[0]][orders[1]][orders[2]]
         except:
             print(f"Unable to determine unique ordering on {orders}")
             return "NA"
