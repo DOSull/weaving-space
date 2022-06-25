@@ -6,8 +6,6 @@ import itertools
 from dataclasses import dataclass
 from typing import Iterable, Union
 
-from math import fsum
-
 import pandas as pd
 import geopandas as gpd
 import numpy as np

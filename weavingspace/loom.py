@@ -64,12 +64,12 @@ class Loom:
     
     Attributes:
         indices (list[tuple]): grid coordinate pairs.
-        orderings (list[tuple[int] | None]): list of the layer orders at site
-            locations indexed by the corresponding item in indices.
+        orderings (list[Union[tuple[int],None]]): list of the layer orders at 
+            site locations indexed by the corresponding item in indices.
         dimensions (tuple[int]): the maximum coordinate values in each 
             direction.
-        orientations (tuple[float]): the angles which strands on each axis make
-            to the x-axis. (0, -90) for 2 axes, (0, 120, 240) for 2 axes.
+        orientations (tuple[float]): the angles which strands on each axis 
+            make to the x-axis. (0, -90) for 2 axes, (0, 120, 240) for 2 axes.
         n_axes (int): 2 or 3.   
     """    
     indices: list[tuple]

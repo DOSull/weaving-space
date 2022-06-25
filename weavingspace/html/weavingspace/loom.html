@@ -92,12 +92,12 @@ class Loom:
     
     Attributes:
         indices (list[tuple]): grid coordinate pairs.
-        orderings (list[tuple[int] | None]): list of the layer orders at site
-            locations indexed by the corresponding item in indices.
+        orderings (list[Union[tuple[int],None]]): list of the layer orders at 
+            site locations indexed by the corresponding item in indices.
         dimensions (tuple[int]): the maximum coordinate values in each 
             direction.
-        orientations (tuple[float]): the angles which strands on each axis make
-            to the x-axis. (0, -90) for 2 axes, (0, 120, 240) for 2 axes.
+        orientations (tuple[float]): the angles which strands on each axis 
+            make to the x-axis. (0, -90) for 2 axes, (0, 120, 240) for 2 axes.
         n_axes (int): 2 or 3.   
     &#34;&#34;&#34;    
     indices: list[tuple]
@@ -192,14 +192,15 @@ orderings: [(0, 1), (1, 0), (1, 0), (0, 1)]
 <dl>
 <dt><strong><code>indices</code></strong> :&ensp;<code>list[tuple]</code></dt>
 <dd>grid coordinate pairs.</dd>
-<dt>orderings (list[tuple[int] | None]): list of the layer orders at site</dt>
-<dt>locations indexed by the corresponding item in indices.</dt>
+<dt><strong><code>orderings</code></strong> :&ensp;<code>list[Union[tuple[int],None]]</code></dt>
+<dd>list of the layer orders at
+site locations indexed by the corresponding item in indices.</dd>
 <dt><strong><code>dimensions</code></strong> :&ensp;<code>tuple[int]</code></dt>
 <dd>the maximum coordinate values in each
 direction.</dd>
 <dt><strong><code>orientations</code></strong> :&ensp;<code>tuple[float]</code></dt>
-<dd>the angles which strands on each axis make
-to the x-axis. (0, -90) for 2 axes, (0, 120, 240) for 2 axes.</dd>
+<dd>the angles which strands on each axis
+make to the x-axis. (0, -90) for 2 axes, (0, 120, 240) for 2 axes.</dd>
 <dt><strong><code>n_axes</code></strong> :&ensp;<code>int</code></dt>
 <dd>2 or 3.
 </dd>
@@ -223,12 +224,12 @@ class Loom:
     
     Attributes:
         indices (list[tuple]): grid coordinate pairs.
-        orderings (list[tuple[int] | None]): list of the layer orders at site
-            locations indexed by the corresponding item in indices.
+        orderings (list[Union[tuple[int],None]]): list of the layer orders at 
+            site locations indexed by the corresponding item in indices.
         dimensions (tuple[int]): the maximum coordinate values in each 
             direction.
-        orientations (tuple[float]): the angles which strands on each axis make
-            to the x-axis. (0, -90) for 2 axes, (0, 120, 240) for 2 axes.
+        orientations (tuple[float]): the angles which strands on each axis 
+            make to the x-axis. (0, -90) for 2 axes, (0, 120, 240) for 2 axes.
         n_axes (int): 2 or 3.   
     &#34;&#34;&#34;    
     indices: list[tuple]
