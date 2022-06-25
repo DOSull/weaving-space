@@ -26,7 +26,7 @@ import tiling_utils
 
 
 @dataclass
-class TileGrid:
+class _TileGrid:
     """A class to represent the translation centres of a tiling.
     
     Note that we store the grid as a GeoSeries of Point objects to make it
@@ -205,19 +205,38 @@ class TileGrid:
 
 @dataclass
 class Tiling:
+    """Class that applies a `Tileable` object to a region to be mapped.
+    
+    The result of the tiling procedure is stored in the `tiles` variable and
+    covers a region sufficient that the tiling can be rotated to any desired 
+    angle. 
+    """
     tile_unit:Tileable = None
     tile_shape:str = ""
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
-    grid:TileGrid = None
+    grid:_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
     def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
                  id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
                  elements_margin:float = 0) -> None:
-        """A class to persist a tiling by filling an area relative to 
-        a region that is sufficient to apply the tiling at any rotation.
+        """Class to persist a tiling by filling an area relative to 
+        a region sufficient to apply the tiling at any rotation.
+        
+        The Tiling constructor allows a number of adjustments to the supplied
+        `Tileable` object:
+        
+        + `tile_margin` values greater than 0 will introduce spacing of half 
+        the specified distance between elements on the boundary of each tile.
+        Note that this operation does not make sense for `WeaveUnit` objects,
+        and may not preserve the equality of tile element areas.
+        + `elements_sf` values less than one scale down tile elements 
+        accordingly. Does not make sense for `WeaveUnit` objects.
+        + `elements_margin` values greater than one apply a negative buffer of
+        the specified distance to every element in the tile. This option is
+        applicable to both `WeaveUnit` and `TileUnit` objects.
 
         Args:
             unit (Tileable): the tile_unit to use.
@@ -246,7 +265,7 @@ class Tiling:
                 print(f"""Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.""")        
         self.region = region
         self.region_id_var = ("ID" if id_var is None else id_var)
-        self.grid = TileGrid(self.tile_unit.tile.geometry,
+        self.grid = _TileGrid(self.tile_unit.tile.geometry,
                              self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
 
@@ -255,10 +274,17 @@ class Tiling:
                       prioritise_tiles:bool = False) -> "TiledMap":
         """Returns a `TiledMap` filling a region at the requested rotation.
         
-        HERE BE DRAGONS! This function took a long time and a lot of trial and 
-        error to get right, so modify with EXTREME CAUTION. As should be 
-        apparent from the volume of code, the prioritise_tiles = True option is
-        where the tricky bits are mostly found.
+        HERE BE DRAGONS! This function took a lot of trial and error to get 
+        right, so modify with CAUTION!
+        
+        The `proritise_tiles = True` option means that the tiling will not 
+        break up the elements in `TileUnit`s at the boundaries between areas 
+        in the mapped region, but will instead ensure that tile elements remain
+        complete, picking up their data from the region zone which they overlap
+        the most. 
+        
+        As should be apparent from the volume of code, the prioritise_tiles = 
+        True option is where the tricky bits are mostly found.
 
         Args:
             id_var (str, optional): the variable the distinguishes areas in the
@@ -429,7 +455,11 @@ class TiledMap:
         tm.variables = dict(zip(["a", "b"], ["population", "income"]))
         
     `colourmaps` is a dictionary mapping dataset variable names to the 
-    matplotlib colourmap to be used for each. See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. This TODO: more complicated example shows how 
+    matplotlib colourmap to be used for each. For example,
+    
+        tm.colourmaps = dict(zip(tm.variables.values(), ["Reds", "Blues"]))
+    
+    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. This TODO: more complicated example shows how 
     categorical maps can be created.
      """
     # these will be set at instantion by Tiling.get_tiled_map()
