@@ -26,11 +26,6 @@ from tileable import Tileable
 @dataclass
 class WeaveUnit(Tileable):
     """ Extends Tileable to allow for tiles that appear like woven patterns.
-    
-    Attributes:
-        elements: a GeoDataFrame of strand geometries.
-        tile: a GeoDataFrame of the weave_unit tileable polygon (either a
-            rectangle or a hexagon).
     """  
     weave_type:str = "plain"
     aspect:float = 1.

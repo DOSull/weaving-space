@@ -23,6 +23,13 @@ class TileShape(Enum):
 
 @dataclass
 class Tileable:
+    """Class to represent a tileable set of geometries.
+    
+    Attributes:
+        elements: a GeoDataFrame of strand geometries.
+        tile: a GeoDataFrame of the weave_unit tileable polygon (either a
+            rectangle or a hexagon).
+    """
     fudge_factor:float = 1e-3
     spacing:float = 1000.
     crs:int = 3857
