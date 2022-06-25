@@ -1,32 +1,28 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Tileable biaxial weave units
-# Functions that can be used to generate sf data 'weave units' i.e. a tileable 
-# repeating element that when tiled gives the appearance of a  biaxial woven 
-# surface composed of criss-crossing rectangular elements. Implementation is 
-# based on ideas discussed in variously
-# 
-# Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 
-#   22 (6):108–118.
-# ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 
-#   23 (2):80–83.
-# ———. 2003b. Digital weaving. 2. IEEE Computer Graphics and Applications 
-#   23 (1):77–90.
-# 
-# and (unpublished)
-# 
-# Griswold, R. 2006. Mathematical and Computational Topics in Weaving
-# https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf 
-# (accessed 29/10/21).
-# 
-# where weaving is shown to be a matrix multiplication of tie-up, threading and 
-# treadling matrices. An accessible introduction can be found at 
-# https://www.youtube.com/watch?v=oMOSiag3dxg
+"""Functions that can be used to generate sf data 'weave units' i.e. a tileable 
+repeating element that when tiled gives the appearance of a  biaxial woven 
+surface composed of criss-crossing rectangular elements. Implementation is 
+based on ideas discussed in variously
+ 
++ Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 22 (6):108–118.
++ ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 23 (2):80–83.
++ ———. 2003b. Digital weaving. 2. IEEE Computer Graphics and Applications 23 (1):77–90.
+ 
+and (unpublished)
+
++ Griswold, R. 2006. Mathematical and Computational Topics in Weaving
+https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf 
+(accessed 29/10/21).
+ 
+where weaving is shown to be a matrix multiplication of tie-up, threading and 
+treadling matrices. An accessible introduction can be found at 
+https://www.youtube.com/watch?v=oMOSiag3dxg
+"""
 
 from typing import Union
 import numpy as np
-
 
 def reps_needed(x1:int, x2:int) -> tuple[int]:
     """Returns how many repetitions of sequences of length x1 and x2 are 
@@ -83,11 +79,11 @@ def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray,
                          weft:np.ndarray) -> np.ndarray:
     """Encodes a biaxial weave pattern as below.
 
-    1 = warp is absent
-    2 = weft is absent
-    3 = both threads are absent
-    4 = weft is on top
-    5 = warp is on top 
+        1 - warp is absent
+        2 - weft is absent
+        3 - both threads are absent
+        4 - weft is on top
+        5 - warp is on top 
     
     Can't recall why this particular encoding, but don't think it matters...
 
@@ -194,10 +190,10 @@ def make_twill_matrix(over_under:Union[int, tuple[int]]) -> np.ndarray:
 
     Makes a matrix like
     
-      1 1 0 0
-      0 1 1 0
-      0 0 1 1
-      1 0 0 1
+        1 1 0 0
+        0 1 1 0
+        0 0 1 1
+        1 0 0 1
       
     where the repeat runs in each row are lengths returned by
     make_over_under_rown(n)
@@ -241,10 +237,10 @@ def make_basket_matrix(n:int) -> np.ndarray:
 
     Makes a matrix like
     
-      1 1 0 0
-      1 1 0 0
-      0 0 1 1
-      0 0 1 1
+        1 1 0 0
+        1 1 0 0
+        0 0 1 1
+        0 0 1 1
     
     where the repeat runs in each row are length n
 

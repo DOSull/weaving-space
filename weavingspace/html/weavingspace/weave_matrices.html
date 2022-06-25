@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>weavingspace.weave_matrices API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="Functions that can be used to generate sf data &#39;weave units&#39; i.e. a tileable
+repeating element that when tiled gives the appearance of a
+biaxial …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,6 +24,25 @@
 <h1 class="title">Module <code>weavingspace.weave_matrices</code></h1>
 </header>
 <section id="section-intro">
+<p>Functions that can be used to generate sf data 'weave units' i.e. a tileable
+repeating element that when tiled gives the appearance of a
+biaxial woven
+surface composed of criss-crossing rectangular elements. Implementation is
+based on ideas discussed in variously</p>
+<ul>
+<li>Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 22 (6):108–118.</li>
+<li>———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 23 (2):80–83.</li>
+<li>———. 2003b. Digital weaving. 2. IEEE Computer Graphics and Applications 23 (1):77–90.</li>
+</ul>
+<p>and (unpublished)</p>
+<ul>
+<li>Griswold, R. 2006. Mathematical and Computational Topics in Weaving
+<a href="https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf">https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf</a>
+(accessed 29/10/21).</li>
+</ul>
+<p>where weaving is shown to be a matrix multiplication of tie-up, threading and
+treadling matrices. An accessible introduction can be found at
+<a href="https://www.youtube.com/watch?v=oMOSiag3dxg">https://www.youtube.com/watch?v=oMOSiag3dxg</a></p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -29,32 +50,28 @@
 <pre><code class="python">#!/usr/bin/env python
 # coding: utf-8
 
-# # Tileable biaxial weave units
-# Functions that can be used to generate sf data &#39;weave units&#39; i.e. a tileable 
-# repeating element that when tiled gives the appearance of a  biaxial woven 
-# surface composed of criss-crossing rectangular elements. Implementation is 
-# based on ideas discussed in variously
-# 
-# Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 
-#   22 (6):108–118.
-# ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 
-#   23 (2):80–83.
-# ———. 2003b. Digital weaving. 2. IEEE Computer Graphics and Applications 
-#   23 (1):77–90.
-# 
-# and (unpublished)
-# 
-# Griswold, R. 2006. Mathematical and Computational Topics in Weaving
-# https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf 
-# (accessed 29/10/21).
-# 
-# where weaving is shown to be a matrix multiplication of tie-up, threading and 
-# treadling matrices. An accessible introduction can be found at 
-# https://www.youtube.com/watch?v=oMOSiag3dxg
+&#34;&#34;&#34;Functions that can be used to generate sf data &#39;weave units&#39; i.e. a tileable 
+repeating element that when tiled gives the appearance of a  biaxial woven 
+surface composed of criss-crossing rectangular elements. Implementation is 
+based on ideas discussed in variously
+ 
++ Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 22 (6):108–118.
++ ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 23 (2):80–83.
++ ———. 2003b. Digital weaving. 2. IEEE Computer Graphics and Applications 23 (1):77–90.
+ 
+and (unpublished)
+
++ Griswold, R. 2006. Mathematical and Computational Topics in Weaving
+https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf 
+(accessed 29/10/21).
+ 
+where weaving is shown to be a matrix multiplication of tie-up, threading and 
+treadling matrices. An accessible introduction can be found at 
+https://www.youtube.com/watch?v=oMOSiag3dxg
+&#34;&#34;&#34;
 
 from typing import Union
 import numpy as np
-
 
 def reps_needed(x1:int, x2:int) -&gt; tuple[int]:
     &#34;&#34;&#34;Returns how many repetitions of sequences of length x1 and x2 are 
@@ -111,11 +128,11 @@ def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray,
                          weft:np.ndarray) -&gt; np.ndarray:
     &#34;&#34;&#34;Encodes a biaxial weave pattern as below.
 
-    1 = warp is absent
-    2 = weft is absent
-    3 = both threads are absent
-    4 = weft is on top
-    5 = warp is on top 
+        1 - warp is absent
+        2 - weft is absent
+        3 - both threads are absent
+        4 - weft is on top
+        5 - warp is on top 
     
     Can&#39;t recall why this particular encoding, but don&#39;t think it matters...
 
@@ -222,10 +239,10 @@ def make_twill_matrix(over_under:Union[int, tuple[int]]) -&gt; np.ndarray:
 
     Makes a matrix like
     
-      1 1 0 0
-      0 1 1 0
-      0 0 1 1
-      1 0 0 1
+        1 1 0 0
+        0 1 1 0
+        0 0 1 1
+        1 0 0 1
       
     where the repeat runs in each row are lengths returned by
     make_over_under_rown(n)
@@ -269,10 +286,10 @@ def make_basket_matrix(n:int) -&gt; np.ndarray:
 
     Makes a matrix like
     
-      1 1 0 0
-      1 1 0 0
-      0 0 1 1
-      0 0 1 1
+        1 1 0 0
+        1 1 0 0
+        0 0 1 1
+        0 0 1 1
     
     where the repeat runs in each row are length n
 
@@ -387,11 +404,12 @@ def get_weave_pattern_matrix(weave_type:str = &#34;plain&#34;,
 </code></dt>
 <dd>
 <div class="desc"><p>Encodes a biaxial weave pattern as below.</p>
-<p>1 = warp is absent
-2 = weft is absent
-3 = both threads are absent
-4 = weft is on top
-5 = warp is on top </p>
+<pre><code>1 - warp is absent
+2 - weft is absent
+3 - both threads are absent
+4 - weft is on top
+5 - warp is on top
+</code></pre>
 <p>Can't recall why this particular encoding, but don't think it matters&hellip;</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -416,11 +434,11 @@ def get_weave_pattern_matrix(weave_type:str = &#34;plain&#34;,
                          weft:np.ndarray) -&gt; np.ndarray:
     &#34;&#34;&#34;Encodes a biaxial weave pattern as below.
 
-    1 = warp is absent
-    2 = weft is absent
-    3 = both threads are absent
-    4 = weft is on top
-    5 = warp is on top 
+        1 - warp is absent
+        2 - weft is absent
+        3 - both threads are absent
+        4 - weft is on top
+        5 - warp is on top 
     
     Can&#39;t recall why this particular encoding, but don&#39;t think it matters...
 
@@ -621,10 +639,11 @@ Defaults to None.</dd>
 <dd>
 <div class="desc"><p>Returns a basket weave pattern matrix.</p>
 <p>Makes a matrix like</p>
-<p>1 1 0 0
+<pre><code>1 1 0 0
 1 1 0 0
 0 0 1 1
-0 0 1 1</p>
+0 0 1 1
+</code></pre>
 <p>where the repeat runs in each row are length n</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -645,10 +664,10 @@ Defaults to None.</dd>
 
     Makes a matrix like
     
-      1 1 0 0
-      1 1 0 0
-      0 0 1 1
-      0 0 1 1
+        1 1 0 0
+        1 1 0 0
+        0 0 1 1
+        0 0 1 1
     
     where the repeat runs in each row are length n
 
@@ -861,10 +880,11 @@ tie_up.shape[1] == threading.shape[0]</p>
 <dd>
 <div class="desc"><p>Makes a twill 0/1 matrix.</p>
 <p>Makes a matrix like</p>
-<p>1 1 0 0
+<pre><code>1 1 0 0
 0 1 1 0
 0 0 1 1
-1 0 0 1</p>
+1 0 0 1
+</code></pre>
 <p>where the repeat runs in each row are lengths returned by
 make_over_under_rown(n)</p>
 <h2 id="args">Args</h2>
@@ -884,10 +904,10 @@ make_over_under_row().</p>
 
     Makes a matrix like
     
-      1 1 0 0
-      0 1 1 0
-      0 0 1 1
-      1 0 0 1
+        1 1 0 0
+        0 1 1 0
+        0 0 1 1
+        1 0 0 1
       
     where the repeat runs in each row are lengths returned by
     make_over_under_rown(n)
