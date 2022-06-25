@@ -28,7 +28,12 @@ hence is not complete in places. In general the variable 'unit' is a
 TileUnit object.
 """
 
-def setup_none_tile(unit) -> None: 
+def setup_none_tile(unit:"TileUnit") -> None:
+    """Setups a 'null' tile with one element and one element_id.
+
+    Args:
+        unit (TileUnit): the TileUnit to setup.
+    """
     setup_base_tile(unit, unit.tile_shape)
     unit.elements = gpd.GeoDataFrame(
         data = {"element_id": ["a"]}, crs = unit.crs,
@@ -36,7 +41,13 @@ def setup_none_tile(unit) -> None:
     return
 
 
-def setup_base_tile(unit, shape:TileShape) -> None: 
+def setup_base_tile(unit:"TileUnit", shape:TileShape) -> None:
+    """_summary_
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
+        shape (TileShape): the TileShape to apply.
+    """
     unit.tile_shape = shape
     if unit.tile_shape == TileShape.DIAMOND:
         tile = geom.Polygon([
@@ -54,8 +65,8 @@ def setup_base_tile(unit, shape:TileShape) -> None:
     return
 
 
-def setup_cairo(unit) -> None:
-    """The Cairo tiling. King of tilings. All hail the Cairo tiling.
+def setup_cairo(unit:"TileUnit") -> None:
+    """Sets up the Cairo tiling. King of tilings. All hail the Cairo tiling.
     This code shows how a 'handcoded' set of geometries can be applied.
     
     Note that it is advisable to avoid intersection and union operations where
@@ -65,6 +76,9 @@ def setup_cairo(unit) -> None:
     then reflecting and rotating copies and joing them back together. But 
     floating point issues make that very messy indeed. Much better to make
     the geometries 'pure'.)
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """ 
     setup_base_tile(unit, TileShape.RECTANGLE)  # a square
     d = unit.spacing        
@@ -86,7 +100,7 @@ def setup_cairo(unit) -> None:
     p3 = affine.rotate(p2, 90, (0, 0))
     p4 = affine.rotate(p3, 90, (0, 0))
     
-    # now move them
+    # now move them so they are arranged as a hexagon centered on the tile
     p1 = affine.translate(p1, -unit.spacing / 2, 0)
     p2 = affine.translate(p2, unit.spacing / 2, 0)
     p3 = affine.translate(p3, unit.spacing / 2, 0)
@@ -96,18 +110,20 @@ def setup_cairo(unit) -> None:
         data = {"element_id": list("abcd")}, crs = unit.crs,
         geometry = gpd.GeoSeries([p1, p2, p3, p4]))
     unit.make_regularised_tile_from_elements()
-    
         
     
-def setup_hex_dissection(unit):
+def setup_hex_dissection(unit:"TileUnit") -> None:
     """Tilings from radial dissection of a hexagon into 2, 3, 4, 6 or 12 slices.
     
     The supplied unit should have dissection_offset and n set.
     
     self.dissection_offset == 1 starts at midpoints, 0 at hexagon corners
-    self.n is the number of slices and should be 2, 3, 4, 6 or 12
+    self.n is the number of slices and should be 2, 3, 4, 6 or 12.
     
-    Again, construction avoids intersection operations.
+    Again, construction avoids intersection operations where possible.
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """
     setup_base_tile(unit, TileShape.HEXAGON)
     hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
@@ -166,10 +182,10 @@ def setup_hex_dissection(unit):
                         for a in range(0, 360, 60)]
             slices2 = [affine.rotate(s2, a, origin = (0, 0)) 
                         for a in range(0, 360, 60)]
-            slices = itertools.chain(slices1, slices2)
+            # interleave the slices so they are labelled in CCW order 
+            slices = itertools.chain(*zip(slices1, slices2))
         else:
-            steps = np.linspace(0, 1, unit.n + 1) - \
-                unit.dissection_offset / (unit.n * 2)
+            steps = np.linspace(0, 1, unit.n + 1) - (1 / 24)
             slices = [tiling_utils.get_polygon_sector(hex, p1, p2)
                     for p1, p2 in zip(steps[:-1], steps[1:])]    
     
@@ -180,13 +196,16 @@ def setup_hex_dissection(unit):
     unit.regularised_tile = copy.deepcopy(unit.tile)
 
 
-def setup_laves(unit) -> None:
+def setup_laves(unit:"TileUnit") -> None:
     """The Laves tilings. See https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings.
     
     These are all isohedral, but mostly not regular polygons. We 
     prioritise them over the Archimedean tilings because being
     isohedral all tiles are the same size. Several are hex
     dissections and setup is delegated accordingly.
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """
     if unit.code == "3.3.3.3.3.3":
         # this is the regular hexagons
@@ -251,10 +270,14 @@ def setup_laves(unit) -> None:
     return
 
 
-def setup_laves_33336(unit) -> None:
+def setup_laves_33336(unit:"TileUnit") -> None:
     """Sets up Laves [3.3.3.3.6] which is like a 6 petal flower.
     
-    Similar to the H3 7 hexagon group with the central hex removed.
+    Similar to the H3 7 hexagon group with the central hex removed and each
+    hex 'taking' a 1/6 share of the central hex.
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """
     setup_base_tile(unit, TileShape.HEXAGON)
     offset_a = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
@@ -276,8 +299,11 @@ def setup_laves_33336(unit) -> None:
     unit.make_regularised_tile_from_elements()
         
 
-def setup_laves_488(unit) -> None:
+def setup_laves_488(unit:"TileUnit") -> None:
     """The 4-dissection of the square by its diagonals.
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """
     setup_base_tile(unit, TileShape.RECTANGLE)
     tile = tiling_utils.get_regular_polygon(unit.spacing, 4)
@@ -291,34 +317,44 @@ def setup_laves_488(unit) -> None:
     unit.make_regularised_tile_from_elements()
         
         
-def setup_laves_31212(unit):
-    """The 3-dissection of the triangle.
+def setup_laves_31212(unit:"TileUnit") -> None:
+    """This is also a hexagon dissection... like 3.6.3.6 with each rhombus
+    sliced in half along its long diagonal.
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """
-    setup_base_tile(unit, TileShape.TRIANGLE)
-    tile = tiling_utils.get_regular_polygon(unit.spacing, 3)
-    pts = [p for p in tile.exterior.coords]
-    tri1 = geom.Polygon([pts[0], pts[1], tile.centroid])
-    tris = [affine.rotate(tri1, a, tile.centroid) 
-                for a in range(0, 360, 120)]
+    setup_base_tile(unit, TileShape.HEXAGON)
+    hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
+    pts = [p for p in hex.exterior.coords]
+    tri1 = geom.Polygon([pts[0], pts[2], [0, 0]])
+    tri2 = geom.Polygon([pts[0], pts[1], pts[2]])
+    tris1 = [affine.rotate(tri1, a, origin = (0, 0)) 
+             for a in range(0, 360, 120)]
+    tris2 = [affine.rotate(tri2, a, origin = (0, 0)) 
+             for a in range(0, 360, 120)]
+    # reorder so the 'inner' and 'outer' triangles are labelled alternately 
+    tris = itertools.chain(*zip(tris1, tris2))
     unit.elements = gpd.GeoDataFrame(
-        data = {"element_id": list("abc")}, crs = unit.crs,
+        data = {"element_id": list("abcdef")}, crs = unit.crs,
         geometry = gpd.GeoSeries(tris)
     )
-    unit._modify_tile()
-    unit._modify_elements()
+    unit.regularised_tile = copy.deepcopy(unit.tile)
 
 
-def setup_archimedean(unit) -> None:
+def setup_archimedean(unit:"TileUnit") -> None:
     """The Archimedean 'regular tilings. See https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Convex_uniform_tilings_of_the_Euclidean_plane
 
     Many of these are most easily constructed as duals of the Laves tilings.
     
     Some are not yet implemented:
     
-    (3.3.3.3.6) has 2 reflected forms and our get_dual_tiling does not generate
-    it accurately from the Laves 'petal' tiling.
+    (3.3.3.3.6) has 2 reflected forms and tiling_utils.get_dual_tile_unit does not generate it accurately from the Laves 'petal' tiling.
     (3.3.3.4.4) is kind of weird (stripes of triangles and squares) so can't be 
     bothered with it. Perhaps as a 5-element option we'll get to it in time.
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """
     if unit.code == "3.3.3.3.3.3":
         setup_base_tile(unit, TileShape.TRIANGLE)
@@ -381,9 +417,12 @@ def setup_archimedean(unit) -> None:
     return
 
 
-def setup_archimedean_3464(unit) -> None:
+def setup_archimedean_3464(unit:"TileUnit") -> None:
     """The dual of Laves 3.4.6.4 is not accurately rendered
     by our code, so we do this one by hand. 
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """
     setup_base_tile(unit, TileShape.HEXAGON)
     sf = np.sqrt(3) / (1 + np.sqrt(3))
@@ -412,8 +451,11 @@ def setup_archimedean_3464(unit) -> None:
     unit.make_regularised_tile_from_elements()
 
 
-def setup_hex_colouring(unit):
-    """Several colourings of a regular array of hexagons
+def setup_hex_colouring(unit:"TileUnit") -> None:
+    """3, 4, and 7 colourings of a regular array of hexagons.
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """
     hex = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 6)
     if unit.n == 3:
@@ -464,9 +506,12 @@ def setup_hex_colouring(unit):
     unit.make_regularised_tile_from_elements()
 
 
-def setup_square_colouring(unit):
+def setup_square_colouring(unit:"TileUnit") -> None:
     """Colourings of a regular array of squares. Only supports n = 5 at present
     but we need a n=5 option
+
+    Args:
+        unit (TileUnit):  the TileUnit to setup.
     """
     sq = tiling_utils.get_regular_polygon(unit.spacing, 4)
     if unit.n == 5:

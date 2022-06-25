@@ -294,6 +294,20 @@ class WeaveGrid:
 
 
     def get_tile_from_cells(self, approx_tile:Polygon) -> Polygon:
+        """Returns a rectangle or hexagon derived from the bounds of the
+        supplied approximation to a tile.
+        
+        This is required because we know the required tile is an exact 4 or
+        6 cornered polygon, but the MultiPolygon formed by unary_union is likely
+        to have many more corners than this (for some reason...).
+
+        Args:
+            approx_tile (Polygon): MultiPolygon formed from the cells of the
+                tile.
+
+        Returns:
+            Polygon (geom.Polygon): rectangle of hexagon Polygon.
+        """
         xmin, ymin, xmax, ymax = approx_tile.bounds
         if self.n_axes == 2:
             w = np.round((xmax - xmin) / self.spacing) * self.spacing

@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>weavingspace.tiling_utils API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>weavingspace.tiling_utils</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#!/usr/bin/env python
+# coding: utf-8
+
+from typing import Iterable, Union
+import re
+import string
+
+from math import fsum
+
+import matplotlib
+import matplotlib.colors
+import numpy as np
+
+import geopandas as gpd
+import pandas as pd
+import shapely.geometry as geom
+import shapely.affinity as affine
+import shapely.wkt as wkt
+import shapely.ops
+
+
+def _parse_strand_label(s:str) -&gt; list[str]:
+    &#34;&#34;&#34;Breaks a strand label specifiction in to a list of labels
+
+    Args:
+        s (str): see get_strand_ids() for details
+    Returns:
+        list[str]: list of strand labels.
+    &#34;&#34;&#34;    
+    clean_s = re.sub(&#34;[(]+&#34;, &#34;(&#34;, re.sub(&#34;[)]+&#34;, &#34;)&#34;, s))
+    is_combo = False
+    output = []
+    current = &#34;&#34;
+    for c in clean_s:
+        if is_combo:
+            if c == &#34;)&#34;:
+                output.append(current)
+                current = &#34;&#34;
+                is_combo = False
+            else:
+                current = current + c
+        else:
+            if c == &#34;(&#34;:
+                is_combo = True
+            else:
+                output.append(c)
+    return output
+
+
+def get_strand_ids(strands_spec: str) -&gt; tuple[list[str]]:
+    &#34;&#34;&#34;Strands label string to split into strand labels.
+
+    Args:
+        strands_spec (str): string format &#34;a|bc|(de)f&#34; | separates strands in
+            each direction and () designates combining labels into a single strand that will be sliced lengthwise. Example output:
+
+                &#34;a|bc|(de)f&#34; -&gt; ([&#34;a&#34;], [&#34;b&#34;, &#34;c&#34;], [&#34;de&#34;, &#34;f&#34;])
+            
+            Superflous parentheses are removed, but no other error-checks are
+            applied.
+
+    Returns:
+        tuple[str]: tuple of lists of labels for each set of strands.
+    &#34;&#34;&#34;    
+    strand_ids = [_parse_strand_label(s) for s in strands_spec.split(&#34;|&#34;)]
+    strand_ids = (strand_ids
+                  if len(strand_ids) == 3
+                  else strand_ids + [[&#34;&#34;]])
+    return tuple(strand_ids)
+
+
+def centre_offset(shape: geom.Polygon, 
+                  target:tuple[float] = (0, 0)) -&gt; tuple[float]:
+    &#34;&#34;&#34;Returns vector required to move centroid of polygon to target. 
+
+    Args:
+        shape (Polygon): polygon to move.
+        target (tuple[float], optional): target to move to. 
+            Defaults to (0, 0).
+
+    Returns:
+        tuple[float]: tuple of x, y movement required.
+    &#34;&#34;&#34;  
+    shape_c = shape.centroid.coords[0]
+    return (target[0] - shape_c[0], target[1] - shape_c[1])
+
+
+def get_regular_polygon(spacing, n:int) -&gt; geom.Polygon: 
+    &#34;&#34;&#34;Returns regular polygon with n sides centered on (0, 0) with a horizontal base, and height given by spacing.
+
+    Args:
+        spacing (_type_): required height.
+        n (int): number of sides.
+
+    Returns:
+        geom.Polygon: required geom.Polygon.
+    &#34;&#34;&#34;
+    R = spacing / np.cos(np.radians(180 / n)) / 2
+    a0 = -90 + 180 / n
+    a_diff = 360 / n
+    angles = [a0 + a * a_diff for a in range(n)]
+    corners = [(R * np.cos(np.radians(a)), 
+                R * np.sin(np.radians(a))) for a in angles]
+    return geom.Polygon(corners)
+
+
+def incentre(tri:geom.Polygon) -&gt; geom.Point:
+    &#34;&#34;&#34;A different triangle centre, which produces better results for some
+    of the dual tilings were triangles are not equilateral... see
+    https://en.wikipedia.org/wiki/Incenter
+
+    Args:
+        tri (geom.Polygon): the triangle.
+
+    Returns:
+        geom.Point: the incentre of the triangle.
+    &#34;&#34;&#34;
+    corners = [geom.Point(p[0], p[1]) 
+               for p in list(tri.exterior.coords)]  # ABCA
+    lengths = [p.distance(q) 
+               for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
+    lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
+    perimeter = fsum(lengths)
+    incentre = [0, 0]
+    for p, l in zip(corners[:-1], lengths):
+        incentre[0] = incentre[0] + p.x * l / perimeter
+        incentre[1] = incentre[1] + p.y * l / perimeter
+    return geom.Point(incentre)
+    
+
+def get_interior_vertices(polys:gpd.GeoDataFrame) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns points not on the outer boundary of the supplied set 
+    of polygons.
+
+    Args:
+        polys (gpd.GeoDataFrame): a set of polygons.
+
+    Returns:
+        gpd.GeoSeries: interior vertices of the set of polygons.
+    &#34;&#34;&#34;
+    polygons = gridify(polys.geometry)
+    uu = safe_union(polygons, as_polygon = True)
+    interior_pts = set()
+    for poly in polygons:
+        for pt in poly.exterior.coords:
+            if uu.contains(
+                geom.Point(pt).buffer(1e-3, resolution = 1, join_style = 2)):
+                interior_pts.add(pt)
+    return gpd.GeoSeries([geom.Point(p) for p in interior_pts])
+
+    
+def gridify(gs:gpd.GeoSeries, precision:int = 6) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns the supplied GeoSeries rounded to the specified precision.
+    
+    Works by round-tripping through WKT, which seems like the easiest
+    way to do this given the variety of ways in which coordinates are
+    stored depending on the geometry.
+
+    Args:
+        gs (gpd.GeoSeries): geometries to gridify.
+        precision (int, optional): digits of precision. Defaults to 6.
+
+    Returns:
+        gpd.GeoSeries: the rounded geometries.
+    &#34;&#34;&#34;
+    return gpd.GeoSeries(
+        list(gs.apply(
+            wkt.dumps, rounding_precision = precision).apply(wkt.loads)))
+
+    
+def get_dual_tile_unit(t) -&gt; gpd.GeoDataFrame:
+    &#34;&#34;&#34;Converts supplied TileUnit to a candidate GeoDataFrame of its dual 
+    TileUnit.
+    
+    NOTE: this is complicated and not remotely guaranteed to work!
+    a particular issue is that where to place the vertices of the faces
+    of the dual with respect to the tiles in the original is ill-defined.
+    This is because the dual process is topologically not metrically defineed, 
+    so that exact vertex locations are ambiguous. 
+    
+    NOTE: In general, it can be expected to work only if all the supplied 
+    elements are regular polygons. A known exception is if the only non-regular 
+    polygons are triangles.
+    
+    NOTE: &#39;clean&#39; polygons are required. If supplied polygons have messy 
+    vertices with multiple points where there is only one proper point, bad 
+    things are likely to happen!
+    
+    We therefore only return a GeoDataFrame for inspection. 
+    
+    However some TileUnit setup methods in tiling_geometries.py use this
+    method, where we are confident the returned dual TileUnit is valid.    
+
+    Args:
+        t (TileUnit): the tiling for which the dual is required.
+
+    Returns:
+        gpd.GeoDataFrame: GeoDataFrame that could be the elements attribute for
+            a TileUnit of the dual tiling.
+    &#34;&#34;&#34;
+    # get a local patch of this Tiling
+    local_patch = t.get_local_patch(r = 3, include_0 = True)     
+    # Find the interior points of these tiles - these will be guaranteed
+    # to have a sequence of surrounding tiles incident on them 
+    interior_pts = get_interior_vertices(local_patch)
+    # Compile a list of the polygons incident on the interior points
+    cycles = []
+    for pt in interior_pts:
+        cycles.append(
+            set([poly_id for poly_id, p in enumerate(local_patch.geometry) 
+                 if pt.distance(p) &lt; t.fudge_factor]))
+    # convert the polygon ID sequences to (centroid.x, centroid.y, ID) tuples
+    dual_faces = []
+    for cycle in cycles:
+        ids, pts = [], []
+        for poly_id in cycle:
+            ids.append(local_patch.element_id[poly_id])
+            poly = local_patch.geometry[poly_id]
+            if len(poly.exterior.coords) == 4:
+                centroid = incentre(poly)
+            else:
+                centroid = poly.centroid
+            pts.append([centroid.x, centroid.y])
+        # sort them into CCW order so they are well formed
+        sorted_coords = sort_ccw([(pt[0], pt[1], id) 
+                                  for pt, id in zip(pts, ids)])
+        dual_faces.append(
+            (geom.Polygon([(pt_id[0], pt_id[1]) for pt_id in sorted_coords]), 
+             &#34;&#34;.join([pt_id[2] for pt_id in sorted_coords])))
+    # ensure the resulting face centroids are inside the original tile
+    # displaced a little to avoid uncertainties at corners/edges
+    dual_faces = [(f, id) for f, id in dual_faces
+                  if affine.translate(t.tile.geometry[0],
+                                      t.fudge_factor, 
+                                      t.fudge_factor).contains(f.centroid)]
+    gdf = gpd.GeoDataFrame(
+        data = {&#34;element_id&#34;: [f[1] for f in dual_faces]}, crs = t.crs,
+        geometry = gpd.GeoSeries([f[0] for f in dual_faces]))
+    # ensure no duplicates
+    gdf = gdf.dissolve(by = &#34;element_id&#34;, as_index = False).explode(
+        index_parts = False, ignore_index = True)
+    
+    gdf.element_id = relabel(gdf.element_id)
+    return gdf
+
+
+def relabel(data:Iterable) -&gt; list:
+    &#34;&#34;&#34;Returns supplied data reassigned with unique values from 
+    string.ascii_letters.
+
+    Args:
+        data (Iterable): the data to relabel
+
+    Returns:
+        list: the reassigned data
+    &#34;&#34;&#34;
+    new_data = {}
+    d_count = 0
+    for d in data:
+        if not d in new_data:
+            new_data[d] = string.ascii_letters[d_count]
+            d_count = d_count + 1
+    return [new_data[d] for d in data]
+        
+
+def sort_ccw(pts_ids:list[tuple[float, float, str]]):
+    &#34;&#34;&#34;Sorts supplied tuple of x, y, ID into counterclockwise order.
+
+    Args:
+        pts_ids (list[tuple[float, float, str]]): A tuple of a pair of 
+            floats and a string.
+
+    Returns:
+        list: a list in the same format as supplied sorted into 
+            counter-clockwise order of the point locations.
+    &#34;&#34;&#34;
+    x = [p[0] for p in pts_ids]
+    y = [p[1] for p in pts_ids]
+    cx, cy = np.mean(x), np.mean(y)
+    dx = [_ - cx for _ in x]
+    dy = [_ - cy for _ in y]
+    angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
+    d = dict(zip(angles, pts_ids))
+    return [pt_id for angle, pt_id in sorted(d.items())]
+
+
+def write_map_to_layers(gdf:gpd.GeoDataFrame, fname:str = &#34;output.gpkg&#34;,
+                        element_var:str = &#34;element_id&#34;) -&gt; None:
+    &#34;&#34;&#34;Writes supplied GeoDataFrame to a GPKG file with layers based on 
+    the element_var attribute.
+
+    Args:
+        gdf (gpd.GeoDataFrame): the GeoDataFrame.
+        fname (str, optional): filename to write.
+        element_var (str, optional): the attribute to use to separate
+            output file into layers. Defaults to &#34;element_id&#34;.
+    &#34;&#34;&#34;
+    grouped = gdf.groupby(element_var, as_index = False)
+    for e in pd.Series.unique(gdf[element_var]):
+        grouped.get_group(e).to_file(fname, layer = e, driver = &#34;GPKG&#34;)
+        
+
+def get_collapse_distance(geometry:geom.Polygon) -&gt; float:
+    &#34;&#34;&#34;Returns the distance under which the supplied polygon will shrink
+    to nothing if negatively buffered by that distance.
+    
+    Performs a binary search between an upper bound based on the radius of
+    the circle of equal area to the polygon, and 0.
+
+    Args:
+        geometry (geom.Polygon): the polygon.
+
+    Returns:
+        float: its collapse distance.
+    &#34;&#34;&#34;
+    radius = np.sqrt(geometry.area / np.pi)
+    lower = 0
+    upper = radius
+    delta = 1e12
+    stop_delta = radius / 1000
+    while delta &gt; stop_delta:
+        new_r = (lower + upper) / 2
+        if geometry.buffer(-new_r).area &gt; 0:
+            lower = new_r
+            delta = upper - new_r
+        else:
+            upper = new_r 
+            delta = new_r - lower
+    return new_r
+
+
+def get_largest_polygon(polygons:gpd.GeoSeries) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns the largest polygon in a GeoSeries as a GeoSeries of one polygon.
+
+    Args:
+        polygons (gpd.GeoSeries): the set of polygons to pick from.
+
+    Returns:
+        gpd.GeoSeries: the largest polygon.
+    &#34;&#34;&#34;
+    areas = list(polygons.area)
+    max_area = max(areas)
+    return gpd.GeoSeries([polygons[areas.index(max_area)]])
+
+
+def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -&gt; bool:
+    &#34;&#34;&#34;Tests if two polygons touch along an edge.
+
+    Checks that the intersection area of the two polygons buffered by
+    a small amount is large enough to indicate the neighbour at more
+    than a corner.
+
+    Args:
+        p1 (geom.Polygon): First polygon
+        p2 (geom.Polygon): Second polygon
+
+    Returns:
+        bool: True if they neighbour along an edge
+    &#34;&#34;&#34;
+    return p1.buffer(1e-3, resolution = 1, join_style = 2).intersection(
+        p2.buffer(1e-3, resolution = 1, join_style = 2)).area &gt; 4e-6
+
+
+def get_width_height_left_bottom(gs:gpd.GeoSeries) -&gt; tuple[float]:
+    &#34;&#34;&#34;Returns width, height, left and bottom limits of a GeoSeries
+
+    Args:
+        gs (geopandas.GeoSeries): GeoSeries for which limits are required.
+
+    Returns:
+        tuple: four float values of width, height, left and bottom of gs.
+    &#34;&#34;&#34;    
+    extent = gs.total_bounds
+    return (extent[2] - extent[0], extent[3] - extent[1], 
+            extent[0], extent[1])
+
+
+def get_bounding_ellipse(
+        shapes:gpd.GeoSeries, mag:float = 1.0) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns an ellipse containing the supplied shapes.
+    
+    The method used is to calculate the size of square that would contain
+    the shapes, if they had an aspect ratio 1, then stretch the circle in
+    the x, y directions according to the actual aspect ratio of the shapes.
+
+    Args:
+        shapes (gpd.GeoSeries): the shapes to be contained.
+        mag (float, optional): optionally increase the size of the returned 
+            ellipse by this scale factor. Defaults to 1.0.
+
+    Returns:
+        gpd.GeoSeries: the set of shapes.
+    &#34;&#34;&#34;
+
+    w, h, *_ = get_width_height_left_bottom(shapes)
+    
+    c = shapes.unary_union.centroid
+    r = min(w, h) * np.sqrt(2)
+    circle = [c.buffer(r)]
+    return gpd.GeoSeries(circle, crs = shapes.crs).scale(
+        w / r * mag / np.sqrt(2), h / r * mag / np.sqrt(2), origin = c)
+    
+    
+def get_boundaries(shapes:gpd.GeoSeries) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns linestring GeoSeries from supplied polygon GeoSeries.
+
+    This is used to allow display of edges of tiles in legend when they are 
+    masked by an ellipse (if we instead clip polygons then the ellipse edge 
+    will also show in the result.)
+    
+    Args:
+        shapes (gpd.GeoSeries): Polygons to convert.
+
+    Returns:
+        gpd.GeoSeries: LineStrings from the supplied Polygons.
+    &#34;&#34;&#34;
+    bdys = [geom.LineString(p.exterior.coords) for p in shapes]
+    return gpd.GeoSeries(bdys, crs = shapes.crs)
+
+
+def get_polygon_sector(shape:geom.Polygon, start:float = 0.0, 
+               end:float = 1.0) -&gt; geom.Polygon:
+    &#34;&#34;&#34;Returns a sector of the provided Polygon.
+    
+    The returned sector is a section of the polygon boundary between the
+    normalized start and end positions, and including the polygon centroid.
+    Should (probably) only be applied to convex polygons.
+    
+    Args:
+        shape (geom.Polygon): the Polygon.
+        start (float): normalized start position along the boundary. Defaults to
+            0.
+        end (float): normalized start position along the boundary. Defaults to 
+            1.
+    &#34;&#34;&#34;
+    if start == end:
+        # must return a null polygon since the calling context
+        # expects to get something back... which most likely 
+        # is needed to align with other data 
+        return geom.Polygon()
+    if start * end &lt; 0:
+        # either side of 0/1 so assume required sector includes 0
+        e1, e2 = min(start, end), max(start, end)
+        arc1 = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
+                                     np.mod(e1, 1), 1, normalized = True) 
+        arc2 = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
+                                     0, e2, normalized = True) 
+        sector = geom.Polygon([shape.centroid] + 
+                              list(arc1.coords) + 
+                              list(arc2.coords)[1:])
+    else:
+        arc = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
+                                    start, end, normalized = True)
+        sector = geom.Polygon([shape.centroid] + list(arc.coords))
+    return clean_polygon(sector)
+
+
+def clean_polygon(p:Union[geom.Polygon, gpd.GeoSeries], 
+                      res:float = 1e-3, shrink_then_grow:bool = True
+                  ) -&gt; Union[geom.Polygon, gpd.GeoSeries]:
+    &#34;&#34;&#34;Convenience function to &#39;clean&#39; a shapely polyon or GeoSeries by applying
+    a negative buffer then the same positive buffer.
+
+    Optionally the buffer may be applied in the opposite order (i.e. grow then 
+    shrink)
+        
+    This is a procedure often unofficially recommended (on stackexchange etc.) 
+    even in the shapely docs, to resolve topology issues and extraneous 
+    additional vertices appearing when spatial operations are repeatedly 
+    applied.
+
+    Args:
+        p (Union[geom.Polygon, gpd.GeoSeries]): Polygon or GeoSeries to clean.
+        res (float, optional): buffer size to use. Defaults to 1e-3.
+        shrink_then_grow (bool, optional): if True the negative buffer is 
+            applied first, otherwise the buffer operations are applied in
+            reverse. Defaults to True.
+
+    Returns:
+        Union[geom.Polygon, gpd.GeoSeries]: the cleaned Polygon or GeoSeries.
+    &#34;&#34;&#34;
+    if shrink_then_grow:
+        return p.buffer(
+            -res, resolution = 1, join_style = 2).buffer(
+                res, resolution = 1, join_style = 2)
+    else:
+        return p.buffer(
+            res, resolution = 1, join_style = 2).buffer(
+                -res, resolution = 1, join_style = 2)
+    
+
+def safe_union(gs:gpd.GeoSeries, res:float = 1e-3, 
+               as_polygon:bool = False) -&gt; Union[gpd.GeoSeries, geom.Polygon]:
+    &#34;&#34;&#34;Unions the supplied GeoSeries of Polygons while buffering them to avoid
+    gaps and odd internal floating edges. Optionally returns a Polygon or a 
+    GeoSeries. 
+    
+    Frequently when unioning polygons that are ostensibly adjacent &#39;rogue&#39; 
+    internal boundaries remain in the result. We can avoid this by buffering the
+    polygons before unioning them, then reversing the buffer on the unioned 
+    shape.
+
+    Args:
+        gs (gpd.GeoSeries): the Polygons to union.
+        res (float, optional): size of the buffer to use. Defaults to 1e-3.
+        as_polygon (bool, optional): if True returns a Polygon, otherwise   
+            returns a one Polygon GeoSeries. Defaults to False.
+
+    Returns:
+        Union[gpd.GeoSeries, geom.Polygon]: _description_
+    &#34;&#34;&#34;
+    union = gs.buffer(res, resolution = 1, join_style = 2) \
+                .unary_union \
+                .buffer(-res, resolution = 1, join_style = 2)
+    if as_polygon:
+        return union
+    else:
+        return gpd.GeoSeries([union], crs = gs.crs)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="weavingspace.tiling_utils.centre_offset"><code class="name flex">
+<span>def <span class="ident">centre_offset</span></span>(<span>shape: shapely.geometry.polygon.Polygon, target: tuple[float] = (0, 0)) ‑> tuple[float]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns vector required to move centroid of polygon to target. </p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>shape</code></strong> :&ensp;<code>Polygon</code></dt>
+<dd>polygon to move.</dd>
+<dt><strong><code>target</code></strong> :&ensp;<code>tuple[float]</code>, optional</dt>
+<dd>target to move to.
+Defaults to (0, 0).</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple[float]</code></dt>
+<dd>tuple of x, y movement required.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def centre_offset(shape: geom.Polygon, 
+                  target:tuple[float] = (0, 0)) -&gt; tuple[float]:
+    &#34;&#34;&#34;Returns vector required to move centroid of polygon to target. 
+
+    Args:
+        shape (Polygon): polygon to move.
+        target (tuple[float], optional): target to move to. 
+            Defaults to (0, 0).
+
+    Returns:
+        tuple[float]: tuple of x, y movement required.
+    &#34;&#34;&#34;  
+    shape_c = shape.centroid.coords[0]
+    return (target[0] - shape_c[0], target[1] - shape_c[1])</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.clean_polygon"><code class="name flex">
+<span>def <span class="ident">clean_polygon</span></span>(<span>p: Union[shapely.geometry.polygon.Polygon, geopandas.geoseries.GeoSeries], res: float = 0.001, shrink_then_grow: bool = True) ‑> Union[shapely.geometry.polygon.Polygon, geopandas.geoseries.GeoSeries]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convenience function to 'clean' a shapely polyon or GeoSeries by applying
+a negative buffer then the same positive buffer.</p>
+<p>Optionally the buffer may be applied in the opposite order (i.e. grow then
+shrink)</p>
+<p>This is a procedure often unofficially recommended (on stackexchange etc.)
+even in the shapely docs, to resolve topology issues and extraneous
+additional vertices appearing when spatial operations are repeatedly
+applied.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>p</code></strong> :&ensp;<code>Union[geom.Polygon, gpd.GeoSeries]</code></dt>
+<dd>Polygon or GeoSeries to clean.</dd>
+<dt><strong><code>res</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>buffer size to use. Defaults to 1e-3.</dd>
+<dt><strong><code>shrink_then_grow</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>if True the negative buffer is
+applied first, otherwise the buffer operations are applied in
+reverse. Defaults to True.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Union[geom.Polygon, gpd.GeoSeries]</code></dt>
+<dd>the cleaned Polygon or GeoSeries.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clean_polygon(p:Union[geom.Polygon, gpd.GeoSeries], 
+                      res:float = 1e-3, shrink_then_grow:bool = True
+                  ) -&gt; Union[geom.Polygon, gpd.GeoSeries]:
+    &#34;&#34;&#34;Convenience function to &#39;clean&#39; a shapely polyon or GeoSeries by applying
+    a negative buffer then the same positive buffer.
+
+    Optionally the buffer may be applied in the opposite order (i.e. grow then 
+    shrink)
+        
+    This is a procedure often unofficially recommended (on stackexchange etc.) 
+    even in the shapely docs, to resolve topology issues and extraneous 
+    additional vertices appearing when spatial operations are repeatedly 
+    applied.
+
+    Args:
+        p (Union[geom.Polygon, gpd.GeoSeries]): Polygon or GeoSeries to clean.
+        res (float, optional): buffer size to use. Defaults to 1e-3.
+        shrink_then_grow (bool, optional): if True the negative buffer is 
+            applied first, otherwise the buffer operations are applied in
+            reverse. Defaults to True.
+
+    Returns:
+        Union[geom.Polygon, gpd.GeoSeries]: the cleaned Polygon or GeoSeries.
+    &#34;&#34;&#34;
+    if shrink_then_grow:
+        return p.buffer(
+            -res, resolution = 1, join_style = 2).buffer(
+                res, resolution = 1, join_style = 2)
+    else:
+        return p.buffer(
+            res, resolution = 1, join_style = 2).buffer(
+                -res, resolution = 1, join_style = 2)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_boundaries"><code class="name flex">
+<span>def <span class="ident">get_boundaries</span></span>(<span>shapes: geopandas.geoseries.GeoSeries) ‑> geopandas.geoseries.GeoSeries</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns linestring GeoSeries from supplied polygon GeoSeries.</p>
+<p>This is used to allow display of edges of tiles in legend when they are
+masked by an ellipse (if we instead clip polygons then the ellipse edge
+will also show in the result.)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>shapes</code></strong> :&ensp;<code>gpd.GeoSeries</code></dt>
+<dd>Polygons to convert.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>gpd.GeoSeries</code></dt>
+<dd>LineStrings from the supplied Polygons.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_boundaries(shapes:gpd.GeoSeries) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns linestring GeoSeries from supplied polygon GeoSeries.
+
+    This is used to allow display of edges of tiles in legend when they are 
+    masked by an ellipse (if we instead clip polygons then the ellipse edge 
+    will also show in the result.)
+    
+    Args:
+        shapes (gpd.GeoSeries): Polygons to convert.
+
+    Returns:
+        gpd.GeoSeries: LineStrings from the supplied Polygons.
+    &#34;&#34;&#34;
+    bdys = [geom.LineString(p.exterior.coords) for p in shapes]
+    return gpd.GeoSeries(bdys, crs = shapes.crs)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_bounding_ellipse"><code class="name flex">
+<span>def <span class="ident">get_bounding_ellipse</span></span>(<span>shapes: geopandas.geoseries.GeoSeries, mag: float = 1.0) ‑> geopandas.geoseries.GeoSeries</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns an ellipse containing the supplied shapes.</p>
+<p>The method used is to calculate the size of square that would contain
+the shapes, if they had an aspect ratio 1, then stretch the circle in
+the x, y directions according to the actual aspect ratio of the shapes.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>shapes</code></strong> :&ensp;<code>gpd.GeoSeries</code></dt>
+<dd>the shapes to be contained.</dd>
+<dt><strong><code>mag</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>optionally increase the size of the returned
+ellipse by this scale factor. Defaults to 1.0.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>gpd.GeoSeries</code></dt>
+<dd>the set of shapes.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_bounding_ellipse(
+        shapes:gpd.GeoSeries, mag:float = 1.0) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns an ellipse containing the supplied shapes.
+    
+    The method used is to calculate the size of square that would contain
+    the shapes, if they had an aspect ratio 1, then stretch the circle in
+    the x, y directions according to the actual aspect ratio of the shapes.
+
+    Args:
+        shapes (gpd.GeoSeries): the shapes to be contained.
+        mag (float, optional): optionally increase the size of the returned 
+            ellipse by this scale factor. Defaults to 1.0.
+
+    Returns:
+        gpd.GeoSeries: the set of shapes.
+    &#34;&#34;&#34;
+
+    w, h, *_ = get_width_height_left_bottom(shapes)
+    
+    c = shapes.unary_union.centroid
+    r = min(w, h) * np.sqrt(2)
+    circle = [c.buffer(r)]
+    return gpd.GeoSeries(circle, crs = shapes.crs).scale(
+        w / r * mag / np.sqrt(2), h / r * mag / np.sqrt(2), origin = c)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_collapse_distance"><code class="name flex">
+<span>def <span class="ident">get_collapse_distance</span></span>(<span>geometry: shapely.geometry.polygon.Polygon) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the distance under which the supplied polygon will shrink
+to nothing if negatively buffered by that distance.</p>
+<p>Performs a binary search between an upper bound based on the radius of
+the circle of equal area to the polygon, and 0.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>geometry</code></strong> :&ensp;<code>geom.Polygon</code></dt>
+<dd>the polygon.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>float</code></dt>
+<dd>its collapse distance.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_collapse_distance(geometry:geom.Polygon) -&gt; float:
+    &#34;&#34;&#34;Returns the distance under which the supplied polygon will shrink
+    to nothing if negatively buffered by that distance.
+    
+    Performs a binary search between an upper bound based on the radius of
+    the circle of equal area to the polygon, and 0.
+
+    Args:
+        geometry (geom.Polygon): the polygon.
+
+    Returns:
+        float: its collapse distance.
+    &#34;&#34;&#34;
+    radius = np.sqrt(geometry.area / np.pi)
+    lower = 0
+    upper = radius
+    delta = 1e12
+    stop_delta = radius / 1000
+    while delta &gt; stop_delta:
+        new_r = (lower + upper) / 2
+        if geometry.buffer(-new_r).area &gt; 0:
+            lower = new_r
+            delta = upper - new_r
+        else:
+            upper = new_r 
+            delta = new_r - lower
+    return new_r</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_dual_tile_unit"><code class="name flex">
+<span>def <span class="ident">get_dual_tile_unit</span></span>(<span>t) ‑> geopandas.geodataframe.GeoDataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Converts supplied TileUnit to a candidate GeoDataFrame of its dual
+TileUnit.</p>
+<p>NOTE: this is complicated and not remotely guaranteed to work!
+a particular issue is that where to place the vertices of the faces
+of the dual with respect to the tiles in the original is ill-defined.
+This is because the dual process is topologically not metrically defineed,
+so that exact vertex locations are ambiguous. </p>
+<p>NOTE: In general, it can be expected to work only if all the supplied
+elements are regular polygons. A known exception is if the only non-regular
+polygons are triangles.</p>
+<p>NOTE: 'clean' polygons are required. If supplied polygons have messy
+vertices with multiple points where there is only one proper point, bad
+things are likely to happen!</p>
+<p>We therefore only return a GeoDataFrame for inspection. </p>
+<p>However some TileUnit setup methods in tiling_geometries.py use this
+method, where we are confident the returned dual TileUnit is valid.
+</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>t</code></strong> :&ensp;<code>TileUnit</code></dt>
+<dd>the tiling for which the dual is required.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>gpd.GeoDataFrame</code></dt>
+<dd>GeoDataFrame that could be the elements attribute for
+a TileUnit of the dual tiling.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_dual_tile_unit(t) -&gt; gpd.GeoDataFrame:
+    &#34;&#34;&#34;Converts supplied TileUnit to a candidate GeoDataFrame of its dual 
+    TileUnit.
+    
+    NOTE: this is complicated and not remotely guaranteed to work!
+    a particular issue is that where to place the vertices of the faces
+    of the dual with respect to the tiles in the original is ill-defined.
+    This is because the dual process is topologically not metrically defineed, 
+    so that exact vertex locations are ambiguous. 
+    
+    NOTE: In general, it can be expected to work only if all the supplied 
+    elements are regular polygons. A known exception is if the only non-regular 
+    polygons are triangles.
+    
+    NOTE: &#39;clean&#39; polygons are required. If supplied polygons have messy 
+    vertices with multiple points where there is only one proper point, bad 
+    things are likely to happen!
+    
+    We therefore only return a GeoDataFrame for inspection. 
+    
+    However some TileUnit setup methods in tiling_geometries.py use this
+    method, where we are confident the returned dual TileUnit is valid.    
+
+    Args:
+        t (TileUnit): the tiling for which the dual is required.
+
+    Returns:
+        gpd.GeoDataFrame: GeoDataFrame that could be the elements attribute for
+            a TileUnit of the dual tiling.
+    &#34;&#34;&#34;
+    # get a local patch of this Tiling
+    local_patch = t.get_local_patch(r = 3, include_0 = True)     
+    # Find the interior points of these tiles - these will be guaranteed
+    # to have a sequence of surrounding tiles incident on them 
+    interior_pts = get_interior_vertices(local_patch)
+    # Compile a list of the polygons incident on the interior points
+    cycles = []
+    for pt in interior_pts:
+        cycles.append(
+            set([poly_id for poly_id, p in enumerate(local_patch.geometry) 
+                 if pt.distance(p) &lt; t.fudge_factor]))
+    # convert the polygon ID sequences to (centroid.x, centroid.y, ID) tuples
+    dual_faces = []
+    for cycle in cycles:
+        ids, pts = [], []
+        for poly_id in cycle:
+            ids.append(local_patch.element_id[poly_id])
+            poly = local_patch.geometry[poly_id]
+            if len(poly.exterior.coords) == 4:
+                centroid = incentre(poly)
+            else:
+                centroid = poly.centroid
+            pts.append([centroid.x, centroid.y])
+        # sort them into CCW order so they are well formed
+        sorted_coords = sort_ccw([(pt[0], pt[1], id) 
+                                  for pt, id in zip(pts, ids)])
+        dual_faces.append(
+            (geom.Polygon([(pt_id[0], pt_id[1]) for pt_id in sorted_coords]), 
+             &#34;&#34;.join([pt_id[2] for pt_id in sorted_coords])))
+    # ensure the resulting face centroids are inside the original tile
+    # displaced a little to avoid uncertainties at corners/edges
+    dual_faces = [(f, id) for f, id in dual_faces
+                  if affine.translate(t.tile.geometry[0],
+                                      t.fudge_factor, 
+                                      t.fudge_factor).contains(f.centroid)]
+    gdf = gpd.GeoDataFrame(
+        data = {&#34;element_id&#34;: [f[1] for f in dual_faces]}, crs = t.crs,
+        geometry = gpd.GeoSeries([f[0] for f in dual_faces]))
+    # ensure no duplicates
+    gdf = gdf.dissolve(by = &#34;element_id&#34;, as_index = False).explode(
+        index_parts = False, ignore_index = True)
+    
+    gdf.element_id = relabel(gdf.element_id)
+    return gdf</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_interior_vertices"><code class="name flex">
+<span>def <span class="ident">get_interior_vertices</span></span>(<span>polys: geopandas.geodataframe.GeoDataFrame) ‑> geopandas.geoseries.GeoSeries</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns points not on the outer boundary of the supplied set
+of polygons.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>polys</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
+<dd>a set of polygons.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>gpd.GeoSeries</code></dt>
+<dd>interior vertices of the set of polygons.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_interior_vertices(polys:gpd.GeoDataFrame) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns points not on the outer boundary of the supplied set 
+    of polygons.
+
+    Args:
+        polys (gpd.GeoDataFrame): a set of polygons.
+
+    Returns:
+        gpd.GeoSeries: interior vertices of the set of polygons.
+    &#34;&#34;&#34;
+    polygons = gridify(polys.geometry)
+    uu = safe_union(polygons, as_polygon = True)
+    interior_pts = set()
+    for poly in polygons:
+        for pt in poly.exterior.coords:
+            if uu.contains(
+                geom.Point(pt).buffer(1e-3, resolution = 1, join_style = 2)):
+                interior_pts.add(pt)
+    return gpd.GeoSeries([geom.Point(p) for p in interior_pts])</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_largest_polygon"><code class="name flex">
+<span>def <span class="ident">get_largest_polygon</span></span>(<span>polygons: geopandas.geoseries.GeoSeries) ‑> geopandas.geoseries.GeoSeries</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the largest polygon in a GeoSeries as a GeoSeries of one polygon.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>polygons</code></strong> :&ensp;<code>gpd.GeoSeries</code></dt>
+<dd>the set of polygons to pick from.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>gpd.GeoSeries</code></dt>
+<dd>the largest polygon.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_largest_polygon(polygons:gpd.GeoSeries) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns the largest polygon in a GeoSeries as a GeoSeries of one polygon.
+
+    Args:
+        polygons (gpd.GeoSeries): the set of polygons to pick from.
+
+    Returns:
+        gpd.GeoSeries: the largest polygon.
+    &#34;&#34;&#34;
+    areas = list(polygons.area)
+    max_area = max(areas)
+    return gpd.GeoSeries([polygons[areas.index(max_area)]])</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_polygon_sector"><code class="name flex">
+<span>def <span class="ident">get_polygon_sector</span></span>(<span>shape: shapely.geometry.polygon.Polygon, start: float = 0.0, end: float = 1.0) ‑> shapely.geometry.polygon.Polygon</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a sector of the provided Polygon.</p>
+<p>The returned sector is a section of the polygon boundary between the
+normalized start and end positions, and including the polygon centroid.
+Should (probably) only be applied to convex polygons.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>shape</code></strong> :&ensp;<code>geom.Polygon</code></dt>
+<dd>the Polygon.</dd>
+<dt><strong><code>start</code></strong> :&ensp;<code>float</code></dt>
+<dd>normalized start position along the boundary. Defaults to
+0.</dd>
+<dt><strong><code>end</code></strong> :&ensp;<code>float</code></dt>
+<dd>normalized start position along the boundary. Defaults to
+1.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_polygon_sector(shape:geom.Polygon, start:float = 0.0, 
+               end:float = 1.0) -&gt; geom.Polygon:
+    &#34;&#34;&#34;Returns a sector of the provided Polygon.
+    
+    The returned sector is a section of the polygon boundary between the
+    normalized start and end positions, and including the polygon centroid.
+    Should (probably) only be applied to convex polygons.
+    
+    Args:
+        shape (geom.Polygon): the Polygon.
+        start (float): normalized start position along the boundary. Defaults to
+            0.
+        end (float): normalized start position along the boundary. Defaults to 
+            1.
+    &#34;&#34;&#34;
+    if start == end:
+        # must return a null polygon since the calling context
+        # expects to get something back... which most likely 
+        # is needed to align with other data 
+        return geom.Polygon()
+    if start * end &lt; 0:
+        # either side of 0/1 so assume required sector includes 0
+        e1, e2 = min(start, end), max(start, end)
+        arc1 = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
+                                     np.mod(e1, 1), 1, normalized = True) 
+        arc2 = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
+                                     0, e2, normalized = True) 
+        sector = geom.Polygon([shape.centroid] + 
+                              list(arc1.coords) + 
+                              list(arc2.coords)[1:])
+    else:
+        arc = shapely.ops.substring(geom.LineString(shape.exterior.coords), 
+                                    start, end, normalized = True)
+        sector = geom.Polygon([shape.centroid] + list(arc.coords))
+    return clean_polygon(sector)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_regular_polygon"><code class="name flex">
+<span>def <span class="ident">get_regular_polygon</span></span>(<span>spacing, n: int) ‑> shapely.geometry.polygon.Polygon</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns regular polygon with n sides centered on (0, 0) with a horizontal base, and height given by spacing.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>spacing</code></strong> :&ensp;<code>_type_</code></dt>
+<dd>required height.</dd>
+<dt><strong><code>n</code></strong> :&ensp;<code>int</code></dt>
+<dd>number of sides.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>geom.Polygon</code></dt>
+<dd>required geom.Polygon.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_regular_polygon(spacing, n:int) -&gt; geom.Polygon: 
+    &#34;&#34;&#34;Returns regular polygon with n sides centered on (0, 0) with a horizontal base, and height given by spacing.
+
+    Args:
+        spacing (_type_): required height.
+        n (int): number of sides.
+
+    Returns:
+        geom.Polygon: required geom.Polygon.
+    &#34;&#34;&#34;
+    R = spacing / np.cos(np.radians(180 / n)) / 2
+    a0 = -90 + 180 / n
+    a_diff = 360 / n
+    angles = [a0 + a * a_diff for a in range(n)]
+    corners = [(R * np.cos(np.radians(a)), 
+                R * np.sin(np.radians(a))) for a in angles]
+    return geom.Polygon(corners)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_strand_ids"><code class="name flex">
+<span>def <span class="ident">get_strand_ids</span></span>(<span>strands_spec: str) ‑> tuple[list[str]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Strands label string to split into strand labels.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>strands_spec</code></strong> :&ensp;<code>str</code></dt>
+<dd>
+<p>string format "a|bc|(de)f" | separates strands in
+each direction and () designates combining labels into a single strand that will be sliced lengthwise. Example output:</p>
+<pre><code>"a|bc|(de)f" -&gt; (["a"], ["b", "c"], ["de", "f"])
+</code></pre>
+<p>Superflous parentheses are removed, but no other error-checks are
+applied.</p>
+</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple[str]</code></dt>
+<dd>tuple of lists of labels for each set of strands.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_strand_ids(strands_spec: str) -&gt; tuple[list[str]]:
+    &#34;&#34;&#34;Strands label string to split into strand labels.
+
+    Args:
+        strands_spec (str): string format &#34;a|bc|(de)f&#34; | separates strands in
+            each direction and () designates combining labels into a single strand that will be sliced lengthwise. Example output:
+
+                &#34;a|bc|(de)f&#34; -&gt; ([&#34;a&#34;], [&#34;b&#34;, &#34;c&#34;], [&#34;de&#34;, &#34;f&#34;])
+            
+            Superflous parentheses are removed, but no other error-checks are
+            applied.
+
+    Returns:
+        tuple[str]: tuple of lists of labels for each set of strands.
+    &#34;&#34;&#34;    
+    strand_ids = [_parse_strand_label(s) for s in strands_spec.split(&#34;|&#34;)]
+    strand_ids = (strand_ids
+                  if len(strand_ids) == 3
+                  else strand_ids + [[&#34;&#34;]])
+    return tuple(strand_ids)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_width_height_left_bottom"><code class="name flex">
+<span>def <span class="ident">get_width_height_left_bottom</span></span>(<span>gs: geopandas.geoseries.GeoSeries) ‑> tuple[float]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns width, height, left and bottom limits of a GeoSeries</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gs</code></strong> :&ensp;<code>geopandas.GeoSeries</code></dt>
+<dd>GeoSeries for which limits are required.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple</code></dt>
+<dd>four float values of width, height, left and bottom of gs.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_width_height_left_bottom(gs:gpd.GeoSeries) -&gt; tuple[float]:
+    &#34;&#34;&#34;Returns width, height, left and bottom limits of a GeoSeries
+
+    Args:
+        gs (geopandas.GeoSeries): GeoSeries for which limits are required.
+
+    Returns:
+        tuple: four float values of width, height, left and bottom of gs.
+    &#34;&#34;&#34;    
+    extent = gs.total_bounds
+    return (extent[2] - extent[0], extent[3] - extent[1], 
+            extent[0], extent[1])</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.gridify"><code class="name flex">
+<span>def <span class="ident">gridify</span></span>(<span>gs: geopandas.geoseries.GeoSeries, precision: int = 6) ‑> geopandas.geoseries.GeoSeries</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the supplied GeoSeries rounded to the specified precision.</p>
+<p>Works by round-tripping through WKT, which seems like the easiest
+way to do this given the variety of ways in which coordinates are
+stored depending on the geometry.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gs</code></strong> :&ensp;<code>gpd.GeoSeries</code></dt>
+<dd>geometries to gridify.</dd>
+<dt><strong><code>precision</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>digits of precision. Defaults to 6.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>gpd.GeoSeries</code></dt>
+<dd>the rounded geometries.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def gridify(gs:gpd.GeoSeries, precision:int = 6) -&gt; gpd.GeoSeries:
+    &#34;&#34;&#34;Returns the supplied GeoSeries rounded to the specified precision.
+    
+    Works by round-tripping through WKT, which seems like the easiest
+    way to do this given the variety of ways in which coordinates are
+    stored depending on the geometry.
+
+    Args:
+        gs (gpd.GeoSeries): geometries to gridify.
+        precision (int, optional): digits of precision. Defaults to 6.
+
+    Returns:
+        gpd.GeoSeries: the rounded geometries.
+    &#34;&#34;&#34;
+    return gpd.GeoSeries(
+        list(gs.apply(
+            wkt.dumps, rounding_precision = precision).apply(wkt.loads)))</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.incentre"><code class="name flex">
+<span>def <span class="ident">incentre</span></span>(<span>tri: shapely.geometry.polygon.Polygon) ‑> shapely.geometry.point.Point</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A different triangle centre, which produces better results for some
+of the dual tilings were triangles are not equilateral&hellip; see
+<a href="https://en.wikipedia.org/wiki/Incenter">https://en.wikipedia.org/wiki/Incenter</a></p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tri</code></strong> :&ensp;<code>geom.Polygon</code></dt>
+<dd>the triangle.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>geom.Point</code></dt>
+<dd>the incentre of the triangle.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def incentre(tri:geom.Polygon) -&gt; geom.Point:
+    &#34;&#34;&#34;A different triangle centre, which produces better results for some
+    of the dual tilings were triangles are not equilateral... see
+    https://en.wikipedia.org/wiki/Incenter
+
+    Args:
+        tri (geom.Polygon): the triangle.
+
+    Returns:
+        geom.Point: the incentre of the triangle.
+    &#34;&#34;&#34;
+    corners = [geom.Point(p[0], p[1]) 
+               for p in list(tri.exterior.coords)]  # ABCA
+    lengths = [p.distance(q) 
+               for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
+    lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
+    perimeter = fsum(lengths)
+    incentre = [0, 0]
+    for p, l in zip(corners[:-1], lengths):
+        incentre[0] = incentre[0] + p.x * l / perimeter
+        incentre[1] = incentre[1] + p.y * l / perimeter
+    return geom.Point(incentre)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.relabel"><code class="name flex">
+<span>def <span class="ident">relabel</span></span>(<span>data: Iterable) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns supplied data reassigned with unique values from
+string.ascii_letters.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>data</code></strong> :&ensp;<code>Iterable</code></dt>
+<dd>the data to relabel</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>the reassigned data</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def relabel(data:Iterable) -&gt; list:
+    &#34;&#34;&#34;Returns supplied data reassigned with unique values from 
+    string.ascii_letters.
+
+    Args:
+        data (Iterable): the data to relabel
+
+    Returns:
+        list: the reassigned data
+    &#34;&#34;&#34;
+    new_data = {}
+    d_count = 0
+    for d in data:
+        if not d in new_data:
+            new_data[d] = string.ascii_letters[d_count]
+            d_count = d_count + 1
+    return [new_data[d] for d in data]</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.safe_union"><code class="name flex">
+<span>def <span class="ident">safe_union</span></span>(<span>gs: geopandas.geoseries.GeoSeries, res: float = 0.001, as_polygon: bool = False) ‑> Union[shapely.geometry.polygon.Polygon, geopandas.geoseries.GeoSeries]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Unions the supplied GeoSeries of Polygons while buffering them to avoid
+gaps and odd internal floating edges. Optionally returns a Polygon or a
+GeoSeries. </p>
+<p>Frequently when unioning polygons that are ostensibly adjacent 'rogue'
+internal boundaries remain in the result. We can avoid this by buffering the
+polygons before unioning them, then reversing the buffer on the unioned
+shape.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gs</code></strong> :&ensp;<code>gpd.GeoSeries</code></dt>
+<dd>the Polygons to union.</dd>
+<dt><strong><code>res</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>size of the buffer to use. Defaults to 1e-3.</dd>
+<dt><strong><code>as_polygon</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>if True returns a Polygon, otherwise <br>
+returns a one Polygon GeoSeries. Defaults to False.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Union[gpd.GeoSeries, geom.Polygon]</code></dt>
+<dd><em>description</em></dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def safe_union(gs:gpd.GeoSeries, res:float = 1e-3, 
+               as_polygon:bool = False) -&gt; Union[gpd.GeoSeries, geom.Polygon]:
+    &#34;&#34;&#34;Unions the supplied GeoSeries of Polygons while buffering them to avoid
+    gaps and odd internal floating edges. Optionally returns a Polygon or a 
+    GeoSeries. 
+    
+    Frequently when unioning polygons that are ostensibly adjacent &#39;rogue&#39; 
+    internal boundaries remain in the result. We can avoid this by buffering the
+    polygons before unioning them, then reversing the buffer on the unioned 
+    shape.
+
+    Args:
+        gs (gpd.GeoSeries): the Polygons to union.
+        res (float, optional): size of the buffer to use. Defaults to 1e-3.
+        as_polygon (bool, optional): if True returns a Polygon, otherwise   
+            returns a one Polygon GeoSeries. Defaults to False.
+
+    Returns:
+        Union[gpd.GeoSeries, geom.Polygon]: _description_
+    &#34;&#34;&#34;
+    union = gs.buffer(res, resolution = 1, join_style = 2) \
+                .unary_union \
+                .buffer(-res, resolution = 1, join_style = 2)
+    if as_polygon:
+        return union
+    else:
+        return gpd.GeoSeries([union], crs = gs.crs)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.sort_ccw"><code class="name flex">
+<span>def <span class="ident">sort_ccw</span></span>(<span>pts_ids: list[tuple[float, float, str]])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Sorts supplied tuple of x, y, ID into counterclockwise order.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>pts_ids</code></strong> :&ensp;<code>list[tuple[float, float, str]]</code></dt>
+<dd>A tuple of a pair of
+floats and a string.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>a list in the same format as supplied sorted into
+counter-clockwise order of the point locations.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sort_ccw(pts_ids:list[tuple[float, float, str]]):
+    &#34;&#34;&#34;Sorts supplied tuple of x, y, ID into counterclockwise order.
+
+    Args:
+        pts_ids (list[tuple[float, float, str]]): A tuple of a pair of 
+            floats and a string.
+
+    Returns:
+        list: a list in the same format as supplied sorted into 
+            counter-clockwise order of the point locations.
+    &#34;&#34;&#34;
+    x = [p[0] for p in pts_ids]
+    y = [p[1] for p in pts_ids]
+    cx, cy = np.mean(x), np.mean(y)
+    dx = [_ - cx for _ in x]
+    dy = [_ - cy for _ in y]
+    angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
+    d = dict(zip(angles, pts_ids))
+    return [pt_id for angle, pt_id in sorted(d.items())]</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.touch_along_an_edge"><code class="name flex">
+<span>def <span class="ident">touch_along_an_edge</span></span>(<span>p1: shapely.geometry.polygon.Polygon, p2: shapely.geometry.polygon.Polygon) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Tests if two polygons touch along an edge.</p>
+<p>Checks that the intersection area of the two polygons buffered by
+a small amount is large enough to indicate the neighbour at more
+than a corner.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>p1</code></strong> :&ensp;<code>geom.Polygon</code></dt>
+<dd>First polygon</dd>
+<dt><strong><code>p2</code></strong> :&ensp;<code>geom.Polygon</code></dt>
+<dd>Second polygon</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if they neighbour along an edge</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -&gt; bool:
+    &#34;&#34;&#34;Tests if two polygons touch along an edge.
+
+    Checks that the intersection area of the two polygons buffered by
+    a small amount is large enough to indicate the neighbour at more
+    than a corner.
+
+    Args:
+        p1 (geom.Polygon): First polygon
+        p2 (geom.Polygon): Second polygon
+
+    Returns:
+        bool: True if they neighbour along an edge
+    &#34;&#34;&#34;
+    return p1.buffer(1e-3, resolution = 1, join_style = 2).intersection(
+        p2.buffer(1e-3, resolution = 1, join_style = 2)).area &gt; 4e-6</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.write_map_to_layers"><code class="name flex">
+<span>def <span class="ident">write_map_to_layers</span></span>(<span>gdf: geopandas.geodataframe.GeoDataFrame, fname: str = 'output.gpkg', element_var: str = 'element_id') ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes supplied GeoDataFrame to a GPKG file with layers based on
+the element_var attribute.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gdf</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
+<dd>the GeoDataFrame.</dd>
+<dt><strong><code>fname</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>filename to write.</dd>
+<dt><strong><code>element_var</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the attribute to use to separate
+output file into layers. Defaults to "element_id".</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_map_to_layers(gdf:gpd.GeoDataFrame, fname:str = &#34;output.gpkg&#34;,
+                        element_var:str = &#34;element_id&#34;) -&gt; None:
+    &#34;&#34;&#34;Writes supplied GeoDataFrame to a GPKG file with layers based on 
+    the element_var attribute.
+
+    Args:
+        gdf (gpd.GeoDataFrame): the GeoDataFrame.
+        fname (str, optional): filename to write.
+        element_var (str, optional): the attribute to use to separate
+            output file into layers. Defaults to &#34;element_id&#34;.
+    &#34;&#34;&#34;
+    grouped = gdf.groupby(element_var, as_index = False)
+    for e in pd.Series.unique(gdf[element_var]):
+        grouped.get_group(e).to_file(fname, layer = e, driver = &#34;GPKG&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="weavingspace" href="index.html">weavingspace</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="weavingspace.tiling_utils.centre_offset" href="#weavingspace.tiling_utils.centre_offset">centre_offset</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.clean_polygon" href="#weavingspace.tiling_utils.clean_polygon">clean_polygon</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_boundaries" href="#weavingspace.tiling_utils.get_boundaries">get_boundaries</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_bounding_ellipse" href="#weavingspace.tiling_utils.get_bounding_ellipse">get_bounding_ellipse</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_collapse_distance" href="#weavingspace.tiling_utils.get_collapse_distance">get_collapse_distance</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_dual_tile_unit" href="#weavingspace.tiling_utils.get_dual_tile_unit">get_dual_tile_unit</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_interior_vertices" href="#weavingspace.tiling_utils.get_interior_vertices">get_interior_vertices</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_largest_polygon" href="#weavingspace.tiling_utils.get_largest_polygon">get_largest_polygon</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_polygon_sector" href="#weavingspace.tiling_utils.get_polygon_sector">get_polygon_sector</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_regular_polygon" href="#weavingspace.tiling_utils.get_regular_polygon">get_regular_polygon</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_strand_ids" href="#weavingspace.tiling_utils.get_strand_ids">get_strand_ids</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_width_height_left_bottom" href="#weavingspace.tiling_utils.get_width_height_left_bottom">get_width_height_left_bottom</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.gridify" href="#weavingspace.tiling_utils.gridify">gridify</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.incentre" href="#weavingspace.tiling_utils.incentre">incentre</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.relabel" href="#weavingspace.tiling_utils.relabel">relabel</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.safe_union" href="#weavingspace.tiling_utils.safe_union">safe_union</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.sort_ccw" href="#weavingspace.tiling_utils.sort_ccw">sort_ccw</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.touch_along_an_edge" href="#weavingspace.tiling_utils.touch_along_an_edge">touch_along_an_edge</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.write_map_to_layers" href="#weavingspace.tiling_utils.write_map_to_layers">write_map_to_layers</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

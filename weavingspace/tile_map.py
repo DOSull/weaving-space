@@ -264,7 +264,7 @@ class Tiling:
         HERE BE DRAGONS! This function took a long time and a lot of trial and 
         error to get right, so modify with EXTREME CAUTION. As should be 
         apparent from the volume of code, the prioritise_tiles = True option is
-        where the tricky bits are mostly found, but 
+        where the tricky bits are mostly found.
 
         Args:
             id_var (str, optional): the variable the distinguishes areas in the

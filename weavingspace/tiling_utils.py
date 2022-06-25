@@ -178,10 +178,18 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
     This is because the dual process is topologically not metrically defineed, 
     so that exact vertex locations are ambiguous. 
     
+    NOTE: In general, it can be expected to work only if all the supplied 
+    elements are regular polygons. A known exception is if the only non-regular 
+    polygons are triangles.
+    
+    NOTE: 'clean' polygons are required. If supplied polygons have messy 
+    vertices with multiple points where there is only one proper point, bad 
+    things are likely to happen!
+    
     We therefore only return a GeoDataFrame for inspection. 
     
-    However some of TileUnit setup methods in tiling_geometries.py use this
-    method, where we are confident the dual TileUnit returned is valid.    
+    However some TileUnit setup methods in tiling_geometries.py use this
+    method, where we are confident the returned dual TileUnit is valid.    
 
     Args:
         t (TileUnit): the tiling for which the dual is required.
@@ -367,8 +375,22 @@ def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
             extent[0], extent[1])
 
 
-def get_bounding_ellipse(shapes:gpd.GeoSeries, 
-                         mag:float = 1.0) -> gpd.GeoSeries:
+def get_bounding_ellipse(
+        shapes:gpd.GeoSeries, mag:float = 1.0) -> gpd.GeoSeries:
+    """Returns an ellipse containing the supplied shapes.
+    
+    The method used is to calculate the size of square that would contain
+    the shapes, if they had an aspect ratio 1, then stretch the circle in
+    the x, y directions according to the actual aspect ratio of the shapes.
+
+    Args:
+        shapes (gpd.GeoSeries): the shapes to be contained.
+        mag (float, optional): optionally increase the size of the returned 
+            ellipse by this scale factor. Defaults to 1.0.
+
+    Returns:
+        gpd.GeoSeries: the set of shapes.
+    """
 
     w, h, *_ = get_width_height_left_bottom(shapes)
     
@@ -380,12 +402,37 @@ def get_bounding_ellipse(shapes:gpd.GeoSeries,
     
     
 def get_boundaries(shapes:gpd.GeoSeries) -> gpd.GeoSeries:
+    """Returns linestring GeoSeries from supplied polygon GeoSeries.
+
+    This is used to allow display of edges of tiles in legend when they are 
+    masked by an ellipse (if we instead clip polygons then the ellipse edge 
+    will also show in the result.)
+    
+    Args:
+        shapes (gpd.GeoSeries): Polygons to convert.
+
+    Returns:
+        gpd.GeoSeries: LineStrings from the supplied Polygons.
+    """
     bdys = [geom.LineString(p.exterior.coords) for p in shapes]
     return gpd.GeoSeries(bdys, crs = shapes.crs)
 
 
 def get_polygon_sector(shape:geom.Polygon, start:float = 0.0, 
                end:float = 1.0) -> geom.Polygon:
+    """Returns a sector of the provided Polygon.
+    
+    The returned sector is a section of the polygon boundary between the
+    normalized start and end positions, and including the polygon centroid.
+    Should (probably) only be applied to convex polygons.
+    
+    Args:
+        shape (geom.Polygon): the Polygon.
+        start (float): normalized start position along the boundary. Defaults to
+            0.
+        end (float): normalized start position along the boundary. Defaults to 
+            1.
+    """
     if start == end:
         # must return a null polygon since the calling context
         # expects to get something back... which most likely 
@@ -411,6 +458,27 @@ def get_polygon_sector(shape:geom.Polygon, start:float = 0.0,
 def clean_polygon(p:Union[geom.Polygon, gpd.GeoSeries], 
                       res:float = 1e-3, shrink_then_grow:bool = True
                   ) -> Union[geom.Polygon, gpd.GeoSeries]:
+    """Convenience function to 'clean' a shapely polyon or GeoSeries by applying
+    a negative buffer then the same positive buffer.
+
+    Optionally the buffer may be applied in the opposite order (i.e. grow then 
+    shrink)
+        
+    This is a procedure often unofficially recommended (on stackexchange etc.) 
+    even in the shapely docs, to resolve topology issues and extraneous 
+    additional vertices appearing when spatial operations are repeatedly 
+    applied.
+
+    Args:
+        p (Union[geom.Polygon, gpd.GeoSeries]): Polygon or GeoSeries to clean.
+        res (float, optional): buffer size to use. Defaults to 1e-3.
+        shrink_then_grow (bool, optional): if True the negative buffer is 
+            applied first, otherwise the buffer operations are applied in
+            reverse. Defaults to True.
+
+    Returns:
+        Union[geom.Polygon, gpd.GeoSeries]: the cleaned Polygon or GeoSeries.
+    """
     if shrink_then_grow:
         return p.buffer(
             -res, resolution = 1, join_style = 2).buffer(
@@ -423,6 +491,24 @@ def clean_polygon(p:Union[geom.Polygon, gpd.GeoSeries],
 
 def safe_union(gs:gpd.GeoSeries, res:float = 1e-3, 
                as_polygon:bool = False) -> Union[gpd.GeoSeries, geom.Polygon]:
+    """Unions the supplied GeoSeries of Polygons while buffering them to avoid
+    gaps and odd internal floating edges. Optionally returns a Polygon or a 
+    GeoSeries. 
+    
+    Frequently when unioning polygons that are ostensibly adjacent 'rogue' 
+    internal boundaries remain in the result. We can avoid this by buffering the
+    polygons before unioning them, then reversing the buffer on the unioned 
+    shape.
+
+    Args:
+        gs (gpd.GeoSeries): the Polygons to union.
+        res (float, optional): size of the buffer to use. Defaults to 1e-3.
+        as_polygon (bool, optional): if True returns a Polygon, otherwise   
+            returns a one Polygon GeoSeries. Defaults to False.
+
+    Returns:
+        Union[gpd.GeoSeries, geom.Polygon]: _description_
+    """
     union = gs.buffer(res, resolution = 1, join_style = 2) \
                 .unary_union \
                 .buffer(-res, resolution = 1, join_style = 2)
