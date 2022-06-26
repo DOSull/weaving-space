@@ -32,7 +32,6 @@
 from dataclasses import dataclass
 from typing import Union
 import itertools
-import copy
 
 import numpy as np
 import geopandas as gpd
@@ -45,12 +44,11 @@ import matplotlib.pyplot as pyplot
 import shapely.affinity as affine
 import shapely.geometry as geom
 
-from tileable import Tileable
-from tileable import TileShape
-from tile_unit import TileUnit
-# from weave_unit import WeaveUnit
+from weavingspace.tileable import Tileable
+from weavingspace.tileable import TileShape
+from weavingspace.tile_unit import TileUnit
 
-import tiling_utils
+import weavingspace.tiling_utils as tiling_utils
 
 
 @dataclass
@@ -1734,7 +1732,7 @@ plot. Defaults to (20,15).</dd>
 </dd>
 <dt id="weavingspace.tile_map.Tiling"><code class="flex name class">
 <span>class <span class="ident">Tiling</span></span>
-<span>(</span><span>unit: tileable.Tileable, region: geopandas.geodataframe.GeoDataFrame, id_var: str, tile_margin: float = 0, elements_sf: float = 1, elements_margin: float = 0)</span>
+<span>(</span><span>unit: <a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a>, region: geopandas.geodataframe.GeoDataFrame, id_var: str, tile_margin: float = 0, elements_sf: float = 1, elements_margin: float = 0)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class that applies a <code>Tileable</code> object to a region to be mapped.</p>
@@ -2008,11 +2006,11 @@ class Tiling:
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="weavingspace.tile_map.Tiling.tile_shape"><code class="name">var <span class="ident">tile_shape</span> : tileable.TileShape</code></dt>
+<dt id="weavingspace.tile_map.Tiling.tile_shape"><code class="name">var <span class="ident">tile_shape</span> : <a title="weavingspace.tileable.TileShape" href="tileable.html#weavingspace.tileable.TileShape">TileShape</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="weavingspace.tile_map.Tiling.tile_unit"><code class="name">var <span class="ident">tile_unit</span> : tileable.Tileable</code></dt>
+<dt id="weavingspace.tile_map.Tiling.tile_unit"><code class="name">var <span class="ident">tile_unit</span> : <a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>

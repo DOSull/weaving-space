@@ -10,11 +10,11 @@ import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
-from tileable import Tileable
-from tileable import TileShape
+from weavingspace.tileable import Tileable
+from weavingspace.tileable import TileShape
 
-import tiling_utils
-import _tiling_geometries
+import weavingspace.tiling_utils as tiling_utils
+import weavingspace._tiling_geometries as tiling_geometries
 
 
 @dataclass
@@ -106,19 +106,19 @@ class TileUnit(Tileable):
         on self.tiling_type.
         """
         if self.tiling_type == "cairo":
-            _tiling_geometries.setup_cairo(self)
+            tiling_geometries.setup_cairo(self)
         elif self.tiling_type == "hex-dissection":
-            _tiling_geometries.setup_hex_dissection(self)
+            tiling_geometries.setup_hex_dissection(self)
         elif self.tiling_type == "laves":
-            _tiling_geometries.setup_laves(self)
+            tiling_geometries.setup_laves(self)
         elif self.tiling_type == "archimedean":
-            _tiling_geometries.setup_archimedean(self)
+            tiling_geometries.setup_archimedean(self)
         elif self.tiling_type in ("hex-colouring", "hex-coloring"):
-            _tiling_geometries.setup_hex_colouring(self)
+            tiling_geometries.setup_hex_colouring(self)
         elif self.tiling_type in ("square-colouring", "square-coloring"):
-            _tiling_geometries.setup_square_colouring(self)
+            tiling_geometries.setup_square_colouring(self)
         else:
-            _tiling_geometries.setup_none_tile(self)
+            tiling_geometries.setup_none_tile(self)
         return
 
     

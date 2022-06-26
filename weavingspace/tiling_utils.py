@@ -7,8 +7,6 @@ import string
 
 from math import fsum
 
-import matplotlib
-import matplotlib.colors
 import numpy as np
 
 import geopandas as gpd

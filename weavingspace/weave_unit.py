@@ -13,14 +13,14 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.ops
 
-import _weave_matrices
-import tiling_utils
+import weavingspace._weave_matrices as weave_matrices
+import weavingspace.tiling_utils as tiling_utils
 
-from _loom import Loom
-from _weave_grids import WeaveGrid
+from weavingspace._loom import Loom
+from weavingspace._weave_grids import WeaveGrid
 
-from tileable import TileShape
-from tileable import Tileable
+from weavingspace.tileable import TileShape
+from weavingspace.tileable import Tileable
 
 
 @dataclass
@@ -118,7 +118,7 @@ class WeaveUnit(Tileable):
         if self.weave_type == "basket" and isinstance(self.n, (list, tuple)):
             self.n = self.n[0]
         
-        p = _weave_matrices.get_weave_pattern_matrix(
+        p = weave_matrices.get_weave_pattern_matrix(
             weave_type = self.weave_type, n = self.n, warp = warp_threads,
             weft = weft_threads, tie_up = self.tie_up, tr = self.tr, 
             th = self.th)
@@ -158,26 +158,26 @@ class WeaveUnit(Tileable):
         """
         if self.weave_type == "hex":
             loom = Loom(
-                _weave_matrices.get_weave_pattern_matrix(
+                weave_matrices.get_weave_pattern_matrix(
                     weave_type = "this", tie_up = np.ones((6, 6)), 
                     warp = strands_1, weft = strands_2),
-                _weave_matrices.get_weave_pattern_matrix(
+                weave_matrices.get_weave_pattern_matrix(
                     weave_type = "this", tie_up = np.ones((6, 6)), 
                     warp = strands_2, weft = strands_3),
-                _weave_matrices.get_weave_pattern_matrix(
+                weave_matrices.get_weave_pattern_matrix(
                     weave_type = "this", tie_up = np.ones((6, 6)), 
                     warp = strands_3, weft = strands_1),
             )
         else: # "cube"
             loom = Loom(  
                 # Note n = (1,2,1,2) is required here to force 6x6 twill
-                _weave_matrices.get_weave_pattern_matrix(
+                weave_matrices.get_weave_pattern_matrix(
                     weave_type = "twill", n = (1, 2, 1, 2), 
                     warp = strands_1, weft = strands_2),
-                _weave_matrices.get_weave_pattern_matrix(
+                weave_matrices.get_weave_pattern_matrix(
                     weave_type = "twill", n = (1, 2, 1, 2), 
                     warp = strands_2, weft = strands_3),
-                _weave_matrices.get_weave_pattern_matrix(
+                weave_matrices.get_weave_pattern_matrix(
                     weave_type = "twill", n = (1, 2, 1, 2), 
                     warp = strands_3, weft = strands_1),
             )

@@ -4,7 +4,6 @@
 from dataclasses import dataclass
 from typing import Union
 import itertools
-import copy
 
 import numpy as np
 import geopandas as gpd
@@ -14,15 +13,13 @@ from matplotlib.figure import Figure
 import matplotlib.colors
 import matplotlib.pyplot as pyplot
 
-import shapely.affinity as affine
 import shapely.geometry as geom
 
-from tileable import Tileable
-from tileable import TileShape
-from tile_unit import TileUnit
-# from weave_unit import WeaveUnit
+from weavingspace.tileable import Tileable
+from weavingspace.tileable import TileShape
+from weavingspace.tile_unit import TileUnit
 
-import tiling_utils
+import weavingspace.tiling_utils as tiling_utils
 
 
 @dataclass
@@ -252,7 +249,7 @@ class Tiling:
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         if elements_margin > 0:
-            self.tile_unit = self.inset_elements(elements_margin) 
+            self.tile_unit = self.tile_unit.inset_elements(elements_margin) 
         if elements_sf != 1:
             if isinstance(self.tile_unit, TileUnit):
                 self.tile_unit = self.tile_unit.scale_elements(elements_sf)

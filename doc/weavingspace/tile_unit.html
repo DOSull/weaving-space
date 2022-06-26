@@ -38,11 +38,11 @@ import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
-from tileable import Tileable
-from tileable import TileShape
+from weavingspace.tileable import Tileable
+from weavingspace.tileable import TileShape
 
-import tiling_utils
-import _tiling_geometries
+import weavingspace.tiling_utils as tiling_utils
+import weavingspace._tiling_geometries as tiling_geometries
 
 
 @dataclass
@@ -134,19 +134,19 @@ class TileUnit(Tileable):
         on self.tiling_type.
         &#34;&#34;&#34;
         if self.tiling_type == &#34;cairo&#34;:
-            _tiling_geometries.setup_cairo(self)
+            tiling_geometries.setup_cairo(self)
         elif self.tiling_type == &#34;hex-dissection&#34;:
-            _tiling_geometries.setup_hex_dissection(self)
+            tiling_geometries.setup_hex_dissection(self)
         elif self.tiling_type == &#34;laves&#34;:
-            _tiling_geometries.setup_laves(self)
+            tiling_geometries.setup_laves(self)
         elif self.tiling_type == &#34;archimedean&#34;:
-            _tiling_geometries.setup_archimedean(self)
+            tiling_geometries.setup_archimedean(self)
         elif self.tiling_type in (&#34;hex-colouring&#34;, &#34;hex-coloring&#34;):
-            _tiling_geometries.setup_hex_colouring(self)
+            tiling_geometries.setup_hex_colouring(self)
         elif self.tiling_type in (&#34;square-colouring&#34;, &#34;square-coloring&#34;):
-            _tiling_geometries.setup_square_colouring(self)
+            tiling_geometries.setup_square_colouring(self)
         else:
-            _tiling_geometries.setup_none_tile(self)
+            tiling_geometries.setup_none_tile(self)
         return
 
     
@@ -368,8 +368,8 @@ rectangle or a hexagon).</dd>
 <dd>the tile spacing &ndash; effectively the 'resolution' of
 the tiling. Defaults to 1000.</dd>
 <dt><strong><code>tile_shape</code></strong> :&ensp;<code>TileShape</code></dt>
-<dd>the tile shape. Defaults to </dd>
-<dt><code>TileShape.RECTANGLE</code>.</dt>
+<dd>the tile shape. Defaults to
+<code>TileShape.RECTANGLE</code>.</dd>
 <dt><strong><code>vectors</code></strong> :&ensp;<code>list[tuple[float]]</code></dt>
 <dd>translation vector symmetries of the
 tiling.</dd>
@@ -378,8 +378,8 @@ tiling.</dd>
 elements of self.tile &ndash; most often a union of those polygons.</dd>
 <dt><strong><code>crs</code></strong> :&ensp;<code>int</code></dt>
 <dd>the coordinate reference system of the tile. Most often
-an EPSG code. Any valid geopandas CRS is valid. Defaults to
-3857 (i.e. Web Mercator).</dd>
+an EPSG code, but any valid geopandas CRS specification is
+valid. Defaults to 3857 (i.e. Web Mercator).</dd>
 <dt><strong><code>fudge_factor</code></strong> :&ensp;<code>float</code></dt>
 <dd>a distance in units of self.crs to be used in
 geometry clean ups (for example this buffer distance is applied
@@ -478,19 +478,19 @@ class TileUnit(Tileable):
         on self.tiling_type.
         &#34;&#34;&#34;
         if self.tiling_type == &#34;cairo&#34;:
-            _tiling_geometries.setup_cairo(self)
+            tiling_geometries.setup_cairo(self)
         elif self.tiling_type == &#34;hex-dissection&#34;:
-            _tiling_geometries.setup_hex_dissection(self)
+            tiling_geometries.setup_hex_dissection(self)
         elif self.tiling_type == &#34;laves&#34;:
-            _tiling_geometries.setup_laves(self)
+            tiling_geometries.setup_laves(self)
         elif self.tiling_type == &#34;archimedean&#34;:
-            _tiling_geometries.setup_archimedean(self)
+            tiling_geometries.setup_archimedean(self)
         elif self.tiling_type in (&#34;hex-colouring&#34;, &#34;hex-coloring&#34;):
-            _tiling_geometries.setup_hex_colouring(self)
+            tiling_geometries.setup_hex_colouring(self)
         elif self.tiling_type in (&#34;square-colouring&#34;, &#34;square-coloring&#34;):
-            _tiling_geometries.setup_square_colouring(self)
+            tiling_geometries.setup_square_colouring(self)
         else:
-            _tiling_geometries.setup_none_tile(self)
+            tiling_geometries.setup_none_tile(self)
         return
 
     
@@ -618,7 +618,7 @@ class TileUnit(Tileable):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li>tileable.Tileable</li>
+<li><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
@@ -730,23 +730,39 @@ on self.tiling_type.</p></div>
     on self.tiling_type.
     &#34;&#34;&#34;
     if self.tiling_type == &#34;cairo&#34;:
-        _tiling_geometries.setup_cairo(self)
+        tiling_geometries.setup_cairo(self)
     elif self.tiling_type == &#34;hex-dissection&#34;:
-        _tiling_geometries.setup_hex_dissection(self)
+        tiling_geometries.setup_hex_dissection(self)
     elif self.tiling_type == &#34;laves&#34;:
-        _tiling_geometries.setup_laves(self)
+        tiling_geometries.setup_laves(self)
     elif self.tiling_type == &#34;archimedean&#34;:
-        _tiling_geometries.setup_archimedean(self)
+        tiling_geometries.setup_archimedean(self)
     elif self.tiling_type in (&#34;hex-colouring&#34;, &#34;hex-coloring&#34;):
-        _tiling_geometries.setup_hex_colouring(self)
+        tiling_geometries.setup_hex_colouring(self)
     elif self.tiling_type in (&#34;square-colouring&#34;, &#34;square-coloring&#34;):
-        _tiling_geometries.setup_square_colouring(self)
+        tiling_geometries.setup_square_colouring(self)
     else:
-        _tiling_geometries.setup_none_tile(self)
+        tiling_geometries.setup_none_tile(self)
     return</code></pre>
 </details>
 </dd>
 </dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></b></code>:
+<ul class="hlist">
+<li><code><a title="weavingspace.tileable.Tileable.fit_elements_to_tile" href="tileable.html#weavingspace.tileable.Tileable.fit_elements_to_tile">fit_elements_to_tile</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.get_local_patch" href="tileable.html#weavingspace.tileable.Tileable.get_local_patch">get_local_patch</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.get_vectors" href="tileable.html#weavingspace.tileable.Tileable.get_vectors">get_vectors</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.inset_elements" href="tileable.html#weavingspace.tileable.Tileable.inset_elements">inset_elements</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.merge_fragments" href="tileable.html#weavingspace.tileable.Tileable.merge_fragments">merge_fragments</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.plot" href="tileable.html#weavingspace.tileable.Tileable.plot">plot</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.regularise_elements" href="tileable.html#weavingspace.tileable.Tileable.regularise_elements">regularise_elements</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.setup_regularised_tile_from_elements" href="tileable.html#weavingspace.tileable.Tileable.setup_regularised_tile_from_elements">setup_regularised_tile_from_elements</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.setup_vectors" href="tileable.html#weavingspace.tileable.Tileable.setup_vectors">setup_vectors</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 </dl>
 </section>

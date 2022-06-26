@@ -6,15 +6,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from shapely.affinity import translate
-from shapely.affinity import rotate
-from shapely.affinity import scale
-from shapely.geometry import Polygon
-from shapely.geometry import MultiPolygon
-from shapely.ops import unary_union
-from shapely.wkt import dumps
-from shapely.wkt import loads
+import shapely.affinity as affine
+import shapely.geometry as geom
+import shapely.wkt as wkt
 import shapely.ops
+
 
 @dataclass
 class WeaveGrid:
@@ -28,14 +24,14 @@ class WeaveGrid:
             site from its (integer) grid coordinates,
         orientations (tuple[float]: orientations of the two or three
             axes either (0, -90) or (0, 120, 240).
-        grid_cell (Polygon): the base triangle or square of the grid.
+        grid_cell (geom.Polygon): the base triangle or square of the grid.
         n_axes (int): the number of axes in the weave, 2 or 3. 
             Defaults to 2.
         spacing (float): spacing of the strands. Defaults to 10_000.
     """    
     basis: np.ndarray
     orientations: tuple[float]
-    grid_cell: Polygon = None
+    grid_cell: geom.Polygon = None
     n_axes: int = None
     spacing: float = 10000
     
@@ -83,14 +79,15 @@ class WeaveGrid:
         return self.basis @ coords
         
 
-    def get_grid_cell_at(self, coords: tuple[int] = None) -> Polygon:
+    def get_grid_cell_at(self, coords: tuple[int] = None) -> geom.Polygon:
         """Returns grid cell polygon centred on coords.
 
         Args:
             coords (tuple[int], optional): _description_. Defaults to None.
 
         Returns:
-            Polygon: square or triangle centred at the specified coordinates.
+            geom.Polygon: square or triangle centred at the specified 
+                coordinates.
         """        
         if coords is None:
             coords = tuple([0] * self.n_axes)
@@ -99,14 +96,14 @@ class WeaveGrid:
         else:
             polygon = self.grid_cell
             xy = self.get_coordinates(coords)
-            polygon = translate(polygon, xy[0], xy[1])
+            polygon = affine.translate(polygon, xy[0], xy[1])
         if self.n_axes == 2 or sum(coords) %2 == 0:
             return polygon
         else:
-            return rotate(polygon, 180, origin = polygon.centroid)
+            return affine.rotate(polygon, 180, origin = polygon.centroid)
 
         
-    def _make_grid_cell(self) -> Polygon:
+    def _make_grid_cell(self) -> geom.Polygon:
         """Returns base cell polygon for this _WeaveGrid
 
         Grid cell is centred at (0, 0) with  number of sides dependent
@@ -138,8 +135,7 @@ class WeaveGrid:
             R = self.spacing / (1 + np.cos(np.pi / n_sides))
         angles = self.__get_angles(n_sides)
         corners = [(R * np.cos(a), R * np.sin(a)) for a in angles]
-        # return Polygon(corners)
-        return self._gridify(Polygon(corners), precision = 6)
+        return self._gridify(geom.Polygon(corners), precision = 6)
 
 
     def __get_angles(self, n: int = 4) -> list[float]:
@@ -159,21 +155,21 @@ class WeaveGrid:
                 (i / n * 2 * np.pi) for i in range(n)]
 
 
-    def _gridify(self, shape: Polygon, precision = 3) -> Polygon:
+    def _gridify(self, shape: geom.Polygon, precision = 3) -> geom.Polygon:
         """Returns polygon with coordinates at specified precision. 
 
         Args:
-            shape (Polygon): polygon to gridify.
+            shape (geom.Polygon): polygon to gridify.
             precision (int): digits of precision. Defaults to 3.
 
         Returns:
-            Polygon: gridified polygon.
+            geom.Polygon: gridified polygon.
         """        
-        return loads(dumps(shape, rounding_precision = precision))
+        return wkt.loads(wkt.dumps(shape, rounding_precision = precision))
 
 
     def _get_grid_cell_slices(self, L:float = 0.0, W:float = 1, 
-                              n_slices:int = 1) -> list[Polygon]:
+                              n_slices:int = 1) -> list[geom.Polygon]:
         """Gets list of rectangular polygons represneting 'slices' across cell.
         
         Returns 'slices' across grid cell (i.e. horizontally) centred vertically
@@ -200,7 +196,7 @@ class WeaveGrid:
                 along their length. Defaults to 1.
 
         Returns:
-            list[Polygon]: _description_
+            list[geom.Polygon]: _description_
         """        
         L = self.spacing if L == 0 else L
         # note that strand width is based on self.spacing, not L because L
@@ -211,15 +207,16 @@ class WeaveGrid:
         odd_numbers = [x for x in range(1, 2 * n_slices, 2)]
         slice_offsets = [(slice_w * o / 2) - 
                          (strand_w / 2) for o in odd_numbers] 
-        base_slice = Polygon([(-L/2, -slice_w/2), ( L/2, -slice_w/2), 
-                              ( L/2,  slice_w/2), (-L/2,  slice_w/2)])
-        return [translate(base_slice, 0, offset) for offset in slice_offsets]
+        base_slice = geom.Polygon([(-L/2, -slice_w/2), ( L/2, -slice_w/2), 
+                                   ( L/2,  slice_w/2), (-L/2,  slice_w/2)])
+        return [affine.translate(base_slice, 0, offset) 
+                for offset in slice_offsets]
 
 
     def _get_cell_strands(
             self, width:float = 1.0, coords:tuple[int] = None, 
             orientation:int = 0, n_slices:int = 1
-        ) -> list[Union[Polygon, MultiPolygon]]:
+        ) -> list[Union[geom.Polygon,geom.MultiPolygon]]:
         """Gets n_slices cells strands with specified total width across the
         grid cell at coords at orientation.
 
@@ -234,25 +231,26 @@ class WeaveGrid:
                 strands into. Defaults to 1.
 
         Returns:
-            list[Polygon|MultiPolygon]: polygons representing the strands.
+            list[Union[geom.Polygon,geom.MultiPolygon]]: polygons representing the strands.
         """        
         cell = self.get_grid_cell_at(coords)
         # when aspect is <1 strands extend outside cell by some scale factor
         sf = 2 - width if self.n_axes == 2 else (5 - 3 * width) / 2
-        expanded_cell = scale(cell, sf, sf, origin = cell.centroid)
+        expanded_cell = affine.scale(cell, sf, sf, origin = cell.centroid)
         big_l = (sf * self.spacing      ## rectangular case is simple
                  if self.n_axes == 2    ## triangular less so!
                  else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2)
-        strands = MultiPolygon(self._get_grid_cell_slices(L = big_l, W = width,
-                                                          n_slices = n_slices))
+        strands = geom.MultiPolygon(
+            self._get_grid_cell_slices(
+                L = big_l, W = width, n_slices = n_slices))
         # we need centre of cell bounding box to shift strands to 
         # vertical center of triangular cells. In rectangular case
         # this will be (0, 0).
         cell_offset = cell.envelope.centroid.coords[0]
-        strands = translate(strands, cell_offset[0], cell_offset[1])
-        strands = MultiPolygon([expanded_cell.intersection(s)
-                                for s in strands.geoms])
-        strands = rotate(strands, orientation, origin = cell.centroid)
+        strands = affine.translate(strands, cell_offset[0], cell_offset[1])
+        strands = geom.MultiPolygon(
+            [expanded_cell.intersection(s) for s in strands.geoms])
+        strands = affine.rotate(strands, orientation, origin = cell.centroid)
         # return [s for s in strands.geoms]
         return [self._gridify(s) for s in strands.geoms]
 
@@ -260,7 +258,7 @@ class WeaveGrid:
     def get_visible_cell_strands(
             self, width:float= 1.0, coords:tuple[int] = None, 
             strand_order:tuple[int] = (0, 1, 2), n_slices:tuple[int] = (1, 1, 1)
-        ) -> list[Union[Polygon, MultiPolygon]]:
+        ) -> list[Union[geom.Polygon,geom.MultiPolygon]]:
         """Returns visible strands in grid cell based on layer order.
 
         Returns visible parts of the strands in a grid cell, given strand width, strand layer order and the number of slices in each direction.
@@ -276,8 +274,9 @@ class WeaveGrid:
                 at this cell site. Defaults to (1, 1, 1).
 
         Returns:
-            list[Polygon|MultiPolygon]: those polygons that will be visible at
-                this site given requested strand order from the top.
+            list[Union[geom.Polygon,geom.MultiPolygon]]: those polygons that
+                will be visible at this site given requested strand order from 
+                the top.
         """        
         all_polys = []
         for order in strand_order[:self.n_axes]:
@@ -286,14 +285,14 @@ class WeaveGrid:
                                                 n_slices[order])
             if all_polys == []:
                 all_polys.extend(next_polys)
-                mask = unary_union(next_polys)
+                mask = shapely.ops.unary_union(next_polys)
             else:
                 all_polys.extend([p.difference(mask) for p in next_polys])
-                mask = mask.union(unary_union(next_polys))
+                mask = mask.union(shapely.ops.unary_union(next_polys))
         return all_polys
 
 
-    def get_tile_from_cells(self, approx_tile:Polygon) -> Polygon:
+    def get_tile_from_cells(self, approx_tile:geom.Polygon) -> geom.Polygon:
         """Returns a rectangle or hexagon derived from the bounds of the
         supplied approximation to a tile.
         
@@ -302,11 +301,11 @@ class WeaveGrid:
         to have many more corners than this (for some reason...).
 
         Args:
-            approx_tile (Polygon): MultiPolygon formed from the cells of the
-                tile.
+            approx_tile (geom.Polygon): MultiPolygon formed from the cells of
+                the tile.
 
         Returns:
-            Polygon (geom.Polygon): rectangle of hexagon Polygon.
+            geom.Polygon (geom.Polygon): rectangle or hexagon geom.Polygon.
         """
         xmin, ymin, xmax, ymax = approx_tile.bounds
         if self.n_axes == 2:
@@ -316,10 +315,11 @@ class WeaveGrid:
             w = np.round((xmax - xmin) / h_spacing) * h_spacing
         h = np.round((ymax - ymin) / self.spacing) * self.spacing
         if self.n_axes == 2:
-            return Polygon([(-w/2, -h/2), (w/2, -h/2), (w/2, h/2), (-w/2, h/2)])
+            return geom.Polygon([(-w/2, -h/2), ( w/2, -h/2), 
+                                 ( w/2,  h/2), (-w/2,  h/2)])
         else:
-            return Polygon([( w/4, -h/2), ( w/2,    0), ( w/4,  h/2), 
-                            (-w/4,  h/2), (-w/2,    0), (-w/4, -h/2)])
+            return geom.Polygon([( w/4, -h/2), ( w/2,    0), ( w/4,  h/2), 
+                                 (-w/4,  h/2), (-w/2,    0), (-w/4, -h/2)])
             
         
         

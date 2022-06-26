@@ -11,7 +11,7 @@ import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
-import tiling_utils
+import weavingspace.tiling_utils as tiling_utils
 
 
 class TileShape(Enum):

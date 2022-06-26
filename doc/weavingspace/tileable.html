@@ -33,14 +33,13 @@ from enum import Enum
 from typing import Union
 from dataclasses import dataclass
 import copy
-import string
 
 import geopandas as gpd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
-import tiling_utils
+import weavingspace.tiling_utils as tiling_utils
 
 
 class TileShape(Enum):
@@ -85,14 +84,14 @@ class Tileable:
             spacing (float): the tile spacing -- effectively the &#39;resolution&#39; of
                 the tiling. Defaults to 1000.
             tile_shape (TileShape): the tile shape. Defaults to 
-            `TileShape.RECTANGLE`.
+                `TileShape.RECTANGLE`.
             vectors (list[tuple[float]]): translation vector symmetries of the 
                 tiling.
             regularised_tile (gpd.GeoDataFrame): a polygon containing all the 
                 elements of self.tile -- most often a union of those polygons.
             crs (int): the coordinate reference system of the tile. Most often 
-                an EPSG code. Any valid geopandas CRS is valid. Defaults to 
-                3857 (i.e. Web Mercator).
+                an EPSG code, but any valid geopandas CRS specification is
+                valid. Defaults to 3857 (i.e. Web Mercator).
             fudge_factor (float): a distance in units of self.crs to be used in
                 geometry clean ups (for example this buffer distance is applied
                 before unioning polygons.) Defaults to 1e-3.
@@ -547,8 +546,8 @@ rectangle or a hexagon).</dd>
 <dd>the tile spacing &ndash; effectively the 'resolution' of
 the tiling. Defaults to 1000.</dd>
 <dt><strong><code>tile_shape</code></strong> :&ensp;<code><a title="weavingspace.tileable.TileShape" href="#weavingspace.tileable.TileShape">TileShape</a></code></dt>
-<dd>the tile shape. Defaults to </dd>
-<dt><code><a title="weavingspace.tileable.TileShape.RECTANGLE" href="#weavingspace.tileable.TileShape.RECTANGLE">TileShape.RECTANGLE</a></code>.</dt>
+<dd>the tile shape. Defaults to
+<code><a title="weavingspace.tileable.TileShape.RECTANGLE" href="#weavingspace.tileable.TileShape.RECTANGLE">TileShape.RECTANGLE</a></code>.</dd>
 <dt><strong><code>vectors</code></strong> :&ensp;<code>list[tuple[float]]</code></dt>
 <dd>translation vector symmetries of the
 tiling.</dd>
@@ -557,8 +556,8 @@ tiling.</dd>
 elements of self.tile &ndash; most often a union of those polygons.</dd>
 <dt><strong><code>crs</code></strong> :&ensp;<code>int</code></dt>
 <dd>the coordinate reference system of the tile. Most often
-an EPSG code. Any valid geopandas CRS is valid. Defaults to
-3857 (i.e. Web Mercator).</dd>
+an EPSG code, but any valid geopandas CRS specification is
+valid. Defaults to 3857 (i.e. Web Mercator).</dd>
 <dt><strong><code>fudge_factor</code></strong> :&ensp;<code>float</code></dt>
 <dd>a distance in units of self.crs to be used in
 geometry clean ups (for example this buffer distance is applied
@@ -598,14 +597,14 @@ class Tileable:
             spacing (float): the tile spacing -- effectively the &#39;resolution&#39; of
                 the tiling. Defaults to 1000.
             tile_shape (TileShape): the tile shape. Defaults to 
-            `TileShape.RECTANGLE`.
+                `TileShape.RECTANGLE`.
             vectors (list[tuple[float]]): translation vector symmetries of the 
                 tiling.
             regularised_tile (gpd.GeoDataFrame): a polygon containing all the 
                 elements of self.tile -- most often a union of those polygons.
             crs (int): the coordinate reference system of the tile. Most often 
-                an EPSG code. Any valid geopandas CRS is valid. Defaults to 
-                3857 (i.e. Web Mercator).
+                an EPSG code, but any valid geopandas CRS specification is
+                valid. Defaults to 3857 (i.e. Web Mercator).
             fudge_factor (float): a distance in units of self.crs to be used in
                 geometry clean ups (for example this buffer distance is applied
                 before unioning polygons.) Defaults to 1e-3.
@@ -979,6 +978,11 @@ class Tileable:
         elements[&#34;rotation&#34;] = 0
         return elements</code></pre>
 </details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></li>
+<li><a title="weavingspace.weave_unit.WeaveUnit" href="weave_unit.html#weavingspace.weave_unit.WeaveUnit">WeaveUnit</a></li>
+</ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="weavingspace.tileable.Tileable.crs"><code class="name">var <span class="ident">crs</span> : int</code></dt>
