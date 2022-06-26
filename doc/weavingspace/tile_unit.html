@@ -369,11 +369,11 @@ arguments any of the arguments below.</p>
 <dd>the strand geometries with associated
 element_id attribute encoding their different colouring.</dd>
 <dt><strong><code>tile</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
-<dd>the tileable polygon (either a
-rectangle or a hexagon).</dd>
+<dd>the tileable polygon (a rectangle, a
+hexagon, or a diamond).</dd>
 <dt><strong><code>spacing</code></strong> :&ensp;<code>float</code></dt>
 <dd>the tile spacing &ndash; effectively the 'resolution' of
-the tiling. Defaults to 1000.</dd>
+the tiling. Defaults to <code>1000</code>.</dd>
 <dt><strong><code>tile_shape</code></strong> :&ensp;<code>TileShape</code></dt>
 <dd>the tile shape. Defaults to
 <code>TileShape.RECTANGLE</code>.</dd>
@@ -381,8 +381,9 @@ the tiling. Defaults to 1000.</dd>
 <dd>translation vector symmetries of the
 tiling.</dd>
 <dt><strong><code>regularised_tile</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
-<dd>a polygon containing all the
-elements of self.tile &ndash; most often a union of those polygons.</dd>
+<dd>a polygon containing the
+elements of this <code><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></code> &mdash; most
+often a union of those polygons.</dd>
 <dt><strong><code>crs</code></strong> :&ensp;<code>int</code></dt>
 <dd>the coordinate reference system of the tile. Most often
 an EPSG code, but any valid geopandas CRS specification is
@@ -390,7 +391,7 @@ valid. Defaults to 3857 (i.e. Web Mercator).</dd>
 <dt><strong><code>fudge_factor</code></strong> :&ensp;<code>float</code></dt>
 <dd>a distance in units of self.crs to be used in
 geometry clean ups (for example this buffer distance is applied
-before unioning polygons.) Defaults to 1e-3.</dd>
+before unioning polygons.) Defaults to <code>1e-3</code>.</dd>
 </dl></div>
 <details class="source">
 <summary>

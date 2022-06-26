@@ -27,7 +27,7 @@ class TileShape(Enum):
     """The available base tile shapes.
     
     NOTE: the TRIANGLE type does not persist, but should be converted to a
-    DIAMOND or HEXAGON type during Tileable construction.
+    DIAMOND or HEXAGON type during `Tileable` construction.
     """
     RECTANGLE = "rectangle"
     HEXAGON = "hexagon"
@@ -60,22 +60,23 @@ class Tileable:
         Args:
             elements (gpd.GeoDataFrame): the strand geometries with associated
                 element_id attribute encoding their different colouring.
-            tile (gpd.GeoDataFrame): the tileable polygon (either a
-                rectangle or a hexagon).
+            tile (gpd.GeoDataFrame): the tileable polygon (a rectangle, a
+                hexagon, or a diamond).
             spacing (float): the tile spacing -- effectively the 'resolution' of
-                the tiling. Defaults to 1000.
+                the tiling. Defaults to `1000`.
             tile_shape (TileShape): the tile shape. Defaults to 
                 `TileShape.RECTANGLE`.
             vectors (list[tuple[float]]): translation vector symmetries of the 
                 tiling.
-            regularised_tile (gpd.GeoDataFrame): a polygon containing all the 
-                elements of self.tile -- most often a union of those polygons.
+            regularised_tile (gpd.GeoDataFrame): a polygon containing the 
+                elements of this `weavingspace.tileable.Tileable` --- most 
+                often a union of those polygons.
             crs (int): the coordinate reference system of the tile. Most often 
                 an EPSG code, but any valid geopandas CRS specification is
                 valid. Defaults to 3857 (i.e. Web Mercator).
             fudge_factor (float): a distance in units of self.crs to be used in
                 geometry clean ups (for example this buffer distance is applied
-                before unioning polygons.) Defaults to 1e-3.
+                before unioning polygons.) Defaults to `1e-3`.
         """
         for k, v in kwargs.items():
             self.__dict__[k] = v
@@ -108,14 +109,14 @@ class Tileable:
                 (-1,  0): (-100, 0), ( 0, -1): (0, -100)
             }
             
-        For a tileable of type TileShape.HEXAGON, the indexing tuples 
+        For a tileable of type `TileShape.HEXAGON`, the indexing tuples 
         have three components. See https://www.redblobgames.com/grids/hexagons/ 
         
         Args:
-            return_values (bool): If True returns the vectors only. If 
-            False returns a dictionary of the vectors indexed by tuples 
-            in the grid coordinate system. Defaults to True.
-
+            return_values (bool): If `True` returns the vectors only. If
+                `False` returns a dictionary of the vectors indexed by tuples
+                in the grid coordinate system. Defaults to `True`.
+        
         Returns:
             Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]: 
                 either the vectors as a list of float tuples, or a dictionary 
@@ -228,7 +229,8 @@ class Tileable:
         """Combines separate elements that share an element_id value into 
         single elements, if they would end up touching when tiled. 
         
-        Also adjusts the regularised_tile attribute accordingly.
+        Also adjusts the `weavingspace.tileable.Tileable.regularised_tile` 
+        attribute accordingly.
         """
         self.regularised_tile = copy.deepcopy(self.tile)
         self.regularised_tile.geometry = \
@@ -271,12 +273,12 @@ class Tileable:
 
         Args:
             r (int, optional): the number of translation vector steps required. 
-                Defaults to 1.
+                Defaults to `1`.
             include_0 (bool, optional): If True includes the Tileable itself at 
-                (0, 0). Defaults to False.
+                (0, 0). Defaults to `False`.
 
         Returns:
-            gpd.GeoDataFrame: A GeoDataframe of the Tileable's elements extended
+            gpd.GeoDataFrame: A GeoDataframe of the elements extended
                 by a number of translation vectors.
         """
         # a dictionary of all the vectors we need, starting with (0, 0)
@@ -327,7 +329,7 @@ class Tileable:
 
         Args:
             centre_element (int, optional): the index position of the central 
-                element. Defaults to 0.
+                element. Defaults to `0`.
         """
         dxy = self.elements.geometry[centre_element].centroid
         self.elements.geometry = self.elements.translate(-dxy.x, -dxy.y)
@@ -345,7 +347,7 @@ class Tileable:
     
 
     # applicable to both TileUnits and WeaveUnits
-    def inset_elements(self, inset:float = 1) -> "Tileable":
+    def inset_elements(self, inset:float = 0) -> "Tileable":
         """Returns a new Tileable with an inset applied around the edges of the 
         tiling elements.
 
@@ -357,7 +359,7 @@ class Tileable:
         elements.
 
         Args:
-            inset (float, optional): The distance to inset. Defaults to 1.
+            inset (float, optional): The distance to inset. Defaults to `0`.
         
         Returns:
             "Tileable": the new inset Tileable.
@@ -385,25 +387,25 @@ class Tileable:
 
         Args:
             ax (_type_, optional): matplotlib axis to draw to. Defaults to None.
-            show_tile (bool, optional): if True show the tile outline. 
-                Defaults to True.
-            show_reg_tile (bool, optional): if True show the regularised tile 
-                outline. Defaults to True.
-            show_ids (bool, optional): if True show the element_ids. 
-                Defaults to True.
-            show_vectors (bool, optional): if true show the translation vectors 
-                (not the minimal pair, but those used by get_local_patch). 
-                Defaults to False.
-            r (int, optional): passed to get_local_patch to show context if 
-                greater than 0. Defaults to 0.
+            show_tile (bool, optional): if `True` show the tile outline. 
+                Defaults to `True`.
+            show_reg_tile (bool, optional): if `True` show the regularised tile 
+                outline. Defaults to `True`.
+            show_ids (bool, optional): if `True` show the element_ids. 
+                Defaults to `True`.
+            show_vectors (bool, optional): if `True` show the translation 
+                vectors (not the minimal pair, but those used by 
+                `get_local_patch()`). Defaults to `False`.
+            r (int, optional): passed to `get_local_patch()` to show context if 
+                greater than 0. Defaults to `0`.
             tile_edgecolor (str, optional): outline colour for the tile. 
-                Defaults to "k".
+                Defaults to `"k"`.
             reg_tile_edgcolor (str, optional): outline colour for the 
-                regularised. Defaults to "r".
+                regularised. Defaults to `"r"`.
             cmap (list[str], optional): colour map to apply to the central 
-                tiles. Defaults to None.
+                tiles. Defaults to `None`.
             figsize (tuple[float], optional): size of the figure. 
-                Defaults to (8, 8).
+                Defaults to `(8, 8)`.
         """
         w = self.tile.geometry[0].bounds[2] - self.tile.geometry[0].bounds[0] 
         n_cols = len(set(self.elements.element_id))
@@ -442,7 +444,8 @@ class Tileable:
         """Returns the elements augmented by a rotation column.
         
         This base implementation may be overridden by specific tile unit types.
-        I particular see `WeaveUnit._get_legend_elements()`.
+        In particular see 
+        `weavingspace.weave_unit.WeaveUnit._get_legend_elements()`.
         """
         elements = copy.deepcopy(self.elements)
         elements["rotation"] = 0
