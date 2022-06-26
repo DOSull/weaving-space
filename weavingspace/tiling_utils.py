@@ -253,14 +253,9 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
         for poly_id in cycle:
             ids.append(local_patch.element_id[poly_id])
             poly = local_patch.geometry[poly_id]
-            centroid = incentre(poly)
-            # if len(poly.exterior.coords) == 4:
-            #     centroid = incentre(poly)
-            # else:
-            #     centroid = poly.centroid
-            pts.append([centroid.x, centroid.y])
+            pts.append(incentre(poly))
         # sort them into CCW order so they are well formed
-        sorted_coords = sort_ccw([(pt[0], pt[1], id) 
+        sorted_coords = sort_ccw([(pt.x, pt.y, id) 
                                   for pt, id in zip(pts, ids)])
         dual_faces.append(
             (geom.Polygon([(pt_id[0], pt_id[1]) for pt_id in sorted_coords]), 
