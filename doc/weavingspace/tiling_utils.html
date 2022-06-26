@@ -142,23 +142,41 @@ def get_regular_polygon(spacing, n:int) -&gt; geom.Polygon:
     return geom.Polygon(corners)
 
 
-def incentre(tri:geom.Polygon) -&gt; geom.Point:
-    &#34;&#34;&#34;A different triangle centre, which produces better results for some
-    of the dual tilings were triangles are not equilateral... see
+def incentre(poly:geom.Polygon) -&gt; geom.Point:
+    &#34;&#34;&#34;A different polygon centre, which produces better results for some
+    of the dual tilings where polygons are not regular... see
     https://en.wikipedia.org/wiki/Incenter
+    
+    This method relies on the polygon being tangential, i.e. there is an
+    inscribed circle to which all sides of the polygon are tangent. It will
+    work on all the polygons encountered in the Laves tilings, but is not 
+    guaranteed to work on all polygons.
+    
+    Given that the polygon is tangential, the radius of the inscribed circle is 
+    2 x Area / Perimeter. We apply this buffer to every edge of the polygon and 
+    then find their intersection to determine the centre of the circle, which
+    is the incentre of the polygon.
 
     Args:
-        tri (geom.Polygon): the triangle.
+        poly (geom.Polygon): the polygon.
 
     Returns:
-        geom.Point: the incentre of the triangle.
+        geom.Point: the incentre of the polygon.
     &#34;&#34;&#34;
     corners = [geom.Point(p[0], p[1]) 
-               for p in list(tri.exterior.coords)]  # ABCA
-    lengths = [p.distance(q) 
-               for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
-    lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
-    perimeter = fsum(lengths)
+               for p in list(poly.exterior.coords)]  # ABCA
+    edges = [geom.LineString([p, q]) for p, q in zip(corners[:-1], corners[1:])]
+    perimeter = fsum([e.length for e in edges])
+    # lengths = [p.distance(q) 
+    #            for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
+    # lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
+    # perimeter = fsum(lengths)
+    r = 2 * poly.area / perimeter
+    edge_buffers = [e.buffer(r + 1e-6) for e in edges]
+    x = edge_buffers[0].intersection(edge_buffers[1])
+    for b in edge_buffers[1:]:
+        x = x.intersection(b)
+    return x.centroid
     incentre = [0, 0]
     for p, l in zip(corners[:-1], lengths):
         incentre[0] = incentre[0] + p.x * l / perimeter
@@ -257,10 +275,11 @@ def get_dual_tile_unit(t) -&gt; gpd.GeoDataFrame:
         for poly_id in cycle:
             ids.append(local_patch.element_id[poly_id])
             poly = local_patch.geometry[poly_id]
-            if len(poly.exterior.coords) == 4:
-                centroid = incentre(poly)
-            else:
-                centroid = poly.centroid
+            centroid = incentre(poly)
+            # if len(poly.exterior.coords) == 4:
+            #     centroid = incentre(poly)
+            # else:
+            #     centroid = poly.centroid
             pts.append([centroid.x, centroid.y])
         # sort them into CCW order so they are well formed
         sorted_coords = sort_ccw([(pt[0], pt[1], id) 
@@ -906,10 +925,11 @@ a TileUnit of the dual tiling.</dd>
         for poly_id in cycle:
             ids.append(local_patch.element_id[poly_id])
             poly = local_patch.geometry[poly_id]
-            if len(poly.exterior.coords) == 4:
-                centroid = incentre(poly)
-            else:
-                centroid = poly.centroid
+            centroid = incentre(poly)
+            # if len(poly.exterior.coords) == 4:
+            #     centroid = incentre(poly)
+            # else:
+            #     centroid = poly.centroid
             pts.append([centroid.x, centroid.y])
         # sort them into CCW order so they are well formed
         sorted_coords = sort_ccw([(pt[0], pt[1], id) 
@@ -1203,43 +1223,69 @@ stored depending on the geometry.</p>
 </details>
 </dd>
 <dt id="weavingspace.tiling_utils.incentre"><code class="name flex">
-<span>def <span class="ident">incentre</span></span>(<span>tri: shapely.geometry.polygon.Polygon) ‑> shapely.geometry.point.Point</span>
+<span>def <span class="ident">incentre</span></span>(<span>poly: shapely.geometry.polygon.Polygon) ‑> shapely.geometry.point.Point</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A different triangle centre, which produces better results for some
-of the dual tilings were triangles are not equilateral&hellip; see
+<div class="desc"><p>A different polygon centre, which produces better results for some
+of the dual tilings where polygons are not regular&hellip; see
 <a href="https://en.wikipedia.org/wiki/Incenter">https://en.wikipedia.org/wiki/Incenter</a></p>
+<p>This method relies on the polygon being tangential, i.e. there is an
+inscribed circle to which all sides of the polygon are tangent. It will
+work on all the polygons encountered in the Laves tilings, but is not
+guaranteed to work on all polygons.</p>
+<p>Given that the polygon is tangential, the radius of the inscribed circle is
+2 x Area / Perimeter. We apply this buffer to every edge of the polygon and
+then find their intersection to determine the centre of the circle, which
+is the incentre of the polygon.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>tri</code></strong> :&ensp;<code>geom.Polygon</code></dt>
-<dd>the triangle.</dd>
+<dt><strong><code>poly</code></strong> :&ensp;<code>geom.Polygon</code></dt>
+<dd>the polygon.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>geom.Point</code></dt>
-<dd>the incentre of the triangle.</dd>
+<dd>the incentre of the polygon.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def incentre(tri:geom.Polygon) -&gt; geom.Point:
-    &#34;&#34;&#34;A different triangle centre, which produces better results for some
-    of the dual tilings were triangles are not equilateral... see
+<pre><code class="python">def incentre(poly:geom.Polygon) -&gt; geom.Point:
+    &#34;&#34;&#34;A different polygon centre, which produces better results for some
+    of the dual tilings where polygons are not regular... see
     https://en.wikipedia.org/wiki/Incenter
+    
+    This method relies on the polygon being tangential, i.e. there is an
+    inscribed circle to which all sides of the polygon are tangent. It will
+    work on all the polygons encountered in the Laves tilings, but is not 
+    guaranteed to work on all polygons.
+    
+    Given that the polygon is tangential, the radius of the inscribed circle is 
+    2 x Area / Perimeter. We apply this buffer to every edge of the polygon and 
+    then find their intersection to determine the centre of the circle, which
+    is the incentre of the polygon.
 
     Args:
-        tri (geom.Polygon): the triangle.
+        poly (geom.Polygon): the polygon.
 
     Returns:
-        geom.Point: the incentre of the triangle.
+        geom.Point: the incentre of the polygon.
     &#34;&#34;&#34;
     corners = [geom.Point(p[0], p[1]) 
-               for p in list(tri.exterior.coords)]  # ABCA
-    lengths = [p.distance(q) 
-               for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
-    lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
-    perimeter = fsum(lengths)
+               for p in list(poly.exterior.coords)]  # ABCA
+    edges = [geom.LineString([p, q]) for p, q in zip(corners[:-1], corners[1:])]
+    perimeter = fsum([e.length for e in edges])
+    # lengths = [p.distance(q) 
+    #            for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
+    # lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
+    # perimeter = fsum(lengths)
+    r = 2 * poly.area / perimeter
+    edge_buffers = [e.buffer(r + 1e-6) for e in edges]
+    x = edge_buffers[0].intersection(edge_buffers[1])
+    for b in edge_buffers[1:]:
+        x = x.intersection(b)
+    return x.centroid
     incentre = [0, 0]
     for p, l in zip(corners[:-1], lengths):
         incentre[0] = incentre[0] + p.x * l / perimeter

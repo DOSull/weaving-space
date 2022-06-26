@@ -271,11 +271,7 @@ def setup_laves(unit:TileUnit) -&gt; None:
         _setup_laves_33336(unit)
         return
     elif unit.code == &#34;3.3.3.4.4&#34;:
-        # the hex 2-dissection provides a crude approximation
-        unit.n = 2
-        unit.dissection_offset = 1
-        setup_hex_dissection(unit)
-        return
+        print(f&#34;The code [{unit.code}] is unsupported.&#34;)
     elif unit.code == &#34;3.3.4.3.4&#34;:
         # king of tilings!
         setup_cairo(unit)
@@ -403,7 +399,6 @@ def setup_archimedean(unit:TileUnit) -&gt; None:
     
     Some are not yet implemented:
     
-    (3.3.3.3.6) has 2 reflected forms and tiling_utils.get_dual_tile_unit does not generate it accurately from the Laves &#39;petal&#39; tiling.
     (3.3.3.4.4) is kind of weird (stripes of triangles and squares) so can&#39;t be 
     bothered with it. Perhaps as a 5-element option we&#39;ll get to it in time.
 
@@ -414,7 +409,10 @@ def setup_archimedean(unit:TileUnit) -&gt; None:
         _setup_base_tile(unit, TileShape.TRIANGLE)
         _setup_none_tile(unit)
     if unit.code == &#34;3.3.3.3.6&#34;:
-        print(f&#34;The code [{unit.code}] is unsupported.&#34;)
+        setup_laves(unit)
+        unit.elements = tiling_utils.get_dual_tile_unit(unit)
+        unit.setup_regularised_tile_from_elements()
+        return
     elif unit.code == &#34;3.3.3.4.4&#34;:
         print(f&#34;The code [{unit.code}] is unsupported.&#34;)
     elif unit.code == &#34;3.3.4.3.4&#34;:
@@ -606,8 +604,7 @@ def setup_square_colouring(unit:TileUnit) -&gt; None:
 <div class="desc"><p>The Archimedean 'regular tilings. See <a href="https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Convex_uniform_tilings_of_the_Euclidean_plane">https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Convex_uniform_tilings_of_the_Euclidean_plane</a></p>
 <p>Many of these are most easily constructed as duals of the Laves tilings.</p>
 <p>Some are not yet implemented:</p>
-<p>(3.3.3.3.6) has 2 reflected forms and tiling_utils.get_dual_tile_unit does not generate it accurately from the Laves 'petal' tiling.
-(3.3.3.4.4) is kind of weird (stripes of triangles and squares) so can't be
+<p>(3.3.3.4.4) is kind of weird (stripes of triangles and squares) so can't be
 bothered with it. Perhaps as a 5-element option we'll get to it in time.</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -625,7 +622,6 @@ bothered with it. Perhaps as a 5-element option we'll get to it in time.</p>
     
     Some are not yet implemented:
     
-    (3.3.3.3.6) has 2 reflected forms and tiling_utils.get_dual_tile_unit does not generate it accurately from the Laves &#39;petal&#39; tiling.
     (3.3.3.4.4) is kind of weird (stripes of triangles and squares) so can&#39;t be 
     bothered with it. Perhaps as a 5-element option we&#39;ll get to it in time.
 
@@ -636,7 +632,10 @@ bothered with it. Perhaps as a 5-element option we'll get to it in time.</p>
         _setup_base_tile(unit, TileShape.TRIANGLE)
         _setup_none_tile(unit)
     if unit.code == &#34;3.3.3.3.6&#34;:
-        print(f&#34;The code [{unit.code}] is unsupported.&#34;)
+        setup_laves(unit)
+        unit.elements = tiling_utils.get_dual_tile_unit(unit)
+        unit.setup_regularised_tile_from_elements()
+        return
     elif unit.code == &#34;3.3.3.4.4&#34;:
         print(f&#34;The code [{unit.code}] is unsupported.&#34;)
     elif unit.code == &#34;3.3.4.3.4&#34;:
@@ -972,11 +971,7 @@ dissections and setup is delegated accordingly.</p>
         _setup_laves_33336(unit)
         return
     elif unit.code == &#34;3.3.3.4.4&#34;:
-        # the hex 2-dissection provides a crude approximation
-        unit.n = 2
-        unit.dissection_offset = 1
-        setup_hex_dissection(unit)
-        return
+        print(f&#34;The code [{unit.code}] is unsupported.&#34;)
     elif unit.code == &#34;3.3.4.3.4&#34;:
         # king of tilings!
         setup_cairo(unit)
