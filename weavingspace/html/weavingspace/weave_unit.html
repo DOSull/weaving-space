@@ -434,7 +434,42 @@ class WeaveUnit(Tileable):
 <span>(</span><span>**kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Extends Tileable to allow for tiles that appear like woven patterns.</p></div>
+<div class="desc"><p>Extends Tileable to allow for tiles that appear like woven patterns.</p>
+<p>Stores any supplied attributes, sets up the tile, its elements,
+vectors and regularised tile.</p>
+<p>The <code>Tileable</code> constructor should not be called directly, but is
+instead accessed from the <code><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></code> or
+<code><a title="weavingspace.weave_unit.WeaveUnit" href="#weavingspace.weave_unit.WeaveUnit">WeaveUnit</a></code> constructor. These can accept as
+arguments any of the arguments below.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>elements</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
+<dd>the strand geometries with associated
+element_id attribute encoding their different colouring.</dd>
+<dt><strong><code>tile</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
+<dd>the tileable polygon (either a
+rectangle or a hexagon).</dd>
+<dt><strong><code>spacing</code></strong> :&ensp;<code>float</code></dt>
+<dd>the tile spacing &ndash; effectively the 'resolution' of
+the tiling. Defaults to 1000.</dd>
+<dt><strong><code>tile_shape</code></strong> :&ensp;<code>TileShape</code></dt>
+<dd>the tile shape. Defaults to </dd>
+<dt><code>TileShape.RECTANGLE</code>.</dt>
+<dt><strong><code>vectors</code></strong> :&ensp;<code>list[tuple[float]]</code></dt>
+<dd>translation vector symmetries of the
+tiling.</dd>
+<dt><strong><code>regularised_tile</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
+<dd>a polygon containing all the
+elements of self.tile &ndash; most often a union of those polygons.</dd>
+<dt><strong><code>crs</code></strong> :&ensp;<code>int</code></dt>
+<dd>the coordinate reference system of the tile. Most often
+an EPSG code. Any valid geopandas CRS is valid. Defaults to
+3857 (i.e. Web Mercator).</dd>
+<dt><strong><code>fudge_factor</code></strong> :&ensp;<code>float</code></dt>
+<dd>a distance in units of self.crs to be used in
+geometry clean ups (for example this buffer distance is applied
+before unioning polygons.) Defaults to 1e-3.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>

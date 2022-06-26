@@ -48,7 +48,7 @@ import shapely.geometry as geom
 from tileable import Tileable
 from tileable import TileShape
 from tile_unit import TileUnit
-from weave_unit import WeaveUnit
+# from weave_unit import WeaveUnit
 
 import tiling_utils
 
@@ -240,7 +240,7 @@ class Tiling:
     angle. 
     &#34;&#34;&#34;
     tile_unit:Tileable = None
-    tile_shape:str = &#34;&#34;
+    tile_shape:TileShape = None
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
     grid:_TileGrid = None
@@ -256,15 +256,18 @@ class Tiling:
         The Tiling constructor allows a number of adjustments to the supplied
         `Tileable` object:
         
-        + `tile_margin` values greater than 0 will introduce spacing of half 
-        the specified distance between elements on the boundary of each tile.
-        Note that this operation does not make sense for `WeaveUnit` objects,
+        + `tile_margin` values greater than 0 will introduce spacing of  
+        the specified distance between elements on the boundary of each tile
+        by applying the `TileUnit.inset_tile()` method. Note that this 
+        operation does not make sense for `WeaveUnit` objects,
         and may not preserve the equality of tile element areas.
-        + `elements_sf` values less than one scale down tile elements 
-        accordingly. Does not make sense for `WeaveUnit` objects.
+        + `elements_sf` values less than one scale down tile elements by 
+        applying the `TileUnit.scale_elements()` method. Does not make sense 
+        for `WeaveUnit` objects.
         + `elements_margin` values greater than one apply a negative buffer of
-        the specified distance to every element in the tile. This option is
-        applicable to both `WeaveUnit` and `TileUnit` objects.
+        the specified distance to every element in the tile by applying the
+        `Tileable.inset_elements()` method. This option is applicable to both 
+        `WeaveUnit` and `TileUnit` objects.
 
         Args:
             unit (Tileable): the tile_unit to use.
@@ -277,18 +280,15 @@ class Tiling:
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         if elements_margin &gt; 0:
-            self.tile_unit = copy.deepcopy(self.tile_unit)
-            self.tile_unit.inset_elements(elements_margin) 
+            self.tile_unit = self.inset_elements(elements_margin) 
         if elements_sf != 1:
             if isinstance(self.tile_unit, TileUnit):
-                self.tile_unit = copy.deepcopy(self.tile_unit)
-                self.tile_unit.scale_elements(elements_sf)
+                self.tile_unit = self.tile_unit.scale_elements(elements_sf)
             else:
                 print(f&#34;&#34;&#34;Applying scaling to elements of a WeaveUnit does not make sense. Ignoring elements_sf setting of {elements_sf}.&#34;&#34;&#34;)
         if tile_margin &gt; 0:
             if isinstance(self.tile_unit, TileUnit):
-                self.tile_unit = copy.deepcopy(self.tile_unit)
-                self.tile_unit.inset_tile(tile_margin)
+                self.tile_unit = self.tile_unit.inset_tile(tile_margin)
             else:
                 print(f&#34;&#34;&#34;Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.&#34;&#34;&#34;)        
         self.region = region
@@ -450,10 +450,9 @@ class TiledMap:
     will be created by calling `Tiling.get_tiled_map()`. After creation the 
     variables and colourmaps attributes can be set, and then 
     `TiledMap.render()` called to make a map. Settable attributes are explained 
-    in documentation of the `TiledMap.render()` method. Recommended usage is as 
-    follows.
+    in documentation of the `TiledMap.render()` method. Recommended usage is as follows.
     
-    First, make a TiledMap from a Tiling object.
+    First, make a `TiledMap` from a `Tiling` object.
     
         tm = tiling.get_tiled_map(...)
         
@@ -477,8 +476,9 @@ class TiledMap:
     
     The most important options are the `variables` and `colourmaps` settings.
     
-    `variables` is a dictionary mapping `TileUnit` element_ids (usually &#34;a&#34;, 
-    &#34;b&#34;, etc.) to variable names in the data. For example, 
+    `variables` is a dictionary mapping `weavingspace.tileable.Tileable` 
+    element_ids (usually &#34;a&#34;, &#34;b&#34;, etc.) to variable names in the data. For 
+    example, 
     
         tm.variables = dict(zip([&#34;a&#34;, &#34;b&#34;], [&#34;population&#34;, &#34;income&#34;]))
         
@@ -487,35 +487,35 @@ class TiledMap:
     
         tm.colourmaps = dict(zip(tm.variables.values(), [&#34;Reds&#34;, &#34;Blues&#34;]))
     
-    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. This TODO: more complicated example shows how 
-    categorical maps can be created.
+    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. This TODO: more 
+    complicated example shows how categorical maps can be created.
      &#34;&#34;&#34;
     # these will be set at instantion by Tiling.get_tiled_map()
-    tiling:Tiling = None
-    map:gpd.GeoDataFrame = None
+    tiling:Tiling = None  #: the Tiling with the required tiles
+    map:gpd.GeoDataFrame = None  #: the GeoDataFrame on which this map is based 
     
     # variables and colourmaps should be set before calling self.render()
-    variables:dict[str,str] = None 
-    colourmaps:dict[str,Union[str,dict]] = None
+    variables:dict[str,str] = None  #: lookup from element_id to variable names
+    colourmaps:dict[str,Union[str,dict]] = None  #: lookup from variables to cmaps
     
     # the below parameters can be set either before calling self.render() 
     # or passed in as parameters to self.render()
     # these are solely TiledMap.render() options
-    legend:bool = True
-    legend_zoom:float = 1.0
-    legend_dx:float = 0.
-    legend_dy:float = 0.  
-    use_ellipse:bool = False
-    ellipse_magnification:float = 1.0
-    radial_key:bool = False
-    draft_mode:bool = False
+    legend:bool = True  #: whether or not to show a legend
+    legend_zoom:float = 1.0  #: &lt;1 zooms out from legend to show more context
+    legend_dx:float = 0.  #: horizontal shift of legend relative to the map
+    legend_dy:float = 0.  #: vertical shift of legend relative to the map
+    use_ellipse:bool = False  #: if True clips legend with an ellipse
+    ellipse_magnification:float = 1.0  #: magnification to apply to clip ellipse
+    radial_key:bool = False  #: if True use radial key even for ordinal/ratio data (normally these will be shown by concentric elements)
+    draft_mode:bool = False  #: if True plot only the map coloured by element_id
     
     # the parameters below are geopandas.plot options which we intercept to
     # ensure they are applied appropriately when we plot a GDF
-    scheme:str = &#34;equalinterval&#34;
-    k:int = 100
-    figsize:tuple[float] = (20, 15)
-    dpi:float = 72
+    scheme:str = &#34;equalinterval&#34;  #: geopandas scheme to apply
+    k:int = 100  #: geopandas number of classes to apply
+    figsize:tuple[float] = (20, 15)  #: maptlotlib figsize 
+    dpi:float = 72  #: dots per inch for bitmap formats
         
 
     def render(self, **kwargs) -&gt; Figure:
@@ -627,11 +627,11 @@ class TiledMap:
                 else:
                     self.colourmaps[var] = &#34;Reds&#34;
         
-        self.plot_map(axes, **kwargs)
+        self._plot_map(axes, **kwargs)
         return fig
     
     
-    def plot_map(self, axes:pyplot.Axes, **kwargs) -&gt; None:
+    def _plot_map(self, axes:pyplot.Axes, **kwargs) -&gt; None:
         &#34;&#34;&#34;Plots map to the supplied axes.
 
         Args:
@@ -642,7 +642,7 @@ class TiledMap:
             axes[&#34;map&#34;].set_axis_off()
             axes[&#34;map&#34;].set_xlim(bb[0], bb[2])
             axes[&#34;map&#34;].set_ylim(bb[1], bb[3])
-            self.plot_subsetted_gdf(axes[&#34;map&#34;], self.map, **kwargs)
+            self._plot_subsetted_gdf(axes[&#34;map&#34;], self.map, **kwargs)
             self.plot_legend(ax = axes[&#34;legend&#34;], **kwargs)
             if (self.legend_dx != 0 or self.legend_dx != 0):
                 box = axes[&#34;legend&#34;].get_position()
@@ -655,11 +655,11 @@ class TiledMap:
             axes.set_axis_off()
             axes.set_xlim(bb[0], bb[2])
             axes.set_ylim(bb[1], bb[3])
-            self.plot_subsetted_gdf(axes, self.map, **kwargs)
+            self._plot_subsetted_gdf(axes, self.map, **kwargs)
         return None
     
     
-    def plot_subsetted_gdf(self, ax:pyplot.Axes, 
+    def _plot_subsetted_gdf(self, ax:pyplot.Axes, 
                            gdf:gpd.GeoDataFrame, **kwargs) -&gt; None:
         &#34;&#34;&#34;Plots a gpd.GeoDataFrame multiple times based on a subsetting
         attribute (assumed to be &#34;element_id&#34;).
@@ -711,7 +711,7 @@ class TiledMap:
     def to_file(self, fname:str = None) -&gt; None:
         &#34;&#34;&#34;Outputs the tiled map to a layered GPKG file. 
         
-        Currently delegates to tiling_utils.write_map_to_layers.
+        Currently delegates to `weavingspace.tiling_utils.write_map_to_layers()`.
 
         Args:
             fname (str, optional): Filename to write. Defaults to None.
@@ -736,7 +736,7 @@ class TiledMap:
         if isinstance(self.tiling.tile_unit, TileUnit):
             legend_elements.rotation = -self.tiling.rotation
         
-        legend_key = self.get_legend_key_gdf(legend_elements)
+        legend_key = self._get_legend_key_gdf(legend_elements)
                 
         legend_elements.geometry = legend_elements.geometry.rotate(
             self.tiling.rotation, origin = (0, 0))
@@ -759,7 +759,7 @@ class TiledMap:
                     c.y + (bb[3] - c.y) / self.legend_zoom)
 
         # plot the legend key elements (which include the data)
-        self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
+        self._plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
         
         for id, tile, rotn in zip(self.variables.keys(),
                                   legend_elements.geometry,
@@ -796,7 +796,8 @@ class TiledMap:
                 ax = ax, ec = &#34;#5F5F5F&#34;, lw = 1)
 
 
-    def get_legend_key_gdf(self, elements:gpd.GeoDataFrame) -&gt; gpd.GeoDataFrame:
+    def _get_legend_key_gdf(
+            self, elements:gpd.GeoDataFrame) -&gt; gpd.GeoDataFrame:
         &#34;&#34;&#34;Returns a GeoDataFrame of tile elements dissected and with
         data assigned to the slice so a map of them can stand as a legend.
         
@@ -890,9 +891,8 @@ class TiledMap:
 will be created by calling <code><a title="weavingspace.tile_map.Tiling.get_tiled_map" href="#weavingspace.tile_map.Tiling.get_tiled_map">Tiling.get_tiled_map()</a></code>. After creation the
 variables and colourmaps attributes can be set, and then
 <code><a title="weavingspace.tile_map.TiledMap.render" href="#weavingspace.tile_map.TiledMap.render">TiledMap.render()</a></code> called to make a map. Settable attributes are explained
-in documentation of the <code><a title="weavingspace.tile_map.TiledMap.render" href="#weavingspace.tile_map.TiledMap.render">TiledMap.render()</a></code> method. Recommended usage is as
-follows.</p>
-<p>First, make a TiledMap from a Tiling object.</p>
+in documentation of the <code><a title="weavingspace.tile_map.TiledMap.render" href="#weavingspace.tile_map.TiledMap.render">TiledMap.render()</a></code> method. Recommended usage is as follows.</p>
+<p>First, make a <code><a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></code> from a <code><a title="weavingspace.tile_map.Tiling" href="#weavingspace.tile_map.Tiling">Tiling</a></code> object.</p>
 <pre><code>tm = tiling.get_tiled_map(...)
 </code></pre>
 <p>Some options in this method call affect the map appearance. See
@@ -910,16 +910,17 @@ tm.render()
 created the option settings have to be explicitly reset to default values
 on subsequent calls to <code><a title="weavingspace.tile_map.TiledMap.render" href="#weavingspace.tile_map.TiledMap.render">TiledMap.render()</a></code>.</p>
 <p>The most important options are the <code>variables</code> and <code>colourmaps</code> settings.</p>
-<p><code>variables</code> is a dictionary mapping <code>TileUnit</code> element_ids (usually "a",
-"b", etc.) to variable names in the data. For example, </p>
+<p><code>variables</code> is a dictionary mapping <code><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></code>
+element_ids (usually "a", "b", etc.) to variable names in the data. For
+example, </p>
 <pre><code>tm.variables = dict(zip(["a", "b"], ["population", "income"]))
 </code></pre>
 <p><code>colourmaps</code> is a dictionary mapping dataset variable names to the
 matplotlib colourmap to be used for each. For example,</p>
 <pre><code>tm.colourmaps = dict(zip(tm.variables.values(), ["Reds", "Blues"]))
 </code></pre>
-<p>See <a href="https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb">this notebook</a> for simple usage. This TODO: more complicated example shows how
-categorical maps can be created.</p></div>
+<p>See <a href="https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb">this notebook</a> for simple usage. This TODO: more
+complicated example shows how categorical maps can be created.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -930,10 +931,9 @@ class TiledMap:
     will be created by calling `Tiling.get_tiled_map()`. After creation the 
     variables and colourmaps attributes can be set, and then 
     `TiledMap.render()` called to make a map. Settable attributes are explained 
-    in documentation of the `TiledMap.render()` method. Recommended usage is as 
-    follows.
+    in documentation of the `TiledMap.render()` method. Recommended usage is as follows.
     
-    First, make a TiledMap from a Tiling object.
+    First, make a `TiledMap` from a `Tiling` object.
     
         tm = tiling.get_tiled_map(...)
         
@@ -957,8 +957,9 @@ class TiledMap:
     
     The most important options are the `variables` and `colourmaps` settings.
     
-    `variables` is a dictionary mapping `TileUnit` element_ids (usually &#34;a&#34;, 
-    &#34;b&#34;, etc.) to variable names in the data. For example, 
+    `variables` is a dictionary mapping `weavingspace.tileable.Tileable` 
+    element_ids (usually &#34;a&#34;, &#34;b&#34;, etc.) to variable names in the data. For 
+    example, 
     
         tm.variables = dict(zip([&#34;a&#34;, &#34;b&#34;], [&#34;population&#34;, &#34;income&#34;]))
         
@@ -967,35 +968,35 @@ class TiledMap:
     
         tm.colourmaps = dict(zip(tm.variables.values(), [&#34;Reds&#34;, &#34;Blues&#34;]))
     
-    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. This TODO: more complicated example shows how 
-    categorical maps can be created.
+    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. This TODO: more 
+    complicated example shows how categorical maps can be created.
      &#34;&#34;&#34;
     # these will be set at instantion by Tiling.get_tiled_map()
-    tiling:Tiling = None
-    map:gpd.GeoDataFrame = None
+    tiling:Tiling = None  #: the Tiling with the required tiles
+    map:gpd.GeoDataFrame = None  #: the GeoDataFrame on which this map is based 
     
     # variables and colourmaps should be set before calling self.render()
-    variables:dict[str,str] = None 
-    colourmaps:dict[str,Union[str,dict]] = None
+    variables:dict[str,str] = None  #: lookup from element_id to variable names
+    colourmaps:dict[str,Union[str,dict]] = None  #: lookup from variables to cmaps
     
     # the below parameters can be set either before calling self.render() 
     # or passed in as parameters to self.render()
     # these are solely TiledMap.render() options
-    legend:bool = True
-    legend_zoom:float = 1.0
-    legend_dx:float = 0.
-    legend_dy:float = 0.  
-    use_ellipse:bool = False
-    ellipse_magnification:float = 1.0
-    radial_key:bool = False
-    draft_mode:bool = False
+    legend:bool = True  #: whether or not to show a legend
+    legend_zoom:float = 1.0  #: &lt;1 zooms out from legend to show more context
+    legend_dx:float = 0.  #: horizontal shift of legend relative to the map
+    legend_dy:float = 0.  #: vertical shift of legend relative to the map
+    use_ellipse:bool = False  #: if True clips legend with an ellipse
+    ellipse_magnification:float = 1.0  #: magnification to apply to clip ellipse
+    radial_key:bool = False  #: if True use radial key even for ordinal/ratio data (normally these will be shown by concentric elements)
+    draft_mode:bool = False  #: if True plot only the map coloured by element_id
     
     # the parameters below are geopandas.plot options which we intercept to
     # ensure they are applied appropriately when we plot a GDF
-    scheme:str = &#34;equalinterval&#34;
-    k:int = 100
-    figsize:tuple[float] = (20, 15)
-    dpi:float = 72
+    scheme:str = &#34;equalinterval&#34;  #: geopandas scheme to apply
+    k:int = 100  #: geopandas number of classes to apply
+    figsize:tuple[float] = (20, 15)  #: maptlotlib figsize 
+    dpi:float = 72  #: dots per inch for bitmap formats
         
 
     def render(self, **kwargs) -&gt; Figure:
@@ -1107,11 +1108,11 @@ class TiledMap:
                 else:
                     self.colourmaps[var] = &#34;Reds&#34;
         
-        self.plot_map(axes, **kwargs)
+        self._plot_map(axes, **kwargs)
         return fig
     
     
-    def plot_map(self, axes:pyplot.Axes, **kwargs) -&gt; None:
+    def _plot_map(self, axes:pyplot.Axes, **kwargs) -&gt; None:
         &#34;&#34;&#34;Plots map to the supplied axes.
 
         Args:
@@ -1122,7 +1123,7 @@ class TiledMap:
             axes[&#34;map&#34;].set_axis_off()
             axes[&#34;map&#34;].set_xlim(bb[0], bb[2])
             axes[&#34;map&#34;].set_ylim(bb[1], bb[3])
-            self.plot_subsetted_gdf(axes[&#34;map&#34;], self.map, **kwargs)
+            self._plot_subsetted_gdf(axes[&#34;map&#34;], self.map, **kwargs)
             self.plot_legend(ax = axes[&#34;legend&#34;], **kwargs)
             if (self.legend_dx != 0 or self.legend_dx != 0):
                 box = axes[&#34;legend&#34;].get_position()
@@ -1135,11 +1136,11 @@ class TiledMap:
             axes.set_axis_off()
             axes.set_xlim(bb[0], bb[2])
             axes.set_ylim(bb[1], bb[3])
-            self.plot_subsetted_gdf(axes, self.map, **kwargs)
+            self._plot_subsetted_gdf(axes, self.map, **kwargs)
         return None
     
     
-    def plot_subsetted_gdf(self, ax:pyplot.Axes, 
+    def _plot_subsetted_gdf(self, ax:pyplot.Axes, 
                            gdf:gpd.GeoDataFrame, **kwargs) -&gt; None:
         &#34;&#34;&#34;Plots a gpd.GeoDataFrame multiple times based on a subsetting
         attribute (assumed to be &#34;element_id&#34;).
@@ -1191,7 +1192,7 @@ class TiledMap:
     def to_file(self, fname:str = None) -&gt; None:
         &#34;&#34;&#34;Outputs the tiled map to a layered GPKG file. 
         
-        Currently delegates to tiling_utils.write_map_to_layers.
+        Currently delegates to `weavingspace.tiling_utils.write_map_to_layers()`.
 
         Args:
             fname (str, optional): Filename to write. Defaults to None.
@@ -1216,7 +1217,7 @@ class TiledMap:
         if isinstance(self.tiling.tile_unit, TileUnit):
             legend_elements.rotation = -self.tiling.rotation
         
-        legend_key = self.get_legend_key_gdf(legend_elements)
+        legend_key = self._get_legend_key_gdf(legend_elements)
                 
         legend_elements.geometry = legend_elements.geometry.rotate(
             self.tiling.rotation, origin = (0, 0))
@@ -1239,7 +1240,7 @@ class TiledMap:
                     c.y + (bb[3] - c.y) / self.legend_zoom)
 
         # plot the legend key elements (which include the data)
-        self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
+        self._plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
         
         for id, tile, rotn in zip(self.variables.keys(),
                                   legend_elements.geometry,
@@ -1276,7 +1277,8 @@ class TiledMap:
                 ax = ax, ec = &#34;#5F5F5F&#34;, lw = 1)
 
 
-    def get_legend_key_gdf(self, elements:gpd.GeoDataFrame) -&gt; gpd.GeoDataFrame:
+    def _get_legend_key_gdf(
+            self, elements:gpd.GeoDataFrame) -&gt; gpd.GeoDataFrame:
         &#34;&#34;&#34;Returns a GeoDataFrame of tile elements dissected and with
         data assigned to the slice so a map of them can stand as a legend.
         
@@ -1355,67 +1357,67 @@ class TiledMap:
 <dl>
 <dt id="weavingspace.tile_map.TiledMap.colourmaps"><code class="name">var <span class="ident">colourmaps</span> : dict[str, typing.Union[str, dict]]</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>lookup from variables to cmaps</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.dpi"><code class="name">var <span class="ident">dpi</span> : float</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>dots per inch for bitmap formats</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.draft_mode"><code class="name">var <span class="ident">draft_mode</span> : bool</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>if True plot only the map coloured by element_id</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.ellipse_magnification"><code class="name">var <span class="ident">ellipse_magnification</span> : float</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>magnification to apply to clip ellipse</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.figsize"><code class="name">var <span class="ident">figsize</span> : tuple[float]</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>maptlotlib figsize</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.k"><code class="name">var <span class="ident">k</span> : int</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>geopandas number of classes to apply</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.legend"><code class="name">var <span class="ident">legend</span> : bool</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>whether or not to show a legend</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.legend_dx"><code class="name">var <span class="ident">legend_dx</span> : float</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>horizontal shift of legend relative to the map</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.legend_dy"><code class="name">var <span class="ident">legend_dy</span> : float</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>vertical shift of legend relative to the map</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.legend_zoom"><code class="name">var <span class="ident">legend_zoom</span> : float</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>&lt;1 zooms out from legend to show more context</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.map"><code class="name">var <span class="ident">map</span> : geopandas.geodataframe.GeoDataFrame</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>the GeoDataFrame on which this map is based</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.radial_key"><code class="name">var <span class="ident">radial_key</span> : bool</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>if True use radial key even for ordinal/ratio data (normally these will be shown by concentric elements)</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.scheme"><code class="name">var <span class="ident">scheme</span> : str</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>geopandas scheme to apply</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.tiling"><code class="name">var <span class="ident">tiling</span> : <a title="weavingspace.tile_map.Tiling" href="#weavingspace.tile_map.Tiling">Tiling</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>the Tiling with the required tiles</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.use_ellipse"><code class="name">var <span class="ident">use_ellipse</span> : bool</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>if True clips legend with an ellipse</p></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.variables"><code class="name">var <span class="ident">variables</span> : dict[str, str]</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>lookup from element_id to variable names</p></div>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -1433,100 +1435,6 @@ class TiledMap:
     &#34;&#34;&#34;TODO: add wrapper to make tiled web map via geopandas.explore.
     &#34;&#34;&#34;
     return None</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.tile_map.TiledMap.get_legend_key_gdf"><code class="name flex">
-<span>def <span class="ident">get_legend_key_gdf</span></span>(<span>self, elements: geopandas.geodataframe.GeoDataFrame) ‑> geopandas.geodataframe.GeoDataFrame</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Returns a GeoDataFrame of tile elements dissected and with
-data assigned to the slice so a map of them can stand as a legend.</p>
-<p>'Dissection' is handled differently by <code>WeaveUnit</code> and <code>TileUnit</code>
-objects and delegated to either <code>WeaveUnit._get_legend_key_shapes()</code> or <code>TileUnit._get_legend_key_shapes()</code>.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>elements</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
-<dd>the legend elements.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>gpd.GeoDataFrame</code></dt>
-<dd>with element_id, variables and rotation
-attributes, and geometries of Tileable elements sliced into a
-colour ramp or set of nested tiles.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_legend_key_gdf(self, elements:gpd.GeoDataFrame) -&gt; gpd.GeoDataFrame:
-    &#34;&#34;&#34;Returns a GeoDataFrame of tile elements dissected and with
-    data assigned to the slice so a map of them can stand as a legend.
-    
-    &#39;Dissection&#39; is handled differently by `WeaveUnit` and `TileUnit` 
-    objects and delegated to either `WeaveUnit._get_legend_key_shapes()` or `TileUnit._get_legend_key_shapes()`.
-
-    Args:
-        elements (gpd.GeoDataFrame): the legend elements.
-
-    Returns:
-        gpd.GeoDataFrame:  with element_id, variables and rotation
-            attributes, and geometries of Tileable elements sliced into a 
-            colour ramp or set of nested tiles.
-    &#34;&#34;&#34;
-    key_tiles = []   # set of tiles to form a colour key (e.g. a ramp)
-    ids = []         # element_ids applied to the keys
-    unique_ids = []  # list of each element_id used in order 
-    vals = []        # the data assigned to the key tiles
-    rots = []        # rotation of each key tile
-    subsets = self.map.groupby(&#34;element_id&#34;)
-    for (id, var), geom, rot in zip(self.variables.items(),
-                             elements.geometry,
-                             elements.rotation):
-        subset = subsets.get_group(id)
-        d = subset[var]
-        radial = False
-        # if the data are categorical then it&#39;s complicated...
-        if d.dtype == pd.CategoricalDtype:
-            radial = True and self.radial_key
-            # desired order of categorical variable is the 
-            # color maps dictionary keys
-            cmap = self.colourmaps[var]
-            num_cats = len(cmap)
-            val_order = dict(zip(cmap.keys(), range(num_cats)))
-            # compile counts of each category
-            freqs = [0] * num_cats
-            for v in list(d):
-                freqs[val_order[v]] += 1
-            # make list of the categories containing appropriate 
-            # counts of each in the order needed using a reverse lookup
-            data_vals = list(val_order.keys())
-            data_vals = [data_vals[i] for i, f in enumerate(freqs) if f &gt; 0]
-        else: # any other data is easy!
-            data_vals = sorted(d)
-            freqs = [1] * len(data_vals)
-        key = self.tiling.tile_unit._get_legend_key_shapes(
-            geom, freqs, rot, radial)
-        key_tiles.extend(key)
-        vals.extend(data_vals)
-        n = len(data_vals)
-        ids.extend([id] * n)
-        unique_ids.append(id)
-        rots.extend([rot] * n)
-    # finally make up a data table with all the data in all the
-    # columns (each set of data only gets used in the subset it
-    # applies to). This allows us to reuse the tiling_utils.
-    # plot_subsetted_gdf() function
-    key_data = {}
-    for id in unique_ids:
-        key_data[self.variables[id]] = vals
-    
-    key_gdf = gpd.GeoDataFrame(
-        data = key_data | {&#34;element_id&#34;: ids, &#34;rotation&#34;: rots}, 
-        crs = self.map.crs,
-        geometry = gpd.GeoSeries(key_tiles))
-    key_gdf.geometry = key_gdf.rotate(self.tiling.rotation, origin = (0, 0))
-    return key_gdf</code></pre>
 </details>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.plot_legend"><code class="name flex">
@@ -1559,7 +1467,7 @@ colour ramp or set of nested tiles.</dd>
     if isinstance(self.tiling.tile_unit, TileUnit):
         legend_elements.rotation = -self.tiling.rotation
     
-    legend_key = self.get_legend_key_gdf(legend_elements)
+    legend_key = self._get_legend_key_gdf(legend_elements)
             
     legend_elements.geometry = legend_elements.geometry.rotate(
         self.tiling.rotation, origin = (0, 0))
@@ -1582,7 +1490,7 @@ colour ramp or set of nested tiles.</dd>
                 c.y + (bb[3] - c.y) / self.legend_zoom)
 
     # plot the legend key elements (which include the data)
-    self.plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
+    self._plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
     
     for id, tile, rotn in zip(self.variables.keys(),
                               legend_elements.geometry,
@@ -1617,120 +1525,6 @@ colour ramp or set of nested tiles.</dd>
                            ec = &#34;#5F5F5F&#34;, lw = 0.0)
         tiling_utils.get_boundaries(context_tiles.geometry).plot(
             ax = ax, ec = &#34;#5F5F5F&#34;, lw = 1)</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.tile_map.TiledMap.plot_map"><code class="name flex">
-<span>def <span class="ident">plot_map</span></span>(<span>self, axes: matplotlib.axes._axes.Axes, **kwargs) ‑> None</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Plots map to the supplied axes.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>axes</code></strong> :&ensp;<code>pyplot.Axes</code></dt>
-<dd>axes on which maps will be drawn.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def plot_map(self, axes:pyplot.Axes, **kwargs) -&gt; None:
-    &#34;&#34;&#34;Plots map to the supplied axes.
-
-    Args:
-        axes (pyplot.Axes): axes on which maps will be drawn.
-    &#34;&#34;&#34;
-    bb = self.map.geometry.total_bounds
-    if self.legend:
-        axes[&#34;map&#34;].set_axis_off()
-        axes[&#34;map&#34;].set_xlim(bb[0], bb[2])
-        axes[&#34;map&#34;].set_ylim(bb[1], bb[3])
-        self.plot_subsetted_gdf(axes[&#34;map&#34;], self.map, **kwargs)
-        self.plot_legend(ax = axes[&#34;legend&#34;], **kwargs)
-        if (self.legend_dx != 0 or self.legend_dx != 0):
-            box = axes[&#34;legend&#34;].get_position()
-            box.x0 = box.x0 + self.legend_dx
-            box.x1 = box.x1 + self.legend_dx
-            box.y0 = box.y0 + self.legend_dy
-            box.y1 = box.y1 + self.legend_dy
-            axes[&#34;legend&#34;].set_position(box)
-    else:
-        axes.set_axis_off()
-        axes.set_xlim(bb[0], bb[2])
-        axes.set_ylim(bb[1], bb[3])
-        self.plot_subsetted_gdf(axes, self.map, **kwargs)
-    return None</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.tile_map.TiledMap.plot_subsetted_gdf"><code class="name flex">
-<span>def <span class="ident">plot_subsetted_gdf</span></span>(<span>self, ax: matplotlib.axes._axes.Axes, gdf: geopandas.geodataframe.GeoDataFrame, **kwargs) ‑> None</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Plots a gpd.GeoDataFrame multiple times based on a subsetting
-attribute (assumed to be "element_id").</p>
-<p>NOTE: used to plot both the main map <em>and</em> the legend.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>ax</code></strong> :&ensp;<code>pyplot.Axes</code></dt>
-<dd>axes to plot to.</dd>
-<dt><strong><code>gdf</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
-<dd>the GeoDataFrame to plot.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>Exception</code></dt>
-<dd>if self.colourmaps cannot be parsed exception is raised.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def plot_subsetted_gdf(self, ax:pyplot.Axes, 
-                       gdf:gpd.GeoDataFrame, **kwargs) -&gt; None:
-    &#34;&#34;&#34;Plots a gpd.GeoDataFrame multiple times based on a subsetting
-    attribute (assumed to be &#34;element_id&#34;).
-    
-    NOTE: used to plot both the main map _and_ the legend.
-
-    Args:
-        ax (pyplot.Axes): axes to plot to.
-        gdf (gpd.GeoDataFrame): the GeoDataFrame to plot.
-
-    Raises:
-        Exception: if self.colourmaps cannot be parsed exception is raised.
-    &#34;&#34;&#34;
-    groups = gdf.groupby(&#34;element_id&#34;)
-    for id, var in self.variables.items():
-        subset = groups.get_group(id)
-        # Handle custom color assignments via &#39;cmaps&#39; parameter.
-        # Result is setting &#39;cmap&#39; variable used in plot command afterwards.
-        if (isinstance(self.colourmaps[var], dict)):
-            colormap_dict = self.colourmaps[var]
-            data_unique_sorted = sorted(subset[var].unique())
-            cmap = matplotlib.colors.ListedColormap(
-                [colormap_dict[x] for x in data_unique_sorted])
-            subset.plot(ax = ax, column = var, cmap = cmap, **kwargs)
-        else:
-            if (isinstance(self.colourmaps, 
-                            (str, matplotlib.colors.Colormap,
-                            matplotlib.colors.LinearSegmentedColormap,
-                            matplotlib.colors.ListedColormap))):
-                cmap = self.colourmaps   # one palette for all ids
-            elif (len(self.colourmaps) == 0):
-                cmap = &#39;Reds&#39;  # set a default... here, to Brewer&#39;s &#39;Reds&#39;
-            elif (var not in self.colourmaps):
-                cmap = &#39;Reds&#39;  # no color specified in dict, use default
-            elif (isinstance(self.colourmaps[var],
-                            (str, matplotlib.colors.Colormap,
-                            matplotlib.colors.LinearSegmentedColormap,
-                            matplotlib.colors.ListedColormap))):
-                cmap = self.colourmaps[var]  # specified colors for this var
-            else:
-                raise Exception(f&#34;&#34;&#34;Color map for &#39;{var}&#39; is not a known 
-                                type, but is {str(type(self.colourmaps[var])
-                                )}&#34;&#34;&#34;)
-
-            subset.plot(ax = ax, column = var, cmap = cmap, 
-                        scheme = self.scheme, k = self.k, **kwargs)</code></pre>
 </details>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.render"><code class="name flex">
@@ -1905,7 +1699,7 @@ plot. Defaults to (20,15).</dd>
             else:
                 self.colourmaps[var] = &#34;Reds&#34;
     
-    self.plot_map(axes, **kwargs)
+    self._plot_map(axes, **kwargs)
     return fig</code></pre>
 </details>
 </dd>
@@ -1914,7 +1708,7 @@ plot. Defaults to (20,15).</dd>
 </code></dt>
 <dd>
 <div class="desc"><p>Outputs the tiled map to a layered GPKG file. </p>
-<p>Currently delegates to tiling_utils.write_map_to_layers.</p>
+<p>Currently delegates to <code><a title="weavingspace.tiling_utils.write_map_to_layers" href="tiling_utils.html#weavingspace.tiling_utils.write_map_to_layers">write_map_to_layers()</a></code>.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>fname</code></strong> :&ensp;<code>str</code>, optional</dt>
@@ -1927,7 +1721,7 @@ plot. Defaults to (20,15).</dd>
 <pre><code class="python">def to_file(self, fname:str = None) -&gt; None:
     &#34;&#34;&#34;Outputs the tiled map to a layered GPKG file. 
     
-    Currently delegates to tiling_utils.write_map_to_layers.
+    Currently delegates to `weavingspace.tiling_utils.write_map_to_layers()`.
 
     Args:
         fname (str, optional): Filename to write. Defaults to None.
@@ -1952,15 +1746,18 @@ a region sufficient to apply the tiling at any rotation.</p>
 <p>The Tiling constructor allows a number of adjustments to the supplied
 <code>Tileable</code> object:</p>
 <ul>
-<li><code>tile_margin</code> values greater than 0 will introduce spacing of half
-the specified distance between elements on the boundary of each tile.
-Note that this operation does not make sense for <code>WeaveUnit</code> objects,
+<li><code>tile_margin</code> values greater than 0 will introduce spacing of<br>
+the specified distance between elements on the boundary of each tile
+by applying the <code>TileUnit.inset_tile()</code> method. Note that this
+operation does not make sense for <code>WeaveUnit</code> objects,
 and may not preserve the equality of tile element areas.</li>
-<li><code>elements_sf</code> values less than one scale down tile elements
-accordingly. Does not make sense for <code>WeaveUnit</code> objects.</li>
+<li><code>elements_sf</code> values less than one scale down tile elements by
+applying the <code>TileUnit.scale_elements()</code> method. Does not make sense
+for <code>WeaveUnit</code> objects.</li>
 <li><code>elements_margin</code> values greater than one apply a negative buffer of
-the specified distance to every element in the tile. This option is
-applicable to both <code>WeaveUnit</code> and <code>TileUnit</code> objects.</li>
+the specified distance to every element in the tile by applying the
+<code>Tileable.inset_elements()</code> method. This option is applicable to both
+<code>WeaveUnit</code> and <code>TileUnit</code> objects.</li>
 </ul>
 <h2 id="args">Args</h2>
 <dl>
@@ -1990,7 +1787,7 @@ class Tiling:
     angle. 
     &#34;&#34;&#34;
     tile_unit:Tileable = None
-    tile_shape:str = &#34;&#34;
+    tile_shape:TileShape = None
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
     grid:_TileGrid = None
@@ -2006,15 +1803,18 @@ class Tiling:
         The Tiling constructor allows a number of adjustments to the supplied
         `Tileable` object:
         
-        + `tile_margin` values greater than 0 will introduce spacing of half 
-        the specified distance between elements on the boundary of each tile.
-        Note that this operation does not make sense for `WeaveUnit` objects,
+        + `tile_margin` values greater than 0 will introduce spacing of  
+        the specified distance between elements on the boundary of each tile
+        by applying the `TileUnit.inset_tile()` method. Note that this 
+        operation does not make sense for `WeaveUnit` objects,
         and may not preserve the equality of tile element areas.
-        + `elements_sf` values less than one scale down tile elements 
-        accordingly. Does not make sense for `WeaveUnit` objects.
+        + `elements_sf` values less than one scale down tile elements by 
+        applying the `TileUnit.scale_elements()` method. Does not make sense 
+        for `WeaveUnit` objects.
         + `elements_margin` values greater than one apply a negative buffer of
-        the specified distance to every element in the tile. This option is
-        applicable to both `WeaveUnit` and `TileUnit` objects.
+        the specified distance to every element in the tile by applying the
+        `Tileable.inset_elements()` method. This option is applicable to both 
+        `WeaveUnit` and `TileUnit` objects.
 
         Args:
             unit (Tileable): the tile_unit to use.
@@ -2027,18 +1827,15 @@ class Tiling:
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         if elements_margin &gt; 0:
-            self.tile_unit = copy.deepcopy(self.tile_unit)
-            self.tile_unit.inset_elements(elements_margin) 
+            self.tile_unit = self.inset_elements(elements_margin) 
         if elements_sf != 1:
             if isinstance(self.tile_unit, TileUnit):
-                self.tile_unit = copy.deepcopy(self.tile_unit)
-                self.tile_unit.scale_elements(elements_sf)
+                self.tile_unit = self.tile_unit.scale_elements(elements_sf)
             else:
                 print(f&#34;&#34;&#34;Applying scaling to elements of a WeaveUnit does not make sense. Ignoring elements_sf setting of {elements_sf}.&#34;&#34;&#34;)
         if tile_margin &gt; 0:
             if isinstance(self.tile_unit, TileUnit):
-                self.tile_unit = copy.deepcopy(self.tile_unit)
-                self.tile_unit.inset_tile(tile_margin)
+                self.tile_unit = self.tile_unit.inset_tile(tile_margin)
             else:
                 print(f&#34;&#34;&#34;Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.&#34;&#34;&#34;)        
         self.region = region
@@ -2211,7 +2008,7 @@ class Tiling:
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="weavingspace.tile_map.Tiling.tile_shape"><code class="name">var <span class="ident">tile_shape</span> : str</code></dt>
+<dt id="weavingspace.tile_map.Tiling.tile_shape"><code class="name">var <span class="ident">tile_shape</span> : tileable.TileShape</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -2444,7 +2241,6 @@ Defaults to None.</dd>
 <li><code><a title="weavingspace.tile_map.TiledMap.ellipse_magnification" href="#weavingspace.tile_map.TiledMap.ellipse_magnification">ellipse_magnification</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.explore" href="#weavingspace.tile_map.TiledMap.explore">explore</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.figsize" href="#weavingspace.tile_map.TiledMap.figsize">figsize</a></code></li>
-<li><code><a title="weavingspace.tile_map.TiledMap.get_legend_key_gdf" href="#weavingspace.tile_map.TiledMap.get_legend_key_gdf">get_legend_key_gdf</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.k" href="#weavingspace.tile_map.TiledMap.k">k</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.legend" href="#weavingspace.tile_map.TiledMap.legend">legend</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.legend_dx" href="#weavingspace.tile_map.TiledMap.legend_dx">legend_dx</a></code></li>
@@ -2452,8 +2248,6 @@ Defaults to None.</dd>
 <li><code><a title="weavingspace.tile_map.TiledMap.legend_zoom" href="#weavingspace.tile_map.TiledMap.legend_zoom">legend_zoom</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.map" href="#weavingspace.tile_map.TiledMap.map">map</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.plot_legend" href="#weavingspace.tile_map.TiledMap.plot_legend">plot_legend</a></code></li>
-<li><code><a title="weavingspace.tile_map.TiledMap.plot_map" href="#weavingspace.tile_map.TiledMap.plot_map">plot_map</a></code></li>
-<li><code><a title="weavingspace.tile_map.TiledMap.plot_subsetted_gdf" href="#weavingspace.tile_map.TiledMap.plot_subsetted_gdf">plot_subsetted_gdf</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.radial_key" href="#weavingspace.tile_map.TiledMap.radial_key">radial_key</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.render" href="#weavingspace.tile_map.TiledMap.render">render</a></code></li>
 <li><code><a title="weavingspace.tile_map.TiledMap.scheme" href="#weavingspace.tile_map.TiledMap.scheme">scheme</a></code></li>

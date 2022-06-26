@@ -109,7 +109,7 @@ def setup_cairo(unit:"TileUnit") -> None:
     unit.elements = gpd.GeoDataFrame(
         data = {"element_id": list("abcd")}, crs = unit.crs,
         geometry = gpd.GeoSeries([p1, p2, p3, p4]))
-    unit.make_regularised_tile_from_elements()
+    unit.setup_regularised_tile_from_elements()
         
     
 def setup_hex_dissection(unit:"TileUnit") -> None:
@@ -296,7 +296,7 @@ def setup_laves_33336(unit:"TileUnit") -> None:
         data = {"element_id": list("abcdef")}, 
         crs = unit.crs,
         geometry = gpd.GeoSeries(petals))
-    unit.make_regularised_tile_from_elements()
+    unit.setup_regularised_tile_from_elements()
         
 
 def setup_laves_488(unit:"TileUnit") -> None:
@@ -314,7 +314,7 @@ def setup_laves_488(unit:"TileUnit") -> None:
         data = {"element_id": list("abcd")}, 
         crs = unit.crs,
         geometry = gpd.GeoSeries(tris))
-    unit.make_regularised_tile_from_elements()
+    unit.setup_regularised_tile_from_elements()
         
         
 def setup_laves_31212(unit:"TileUnit") -> None:
@@ -367,7 +367,7 @@ def setup_archimedean(unit:"TileUnit") -> None:
         # this is an attractive 6-colourable triangles and squares tiling
         setup_laves(unit)
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.make_regularised_tile_from_elements()
+        unit.setup_regularised_tile_from_elements()
         return
     elif unit.code == "3.4.6.4":
         # our dual tiling code isn't correct for this one
@@ -376,7 +376,7 @@ def setup_archimedean(unit:"TileUnit") -> None:
     elif unit.code == "3.6.3.6":
         setup_laves(unit)
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.make_regularised_tile_from_elements()
+        unit.setup_regularised_tile_from_elements()
         return
     elif unit.code == "3.12.12":
         # nice! we can make dodecagons without having to think too hard
@@ -386,7 +386,7 @@ def setup_archimedean(unit:"TileUnit") -> None:
         setup_laves(unit)
         unit.setup_vectors()
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.make_regularised_tile_from_elements()
+        unit.setup_regularised_tile_from_elements()
         return
     elif unit.code == "4.4.4":
         setup_base_tile(unit, TileShape.RECTANGLE)
@@ -397,13 +397,13 @@ def setup_archimedean(unit:"TileUnit") -> None:
         setup_laves(unit)
         unit.setup_vectors()
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.make_regularised_tile_from_elements()
+        unit.setup_regularised_tile_from_elements()
         return
     elif unit.code == "4.8.8":
         # this is the octagon and square tiling
         setup_laves(unit)
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
-        unit.make_regularised_tile_from_elements()
+        unit.setup_regularised_tile_from_elements()
         return
     elif unit.code == "6.6.6":
         setup_base_tile(unit, TileShape.HEXAGON)
@@ -448,7 +448,7 @@ def setup_archimedean_3464(unit:"TileUnit") -> None:
         data = {"element_id": list("abcdef")}, 
         crs = unit.crs,
         geometry = gpd.GeoSeries([hex, square1, square2, square3, tri1, tri2]))
-    unit.make_regularised_tile_from_elements()
+    unit.setup_regularised_tile_from_elements()
 
 
 def setup_hex_colouring(unit:"TileUnit") -> None:
@@ -503,7 +503,7 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
         data = {"element_id": list(string.ascii_letters)[:unit.n]}, 
         crs = unit.crs,
         geometry = gpd.GeoSeries(hexes))
-    unit.make_regularised_tile_from_elements()
+    unit.setup_regularised_tile_from_elements()
 
 
 def setup_square_colouring(unit:"TileUnit") -> None:
@@ -535,5 +535,5 @@ def setup_square_colouring(unit:"TileUnit") -> None:
         data = {"element_id": list(string.ascii_letters)[:unit.n]}, 
         crs = unit.crs,
         geometry = gpd.GeoSeries(squares))
-    unit.make_regularised_tile_from_elements()
+    unit.setup_regularised_tile_from_elements()
 

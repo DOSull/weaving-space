@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import copy
 from dataclasses import dataclass
 import string
 
@@ -18,6 +19,70 @@ import _tiling_geometries
 
 @dataclass
 class TileUnit(Tileable):
+    """Class to represent the tileable elements of a 'conventional' tiling.
+    
+    A `TileUnit` is initialised like this
+    
+        tile_unit = TileUnit(tiling_type = "cairo")
+        
+    The `tiling_type` may be one of the following
+    
+    + "cairo" the Cairo tiling more formally known as the Laves 
+    [3<sup>2</sup>.4.3.4] tiling. The author's favourite tiling, hence it has 
+    its own tiling_type.
+    + "hex-dissection" a range of dissections of the regular hexagon into, 2, 3
+    4, 6, or 12 'pie slices'. The number of slices is set by specifying an
+    additional argument `n`. Slices are cut either starting at the corners of 
+    the hexagon or from the midpoints of hexagon edges, by specifying an
+    additional argument `dissection_offset` set to either 0 or 1 respectively.
+    + "laves" a range of isohedral tilings. See [this article](https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings). The 
+    desired tiling is specified by the additional argument `code` which is a 
+    string like "3.3.4.3.4".
+    + "archimedean" a range of tilings by regular polygons. See [this article](https://en.wikipedia.org/wiki/Euclidean_tilings_by_convex_regular_polygons#Archimedean,_uniform_or_semiregular_tilings). Many of these are the dual tilings of the 
+    Laves tilings. The desired tiling is specified by the additional argument 
+    `code` which is a string like "3.3.4.3.4". Not all the possible Archimedean 
+    tilings are implemented.
+    + "hex-colouring" three colourings of the regular hexagon tiling, of either 
+    3, 4, or 7 colours, as specified by the argument `n`.
+    + "square-colouring" one colouring of the regular square tiling, of 5 
+    colours as specified by the argument `n = 5`.
+    
+    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/all-the-tiles.ipynb) for exact usage, and illustrations of 
+    each tiling. 
+    
+    Spacing and coordinate reference of the tile unit are specified by the
+    `weavingspace.tileable.Tileable` superclass variables 
+    `weavingspace.tileable.Tileable.spacing` and 
+    `weavingspace.tileable.Tileable.crs`.
+
+    Base tilings by squares, hexagons or triangles can also be requested using
+    
+        tile_unit = TileUnit()  # square tiling, the default
+        tile_unit = TileUnit(tile_shape = TileShape.HEXAGON)
+        tile_unit = TileUnit(tile_shape = TileShape.TRIANGLE)
+        
+    The first two of these have only one element_id value, and so cannot be 
+    used for multivariate mapping. The triangle case has two element_id values
+    so may be useful in its base form.
+    
+    To create custom tilings start from one of the base tiles above, and 
+    explicitly set the `weavingspace.Tileable.elements` variable by geometric 
+    construction of suitable shapely.geometry.Polygons. 
+    
+    TODO: A detailed example of this usage can be found in this notebook.
+    
+    Args:
+        tiling_type (str): tiling type as detailed above.
+        dissection_offset (int): offset for "hex-dissection" tilings. See above 
+            for details. Defaults to 1. 
+        n (int): number of dissections or colours in "hex-dissection", 
+            "hex-colouring", or "square-colouring" tiling types. Defaults to 3.
+        code (str): the code for "laves" or "archimedean" tiling types. 
+        Defaults to "3.3.4.3.4".
+
+    Returns:
+        _type_: _description_
+    """
     tiling_type:str = None
     dissection_offset:int = 1
     n:int = 3
@@ -31,9 +96,9 @@ class TileUnit(Tileable):
             self._modify_tile()
             self._modify_elements()
             self.setup_vectors()
-            self.make_regularised_tile_from_elements()
+            self.setup_regularised_tile_from_elements()
         if self.regularised_tile is None:
-            self.make_regularised_tile_from_elements()
+            self.setup_regularised_tile_from_elements()
 
 
     def setup_tile_and_elements(self) -> None:
@@ -145,19 +210,38 @@ class TileUnit(Tileable):
 
     # Note that geopandas clip is not order preserving hence we do this
     # one polygon at a time...
-    def inset_tile(self, d:float = 0) -> None:
+    def inset_tile(self, d:float = 0) -> "TileUnit":
+        """Returns a new TileUnit clipped by `self.regularised_tile` after
+        a negative buffer d has been applied.
+
+        Args:
+            d (float, optional): the inset distance. Defaults to 0.
+
+        Returns:
+            TileUnit: the new TileUnit with inset applied.
+        """
         inset_tile = self.regularised_tile.geometry.buffer(
                 -d, resolution = 1, join_style = 2)[0]
         # the clean_geometry seems needed to stop proliferation of vertices
         new_elements = [tiling_utils.clean_polygon(inset_tile.intersection(e))
                         for e in self.elements.geometry]
-        self.elements.geometry = gpd.GeoSeries(new_elements)
-        return
+        result = copy.deepcopy(self)
+        result.elements.geometry = gpd.GeoSeries(new_elements)
+        return result
     
     
-    def scale_elements(self, sf:float = 1) -> None:
-        self.elements.geometry = self.elements.geometry.scale(
+    def scale_elements(self, sf:float = 1) -> "TileUnit":
+        """Scales the elements by the specified factor, centred on (0, 0).
+
+        Args:
+            sf (float, optional): scale factor to apply. Defaults to 1.
+
+        Returns:
+            TileUnit: the scaled TileUnit.
+        """
+        result = copy.deepcopy(self)
+        result.elements.geometry = self.elements.geometry.scale(
             sf, sf, origin = (0, 0))
-        return
+        return result
 
 
