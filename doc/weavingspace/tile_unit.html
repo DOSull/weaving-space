@@ -153,7 +153,7 @@ class TileUnit(Tileable):
         elif self.tiling_type in (&#34;square-colouring&#34;, &#34;square-coloring&#34;):
             tiling_geometries.setup_square_colouring(self)
         else:
-            tiling_geometries.setup_none_tile(self)
+            tiling_geometries._setup_none_tile(self)
         return
 
     
@@ -497,7 +497,7 @@ class TileUnit(Tileable):
         elif self.tiling_type in (&#34;square-colouring&#34;, &#34;square-coloring&#34;):
             tiling_geometries.setup_square_colouring(self)
         else:
-            tiling_geometries.setup_none_tile(self)
+            tiling_geometries._setup_none_tile(self)
         return
 
     
@@ -749,7 +749,7 @@ on self.tiling_type.</p></div>
     elif self.tiling_type in (&#34;square-colouring&#34;, &#34;square-coloring&#34;):
         tiling_geometries.setup_square_colouring(self)
     else:
-        tiling_geometries.setup_none_tile(self)
+        tiling_geometries._setup_none_tile(self)
     return</code></pre>
 </details>
 </dd>

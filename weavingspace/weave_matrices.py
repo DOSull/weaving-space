@@ -86,8 +86,6 @@ def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray,
         4 - weft is on top
         5 - warp is on top 
     
-    Can't recall why this particular encoding, but don't think it matters...
-
     Args:
         pattern (np.ndarray): pattern matrix with 1 where warp is on top, 
             0 where weft is on top.
@@ -97,6 +95,7 @@ def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray,
     Returns:
         np.ndarray: matrix of values encoded as above.
     """    
+    # Can't recall why this particular encoding, but don't think it matters...
     pattern = np.where(pattern == 1, 5, pattern)           # warp on top
     pattern = np.where(pattern == 0, 4, pattern)           # weft on top
     pattern = np.where(warp < 0, 1, pattern)               # warp absent

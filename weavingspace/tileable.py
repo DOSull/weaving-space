@@ -94,7 +94,7 @@ class Tileable:
     
         
     def get_vectors(self, return_values:bool = True
-        ) -> Union[dict[tuple[int],tuple[float]], list[tuple[float]]]:
+        ) -> Union[ dict[tuple[int], tuple[float]],list[tuple[float]] ]:
         """
         Returns symmetry translation vectors as floating point pairs. 
         
@@ -117,7 +117,9 @@ class Tileable:
             in the grid coordinate system. Defaults to True.
 
         Returns:
-            list[tuple[float]]: _description_
+            Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]: 
+                either the vectors as a list of float tuples, or a dictionary 
+                of those vectors indexed by integer coordinate tuples. 
         """
         bb = self.tile.geometry[0].bounds
         w, h = bb[2] - bb[0], bb[3] - bb[1]

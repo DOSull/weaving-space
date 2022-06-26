@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>weavingspace.tiling_utils API documentation</title>
-<meta name="description" content="Utility functions for use by various classes the weavingspace module …" />
+<meta name="description" content="Utility functions for use by various classes in the `weavingspace`
+package. Most are geometric convenience functions for commonly applied
+operations." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,9 +24,9 @@
 <h1 class="title">Module <code>weavingspace.tiling_utils</code></h1>
 </header>
 <section id="section-intro">
-<p>Utility functions for use by various classes the weavingspace module.</p>
-<p>Most are geometric convenience functions for commonly applied operations in
-the module.</p>
+<p>Utility functions for use by various classes in the <code><a title="weavingspace" href="index.html">weavingspace</a></code>
+package. Most are geometric convenience functions for commonly applied
+operations.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -32,10 +34,9 @@ the module.</p>
 <pre><code class="python">#!/usr/bin/env python
 # coding: utf-8
 
-&#34;&#34;&#34;Utility functions for use by various classes the weavingspace module.
-
-Most are geometric convenience functions for commonly applied operations in
-the module.
+&#34;&#34;&#34;Utility functions for use by various classes in the `weavingspace` 
+package. Most are geometric convenience functions for commonly applied 
+operations.
 &#34;&#34;&#34;
 
 from typing import Iterable, Union
@@ -165,7 +166,7 @@ def incentre(tri:geom.Polygon) -&gt; geom.Point:
     return geom.Point(incentre)
     
 
-def get_interior_vertices(polys:gpd.GeoDataFrame) -&gt; gpd.GeoSeries:
+def _get_interior_vertices(polys:gpd.GeoDataFrame) -&gt; gpd.GeoSeries:
     &#34;&#34;&#34;Returns points not on the outer boundary of the supplied set 
     of polygons.
 
@@ -211,22 +212,25 @@ def get_dual_tile_unit(t) -&gt; gpd.GeoDataFrame:
     
     NOTE: this is complicated and not remotely guaranteed to work!
     a particular issue is that where to place the vertices of the faces
-    of the dual with respect to the tiles in the original is ill-defined.
-    This is because the dual process is topologically not metrically defineed, 
-    so that exact vertex locations are ambiguous. 
+    of the dual with respect to the tiles in the original is ill-defined. 
+    This is because the dual process is topologically not metrically defined, 
+    so that exact vertex locations are ambiguous. Tiling duality is defined in 
+    Section 4.2 of Grunbaum B, Shephard G C, 1987 _Tilings and Patterns_ (W. H. 
+    Freeman and Company, New York)
     
-    NOTE: In general, it can be expected to work only if all the supplied 
-    elements are regular polygons. A known exception is if the only non-regular 
-    polygons are triangles.
+    NOTE: In general, this method will work only if all supplied elements are 
+    regular polygons. A known exception is if the only non-regular polygons are 
+    triangles.
     
     NOTE: &#39;clean&#39; polygons are required. If supplied polygons have messy 
     vertices with multiple points where there is only one proper point, bad 
-    things are likely to happen!
+    things are likely to happen! Consider using `clean_polygon()` on the
+    element geometries.
     
-    We therefore only return a GeoDataFrame for inspection. 
-    
-    However some TileUnit setup methods in tiling_geometries.py use this
-    method, where we are confident the returned dual TileUnit is valid.    
+    Because of the above limitations, we only return a GeoDataFrame 
+    for inspection. However some `weavingspace.tile_unit.TileUnit` setup 
+    methods in `weavingspace.tiling_geometries` use this method, where we are 
+    confident the returned dual is valid.    
 
     Args:
         t (TileUnit): the tiling for which the dual is required.
@@ -239,7 +243,7 @@ def get_dual_tile_unit(t) -&gt; gpd.GeoDataFrame:
     local_patch = t.get_local_patch(r = 3, include_0 = True)     
     # Find the interior points of these tiles - these will be guaranteed
     # to have a sequence of surrounding tiles incident on them 
-    interior_pts = get_interior_vertices(local_patch)
+    interior_pts = _get_interior_vertices(local_patch)
     # Compile a list of the polygons incident on the interior points
     cycles = []
     for pt in interior_pts:
@@ -384,7 +388,7 @@ def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -&gt; bool:
     &#34;&#34;&#34;Tests if two polygons touch along an edge.
 
     Checks that the intersection area of the two polygons buffered by
-    a small amount is large enough to indicate the neighbour at more
+    a small amount is large enough to indicate that they neighbour at more
     than a corner.
 
     Args:
@@ -820,17 +824,21 @@ TileUnit.</p>
 <p>NOTE: this is complicated and not remotely guaranteed to work!
 a particular issue is that where to place the vertices of the faces
 of the dual with respect to the tiles in the original is ill-defined.
-This is because the dual process is topologically not metrically defineed,
-so that exact vertex locations are ambiguous. </p>
-<p>NOTE: In general, it can be expected to work only if all the supplied
-elements are regular polygons. A known exception is if the only non-regular
-polygons are triangles.</p>
+This is because the dual process is topologically not metrically defined,
+so that exact vertex locations are ambiguous. Tiling duality is defined in
+Section 4.2 of Grunbaum B, Shephard G C, 1987 <em>Tilings and Patterns</em> (W. H.
+Freeman and Company, New York)</p>
+<p>NOTE: In general, this method will work only if all supplied elements are
+regular polygons. A known exception is if the only non-regular polygons are
+triangles.</p>
 <p>NOTE: 'clean' polygons are required. If supplied polygons have messy
 vertices with multiple points where there is only one proper point, bad
-things are likely to happen!</p>
-<p>We therefore only return a GeoDataFrame for inspection. </p>
-<p>However some TileUnit setup methods in tiling_geometries.py use this
-method, where we are confident the returned dual TileUnit is valid.
+things are likely to happen! Consider using <code><a title="weavingspace.tiling_utils.clean_polygon" href="#weavingspace.tiling_utils.clean_polygon">clean_polygon()</a></code> on the
+element geometries.</p>
+<p>Because of the above limitations, we only return a GeoDataFrame
+for inspection. However some <code><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></code> setup
+methods in <code><a title="weavingspace.tiling_geometries" href="tiling_geometries.html">weavingspace.tiling_geometries</a></code> use this method, where we are
+confident the returned dual is valid.
 </p>
 <h2 id="args">Args</h2>
 <dl>
@@ -853,22 +861,25 @@ a TileUnit of the dual tiling.</dd>
     
     NOTE: this is complicated and not remotely guaranteed to work!
     a particular issue is that where to place the vertices of the faces
-    of the dual with respect to the tiles in the original is ill-defined.
-    This is because the dual process is topologically not metrically defineed, 
-    so that exact vertex locations are ambiguous. 
+    of the dual with respect to the tiles in the original is ill-defined. 
+    This is because the dual process is topologically not metrically defined, 
+    so that exact vertex locations are ambiguous. Tiling duality is defined in 
+    Section 4.2 of Grunbaum B, Shephard G C, 1987 _Tilings and Patterns_ (W. H. 
+    Freeman and Company, New York)
     
-    NOTE: In general, it can be expected to work only if all the supplied 
-    elements are regular polygons. A known exception is if the only non-regular 
-    polygons are triangles.
+    NOTE: In general, this method will work only if all supplied elements are 
+    regular polygons. A known exception is if the only non-regular polygons are 
+    triangles.
     
     NOTE: &#39;clean&#39; polygons are required. If supplied polygons have messy 
     vertices with multiple points where there is only one proper point, bad 
-    things are likely to happen!
+    things are likely to happen! Consider using `clean_polygon()` on the
+    element geometries.
     
-    We therefore only return a GeoDataFrame for inspection. 
-    
-    However some TileUnit setup methods in tiling_geometries.py use this
-    method, where we are confident the returned dual TileUnit is valid.    
+    Because of the above limitations, we only return a GeoDataFrame 
+    for inspection. However some `weavingspace.tile_unit.TileUnit` setup 
+    methods in `weavingspace.tiling_geometries` use this method, where we are 
+    confident the returned dual is valid.    
 
     Args:
         t (TileUnit): the tiling for which the dual is required.
@@ -881,7 +892,7 @@ a TileUnit of the dual tiling.</dd>
     local_patch = t.get_local_patch(r = 3, include_0 = True)     
     # Find the interior points of these tiles - these will be guaranteed
     # to have a sequence of surrounding tiles incident on them 
-    interior_pts = get_interior_vertices(local_patch)
+    interior_pts = _get_interior_vertices(local_patch)
     # Compile a list of the polygons incident on the interior points
     cycles = []
     for pt in interior_pts:
@@ -921,47 +932,6 @@ a TileUnit of the dual tiling.</dd>
     
     gdf.element_id = relabel(gdf.element_id)
     return gdf</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.tiling_utils.get_interior_vertices"><code class="name flex">
-<span>def <span class="ident">get_interior_vertices</span></span>(<span>polys: geopandas.geodataframe.GeoDataFrame) ‑> geopandas.geoseries.GeoSeries</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Returns points not on the outer boundary of the supplied set
-of polygons.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>polys</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
-<dd>a set of polygons.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>gpd.GeoSeries</code></dt>
-<dd>interior vertices of the set of polygons.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_interior_vertices(polys:gpd.GeoDataFrame) -&gt; gpd.GeoSeries:
-    &#34;&#34;&#34;Returns points not on the outer boundary of the supplied set 
-    of polygons.
-
-    Args:
-        polys (gpd.GeoDataFrame): a set of polygons.
-
-    Returns:
-        gpd.GeoSeries: interior vertices of the set of polygons.
-    &#34;&#34;&#34;
-    polygons = gridify(polys.geometry)
-    uu = safe_union(polygons, as_polygon = True)
-    interior_pts = set()
-    for poly in polygons:
-        for pt in poly.exterior.coords:
-            if uu.contains(
-                geom.Point(pt).buffer(1e-3, resolution = 1, join_style = 2)):
-                interior_pts.add(pt)
-    return gpd.GeoSeries([geom.Point(p) for p in interior_pts])</code></pre>
 </details>
 </dd>
 <dt id="weavingspace.tiling_utils.get_largest_polygon"><code class="name flex">
@@ -1425,7 +1395,7 @@ counter-clockwise order of the point locations.</dd>
 <dd>
 <div class="desc"><p>Tests if two polygons touch along an edge.</p>
 <p>Checks that the intersection area of the two polygons buffered by
-a small amount is large enough to indicate the neighbour at more
+a small amount is large enough to indicate that they neighbour at more
 than a corner.</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -1447,7 +1417,7 @@ than a corner.</p>
     &#34;&#34;&#34;Tests if two polygons touch along an edge.
 
     Checks that the intersection area of the two polygons buffered by
-    a small amount is large enough to indicate the neighbour at more
+    a small amount is large enough to indicate that they neighbour at more
     than a corner.
 
     Args:
@@ -1521,7 +1491,6 @@ output file into layers. Defaults to "element_id".</dd>
 <li><code><a title="weavingspace.tiling_utils.get_bounding_ellipse" href="#weavingspace.tiling_utils.get_bounding_ellipse">get_bounding_ellipse</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.get_collapse_distance" href="#weavingspace.tiling_utils.get_collapse_distance">get_collapse_distance</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.get_dual_tile_unit" href="#weavingspace.tiling_utils.get_dual_tile_unit">get_dual_tile_unit</a></code></li>
-<li><code><a title="weavingspace.tiling_utils.get_interior_vertices" href="#weavingspace.tiling_utils.get_interior_vertices">get_interior_vertices</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.get_largest_polygon" href="#weavingspace.tiling_utils.get_largest_polygon">get_largest_polygon</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.get_polygon_sector" href="#weavingspace.tiling_utils.get_polygon_sector">get_polygon_sector</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.get_regular_polygon" href="#weavingspace.tiling_utils.get_regular_polygon">get_regular_polygon</a></code></li>

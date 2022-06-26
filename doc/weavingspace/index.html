@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>weavingspace API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="See [this notebook](https://github.com/DOSull/weaving-space/blob/main/using-the-library.ipynb) for some preliminary usage notes." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,12 +22,17 @@
 <h1 class="title">Package <code>weavingspace</code></h1>
 </header>
 <section id="section-intro">
+<p>See <a href="https://github.com/DOSull/weaving-space/blob/main/using-the-library.ipynb">this notebook</a> for some preliminary usage notes.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">#!/usr/bin/env python
 # coding: utf-8
+
+&#34;&#34;&#34;
+See [this notebook](https://github.com/DOSull/weaving-space/blob/main/using-the-library.ipynb) for some preliminary usage notes.
+&#34;&#34;&#34;
 
 from ._loom import *
 from ._weave_grid import *
@@ -63,11 +68,15 @@ many 'conventional' tilings of the plane.</p></div>
 </dd>
 <dt><code class="name"><a title="weavingspace.tiling_geometries" href="tiling_geometries.html">weavingspace.tiling_geometries</a></code></dt>
 <dd>
-<div class="desc"><p>Functions for setting up a TileUnit with various element geometries …</p></div>
+<div class="desc"><p>Functions for setting up a <code><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></code> with various
+element geometries. Some care is required in adding new functions that use
+…</p></div>
 </dd>
 <dt><code class="name"><a title="weavingspace.tiling_utils" href="tiling_utils.html">weavingspace.tiling_utils</a></code></dt>
 <dd>
-<div class="desc"><p>Utility functions for use by various classes the weavingspace module …</p></div>
+<div class="desc"><p>Utility functions for use by various classes in the <code><a title="weavingspace" href="#weavingspace">weavingspace</a></code>
+package. Most are geometric convenience functions for commonly applied
+operations.</p></div>
 </dd>
 <dt><code class="name"><a title="weavingspace.weave_matrices" href="weave_matrices.html">weavingspace.weave_matrices</a></code></dt>
 <dd>

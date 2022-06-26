@@ -130,7 +130,7 @@ class Tileable:
     
         
     def get_vectors(self, return_values:bool = True
-        ) -&gt; Union[dict[tuple[int],tuple[float]], list[tuple[float]]]:
+        ) -&gt; Union[ dict[tuple[int], tuple[float]],list[tuple[float]] ]:
         &#34;&#34;&#34;
         Returns symmetry translation vectors as floating point pairs. 
         
@@ -153,7 +153,9 @@ class Tileable:
             in the grid coordinate system. Defaults to True.
 
         Returns:
-            list[tuple[float]]: _description_
+            Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]: 
+                either the vectors as a list of float tuples, or a dictionary 
+                of those vectors indexed by integer coordinate tuples. 
         &#34;&#34;&#34;
         bb = self.tile.geometry[0].bounds
         w, h = bb[2] - bb[0], bb[3] - bb[1]
@@ -643,7 +645,7 @@ class Tileable:
     
         
     def get_vectors(self, return_values:bool = True
-        ) -&gt; Union[dict[tuple[int],tuple[float]], list[tuple[float]]]:
+        ) -&gt; Union[ dict[tuple[int], tuple[float]],list[tuple[float]] ]:
         &#34;&#34;&#34;
         Returns symmetry translation vectors as floating point pairs. 
         
@@ -666,7 +668,9 @@ class Tileable:
             in the grid coordinate system. Defaults to True.
 
         Returns:
-            list[tuple[float]]: _description_
+            Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]: 
+                either the vectors as a list of float tuples, or a dictionary 
+                of those vectors indexed by integer coordinate tuples. 
         &#34;&#34;&#34;
         bb = self.tile.geometry[0].bounds
         w, h = bb[2] - bb[0], bb[3] - bb[1]
@@ -1186,15 +1190,16 @@ have three components. See <a href="https://www.redblobgames.com/grids/hexagons/
 in the grid coordinate system. Defaults to True.</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>list[tuple[float]]</code></dt>
-<dd><em>description</em></dd>
+<dt><code>Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]</code></dt>
+<dd>either the vectors as a list of float tuples, or a dictionary
+of those vectors indexed by integer coordinate tuples.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_vectors(self, return_values:bool = True
-    ) -&gt; Union[dict[tuple[int],tuple[float]], list[tuple[float]]]:
+    ) -&gt; Union[ dict[tuple[int], tuple[float]],list[tuple[float]] ]:
     &#34;&#34;&#34;
     Returns symmetry translation vectors as floating point pairs. 
     
@@ -1217,7 +1222,9 @@ in the grid coordinate system. Defaults to True.</p>
         in the grid coordinate system. Defaults to True.
 
     Returns:
-        list[tuple[float]]: _description_
+        Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]: 
+            either the vectors as a list of float tuples, or a dictionary 
+            of those vectors indexed by integer coordinate tuples. 
     &#34;&#34;&#34;
     bb = self.tile.geometry[0].bounds
     w, h = bb[2] - bb[0], bb[3] - bb[1]
