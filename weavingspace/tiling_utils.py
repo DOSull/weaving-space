@@ -11,6 +11,7 @@ import re
 import string
 
 from math import fsum
+from math import isclose
 
 import numpy as np
 
@@ -122,7 +123,10 @@ def incentre(poly:geom.Polygon) -> geom.Point:
     Given that the polygon is tangential, the radius of the inscribed circle is 
     2 x Area / Perimeter. We apply this buffer to every edge of the polygon and 
     then find their intersection to determine the centre of the circle, which
-    is the incentre of the polygon.
+    is the incentre of the polygon. NOTE: there is some error here as the object
+    whose centroid is taken at the end of the algorithm is a much reduced copy 
+    of the original polygon, the centroid of which is not its incentre! But the
+    error involved is on the order <<1e-9.
 
     Args:
         poly (geom.Polygon): the polygon.
@@ -131,24 +135,31 @@ def incentre(poly:geom.Polygon) -> geom.Point:
         geom.Point: the incentre of the polygon.
     """
     corners = [geom.Point(p[0], p[1]) 
-               for p in list(poly.exterior.coords)]  # ABCA
-    edges = [geom.LineString([p, q]) for p, q in zip(corners[:-1], corners[1:])]
-    perimeter = fsum([e.length for e in edges])
+               for p in list(poly.exterior.coords)]
+    c = poly.centroid
+    # if corners are equidistant from the centroid, then return that
+    d0 = corners[0].distance(c)
+    if all([isclose(pt.distance(c), d0) for pt in corners[1:-1]]):
+        return c
+    else:  # find the incentre
+        edges = [geom.LineString([p, q]) 
+                 for p, q in zip(corners[:-1], corners[1:])]
+        perimeter = fsum([e.length for e in edges])
+        r = 2 * poly.area / perimeter
+        edge_buffers = [e.buffer(r + 1e-9, cap_style = 2) for e in edges]
+        x = edge_buffers[0].intersection(edge_buffers[1])
+        for b in edge_buffers[1:]:
+            x = x.intersection(b)
+        return x.centroid
+
     # lengths = [p.distance(q) 
     #            for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
     # lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
     # perimeter = fsum(lengths)
-    r = 2 * poly.area / perimeter
-    edge_buffers = [e.buffer(r + 1e-6) for e in edges]
-    x = edge_buffers[0].intersection(edge_buffers[1])
-    for b in edge_buffers[1:]:
-        x = x.intersection(b)
-    return x.centroid
-    incentre = [0, 0]
-    for p, l in zip(corners[:-1], lengths):
-        incentre[0] = incentre[0] + p.x * l / perimeter
-        incentre[1] = incentre[1] + p.y * l / perimeter
-    return geom.Point(incentre)
+    # incentre = [0, 0]
+    # for p, l in zip(corners[:-1], lengths):
+    #     incentre[0] = incentre[0] + p.x * l / perimeter
+    #     incentre[1] = incentre[1] + p.y * l / perimeter
     
 
 def _get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
