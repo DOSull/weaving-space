@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""Functions for setting up a TileUnit with various element geometries.
+
+Some care is required in adding new functions that use exisitng ones
+to get the sequence of setup operations right. Modify with care!
+"""
+
 from typing import TYPE_CHECKING
 import copy
 import itertools
@@ -12,23 +18,10 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 
 from weavingspace.tileable import TileShape
+from weavingspace.tile_unit import TileUnit
 import weavingspace.tiling_utils as tiling_utils
 
-if TYPE_CHECKING:
-    from weavingspace.tile_unit import TileUnit
-
-"""A bunch of functions for etting up a TileUnit with various 
-element geometries.
-
-Some care is required in adding new functions that use exisitng ones
-to get the sequence of setup operations right. Modify with care!
-
-Note also that typehinting in this file causes circular import issues, 
-hence is not complete in places. In general the variable 'unit' is a
-TileUnit object.
-"""
-
-def setup_none_tile(unit:"TileUnit") -> None:
+def setup_none_tile(unit:TileUnit) -> None:
     """Setups a 'null' tile with one element and one element_id.
 
     Args:
@@ -41,7 +34,7 @@ def setup_none_tile(unit:"TileUnit") -> None:
     return
 
 
-def setup_base_tile(unit:"TileUnit", shape:TileShape) -> None:
+def setup_base_tile(unit:TileUnit, shape:TileShape) -> None:
     """_summary_
 
     Args:
@@ -65,7 +58,7 @@ def setup_base_tile(unit:"TileUnit", shape:TileShape) -> None:
     return
 
 
-def setup_cairo(unit:"TileUnit") -> None:
+def setup_cairo(unit:TileUnit) -> None:
     """Sets up the Cairo tiling. King of tilings. All hail the Cairo tiling.
     This code shows how a 'handcoded' set of geometries can be applied.
     
@@ -112,7 +105,7 @@ def setup_cairo(unit:"TileUnit") -> None:
     unit.setup_regularised_tile_from_elements()
         
     
-def setup_hex_dissection(unit:"TileUnit") -> None:
+def setup_hex_dissection(unit:TileUnit) -> None:
     """Tilings from radial dissection of a hexagon into 2, 3, 4, 6 or 12 slices.
     
     The supplied unit should have dissection_offset and n set.
@@ -196,7 +189,7 @@ def setup_hex_dissection(unit:"TileUnit") -> None:
     unit.regularised_tile = copy.deepcopy(unit.tile)
 
 
-def setup_laves(unit:"TileUnit") -> None:
+def setup_laves(unit:TileUnit) -> None:
     """The Laves tilings. See https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings.
     
     These are all isohedral, but mostly not regular polygons. We 
@@ -270,7 +263,7 @@ def setup_laves(unit:"TileUnit") -> None:
     return
 
 
-def setup_laves_33336(unit:"TileUnit") -> None:
+def setup_laves_33336(unit:TileUnit) -> None:
     """Sets up Laves [3.3.3.3.6] which is like a 6 petal flower.
     
     Similar to the H3 7 hexagon group with the central hex removed and each
@@ -299,7 +292,7 @@ def setup_laves_33336(unit:"TileUnit") -> None:
     unit.setup_regularised_tile_from_elements()
         
 
-def setup_laves_488(unit:"TileUnit") -> None:
+def setup_laves_488(unit:TileUnit) -> None:
     """The 4-dissection of the square by its diagonals.
 
     Args:
@@ -317,7 +310,7 @@ def setup_laves_488(unit:"TileUnit") -> None:
     unit.setup_regularised_tile_from_elements()
         
         
-def setup_laves_31212(unit:"TileUnit") -> None:
+def setup_laves_31212(unit:TileUnit) -> None:
     """This is also a hexagon dissection... like 3.6.3.6 with each rhombus
     sliced in half along its long diagonal.
 
@@ -342,7 +335,7 @@ def setup_laves_31212(unit:"TileUnit") -> None:
     unit.regularised_tile = copy.deepcopy(unit.tile)
 
 
-def setup_archimedean(unit:"TileUnit") -> None:
+def setup_archimedean(unit:TileUnit) -> None:
     """The Archimedean 'regular tilings. See https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Convex_uniform_tilings_of_the_Euclidean_plane
 
     Many of these are most easily constructed as duals of the Laves tilings.
@@ -417,7 +410,7 @@ def setup_archimedean(unit:"TileUnit") -> None:
     return
 
 
-def setup_archimedean_3464(unit:"TileUnit") -> None:
+def setup_archimedean_3464(unit:TileUnit) -> None:
     """The dual of Laves 3.4.6.4 is not accurately rendered
     by our code, so we do this one by hand. 
 
@@ -451,7 +444,7 @@ def setup_archimedean_3464(unit:"TileUnit") -> None:
     unit.setup_regularised_tile_from_elements()
 
 
-def setup_hex_colouring(unit:"TileUnit") -> None:
+def setup_hex_colouring(unit:TileUnit) -> None:
     """3, 4, and 7 colourings of a regular array of hexagons.
 
     Args:
@@ -506,7 +499,7 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
     unit.setup_regularised_tile_from_elements()
 
 
-def setup_square_colouring(unit:"TileUnit") -> None:
+def setup_square_colouring(unit:TileUnit) -> None:
     """Colourings of a regular array of squares. Only supports n = 5 at present
     but we need a n=5 option
 

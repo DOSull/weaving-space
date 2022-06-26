@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>weavingspace.tile_map API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="Classes for tiling maps. `weavingspace.tile_map.Tiling` and
+`weavingspace.tile_map.TiledMap` are exposed in the
+public API and
+respectively enable …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,12 +25,23 @@
 <h1 class="title">Module <code>weavingspace.tile_map</code></h1>
 </header>
 <section id="section-intro">
+<p>Classes for tiling maps. <code><a title="weavingspace.tile_map.Tiling" href="#weavingspace.tile_map.Tiling">Tiling</a></code> and
+<code><a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></code> are exposed in the
+public API and
+respectively enable creation of a tiling and plotting of the tiling as a
+multivariate map.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">#!/usr/bin/env python
 # coding: utf-8
+
+&#34;&#34;&#34;Classes for tiling maps. `weavingspace.tile_map.Tiling` and 
+`weavingspace.tile_map.TiledMap` are exposed in the  public API and 
+respectively enable creation of a tiling and plotting of the tiling as a 
+multivariate map. 
+&#34;&#34;&#34;
 
 from dataclasses import dataclass
 from typing import Union
@@ -41,7 +55,6 @@ from matplotlib.figure import Figure
 import matplotlib.colors
 import matplotlib.pyplot as pyplot
 
-import shapely.affinity as affine
 import shapely.geometry as geom
 
 from weavingspace.tileable import Tileable
@@ -278,7 +291,7 @@ class Tiling:
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         if elements_margin &gt; 0:
-            self.tile_unit = self.inset_elements(elements_margin) 
+            self.tile_unit = self.tile_unit.inset_elements(elements_margin) 
         if elements_sf != 1:
             if isinstance(self.tile_unit, TileUnit):
                 self.tile_unit = self.tile_unit.scale_elements(elements_sf)
@@ -1825,7 +1838,7 @@ class Tiling:
         self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         if elements_margin &gt; 0:
-            self.tile_unit = self.inset_elements(elements_margin) 
+            self.tile_unit = self.tile_unit.inset_elements(elements_margin) 
         if elements_sf != 1:
             if isinstance(self.tile_unit, TileUnit):
                 self.tile_unit = self.tile_unit.scale_elements(elements_sf)

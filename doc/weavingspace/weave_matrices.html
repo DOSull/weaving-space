@@ -1,0 +1,1103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>weavingspace.weave_matrices API documentation</title>
+<meta name="description" content="Functions to generate the matrices summarising elements of tileable
+repeating elements that when repeated across a map area give the appearance of
+a …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>weavingspace.weave_matrices</code></h1>
+</header>
+<section id="section-intro">
+<p>Functions to generate the matrices summarising elements of tileable
+repeating elements that when repeated across a map area give the appearance of
+a
+biaxial woven surface composed of criss-crossing rectangular elements. </p>
+<p>Implementation is based on ideas discussed in variously</p>
+<ul>
+<li>Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 22 (6):108–118.</li>
+<li>———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 23 (2):80–83.</li>
+<li>———. 2003b. Digital weaving. 2. IEEE Computer Graphics and Applications 23 (1):77–90.</li>
+</ul>
+<p>and (unpublished)</p>
+<ul>
+<li>Griswold, R. 2006. Mathematical and Computational Topics in Weaving
+<a href="https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf">https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf</a>
+(accessed 29/10/21).</li>
+</ul>
+<p>where weaving is shown to be a matrix multiplication of tie-up, threading and
+treadling matrices. An accessible introduction can be found at
+<a href="https://www.youtube.com/watch?v=oMOSiag3dxg">https://www.youtube.com/watch?v=oMOSiag3dxg</a></p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#!/usr/bin/env python
+# coding: utf-8
+
+&#34;&#34;&#34;Functions to generate the matrices summarising elements of tileable 
+repeating elements that when repeated across a map area give the appearance of 
+a  biaxial woven surface composed of criss-crossing rectangular elements. 
+
+Implementation is based on ideas discussed in variously
+ 
++ Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 22 (6):108–118.
++ ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 23 (2):80–83.
++ ———. 2003b. Digital weaving. 2. IEEE Computer Graphics and Applications 23 (1):77–90.
+ 
+and (unpublished)
+
++ Griswold, R. 2006. Mathematical and Computational Topics in Weaving
+https://www2.cs.arizona.edu/patterns/weaving/webdocs/mo/Griswold-MO.pdf 
+(accessed 29/10/21).
+ 
+where weaving is shown to be a matrix multiplication of tie-up, threading and 
+treadling matrices. An accessible introduction can be found at 
+https://www.youtube.com/watch?v=oMOSiag3dxg
+&#34;&#34;&#34;
+
+from typing import Union
+import numpy as np
+
+def reps_needed(x1:int, x2:int) -&gt; tuple[int]:
+    &#34;&#34;&#34;Returns how many repetitions of sequences of length x1 and x2 are 
+    needed to make a matched length sequence 
+
+    Args:
+        x1 (int): length of first sequence.
+        x2 (int): length of second sequence.
+
+    Returns:
+        tuple[int]: (number of repeats of x1, number of repeats of x2).
+    &#34;&#34;&#34;  
+    n = np.lcm(x1, x2)
+    return tuple(i for i in (n // x1, n // x2))
+
+
+def get_pattern(tie_up:np.ndarray, treadling:np.ndarray, threading:np.ndarray,
+                warp_n:int, weft_n:int, rep:int = 1) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns a 0/1 encoded weave matrix. 
+    
+    Given tie_up, treadling and threading matrices. The following conditions  must be satisfied to avoid non-conformable matrix error:
+    
+        treadling.shape[1] == tie_up.shape[0]
+        tie_up.shape[1] == threading.shape[0]
+    
+    The &#34;twill&#34;, &#34;random&#34;, &#34;basket&#34; and &#34;plain&#34; options should guarantee
+    this, but the &#34;this&#34; option requires the user to make this happen
+    If the warp_n and weft_n values are not factors of treadling.shape[0] and
+    threading.shape[1] respectively, the output matrix will be repeated as
+    needed to make this match
+
+    Args:
+        tie_up (np.ndarray): the tie up matrix.
+        treadling (np.ndarray): the treadling matrix.
+        threading (np.ndarray): the threading matrix.
+        warp_n (int): the number of uniquely labelled warp threads.
+        weft_n (int): the number of uniquely labelled weft threads.
+        rep (int, optional): optional additional repetition of the output       
+            applied in both directions. Defaults to 1.
+
+    Returns:
+        np.ndarray: _description_
+    &#34;&#34;&#34;    
+    pattern = (treadling @ tie_up @ threading &gt; 0) + 0
+    rep_warp = reps_needed(warp_n, pattern.shape[1])
+    rep_weft = reps_needed(weft_n, pattern.shape[0])
+    return np.tile(pattern, (rep_weft[1] * rep, rep_warp[1] * rep))
+
+
+# Note that as currently written this function requires the warp and weft
+# matrices to be the same size, which get_weave_pattern_matrix will ensure, b
+# but which may not be the case if called from elsewhere
+def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray, 
+                         weft:np.ndarray) -&gt; np.ndarray:
+    &#34;&#34;&#34;Encodes a biaxial weave pattern as below.
+
+        1 - warp is absent
+        2 - weft is absent
+        3 - both threads are absent
+        4 - weft is on top
+        5 - warp is on top 
+    
+    Can&#39;t recall why this particular encoding, but don&#39;t think it matters...
+
+    Args:
+        pattern (np.ndarray): pattern matrix with 1 where warp is on top, 
+            0 where weft is on top.
+        warp (np.ndarray): warp matrix where -1 values indicate absent threads.
+        weft (np.ndarray): weft matrix where -1 values indicate absent threads.
+
+    Returns:
+        np.ndarray: matrix of values encoded as above.
+    &#34;&#34;&#34;    
+    pattern = np.where(pattern == 1, 5, pattern)           # warp on top
+    pattern = np.where(pattern == 0, 4, pattern)           # weft on top
+    pattern = np.where(warp &lt; 0, 1, pattern)               # warp absent
+    pattern = np.where(weft &lt; 0, 2, pattern)               # weft absent
+    return np.where((warp &lt; 0) &amp; (weft &lt; 0), 3, pattern)   # both absent
+
+
+def make_plain_pattern(warp_n:int = 1, weft_n:int = 1) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns plain weave (checkerboard) matrix.
+
+    Args:
+        warp_n (int, optional): number of warp thread labels. Defaults to 1.
+        weft_n (int, optional): number of weft thread labels. Defaults to 1.
+
+    Returns:
+        np.ndarray: 0/1 matrix where 1 = warp on top.
+    &#34;&#34;&#34;    
+    return make_twill_pattern(n = 1, warp_n = warp_n, weft_n = weft_n)
+
+
+def make_twill_pattern(n:Union[int, tuple[int]] = 2, 
+                       warp_n:int = 2, weft_n:int = 2) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns twill pattern matrix extended for warp and weft patterns.
+
+    n is the number of over-unders. With n = 1 we get a plain weave.
+
+    Args:
+        n (Union[int,tuple[int]], optional): specifies over-under sequence in
+            the weave. Defaults to 2.
+        warp_n (int, optional): number of warp thread labels. Defaults to 2.
+        weft_n (int, optional): number of weft thread labels. Defaults to 2.
+
+    Returns:
+        np.ndarray: _description_
+    &#34;&#34;&#34;    
+    tie_up = make_twill_matrix(n)
+    threading = np.diag(np.ones(tie_up.shape[0]))
+    treadling = np.diag(np.ones(tie_up.shape[1]))
+    return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
+
+
+def make_over_under_row(n:Union[int,tuple[int]]) -&gt; list[int]:
+    &#34;&#34;&#34;Returns a tuple of runs of 1s and 0s.
+
+    Returns a tuple of runs of 1s and 0s per supplied n. 
+    
+    If n is an integer, returned tuple will be a series of n 1s followed by
+    n 0s.
+    
+    If n is a tuple of odd length it will be repeated to produce an even
+    length over-under sequence. This is required to avoid cases such as
+    e.g, (1,2,3) -&gt; 100111 which repeated is 1001111001111, i.e. a (2,4)
+    pattern. Repeating it yields 100111011000 which is the requested pattern.
+
+    Args:
+        n (Union[int,tuple[int]]): requested over-under sequence. See details.
+
+    Returns:
+        list[int]: list of runs of 1s and 0s in the requested pattern. 
+    &#34;&#34;&#34;    
+    over_under = n
+    if type(over_under) == int:
+        over_under = [n, n]
+    elif len(n) % 2 != 0:
+        over_under = n * 2
+    x = 1
+    row = []
+    for y in over_under:
+        row.extend([x] * y)
+        x = 1 - x
+    return row
+
+
+def wrap_row(r:list, by:int = 1) -&gt; list:
+    &#34;&#34;&#34;Wraps the list r by number of positions.
+    
+    Positive by will shift right.
+    Negative shifts left.
+
+    Args:
+        r (list): list to wrap.
+        by (int, optional): number of positions to shift by. Defaults to 1.
+
+    Returns:
+        list: wrapped list.
+    &#34;&#34;&#34;    
+    return r[-by:] + r[:-by]
+
+
+def make_twill_matrix(over_under:Union[int, tuple[int]]) -&gt; np.ndarray:
+    &#34;&#34;&#34;Makes a twill 0/1 matrix.
+
+    Makes a matrix like
+    
+        1 1 0 0
+        0 1 1 0
+        0 0 1 1
+        1 0 0 1
+      
+    where the repeat runs in each row are lengths returned by
+    make_over_under_rown(n)
+
+    Args:
+        over_under (Union[int,tuple[int]]): over-under run specification. See
+            make_over_under_row().
+
+    Returns:
+        np.ndarray: a matrix of 0s and 1s.
+    &#34;&#34;&#34;    
+    row = make_over_under_row(over_under)
+    d = len(row)
+    out = []
+    for i in range(d):
+        row = wrap_row(row, 1)
+        out.extend(row)
+    return np.array(out).reshape(d, d)
+
+
+def make_basket_pattern(n:int = 2, warp_n:int = 2, 
+                        weft_n:int = 2) -&gt; np.ndarray: 
+    &#34;&#34;&#34;Returns basket pattern matrix extended for warp and weft patterns.
+
+    Args:
+        n (int, optional): over under count. Defaults to 2.
+        warp_n (int, optional): number of warp thread labels. Defaults to 2.
+        weft_n (int, optional): number of weft thread labels. Defaults to 2.
+
+    Returns:
+        np.ndarray: _description_
+    &#34;&#34;&#34;    
+    tie_up = make_basket_matrix(n)
+    threading = np.diag(np.ones(tie_up.shape[0]))
+    treadling = np.diag(np.ones(tie_up.shape[1]))
+    return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
+
+
+def make_basket_matrix(n:int) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns a basket weave pattern matrix.
+
+    Makes a matrix like
+    
+        1 1 0 0
+        1 1 0 0
+        0 0 1 1
+        0 0 1 1
+    
+    where the repeat runs in each row are length n
+
+    Args:
+        n (int): dimension of the &#39;basket&#39; over-under pattern.
+
+    Returns:
+        np.ndarray: 0/1 matrix in basket weave pattern.
+    &#34;&#34;&#34;    
+    return np.array((([1] * n + [0] * n) * n) + 
+                    (([0] * n + [1] * n) * n)).reshape(n * 2, n * 2)
+
+
+def make_this_pattern(tie_up:np.ndarray, 
+                      threading:np.ndarray = None,
+                      treadling:np.ndarray = None,
+                      warp_n:int = 1, weft_n:int = 1) -&gt; np.ndarray:
+    &#34;&#34;&#34;Pass through returns weave pattern matrix from supplied input.
+
+    This is just a pass through function which applies suitable size identity. Could try to enforce
+    
+        treadling.shape[1] == tie_up.shape[0] and 
+        tie_up.shape[1] == threading.shape[0]
+    
+    but unsure what would be an appropriate way to do this...
+
+    Args:
+        tie_up (np.ndarray): desired weave pattern.
+        threading (np.ndarray): desired threading pattern.
+        treadling (np.ndarray): desired treadling pattern.
+        warp_n (int, optional): number of warp thread labels. Defaults to 1.
+        weft_n (int, optional): number of weft thread labels. Defaults to 1.
+
+    Returns:
+        np.ndarray: resulting 0/1 weave pattern matrix.
+    &#34;&#34;&#34;    
+    threading = (np.diag(np.ones(tie_up.shape[0]))
+                 if threading is None
+                 else threading)
+    treadling = (np.diag(np.ones(tie_up.shape[1]))
+                 if treadling is None
+                 else treadling)
+    return get_pattern(tie_up, treadling, threading, warp_n, weft_n)
+
+
+def get_weave_pattern_matrix(weave_type:str = &#34;plain&#34;, 
+                             n:Union[int, tuple[int]] = 2, 
+                             warp:Union[list[str], tuple[str]] = [&#34;a&#34;, &#34;b&#34;],
+                             weft:Union[list[str], tuple[str]] = [&#34;c&#34;, &#34;d&#34;], 
+                             tie_up:np.ndarray = make_twill_matrix((2, 2)), 
+                             tr:np.ndarray = None, 
+                             th:np.ndarray = None) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns encoded weave pattern matrix.
+    
+    See `encode_biaxial_weave()` for the encoding.
+
+    Allowed weave_types: &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34;, and &#34;this&#34; (pass-thru).
+    These are explained in the respective functions to which this function
+    delegates construction of the base matrices before applying the encoding.
+
+    Args:
+        weave_type (str, optional): one of &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34; or
+            &#34;this&#34;. Defaults to &#34;plain&#34;.
+        n (Union[int,tuple[int]], optional): over under pattern. See 
+            make_over_under_row() for details. Defaults to 2.
+        warp (Union[list[str],tuple[str]], optional): list of labels for warp 
+            strands. Defaults to [&#34;a&#34;, &#34;b&#34;].
+        weft (Union[list[str],tuple[str]], optional): list of labels for weft 
+            strands. Defaults to [&#34;c&#34;, &#34;d&#34;].
+        tie_up (np.ndarray, optional): a weave pattern matrix to pass thru in 
+            the &#34;this&#34; case. Defaults to make_twill_matrix((2, 2)).
+        tr (np.ndarray, optional): treadling matrix for the &#34;this&#34; case.        
+            Defaults to None.
+        th (np.ndarray, optional): threading matrix for the &#34;this&#34; case.        
+            Defaults to None.
+
+    Returns:
+        np.ndarray: encoded weave pattern matrix.
+    &#34;&#34;&#34;    
+    warps = [-1 if c == &#34;-&#34; else i for i, c in enumerate(warp)]
+    wefts = [-1 if c == &#34;-&#34; else i for i, c in enumerate(weft)]
+    width = len(warp)
+    height = len(weft)
+    
+    if weave_type == &#34;plain&#34;:
+        p = make_plain_pattern(warp_n = width, weft_n = height)
+    elif weave_type == &#34;twill&#34;:
+        p = make_twill_pattern(n = n, warp_n = width, weft_n = height)
+    elif weave_type == &#34;basket&#34;:
+        p = make_basket_pattern(n = n, warp_n = width, weft_n = height)
+    else:
+        p = make_this_pattern(tie_up = tie_up, threading = th, treadling = tr,
+                              warp_n = width, weft_n = height)
+    nr, nc = p.shape
+    warp_threads = np.array(warps * 
+            reps_needed(nc, len(warps))[1] * nr).reshape((nr, nc))
+    weft_threads = np.array(wefts * 
+            reps_needed(nr, len(wefts))[1] * nc).reshape((nc, nr)).transpose()
+    # encode to reflect missing threads
+    return encode_biaxial_weave(p, warp_threads, weft_threads)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="weavingspace.weave_matrices.encode_biaxial_weave"><code class="name flex">
+<span>def <span class="ident">encode_biaxial_weave</span></span>(<span>pattern: numpy.ndarray, warp: numpy.ndarray, weft: numpy.ndarray) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Encodes a biaxial weave pattern as below.</p>
+<pre><code>1 - warp is absent
+2 - weft is absent
+3 - both threads are absent
+4 - weft is on top
+5 - warp is on top
+</code></pre>
+<p>Can't recall why this particular encoding, but don't think it matters&hellip;</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>pattern</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>pattern matrix with 1 where warp is on top,
+0 where weft is on top.</dd>
+<dt><strong><code>warp</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>warp matrix where -1 values indicate absent threads.</dd>
+<dt><strong><code>weft</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>weft matrix where -1 values indicate absent threads.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>np.ndarray</code></dt>
+<dd>matrix of values encoded as above.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray, 
+                         weft:np.ndarray) -&gt; np.ndarray:
+    &#34;&#34;&#34;Encodes a biaxial weave pattern as below.
+
+        1 - warp is absent
+        2 - weft is absent
+        3 - both threads are absent
+        4 - weft is on top
+        5 - warp is on top 
+    
+    Can&#39;t recall why this particular encoding, but don&#39;t think it matters...
+
+    Args:
+        pattern (np.ndarray): pattern matrix with 1 where warp is on top, 
+            0 where weft is on top.
+        warp (np.ndarray): warp matrix where -1 values indicate absent threads.
+        weft (np.ndarray): weft matrix where -1 values indicate absent threads.
+
+    Returns:
+        np.ndarray: matrix of values encoded as above.
+    &#34;&#34;&#34;    
+    pattern = np.where(pattern == 1, 5, pattern)           # warp on top
+    pattern = np.where(pattern == 0, 4, pattern)           # weft on top
+    pattern = np.where(warp &lt; 0, 1, pattern)               # warp absent
+    pattern = np.where(weft &lt; 0, 2, pattern)               # weft absent
+    return np.where((warp &lt; 0) &amp; (weft &lt; 0), 3, pattern)   # both absent</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.get_pattern"><code class="name flex">
+<span>def <span class="ident">get_pattern</span></span>(<span>tie_up: numpy.ndarray, treadling: numpy.ndarray, threading: numpy.ndarray, warp_n: int, weft_n: int, rep: int = 1) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a 0/1 encoded weave matrix. </p>
+<p>Given tie_up, treadling and threading matrices. The following conditions
+must be satisfied to avoid non-conformable matrix error:</p>
+<pre><code>treadling.shape[1] == tie_up.shape[0]
+tie_up.shape[1] == threading.shape[0]
+</code></pre>
+<p>The "twill", "random", "basket" and "plain" options should guarantee
+this, but the "this" option requires the user to make this happen
+If the warp_n and weft_n values are not factors of treadling.shape[0] and
+threading.shape[1] respectively, the output matrix will be repeated as
+needed to make this match</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tie_up</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>the tie up matrix.</dd>
+<dt><strong><code>treadling</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>the treadling matrix.</dd>
+<dt><strong><code>threading</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>the threading matrix.</dd>
+<dt><strong><code>warp_n</code></strong> :&ensp;<code>int</code></dt>
+<dd>the number of uniquely labelled warp threads.</dd>
+<dt><strong><code>weft_n</code></strong> :&ensp;<code>int</code></dt>
+<dd>the number of uniquely labelled weft threads.</dd>
+<dt><strong><code>rep</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>optional additional repetition of the output
+<br>
+applied in both directions. Defaults to 1.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>np.ndarray</code></dt>
+<dd><em>description</em></dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_pattern(tie_up:np.ndarray, treadling:np.ndarray, threading:np.ndarray,
+                warp_n:int, weft_n:int, rep:int = 1) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns a 0/1 encoded weave matrix. 
+    
+    Given tie_up, treadling and threading matrices. The following conditions  must be satisfied to avoid non-conformable matrix error:
+    
+        treadling.shape[1] == tie_up.shape[0]
+        tie_up.shape[1] == threading.shape[0]
+    
+    The &#34;twill&#34;, &#34;random&#34;, &#34;basket&#34; and &#34;plain&#34; options should guarantee
+    this, but the &#34;this&#34; option requires the user to make this happen
+    If the warp_n and weft_n values are not factors of treadling.shape[0] and
+    threading.shape[1] respectively, the output matrix will be repeated as
+    needed to make this match
+
+    Args:
+        tie_up (np.ndarray): the tie up matrix.
+        treadling (np.ndarray): the treadling matrix.
+        threading (np.ndarray): the threading matrix.
+        warp_n (int): the number of uniquely labelled warp threads.
+        weft_n (int): the number of uniquely labelled weft threads.
+        rep (int, optional): optional additional repetition of the output       
+            applied in both directions. Defaults to 1.
+
+    Returns:
+        np.ndarray: _description_
+    &#34;&#34;&#34;    
+    pattern = (treadling @ tie_up @ threading &gt; 0) + 0
+    rep_warp = reps_needed(warp_n, pattern.shape[1])
+    rep_weft = reps_needed(weft_n, pattern.shape[0])
+    return np.tile(pattern, (rep_weft[1] * rep, rep_warp[1] * rep))</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.get_weave_pattern_matrix"><code class="name flex">
+<span>def <span class="ident">get_weave_pattern_matrix</span></span>(<span>weave_type: str = 'plain', n: Union[int, tuple[int]] = 2, warp: Union[list[str], tuple[str]] = ['a', 'b'], weft: Union[list[str], tuple[str]] = ['c', 'd'], tie_up: numpy.ndarray = array([[0, 1, 1, 0],
+[0, 0, 1, 1],
+[1, 0, 0, 1],
+[1, 1, 0, 0]]), tr: numpy.ndarray = None, th: numpy.ndarray = None) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns encoded weave pattern matrix.</p>
+<p>See <code><a title="weavingspace.weave_matrices.encode_biaxial_weave" href="#weavingspace.weave_matrices.encode_biaxial_weave">encode_biaxial_weave()</a></code> for the encoding.</p>
+<p>Allowed weave_types: "plain", "twill", "basket", and "this" (pass-thru).
+These are explained in the respective functions to which this function
+delegates construction of the base matrices before applying the encoding.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>weave_type</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>one of "plain", "twill", "basket" or
+"this". Defaults to "plain".</dd>
+<dt><strong><code>n</code></strong> :&ensp;<code>Union[int,tuple[int]]</code>, optional</dt>
+<dd>over under pattern. See
+make_over_under_row() for details. Defaults to 2.</dd>
+<dt><strong><code>warp</code></strong> :&ensp;<code>Union[list[str],tuple[str]]</code>, optional</dt>
+<dd>list of labels for warp
+strands. Defaults to ["a", "b"].</dd>
+<dt><strong><code>weft</code></strong> :&ensp;<code>Union[list[str],tuple[str]]</code>, optional</dt>
+<dd>list of labels for weft
+strands. Defaults to ["c", "d"].</dd>
+<dt><strong><code>tie_up</code></strong> :&ensp;<code>np.ndarray</code>, optional</dt>
+<dd>a weave pattern matrix to pass thru in
+the "this" case. Defaults to make_twill_matrix((2, 2)).</dd>
+<dt><strong><code>tr</code></strong> :&ensp;<code>np.ndarray</code>, optional</dt>
+<dd>treadling matrix for the "this" case.
+<br>
+Defaults to None.</dd>
+<dt><strong><code>th</code></strong> :&ensp;<code>np.ndarray</code>, optional</dt>
+<dd>threading matrix for the "this" case.
+<br>
+Defaults to None.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>np.ndarray</code></dt>
+<dd>encoded weave pattern matrix.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_weave_pattern_matrix(weave_type:str = &#34;plain&#34;, 
+                             n:Union[int, tuple[int]] = 2, 
+                             warp:Union[list[str], tuple[str]] = [&#34;a&#34;, &#34;b&#34;],
+                             weft:Union[list[str], tuple[str]] = [&#34;c&#34;, &#34;d&#34;], 
+                             tie_up:np.ndarray = make_twill_matrix((2, 2)), 
+                             tr:np.ndarray = None, 
+                             th:np.ndarray = None) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns encoded weave pattern matrix.
+    
+    See `encode_biaxial_weave()` for the encoding.
+
+    Allowed weave_types: &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34;, and &#34;this&#34; (pass-thru).
+    These are explained in the respective functions to which this function
+    delegates construction of the base matrices before applying the encoding.
+
+    Args:
+        weave_type (str, optional): one of &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34; or
+            &#34;this&#34;. Defaults to &#34;plain&#34;.
+        n (Union[int,tuple[int]], optional): over under pattern. See 
+            make_over_under_row() for details. Defaults to 2.
+        warp (Union[list[str],tuple[str]], optional): list of labels for warp 
+            strands. Defaults to [&#34;a&#34;, &#34;b&#34;].
+        weft (Union[list[str],tuple[str]], optional): list of labels for weft 
+            strands. Defaults to [&#34;c&#34;, &#34;d&#34;].
+        tie_up (np.ndarray, optional): a weave pattern matrix to pass thru in 
+            the &#34;this&#34; case. Defaults to make_twill_matrix((2, 2)).
+        tr (np.ndarray, optional): treadling matrix for the &#34;this&#34; case.        
+            Defaults to None.
+        th (np.ndarray, optional): threading matrix for the &#34;this&#34; case.        
+            Defaults to None.
+
+    Returns:
+        np.ndarray: encoded weave pattern matrix.
+    &#34;&#34;&#34;    
+    warps = [-1 if c == &#34;-&#34; else i for i, c in enumerate(warp)]
+    wefts = [-1 if c == &#34;-&#34; else i for i, c in enumerate(weft)]
+    width = len(warp)
+    height = len(weft)
+    
+    if weave_type == &#34;plain&#34;:
+        p = make_plain_pattern(warp_n = width, weft_n = height)
+    elif weave_type == &#34;twill&#34;:
+        p = make_twill_pattern(n = n, warp_n = width, weft_n = height)
+    elif weave_type == &#34;basket&#34;:
+        p = make_basket_pattern(n = n, warp_n = width, weft_n = height)
+    else:
+        p = make_this_pattern(tie_up = tie_up, threading = th, treadling = tr,
+                              warp_n = width, weft_n = height)
+    nr, nc = p.shape
+    warp_threads = np.array(warps * 
+            reps_needed(nc, len(warps))[1] * nr).reshape((nr, nc))
+    weft_threads = np.array(wefts * 
+            reps_needed(nr, len(wefts))[1] * nc).reshape((nc, nr)).transpose()
+    # encode to reflect missing threads
+    return encode_biaxial_weave(p, warp_threads, weft_threads)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.make_basket_matrix"><code class="name flex">
+<span>def <span class="ident">make_basket_matrix</span></span>(<span>n: int) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a basket weave pattern matrix.</p>
+<p>Makes a matrix like</p>
+<pre><code>1 1 0 0
+1 1 0 0
+0 0 1 1
+0 0 1 1
+</code></pre>
+<p>where the repeat runs in each row are length n</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>int</code></dt>
+<dd>dimension of the 'basket' over-under pattern.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>np.ndarray</code></dt>
+<dd>0/1 matrix in basket weave pattern.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_basket_matrix(n:int) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns a basket weave pattern matrix.
+
+    Makes a matrix like
+    
+        1 1 0 0
+        1 1 0 0
+        0 0 1 1
+        0 0 1 1
+    
+    where the repeat runs in each row are length n
+
+    Args:
+        n (int): dimension of the &#39;basket&#39; over-under pattern.
+
+    Returns:
+        np.ndarray: 0/1 matrix in basket weave pattern.
+    &#34;&#34;&#34;    
+    return np.array((([1] * n + [0] * n) * n) + 
+                    (([0] * n + [1] * n) * n)).reshape(n * 2, n * 2)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.make_basket_pattern"><code class="name flex">
+<span>def <span class="ident">make_basket_pattern</span></span>(<span>n: int = 2, warp_n: int = 2, weft_n: int = 2) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns basket pattern matrix extended for warp and weft patterns.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>over under count. Defaults to 2.</dd>
+<dt><strong><code>warp_n</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of warp thread labels. Defaults to 2.</dd>
+<dt><strong><code>weft_n</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of weft thread labels. Defaults to 2.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>np.ndarray</code></dt>
+<dd><em>description</em></dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_basket_pattern(n:int = 2, warp_n:int = 2, 
+                        weft_n:int = 2) -&gt; np.ndarray: 
+    &#34;&#34;&#34;Returns basket pattern matrix extended for warp and weft patterns.
+
+    Args:
+        n (int, optional): over under count. Defaults to 2.
+        warp_n (int, optional): number of warp thread labels. Defaults to 2.
+        weft_n (int, optional): number of weft thread labels. Defaults to 2.
+
+    Returns:
+        np.ndarray: _description_
+    &#34;&#34;&#34;    
+    tie_up = make_basket_matrix(n)
+    threading = np.diag(np.ones(tie_up.shape[0]))
+    treadling = np.diag(np.ones(tie_up.shape[1]))
+    return get_pattern(tie_up, treadling, threading, warp_n, weft_n)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.make_over_under_row"><code class="name flex">
+<span>def <span class="ident">make_over_under_row</span></span>(<span>n: Union[int, tuple[int]]) ‑> list[int]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a tuple of runs of 1s and 0s.</p>
+<p>Returns a tuple of runs of 1s and 0s per supplied n. </p>
+<p>If n is an integer, returned tuple will be a series of n 1s followed by
+n 0s.</p>
+<p>If n is a tuple of odd length it will be repeated to produce an even
+length over-under sequence. This is required to avoid cases such as
+e.g, (1,2,3) -&gt; 100111 which repeated is 1001111001111, i.e. a (2,4)
+pattern. Repeating it yields 100111011000 which is the requested pattern.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>Union[int,tuple[int]]</code></dt>
+<dd>requested over-under sequence. See details.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[int]</code></dt>
+<dd>list of runs of 1s and 0s in the requested pattern.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_over_under_row(n:Union[int,tuple[int]]) -&gt; list[int]:
+    &#34;&#34;&#34;Returns a tuple of runs of 1s and 0s.
+
+    Returns a tuple of runs of 1s and 0s per supplied n. 
+    
+    If n is an integer, returned tuple will be a series of n 1s followed by
+    n 0s.
+    
+    If n is a tuple of odd length it will be repeated to produce an even
+    length over-under sequence. This is required to avoid cases such as
+    e.g, (1,2,3) -&gt; 100111 which repeated is 1001111001111, i.e. a (2,4)
+    pattern. Repeating it yields 100111011000 which is the requested pattern.
+
+    Args:
+        n (Union[int,tuple[int]]): requested over-under sequence. See details.
+
+    Returns:
+        list[int]: list of runs of 1s and 0s in the requested pattern. 
+    &#34;&#34;&#34;    
+    over_under = n
+    if type(over_under) == int:
+        over_under = [n, n]
+    elif len(n) % 2 != 0:
+        over_under = n * 2
+    x = 1
+    row = []
+    for y in over_under:
+        row.extend([x] * y)
+        x = 1 - x
+    return row</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.make_plain_pattern"><code class="name flex">
+<span>def <span class="ident">make_plain_pattern</span></span>(<span>warp_n: int = 1, weft_n: int = 1) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns plain weave (checkerboard) matrix.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>warp_n</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of warp thread labels. Defaults to 1.</dd>
+<dt><strong><code>weft_n</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of weft thread labels. Defaults to 1.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>np.ndarray</code></dt>
+<dd>0/1 matrix where 1 = warp on top.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_plain_pattern(warp_n:int = 1, weft_n:int = 1) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns plain weave (checkerboard) matrix.
+
+    Args:
+        warp_n (int, optional): number of warp thread labels. Defaults to 1.
+        weft_n (int, optional): number of weft thread labels. Defaults to 1.
+
+    Returns:
+        np.ndarray: 0/1 matrix where 1 = warp on top.
+    &#34;&#34;&#34;    
+    return make_twill_pattern(n = 1, warp_n = warp_n, weft_n = weft_n)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.make_this_pattern"><code class="name flex">
+<span>def <span class="ident">make_this_pattern</span></span>(<span>tie_up: numpy.ndarray, threading: numpy.ndarray = None, treadling: numpy.ndarray = None, warp_n: int = 1, weft_n: int = 1) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Pass through returns weave pattern matrix from supplied input.</p>
+<p>This is just a pass through function which applies suitable size identity. Could try to enforce</p>
+<pre><code>treadling.shape[1] == tie_up.shape[0] and 
+tie_up.shape[1] == threading.shape[0]
+</code></pre>
+<p>but unsure what would be an appropriate way to do this&hellip;</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tie_up</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>desired weave pattern.</dd>
+<dt><strong><code>threading</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>desired threading pattern.</dd>
+<dt><strong><code>treadling</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>desired treadling pattern.</dd>
+<dt><strong><code>warp_n</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of warp thread labels. Defaults to 1.</dd>
+<dt><strong><code>weft_n</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of weft thread labels. Defaults to 1.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>np.ndarray</code></dt>
+<dd>resulting 0/1 weave pattern matrix.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_this_pattern(tie_up:np.ndarray, 
+                      threading:np.ndarray = None,
+                      treadling:np.ndarray = None,
+                      warp_n:int = 1, weft_n:int = 1) -&gt; np.ndarray:
+    &#34;&#34;&#34;Pass through returns weave pattern matrix from supplied input.
+
+    This is just a pass through function which applies suitable size identity. Could try to enforce
+    
+        treadling.shape[1] == tie_up.shape[0] and 
+        tie_up.shape[1] == threading.shape[0]
+    
+    but unsure what would be an appropriate way to do this...
+
+    Args:
+        tie_up (np.ndarray): desired weave pattern.
+        threading (np.ndarray): desired threading pattern.
+        treadling (np.ndarray): desired treadling pattern.
+        warp_n (int, optional): number of warp thread labels. Defaults to 1.
+        weft_n (int, optional): number of weft thread labels. Defaults to 1.
+
+    Returns:
+        np.ndarray: resulting 0/1 weave pattern matrix.
+    &#34;&#34;&#34;    
+    threading = (np.diag(np.ones(tie_up.shape[0]))
+                 if threading is None
+                 else threading)
+    treadling = (np.diag(np.ones(tie_up.shape[1]))
+                 if treadling is None
+                 else treadling)
+    return get_pattern(tie_up, treadling, threading, warp_n, weft_n)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.make_twill_matrix"><code class="name flex">
+<span>def <span class="ident">make_twill_matrix</span></span>(<span>over_under: Union[int, tuple[int]]) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Makes a twill 0/1 matrix.</p>
+<p>Makes a matrix like</p>
+<pre><code>1 1 0 0
+0 1 1 0
+0 0 1 1
+1 0 0 1
+</code></pre>
+<p>where the repeat runs in each row are lengths returned by
+make_over_under_rown(n)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>over_under</code></strong> :&ensp;<code>Union[int,tuple[int]]</code></dt>
+<dd>over-under run specification. See
+make_over_under_row().</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>np.ndarray</code></dt>
+<dd>a matrix of 0s and 1s.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_twill_matrix(over_under:Union[int, tuple[int]]) -&gt; np.ndarray:
+    &#34;&#34;&#34;Makes a twill 0/1 matrix.
+
+    Makes a matrix like
+    
+        1 1 0 0
+        0 1 1 0
+        0 0 1 1
+        1 0 0 1
+      
+    where the repeat runs in each row are lengths returned by
+    make_over_under_rown(n)
+
+    Args:
+        over_under (Union[int,tuple[int]]): over-under run specification. See
+            make_over_under_row().
+
+    Returns:
+        np.ndarray: a matrix of 0s and 1s.
+    &#34;&#34;&#34;    
+    row = make_over_under_row(over_under)
+    d = len(row)
+    out = []
+    for i in range(d):
+        row = wrap_row(row, 1)
+        out.extend(row)
+    return np.array(out).reshape(d, d)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.make_twill_pattern"><code class="name flex">
+<span>def <span class="ident">make_twill_pattern</span></span>(<span>n: Union[int, tuple[int]] = 2, warp_n: int = 2, weft_n: int = 2) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns twill pattern matrix extended for warp and weft patterns.</p>
+<p>n is the number of over-unders. With n = 1 we get a plain weave.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>Union[int,tuple[int]]</code>, optional</dt>
+<dd>specifies over-under sequence in
+the weave. Defaults to 2.</dd>
+<dt><strong><code>warp_n</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of warp thread labels. Defaults to 2.</dd>
+<dt><strong><code>weft_n</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of weft thread labels. Defaults to 2.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>np.ndarray</code></dt>
+<dd><em>description</em></dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_twill_pattern(n:Union[int, tuple[int]] = 2, 
+                       warp_n:int = 2, weft_n:int = 2) -&gt; np.ndarray:
+    &#34;&#34;&#34;Returns twill pattern matrix extended for warp and weft patterns.
+
+    n is the number of over-unders. With n = 1 we get a plain weave.
+
+    Args:
+        n (Union[int,tuple[int]], optional): specifies over-under sequence in
+            the weave. Defaults to 2.
+        warp_n (int, optional): number of warp thread labels. Defaults to 2.
+        weft_n (int, optional): number of weft thread labels. Defaults to 2.
+
+    Returns:
+        np.ndarray: _description_
+    &#34;&#34;&#34;    
+    tie_up = make_twill_matrix(n)
+    threading = np.diag(np.ones(tie_up.shape[0]))
+    treadling = np.diag(np.ones(tie_up.shape[1]))
+    return get_pattern(tie_up, treadling, threading, warp_n, weft_n)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.reps_needed"><code class="name flex">
+<span>def <span class="ident">reps_needed</span></span>(<span>x1: int, x2: int) ‑> tuple[int]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns how many repetitions of sequences of length x1 and x2 are
+needed to make a matched length sequence </p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>x1</code></strong> :&ensp;<code>int</code></dt>
+<dd>length of first sequence.</dd>
+<dt><strong><code>x2</code></strong> :&ensp;<code>int</code></dt>
+<dd>length of second sequence.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple[int]</code></dt>
+<dd>(number of repeats of x1, number of repeats of x2).</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reps_needed(x1:int, x2:int) -&gt; tuple[int]:
+    &#34;&#34;&#34;Returns how many repetitions of sequences of length x1 and x2 are 
+    needed to make a matched length sequence 
+
+    Args:
+        x1 (int): length of first sequence.
+        x2 (int): length of second sequence.
+
+    Returns:
+        tuple[int]: (number of repeats of x1, number of repeats of x2).
+    &#34;&#34;&#34;  
+    n = np.lcm(x1, x2)
+    return tuple(i for i in (n // x1, n // x2))</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.weave_matrices.wrap_row"><code class="name flex">
+<span>def <span class="ident">wrap_row</span></span>(<span>r: list, by: int = 1) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wraps the list r by number of positions.</p>
+<p>Positive by will shift right.
+Negative shifts left.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>r</code></strong> :&ensp;<code>list</code></dt>
+<dd>list to wrap.</dd>
+<dt><strong><code>by</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of positions to shift by. Defaults to 1.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>wrapped list.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wrap_row(r:list, by:int = 1) -&gt; list:
+    &#34;&#34;&#34;Wraps the list r by number of positions.
+    
+    Positive by will shift right.
+    Negative shifts left.
+
+    Args:
+        r (list): list to wrap.
+        by (int, optional): number of positions to shift by. Defaults to 1.
+
+    Returns:
+        list: wrapped list.
+    &#34;&#34;&#34;    
+    return r[-by:] + r[:-by]</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="weavingspace" href="index.html">weavingspace</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="weavingspace.weave_matrices.encode_biaxial_weave" href="#weavingspace.weave_matrices.encode_biaxial_weave">encode_biaxial_weave</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.get_pattern" href="#weavingspace.weave_matrices.get_pattern">get_pattern</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.get_weave_pattern_matrix" href="#weavingspace.weave_matrices.get_weave_pattern_matrix">get_weave_pattern_matrix</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.make_basket_matrix" href="#weavingspace.weave_matrices.make_basket_matrix">make_basket_matrix</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.make_basket_pattern" href="#weavingspace.weave_matrices.make_basket_pattern">make_basket_pattern</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.make_over_under_row" href="#weavingspace.weave_matrices.make_over_under_row">make_over_under_row</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.make_plain_pattern" href="#weavingspace.weave_matrices.make_plain_pattern">make_plain_pattern</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.make_this_pattern" href="#weavingspace.weave_matrices.make_this_pattern">make_this_pattern</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.make_twill_matrix" href="#weavingspace.weave_matrices.make_twill_matrix">make_twill_matrix</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.make_twill_pattern" href="#weavingspace.weave_matrices.make_twill_pattern">make_twill_pattern</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.reps_needed" href="#weavingspace.weave_matrices.reps_needed">reps_needed</a></code></li>
+<li><code><a title="weavingspace.weave_matrices.wrap_row" href="#weavingspace.weave_matrices.wrap_row">wrap_row</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

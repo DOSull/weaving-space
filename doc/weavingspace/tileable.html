@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>weavingspace.tileable API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="Implements `weavingspace.tileable.TileShape` and
+`weavingspace.tileable.Tileable` the base classes for
+`weavingspace.tile_unit.TileUnit` and …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,12 +24,27 @@
 <h1 class="title">Module <code>weavingspace.tileable</code></h1>
 </header>
 <section id="section-intro">
+<p>Implements <code><a title="weavingspace.tileable.TileShape" href="#weavingspace.tileable.TileShape">TileShape</a></code> and
+<code><a title="weavingspace.tileable.Tileable" href="#weavingspace.tileable.Tileable">Tileable</a></code> the base classes for
+<code><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></code> and <code><a title="weavingspace.weave_unit.WeaveUnit" href="weave_unit.html#weavingspace.weave_unit.WeaveUnit">WeaveUnit</a></code>.</p>
+<p>These should not normally be accessed directly although several methods of
+<code><a title="weavingspace.tileable.Tileable" href="#weavingspace.tileable.Tileable">Tileable</a></code> are generally useful and can be accessed
+through its subclasses.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">#!/usr/bin/env python
 # coding: utf-8
+
+&#34;&#34;&#34;Implements `weavingspace.tileable.TileShape` and 
+`weavingspace.tileable.Tileable` the base classes for 
+`weavingspace.tile_unit.TileUnit` and `weavingspace.weave_unit.WeaveUnit`.
+
+These should not normally be accessed directly although several methods of
+`weavingspace.tileable.Tileable` are generally useful and can be accessed 
+through its subclasses.
+&#34;&#34;&#34;
 
 from enum import Enum
 from typing import Union

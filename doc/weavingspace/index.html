@@ -26,12 +26,15 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from ._loom import *
-from ._weave_grids import *
-from ._weave_matrices import *
-from ._tiling_geometries import *
+<pre><code class="python">#!/usr/bin/env python
+# coding: utf-8
+
+from ._loom import *
+from ._weave_grid import *
 from .tileable import *
+from .tiling_geometries import *
 from .tile_unit import *
+from .weave_matrices import *
 from .weave_unit import *
 from .tile_map import *
 from .tiling_utils import *</code></pre>
@@ -42,23 +45,40 @@ from .tiling_utils import *</code></pre>
 <dl>
 <dt><code class="name"><a title="weavingspace.tile_map" href="tile_map.html">weavingspace.tile_map</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Classes for tiling maps. <code><a title="weavingspace.tile_map.Tiling" href="tile_map.html#weavingspace.tile_map.Tiling">Tiling</a></code> and
+<code><a title="weavingspace.tile_map.TiledMap" href="tile_map.html#weavingspace.tile_map.TiledMap">TiledMap</a></code> are exposed in the
+public API and
+respectively enable …</p></div>
 </dd>
 <dt><code class="name"><a title="weavingspace.tile_unit" href="tile_unit.html">weavingspace.tile_unit</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The <code>TileUnit</code> subclass of <code><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></code> implements
+many 'conventional' tilings of the plane.</p></div>
 </dd>
 <dt><code class="name"><a title="weavingspace.tileable" href="tileable.html">weavingspace.tileable</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Implements <code><a title="weavingspace.tileable.TileShape" href="tileable.html#weavingspace.tileable.TileShape">TileShape</a></code> and
+<code><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></code> the base classes for
+<code><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></code> and …</p></div>
+</dd>
+<dt><code class="name"><a title="weavingspace.tiling_geometries" href="tiling_geometries.html">weavingspace.tiling_geometries</a></code></dt>
+<dd>
+<div class="desc"><p>Functions for setting up a TileUnit with various element geometries …</p></div>
 </dd>
 <dt><code class="name"><a title="weavingspace.tiling_utils" href="tiling_utils.html">weavingspace.tiling_utils</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Utility functions for use by various classes the weavingspace module …</p></div>
+</dd>
+<dt><code class="name"><a title="weavingspace.weave_matrices" href="weave_matrices.html">weavingspace.weave_matrices</a></code></dt>
+<dd>
+<div class="desc"><p>Functions to generate the matrices summarising elements of tileable
+repeating elements that when repeated across a map area give the appearance of
+a …</p></div>
 </dd>
 <dt><code class="name"><a title="weavingspace.weave_unit" href="weave_unit.html">weavingspace.weave_unit</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The <code>WeaveUnit</code> subclass of <code><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></code> implements
+tileable geometric patterns constructed by specifying 2- or 3-axial weaves.</p></div>
 </dd>
 </dl>
 </section>
@@ -80,7 +100,9 @@ from .tiling_utils import *</code></pre>
 <li><code><a title="weavingspace.tile_map" href="tile_map.html">weavingspace.tile_map</a></code></li>
 <li><code><a title="weavingspace.tile_unit" href="tile_unit.html">weavingspace.tile_unit</a></code></li>
 <li><code><a title="weavingspace.tileable" href="tileable.html">weavingspace.tileable</a></code></li>
+<li><code><a title="weavingspace.tiling_geometries" href="tiling_geometries.html">weavingspace.tiling_geometries</a></code></li>
 <li><code><a title="weavingspace.tiling_utils" href="tiling_utils.html">weavingspace.tiling_utils</a></code></li>
+<li><code><a title="weavingspace.weave_matrices" href="weave_matrices.html">weavingspace.weave_matrices</a></code></li>
 <li><code><a title="weavingspace.weave_unit" href="weave_unit.html">weavingspace.weave_unit</a></code></li>
 </ul>
 </li>

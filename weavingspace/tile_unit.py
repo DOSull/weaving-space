@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""The `TileUnit` subclass of `weavingspace.tileable.Tileable` implements
+many 'conventional' tilings of the plane.
+"""
+
 import copy
 from dataclasses import dataclass
 import string
@@ -14,7 +18,7 @@ from weavingspace.tileable import Tileable
 from weavingspace.tileable import TileShape
 
 import weavingspace.tiling_utils as tiling_utils
-import weavingspace._tiling_geometries as tiling_geometries
+import weavingspace.tiling_geometries as tiling_geometries
 
 
 @dataclass
@@ -66,8 +70,8 @@ class TileUnit(Tileable):
     so may be useful in its base form.
     
     To create custom tilings start from one of the base tiles above, and 
-    explicitly set the `weavingspace.Tileable.elements` variable by geometric 
-    construction of suitable shapely.geometry.Polygons. 
+    explicitly set the `weavingspace.tileable.Tileable.elements` variable by 
+    geometric construction of suitable shapely.geometry.Polygons. 
     
     TODO: A detailed example of this usage can be found in this notebook.
     

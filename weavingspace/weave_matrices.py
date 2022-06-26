@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Functions that can be used to generate sf data 'weave units' i.e. a tileable 
-repeating element that when tiled gives the appearance of a  biaxial woven 
-surface composed of criss-crossing rectangular elements. Implementation is 
-based on ideas discussed in variously
+"""Functions to generate the matrices summarising elements of tileable 
+repeating elements that when repeated across a map area give the appearance of 
+a  biaxial woven surface composed of criss-crossing rectangular elements. 
+
+Implementation is based on ideas discussed in variously
  
 + Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 22 (6):108–118.
 + ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 23 (2):80–83.

@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""The `WeaveUnit` subclass of `weavingspace.tileable.Tileable` implements
+tileable geometric patterns constructed by specifying 2- or 3-axial weaves. 
+"""
+
 import logging
 import itertools
 from dataclasses import dataclass
@@ -13,11 +17,11 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.ops
 
-import weavingspace._weave_matrices as weave_matrices
+import weavingspace.weave_matrices as weave_matrices
 import weavingspace.tiling_utils as tiling_utils
 
 from weavingspace._loom import Loom
-from weavingspace._weave_grids import WeaveGrid
+from weavingspace._weave_grid import WeaveGrid
 
 from weavingspace.tileable import TileShape
 from weavingspace.tileable import Tileable

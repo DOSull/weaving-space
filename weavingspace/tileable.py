@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""Implements `weavingspace.tileable.TileShape` and 
+`weavingspace.tileable.Tileable` the base classes for 
+`weavingspace.tile_unit.TileUnit` and `weavingspace.weave_unit.WeaveUnit`.
+
+These should not normally be accessed directly although several methods of
+`weavingspace.tileable.Tileable` are generally useful and can be accessed 
+through its subclasses.
+"""
+
 from enum import Enum
 from typing import Union
 from dataclasses import dataclass

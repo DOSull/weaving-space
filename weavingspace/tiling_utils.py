@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""Utility functions for use by various classes the weavingspace module.
+
+Most are geometric convenience functions for commonly applied operations in
+the module.
+"""
+
 from typing import Iterable, Union
 import re
 import string

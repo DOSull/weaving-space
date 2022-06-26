@@ -20,9 +20,10 @@ _decode_orders = (
     4 = weft is on top
     5 = warp is on top 
 
-this dictionary translates these to tuples listing the 'layer' order
-depending on the input axis, where 0 is the biaxial case with layers 0 and 1
-only, and 1 is layers 0 and 1, 2 is layers 1 and 2, and 3 is layers 2 and 0.
+this tuple of dictionaries translates these to tuples listing the 'layer' order
+depending on the input axis, where item 0 is the biaxial case with layers 0 and 
+1 only, item 1 is layers 0 and 1, item 2 is layers 1 and 2, and item 3 is 
+layers 2 and 0.
 """
 
 _combined_orderings = {
@@ -48,7 +49,8 @@ _combined_orderings = {
 }
 """Nested dictionary to combine layer orders from 3 biaxial weaves
 into a single consistent order of layers. Inconsistent combinations
-will not return a value. 
+will not return a value. Layers 0 and 1 are present in the first 'tier',
+layers 1 and 2 in the second and 2 and 0 in the third.
 """
 
 

@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""Classes for tiling maps. `weavingspace.tile_map.Tiling` and 
+`weavingspace.tile_map.TiledMap` are exposed in the  public API and 
+respectively enable creation of a tiling and plotting of the tiling as a 
+multivariate map. 
+"""
+
 from dataclasses import dataclass
 from typing import Union
 import itertools

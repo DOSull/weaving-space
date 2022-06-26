@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>weavingspace.tile_unit API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="The `TileUnit` subclass of `weavingspace.tileable.Tileable` implements
+many &#39;conventional&#39; tilings of the plane." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,12 +23,18 @@
 <h1 class="title">Module <code>weavingspace.tile_unit</code></h1>
 </header>
 <section id="section-intro">
+<p>The <code><a title="weavingspace.tile_unit.TileUnit" href="#weavingspace.tile_unit.TileUnit">TileUnit</a></code> subclass of <code><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></code> implements
+many 'conventional' tilings of the plane.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">#!/usr/bin/env python
 # coding: utf-8
+
+&#34;&#34;&#34;The `TileUnit` subclass of `weavingspace.tileable.Tileable` implements
+many &#39;conventional&#39; tilings of the plane.
+&#34;&#34;&#34;
 
 import copy
 from dataclasses import dataclass
@@ -42,7 +49,7 @@ from weavingspace.tileable import Tileable
 from weavingspace.tileable import TileShape
 
 import weavingspace.tiling_utils as tiling_utils
-import weavingspace._tiling_geometries as tiling_geometries
+import weavingspace.tiling_geometries as tiling_geometries
 
 
 @dataclass
@@ -94,8 +101,8 @@ class TileUnit(Tileable):
     so may be useful in its base form.
     
     To create custom tilings start from one of the base tiles above, and 
-    explicitly set the `weavingspace.Tileable.elements` variable by geometric 
-    construction of suitable shapely.geometry.Polygons. 
+    explicitly set the `weavingspace.tileable.Tileable.elements` variable by 
+    geometric construction of suitable shapely.geometry.Polygons. 
     
     TODO: A detailed example of this usage can be found in this notebook.
     
@@ -328,8 +335,8 @@ tile_unit = TileUnit(tile_shape = TileShape.TRIANGLE)
 used for multivariate mapping. The triangle case has two element_id values
 so may be useful in its base form.</p>
 <p>To create custom tilings start from one of the base tiles above, and
-explicitly set the <code>weavingspace.Tileable.elements</code> variable by geometric
-construction of suitable shapely.geometry.Polygons. </p>
+explicitly set the <code><a title="weavingspace.tileable.Tileable.elements" href="tileable.html#weavingspace.tileable.Tileable.elements">Tileable.elements</a></code> variable by
+geometric construction of suitable shapely.geometry.Polygons. </p>
 <p>TODO: A detailed example of this usage can be found in this notebook.</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -438,8 +445,8 @@ class TileUnit(Tileable):
     so may be useful in its base form.
     
     To create custom tilings start from one of the base tiles above, and 
-    explicitly set the `weavingspace.Tileable.elements` variable by geometric 
-    construction of suitable shapely.geometry.Polygons. 
+    explicitly set the `weavingspace.tileable.Tileable.elements` variable by 
+    geometric construction of suitable shapely.geometry.Polygons. 
     
     TODO: A detailed example of this usage can be found in this notebook.
     
