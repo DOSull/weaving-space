@@ -5,9 +5,12 @@
 `weavingspace.tileable.Tileable` the base classes for 
 `weavingspace.tile_unit.TileUnit` and `weavingspace.weave_unit.WeaveUnit`.
 
-These should not normally be accessed directly although several methods of
-`weavingspace.tileable.Tileable` are generally useful and can be accessed 
-through its subclasses.
+`Tileable` should not be called directly, but is instead accessed from the 
+`weavingspace.tile_unit.TileUnit` or `weavingspace.weave_unit.WeaveUnit` 
+constructor. 
+
+Several methods of `weavingspace.tileable.Tileable` are generally useful and 
+can be accessed through its subclasses.
 """
 
 from enum import Enum
@@ -38,7 +41,28 @@ class TileShape(Enum):
 @dataclass
 class Tileable:
     """Class to represent a tileable set of geometries.
-    """
+
+    Args:
+        elements (gpd.GeoDataFrame): the geometries with associated
+            element_id attribute encoding their different colouring.
+        tile (gpd.GeoDataFrame): the tileable polygon (a rectangle, a
+            hexagon, or a diamond).
+        spacing (float): the tile spacing -- effectively the 'resolution' of
+            the tiling. Defaults to `1000`.
+        tile_shape (TileShape): the tile shape. Defaults to 
+            `TileShape.RECTANGLE`.
+        vectors (list[tuple[float]]): translation vector symmetries of the 
+            tiling.
+        regularised_tile (gpd.GeoDataFrame): a polygon containing the 
+            elements of this `weavingspace.tileable.Tileable` --- most 
+            often a union of those polygons.
+        crs (int): the coordinate reference system of the tile. Most often 
+            an EPSG code, but any valid geopandas CRS specification is
+            valid. Defaults to 3857 (i.e. Web Mercator).
+        fudge_factor (float): a distance in units of self.crs to be used in
+            geometry clean ups (for example this buffer distance is applied
+            before unioning polygons.) Defaults to `1e-3`.
+   """
     elements:gpd.GeoDataFrame = None
     tile:gpd.GeoDataFrame = None
     spacing:float = 1000.
@@ -48,39 +72,11 @@ class Tileable:
     crs:int = 3857
     fudge_factor:float = 1e-3
     
+    # Tileable constructor called by subclasses - should not be used directly
     def __init__(self, **kwargs):
-        """Stores any supplied attributes, sets up the tile, its elements, 
-        vectors and regularised tile.
-        
-        The `Tileable` constructor should not be called directly, but is 
-        instead accessed from the `weavingspace.tile_unit.TileUnit` or 
-        `weavingspace.weave_unit.WeaveUnit` constructor. These can accept as
-        arguments any of the arguments below.
-        
-        Args:
-            elements (gpd.GeoDataFrame): the strand geometries with associated
-                element_id attribute encoding their different colouring.
-            tile (gpd.GeoDataFrame): the tileable polygon (a rectangle, a
-                hexagon, or a diamond).
-            spacing (float): the tile spacing -- effectively the 'resolution' of
-                the tiling. Defaults to `1000`.
-            tile_shape (TileShape): the tile shape. Defaults to 
-                `TileShape.RECTANGLE`.
-            vectors (list[tuple[float]]): translation vector symmetries of the 
-                tiling.
-            regularised_tile (gpd.GeoDataFrame): a polygon containing the 
-                elements of this `weavingspace.tileable.Tileable` --- most 
-                often a union of those polygons.
-            crs (int): the coordinate reference system of the tile. Most often 
-                an EPSG code, but any valid geopandas CRS specification is
-                valid. Defaults to 3857 (i.e. Web Mercator).
-            fudge_factor (float): a distance in units of self.crs to be used in
-                geometry clean ups (for example this buffer distance is applied
-                before unioning polygons.) Defaults to `1e-3`.
-        """
         for k, v in kwargs.items():
             self.__dict__[k] = v
-        self.setup_tile_and_elements()
+        self._setup_tile_and_elements()
         self.setup_vectors()
         if self.regularised_tile is None:
             self.regularise_elements()

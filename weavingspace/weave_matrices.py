@@ -76,7 +76,7 @@ def get_pattern(tie_up:np.ndarray, treadling:np.ndarray, threading:np.ndarray,
 # Note that as currently written this function requires the warp and weft
 # matrices to be the same size, which get_weave_pattern_matrix will ensure, b
 # but which may not be the case if called from elsewhere
-def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray, 
+def _encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray, 
                          weft:np.ndarray) -> np.ndarray:
     """Encodes a biaxial weave pattern as below.
 
@@ -295,7 +295,7 @@ def get_weave_pattern_matrix(weave_type:str = "plain",
                              th:np.ndarray = None) -> np.ndarray:
     """Returns encoded weave pattern matrix.
     
-    See `encode_biaxial_weave()` for the encoding.
+    See `_encode_biaxial_weave()` for the encoding.
 
     Allowed weave_types: "plain", "twill", "basket", and "this" (pass-thru).
     These are explained in the respective functions to which this function
@@ -340,5 +340,5 @@ def get_weave_pattern_matrix(weave_type:str = "plain",
     weft_threads = np.array(wefts * 
             reps_needed(nr, len(wefts))[1] * nc).reshape((nc, nr)).transpose()
     # encode to reflect missing threads
-    return encode_biaxial_weave(p, warp_threads, weft_threads)
+    return _encode_biaxial_weave(p, warp_threads, weft_threads)
 

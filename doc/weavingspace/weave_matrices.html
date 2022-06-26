@@ -125,7 +125,7 @@ def get_pattern(tie_up:np.ndarray, treadling:np.ndarray, threading:np.ndarray,
 # Note that as currently written this function requires the warp and weft
 # matrices to be the same size, which get_weave_pattern_matrix will ensure, b
 # but which may not be the case if called from elsewhere
-def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray, 
+def _encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray, 
                          weft:np.ndarray) -&gt; np.ndarray:
     &#34;&#34;&#34;Encodes a biaxial weave pattern as below.
 
@@ -344,7 +344,7 @@ def get_weave_pattern_matrix(weave_type:str = &#34;plain&#34;,
                              th:np.ndarray = None) -&gt; np.ndarray:
     &#34;&#34;&#34;Returns encoded weave pattern matrix.
     
-    See `encode_biaxial_weave()` for the encoding.
+    See `_encode_biaxial_weave()` for the encoding.
 
     Allowed weave_types: &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34;, and &#34;this&#34; (pass-thru).
     These are explained in the respective functions to which this function
@@ -389,7 +389,7 @@ def get_weave_pattern_matrix(weave_type:str = &#34;plain&#34;,
     weft_threads = np.array(wefts * 
             reps_needed(nr, len(wefts))[1] * nc).reshape((nc, nr)).transpose()
     # encode to reflect missing threads
-    return encode_biaxial_weave(p, warp_threads, weft_threads)</code></pre>
+    return _encode_biaxial_weave(p, warp_threads, weft_threads)</code></pre>
 </details>
 </section>
 <section>
@@ -399,63 +399,6 @@ def get_weave_pattern_matrix(weave_type:str = &#34;plain&#34;,
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="weavingspace.weave_matrices.encode_biaxial_weave"><code class="name flex">
-<span>def <span class="ident">encode_biaxial_weave</span></span>(<span>pattern: numpy.ndarray, warp: numpy.ndarray, weft: numpy.ndarray) ‑> numpy.ndarray</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Encodes a biaxial weave pattern as below.</p>
-<pre><code>1 - warp is absent
-2 - weft is absent
-3 - both threads are absent
-4 - weft is on top
-5 - warp is on top
-</code></pre>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>pattern</code></strong> :&ensp;<code>np.ndarray</code></dt>
-<dd>pattern matrix with 1 where warp is on top,
-0 where weft is on top.</dd>
-<dt><strong><code>warp</code></strong> :&ensp;<code>np.ndarray</code></dt>
-<dd>warp matrix where -1 values indicate absent threads.</dd>
-<dt><strong><code>weft</code></strong> :&ensp;<code>np.ndarray</code></dt>
-<dd>weft matrix where -1 values indicate absent threads.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>np.ndarray</code></dt>
-<dd>matrix of values encoded as above.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray, 
-                         weft:np.ndarray) -&gt; np.ndarray:
-    &#34;&#34;&#34;Encodes a biaxial weave pattern as below.
-
-        1 - warp is absent
-        2 - weft is absent
-        3 - both threads are absent
-        4 - weft is on top
-        5 - warp is on top 
-    
-    Args:
-        pattern (np.ndarray): pattern matrix with 1 where warp is on top, 
-            0 where weft is on top.
-        warp (np.ndarray): warp matrix where -1 values indicate absent threads.
-        weft (np.ndarray): weft matrix where -1 values indicate absent threads.
-
-    Returns:
-        np.ndarray: matrix of values encoded as above.
-    &#34;&#34;&#34;    
-    # Can&#39;t recall why this particular encoding, but don&#39;t think it matters...
-    pattern = np.where(pattern == 1, 5, pattern)           # warp on top
-    pattern = np.where(pattern == 0, 4, pattern)           # weft on top
-    pattern = np.where(warp &lt; 0, 1, pattern)               # warp absent
-    pattern = np.where(weft &lt; 0, 2, pattern)               # weft absent
-    return np.where((warp &lt; 0) &amp; (weft &lt; 0), 3, pattern)   # both absent</code></pre>
-</details>
-</dd>
 <dt id="weavingspace.weave_matrices.get_pattern"><code class="name flex">
 <span>def <span class="ident">get_pattern</span></span>(<span>tie_up: numpy.ndarray, treadling: numpy.ndarray, threading: numpy.ndarray, warp_n: int, weft_n: int, rep: int = 1) ‑> numpy.ndarray</span>
 </code></dt>
@@ -538,7 +481,7 @@ applied in both directions. Defaults to 1.</dd>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns encoded weave pattern matrix.</p>
-<p>See <code><a title="weavingspace.weave_matrices.encode_biaxial_weave" href="#weavingspace.weave_matrices.encode_biaxial_weave">encode_biaxial_weave()</a></code> for the encoding.</p>
+<p>See <code>_encode_biaxial_weave()</code> for the encoding.</p>
 <p>Allowed weave_types: "plain", "twill", "basket", and "this" (pass-thru).
 These are explained in the respective functions to which this function
 delegates construction of the base matrices before applying the encoding.</p>
@@ -586,7 +529,7 @@ Defaults to None.</dd>
                              th:np.ndarray = None) -&gt; np.ndarray:
     &#34;&#34;&#34;Returns encoded weave pattern matrix.
     
-    See `encode_biaxial_weave()` for the encoding.
+    See `_encode_biaxial_weave()` for the encoding.
 
     Allowed weave_types: &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34;, and &#34;this&#34; (pass-thru).
     These are explained in the respective functions to which this function
@@ -631,7 +574,7 @@ Defaults to None.</dd>
     weft_threads = np.array(wefts * 
             reps_needed(nr, len(wefts))[1] * nc).reshape((nc, nr)).transpose()
     # encode to reflect missing threads
-    return encode_biaxial_weave(p, warp_threads, weft_threads)</code></pre>
+    return _encode_biaxial_weave(p, warp_threads, weft_threads)</code></pre>
 </details>
 </dd>
 <dt id="weavingspace.weave_matrices.make_basket_matrix"><code class="name flex">
@@ -1076,7 +1019,6 @@ Negative shifts left.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="weavingspace.weave_matrices.encode_biaxial_weave" href="#weavingspace.weave_matrices.encode_biaxial_weave">encode_biaxial_weave</a></code></li>
 <li><code><a title="weavingspace.weave_matrices.get_pattern" href="#weavingspace.weave_matrices.get_pattern">get_pattern</a></code></li>
 <li><code><a title="weavingspace.weave_matrices.get_weave_pattern_matrix" href="#weavingspace.weave_matrices.get_weave_pattern_matrix">get_weave_pattern_matrix</a></code></li>
 <li><code><a title="weavingspace.weave_matrices.make_basket_matrix" href="#weavingspace.weave_matrices.make_basket_matrix">make_basket_matrix</a></code></li>

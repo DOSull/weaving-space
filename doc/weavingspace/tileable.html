@@ -27,9 +27,11 @@
 <p>Implements <code><a title="weavingspace.tileable.TileShape" href="#weavingspace.tileable.TileShape">TileShape</a></code> and
 <code><a title="weavingspace.tileable.Tileable" href="#weavingspace.tileable.Tileable">Tileable</a></code> the base classes for
 <code><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></code> and <code><a title="weavingspace.weave_unit.WeaveUnit" href="weave_unit.html#weavingspace.weave_unit.WeaveUnit">WeaveUnit</a></code>.</p>
-<p>These should not normally be accessed directly although several methods of
-<code><a title="weavingspace.tileable.Tileable" href="#weavingspace.tileable.Tileable">Tileable</a></code> are generally useful and can be accessed
-through its subclasses.</p>
+<p><code><a title="weavingspace.tileable.Tileable" href="#weavingspace.tileable.Tileable">Tileable</a></code> should not be called directly, but is instead accessed from the
+<code><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></code> or <code><a title="weavingspace.weave_unit.WeaveUnit" href="weave_unit.html#weavingspace.weave_unit.WeaveUnit">WeaveUnit</a></code>
+constructor. </p>
+<p>Several methods of <code><a title="weavingspace.tileable.Tileable" href="#weavingspace.tileable.Tileable">Tileable</a></code> are generally useful and
+can be accessed through its subclasses.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -41,9 +43,12 @@ through its subclasses.</p>
 `weavingspace.tileable.Tileable` the base classes for 
 `weavingspace.tile_unit.TileUnit` and `weavingspace.weave_unit.WeaveUnit`.
 
-These should not normally be accessed directly although several methods of
-`weavingspace.tileable.Tileable` are generally useful and can be accessed 
-through its subclasses.
+`Tileable` should not be called directly, but is instead accessed from the 
+`weavingspace.tile_unit.TileUnit` or `weavingspace.weave_unit.WeaveUnit` 
+constructor. 
+
+Several methods of `weavingspace.tileable.Tileable` are generally useful and 
+can be accessed through its subclasses.
 &#34;&#34;&#34;
 
 from enum import Enum
@@ -74,7 +79,28 @@ class TileShape(Enum):
 @dataclass
 class Tileable:
     &#34;&#34;&#34;Class to represent a tileable set of geometries.
-    &#34;&#34;&#34;
+
+    Args:
+        elements (gpd.GeoDataFrame): the geometries with associated
+            element_id attribute encoding their different colouring.
+        tile (gpd.GeoDataFrame): the tileable polygon (a rectangle, a
+            hexagon, or a diamond).
+        spacing (float): the tile spacing -- effectively the &#39;resolution&#39; of
+            the tiling. Defaults to `1000`.
+        tile_shape (TileShape): the tile shape. Defaults to 
+            `TileShape.RECTANGLE`.
+        vectors (list[tuple[float]]): translation vector symmetries of the 
+            tiling.
+        regularised_tile (gpd.GeoDataFrame): a polygon containing the 
+            elements of this `weavingspace.tileable.Tileable` --- most 
+            often a union of those polygons.
+        crs (int): the coordinate reference system of the tile. Most often 
+            an EPSG code, but any valid geopandas CRS specification is
+            valid. Defaults to 3857 (i.e. Web Mercator).
+        fudge_factor (float): a distance in units of self.crs to be used in
+            geometry clean ups (for example this buffer distance is applied
+            before unioning polygons.) Defaults to `1e-3`.
+   &#34;&#34;&#34;
     elements:gpd.GeoDataFrame = None
     tile:gpd.GeoDataFrame = None
     spacing:float = 1000.
@@ -84,39 +110,11 @@ class Tileable:
     crs:int = 3857
     fudge_factor:float = 1e-3
     
+    # Tileable constructor called by subclasses - should not be used directly
     def __init__(self, **kwargs):
-        &#34;&#34;&#34;Stores any supplied attributes, sets up the tile, its elements, 
-        vectors and regularised tile.
-        
-        The `Tileable` constructor should not be called directly, but is 
-        instead accessed from the `weavingspace.tile_unit.TileUnit` or 
-        `weavingspace.weave_unit.WeaveUnit` constructor. These can accept as
-        arguments any of the arguments below.
-        
-        Args:
-            elements (gpd.GeoDataFrame): the strand geometries with associated
-                element_id attribute encoding their different colouring.
-            tile (gpd.GeoDataFrame): the tileable polygon (a rectangle, a
-                hexagon, or a diamond).
-            spacing (float): the tile spacing -- effectively the &#39;resolution&#39; of
-                the tiling. Defaults to `1000`.
-            tile_shape (TileShape): the tile shape. Defaults to 
-                `TileShape.RECTANGLE`.
-            vectors (list[tuple[float]]): translation vector symmetries of the 
-                tiling.
-            regularised_tile (gpd.GeoDataFrame): a polygon containing the 
-                elements of this `weavingspace.tileable.Tileable` --- most 
-                often a union of those polygons.
-            crs (int): the coordinate reference system of the tile. Most often 
-                an EPSG code, but any valid geopandas CRS specification is
-                valid. Defaults to 3857 (i.e. Web Mercator).
-            fudge_factor (float): a distance in units of self.crs to be used in
-                geometry clean ups (for example this buffer distance is applied
-                before unioning polygons.) Defaults to `1e-3`.
-        &#34;&#34;&#34;
         for k, v in kwargs.items():
             self.__dict__[k] = v
-        self.setup_tile_and_elements()
+        self._setup_tile_and_elements()
         self.setup_vectors()
         if self.regularised_tile is None:
             self.regularise_elements()
@@ -550,16 +548,10 @@ DIAMOND or HEXAGON type during <code><a title="weavingspace.tileable.Tileable" h
 </code></dt>
 <dd>
 <div class="desc"><p>Class to represent a tileable set of geometries.</p>
-<p>Stores any supplied attributes, sets up the tile, its elements,
-vectors and regularised tile.</p>
-<p>The <code><a title="weavingspace.tileable.Tileable" href="#weavingspace.tileable.Tileable">Tileable</a></code> constructor should not be called directly, but is
-instead accessed from the <code><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></code> or
-<code><a title="weavingspace.weave_unit.WeaveUnit" href="weave_unit.html#weavingspace.weave_unit.WeaveUnit">WeaveUnit</a></code> constructor. These can accept as
-arguments any of the arguments below.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>elements</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
-<dd>the strand geometries with associated
+<dd>the geometries with associated
 element_id attribute encoding their different colouring.</dd>
 <dt><strong><code>tile</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
 <dd>the tileable polygon (a rectangle, a
@@ -593,7 +585,28 @@ before unioning polygons.) Defaults to <code>1e-3</code>.</dd>
 <pre><code class="python">@dataclass
 class Tileable:
     &#34;&#34;&#34;Class to represent a tileable set of geometries.
-    &#34;&#34;&#34;
+
+    Args:
+        elements (gpd.GeoDataFrame): the geometries with associated
+            element_id attribute encoding their different colouring.
+        tile (gpd.GeoDataFrame): the tileable polygon (a rectangle, a
+            hexagon, or a diamond).
+        spacing (float): the tile spacing -- effectively the &#39;resolution&#39; of
+            the tiling. Defaults to `1000`.
+        tile_shape (TileShape): the tile shape. Defaults to 
+            `TileShape.RECTANGLE`.
+        vectors (list[tuple[float]]): translation vector symmetries of the 
+            tiling.
+        regularised_tile (gpd.GeoDataFrame): a polygon containing the 
+            elements of this `weavingspace.tileable.Tileable` --- most 
+            often a union of those polygons.
+        crs (int): the coordinate reference system of the tile. Most often 
+            an EPSG code, but any valid geopandas CRS specification is
+            valid. Defaults to 3857 (i.e. Web Mercator).
+        fudge_factor (float): a distance in units of self.crs to be used in
+            geometry clean ups (for example this buffer distance is applied
+            before unioning polygons.) Defaults to `1e-3`.
+   &#34;&#34;&#34;
     elements:gpd.GeoDataFrame = None
     tile:gpd.GeoDataFrame = None
     spacing:float = 1000.
@@ -603,39 +616,11 @@ class Tileable:
     crs:int = 3857
     fudge_factor:float = 1e-3
     
+    # Tileable constructor called by subclasses - should not be used directly
     def __init__(self, **kwargs):
-        &#34;&#34;&#34;Stores any supplied attributes, sets up the tile, its elements, 
-        vectors and regularised tile.
-        
-        The `Tileable` constructor should not be called directly, but is 
-        instead accessed from the `weavingspace.tile_unit.TileUnit` or 
-        `weavingspace.weave_unit.WeaveUnit` constructor. These can accept as
-        arguments any of the arguments below.
-        
-        Args:
-            elements (gpd.GeoDataFrame): the strand geometries with associated
-                element_id attribute encoding their different colouring.
-            tile (gpd.GeoDataFrame): the tileable polygon (a rectangle, a
-                hexagon, or a diamond).
-            spacing (float): the tile spacing -- effectively the &#39;resolution&#39; of
-                the tiling. Defaults to `1000`.
-            tile_shape (TileShape): the tile shape. Defaults to 
-                `TileShape.RECTANGLE`.
-            vectors (list[tuple[float]]): translation vector symmetries of the 
-                tiling.
-            regularised_tile (gpd.GeoDataFrame): a polygon containing the 
-                elements of this `weavingspace.tileable.Tileable` --- most 
-                often a union of those polygons.
-            crs (int): the coordinate reference system of the tile. Most often 
-                an EPSG code, but any valid geopandas CRS specification is
-                valid. Defaults to 3857 (i.e. Web Mercator).
-            fudge_factor (float): a distance in units of self.crs to be used in
-                geometry clean ups (for example this buffer distance is applied
-                before unioning polygons.) Defaults to `1e-3`.
-        &#34;&#34;&#34;
         for k, v in kwargs.items():
             self.__dict__[k] = v
-        self.setup_tile_and_elements()
+        self._setup_tile_and_elements()
         self.setup_vectors()
         if self.regularised_tile is None:
             self.regularise_elements()

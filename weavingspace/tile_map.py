@@ -35,7 +35,7 @@ class _TileGrid:
     Note that we store the grid as a GeoSeries of Point objects to make it
     simple to plot it in map views if required.
 
-    Attributes:
+    Args:
         tile (gpd.GeoSeries): the geometry of the base tile.
         to_tile (gpd.GeoSeries): the geometry of the region to be tiled.
         grid_type (TileShape): the type of tiling grid, RECTANGLE, 
@@ -229,7 +229,7 @@ class Tiling:
         a region sufficient to apply the tiling at any rotation.
         
         The Tiling constructor allows a number of adjustments to the supplied
-        `Tileable` object:
+        `weavingspace.tileable.Tileable` object:
         
         + `tile_margin` values greater than 0 will introduce spacing of  
         the specified distance between elements on the boundary of each tile
@@ -425,46 +425,48 @@ class TiledMap:
     will be created by calling `Tiling.get_tiled_map()`. After creation the 
     variables and colourmaps attributes can be set, and then 
     `TiledMap.render()` called to make a map. Settable attributes are explained 
-    in documentation of the `TiledMap.render()` method. Recommended usage is as follows.
+    in documentation of the `TiledMap.render()` method. 
     
-    First, make a `TiledMap` from a `Tiling` object.
-    
-        tm = tiling.get_tiled_map(...)
+    Examples:
+        Recommended usage is as follows. First, make a `TiledMap` from a `Tiling` object.
         
-    Some options in this method call affect the map appearance. See 
-    `Tiling.get_tiled_map()` for details.
-    
-    Once a `TiledMap` object exists, set options on it, either when calling 
-    `TiledMap.render()` or explicitly, i.e.
-    
-        tm.render(opt1 = val1, opt2 = val2, ...)
+            tm = tiling.get_tiled_map(...)
+            
+        Some options in the `Tiling` constructor affect the map appearance. See 
+        `Tiling` for details.
         
-    or
-    
-        tm.opt1 = val1
-        tm.opt2 = val2
-        tm.render()
-    
-    Option settings are persistent, i.e. unless a new `TiledMap` object is 
-    created the option settings have to be explicitly reset to default values 
-    on subsequent calls to `TiledMap.render()`.
-    
-    The most important options are the `variables` and `colourmaps` settings.
-    
-    `variables` is a dictionary mapping `weavingspace.tileable.Tileable` 
-    element_ids (usually "a", "b", etc.) to variable names in the data. For 
-    example, 
-    
-        tm.variables = dict(zip(["a", "b"], ["population", "income"]))
+        Once a `TiledMap` object exists, set options on it, either when calling 
+        `TiledMap.render()` or explicitly, i.e.
         
-    `colourmaps` is a dictionary mapping dataset variable names to the 
-    matplotlib colourmap to be used for each. For example,
-    
-        tm.colourmaps = dict(zip(tm.variables.values(), ["Reds", "Blues"]))
-    
-    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. This TODO: more 
-    complicated example shows how categorical maps can be created.
-     """
+            tm.render(opt1 = val1, opt2 = val2, ...)
+            
+        or
+        
+            tm.opt1 = val1
+            tm.opt2 = val2
+            tm.render()
+        
+        Option settings are persistent, i.e. unless a new `TiledMap` object is 
+        created the option settings have to be explicitly reset to default 
+        values on subsequent calls to `TiledMap.render()`.
+        
+        The most important options are the `variables` and `colourmaps` 
+        settings.
+        
+        `variables` is a dictionary mapping `weavingspace.tileable.Tileable` 
+        element_ids (usually "a", "b", etc.) to variable names in the data. For 
+        example, 
+        
+            tm.variables = dict(zip(["a", "b"], ["population", "income"]))
+            
+        `colourmaps` is a dictionary mapping dataset variable names to the 
+        matplotlib colourmap to be used for each. For example,
+        
+            tm.colourmaps = dict(zip(tm.variables.values(), ["Reds", "Blues"]))
+        
+        See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. TODO: This 
+        more complicated example shows how categorical maps can be created.
+    """
     # these will be set at instantion by Tiling.get_tiled_map()
     tiling:Tiling = None  #: the Tiling with the required tiles
     map:gpd.GeoDataFrame = None  #: the GeoDataFrame on which this map is based 

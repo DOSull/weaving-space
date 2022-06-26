@@ -3,6 +3,58 @@
 
 """The `TileUnit` subclass of `weavingspace.tileable.Tileable` implements
 many 'conventional' tilings of the plane.
+
+Examples:
+    A `TileUnit` is initialised like this
+    
+        tile_unit = TileUnit(tiling_type = "cairo")
+        
+    The `tiling_type` may be one of the following
+    
+    + "cairo" the Cairo tiling more formally known as the Laves 
+    [3<sup>2</sup>.4.3.4] tiling. The author's favourite tiling, hence it 
+    has its own tiling_type.
+    + "hex-dissection" a range of dissections of the regular hexagon into,
+    2, 3, 4, 6, or 12 'pie slices'. The number of slices is set by 
+    specifying an additional argument `n`. Slices are cut either starting 
+    at the corners of  the hexagon or from the midpoints of hexagon edges, 
+    by specifying an additional argument `dissection_offset` set to either 
+    0 or 1 respectively.
+    + "laves" a range of isohedral tilings. See [this article](https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings). 
+    The desired tiling is specified by the additional argument `code` which 
+    is a string like "3.3.4.3.4".
+    + "archimedean" a range of tilings by regular polygons. See [this 
+    article](https://en.wikipedia.org/wiki/Euclidean_tilings_by_convex_regular_polygons#Archimedean,_uniform_or_semiregular_tilings). Many of these are the dual tilings of 
+    the Laves tilings. The desired tiling is specified by the additional 
+    argument `code` which is a string like "3.3.4.3.4". Not all the 
+    possible Archimedean tilings are implemented.
+    + "hex-colouring" three colourings of the regular hexagon tiling, of 
+    either 3, 4, or 7 colours, as specified by the argument `n`.
+    + "square-colouring" one colouring of the regular square tiling, of 5 
+    colours as specified by the argument `n = 5`.
+    
+    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/all-the-tiles.ipynb) for exact usage, and illustrations of 
+    each tiling. 
+    
+    Spacing and coordinate reference of the tile unit are specified by the
+    `weavingspace.tileable.Tileable` superclass variables 
+    `weavingspace.tileable.Tileable.spacing` and 
+    `weavingspace.tileable.Tileable.crs`.
+
+    Base tilings by squares, hexagons or triangles can also be requested 
+    using
+    
+        tile_unit = TileUnit()  # square tiling, the default
+        tile_unit = TileUnit(tile_shape = TileShape.HEXAGON)
+        tile_unit = TileUnit(tile_shape = TileShape.TRIANGLE)
+        
+    The first two of these have only one element_id value, and so cannot be 
+    used for multivariate mapping. The triangle case has two element_id 
+    values so may be useful in its base form.
+    
+    To create custom tilings start from one of the base tiles above, and 
+    explicitly set the `weavingspace.tileable.Tileable.elements` variable 
+    by geometric construction of suitable shapely.geometry.Polygons. TODO: A detailed example of this usage can be found here ....
 """
 
 import copy
@@ -24,56 +76,6 @@ import weavingspace.tiling_geometries as tiling_geometries
 @dataclass
 class TileUnit(Tileable):
     """Class to represent the tileable elements of a 'conventional' tiling.
-    
-    A `TileUnit` is initialised like this
-    
-        tile_unit = TileUnit(tiling_type = "cairo")
-        
-    The `tiling_type` may be one of the following
-    
-    + "cairo" the Cairo tiling more formally known as the Laves 
-    [3<sup>2</sup>.4.3.4] tiling. The author's favourite tiling, hence it has 
-    its own tiling_type.
-    + "hex-dissection" a range of dissections of the regular hexagon into, 2, 3
-    4, 6, or 12 'pie slices'. The number of slices is set by specifying an
-    additional argument `n`. Slices are cut either starting at the corners of 
-    the hexagon or from the midpoints of hexagon edges, by specifying an
-    additional argument `dissection_offset` set to either 0 or 1 respectively.
-    + "laves" a range of isohedral tilings. See [this article](https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings). The 
-    desired tiling is specified by the additional argument `code` which is a 
-    string like "3.3.4.3.4".
-    + "archimedean" a range of tilings by regular polygons. See [this article](https://en.wikipedia.org/wiki/Euclidean_tilings_by_convex_regular_polygons#Archimedean,_uniform_or_semiregular_tilings). Many of these are the dual tilings of the 
-    Laves tilings. The desired tiling is specified by the additional argument 
-    `code` which is a string like "3.3.4.3.4". Not all the possible Archimedean 
-    tilings are implemented.
-    + "hex-colouring" three colourings of the regular hexagon tiling, of either 
-    3, 4, or 7 colours, as specified by the argument `n`.
-    + "square-colouring" one colouring of the regular square tiling, of 5 
-    colours as specified by the argument `n = 5`.
-    
-    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/all-the-tiles.ipynb) for exact usage, and illustrations of 
-    each tiling. 
-    
-    Spacing and coordinate reference of the tile unit are specified by the
-    `weavingspace.tileable.Tileable` superclass variables 
-    `weavingspace.tileable.Tileable.spacing` and 
-    `weavingspace.tileable.Tileable.crs`.
-
-    Base tilings by squares, hexagons or triangles can also be requested using
-    
-        tile_unit = TileUnit()  # square tiling, the default
-        tile_unit = TileUnit(tile_shape = TileShape.HEXAGON)
-        tile_unit = TileUnit(tile_shape = TileShape.TRIANGLE)
-        
-    The first two of these have only one element_id value, and so cannot be 
-    used for multivariate mapping. The triangle case has two element_id values
-    so may be useful in its base form.
-    
-    To create custom tilings start from one of the base tiles above, and 
-    explicitly set the `weavingspace.tileable.Tileable.elements` variable by 
-    geometric construction of suitable shapely.geometry.Polygons. 
-    
-    TODO: A detailed example of this usage can be found in this notebook.
     
     Args:
         tiling_type (str): tiling type as detailed above.
@@ -105,7 +107,7 @@ class TileUnit(Tileable):
             self.setup_regularised_tile_from_elements()
 
 
-    def setup_tile_and_elements(self) -> None:
+    def _setup_tile_and_elements(self) -> None:
         """Delegates setup of the unit to various functions depending
         on self.tiling_type.
         """

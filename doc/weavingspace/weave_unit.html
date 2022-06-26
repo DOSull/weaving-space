@@ -6,7 +6,7 @@
 <meta name="generator" content="pdoc 0.10.0" />
 <title>weavingspace.weave_unit API documentation</title>
 <meta name="description" content="The `WeaveUnit` subclass of `weavingspace.tileable.Tileable` implements
-tileable geometric patterns constructed by specifying 2- or 3-axial weaves." />
+tileable geometric patterns constructed by specifying 2- or 3-axial weaves …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -24,7 +24,9 @@ tileable geometric patterns constructed by specifying 2- or 3-axial weaves." />
 </header>
 <section id="section-intro">
 <p>The <code><a title="weavingspace.weave_unit.WeaveUnit" href="#weavingspace.weave_unit.WeaveUnit">WeaveUnit</a></code> subclass of <code><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></code> implements
-tileable geometric patterns constructed by specifying 2- or 3-axial weaves.</p>
+tileable geometric patterns constructed by specifying 2- or 3-axial weaves. </p>
+<h2 id="examples">Examples</h2>
+<p>Explain usage here&hellip;</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -34,6 +36,9 @@ tileable geometric patterns constructed by specifying 2- or 3-axial weaves.</p>
 
 &#34;&#34;&#34;The `WeaveUnit` subclass of `weavingspace.tileable.Tileable` implements
 tileable geometric patterns constructed by specifying 2- or 3-axial weaves. 
+            
+Examples:
+    Explain usage here...
 &#34;&#34;&#34;
 
 import logging
@@ -60,22 +65,35 @@ from weavingspace.tileable import Tileable
 
 @dataclass
 class WeaveUnit(Tileable):
-    &#34;&#34;&#34; Extends Tileable to allow for tiles that appear like woven patterns.
+    &#34;&#34;&#34;Extends Tileable to allow for tiles that appear like woven patterns.
+
+    Args:
+        weave_type (str, optional): the type of weave pattern, one of 
+            &#34;plain&#34;,  &#34;twill&#34;, &#34;basket&#34;, &#34;this&#34;, &#34;cube&#34; or &#34;hex&#34;. Defaults
+            to &#34;plain&#34;.
+        aspect (float, optional): width of strands relative to the spacing. 
+            Defaults to 1.
+        n (Union[int,tuple[int]]): number of over-under strands in biaxial 
+            weaves. Only one item is required in a plain weave. Twill and 
+            basket patterns expect an even number of elements in the tuple. 
+            Defaults to (2, 2).
+        strands (str, optional): specification of the strand labels 
+            along each axis. Defaults to &#34;a|b|c&#34;.
     &#34;&#34;&#34;  
     weave_type:str = &#34;plain&#34;
     aspect:float = 1.
     n:Union[int, tuple[int]] = (2, 2)
     strands:str = &#34;a|b|c&#34;
-    tie_up:np.ndarray = None
-    tr:np.ndarray = None
-    th:np.ndarray = None
+    _tie_up:np.ndarray = None
+    _tr:np.ndarray = None
+    _th:np.ndarray = None
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.weave_type = self.weave_type.lower()
     
 
-    def setup_tile_and_elements(self, **kwargs) -&gt; None:
+    def _setup_tile_and_elements(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Returns dictionary with weave unit and tile GeoDataFrames
         
         Args:
@@ -90,22 +108,22 @@ class WeaveUnit(Tileable):
                 Defaults to (2, 2).
             strands (str, optional): specification of the strand labels 
                 along each axis. Defaults to &#34;a|b|c&#34;.
-            tie_up (numpy.ndarray, optional): used when type is &#34;this&#34; to
+            _tie_up (numpy.ndarray, optional): used when type is &#34;this&#34; to
                 specify a desired weave pattern. See: Glassner A, 2002, 
                 “Digital weaving. 1” IEEE Computer Graphics and Applications 22
                 (6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
-            tr (numpy.ndarray, optional): used when type is &#34;this&#34; to specify 
+            _tr (numpy.ndarray, optional): used when type is &#34;this&#34; to specify 
                 the treadling matrix. See: Glassner 2002. Defaults to None.
-            th (numpy.ndarray, optional): used when type is &#34;this&#34; to specify
+            _th (numpy.ndarray, optional): used when type is &#34;this&#34; to specify
                 the threading matrix. See: Glassner 2002. Defaults to None.
         &#34;&#34;&#34;
         self._parameter_info()
 
         if self.weave_type in (&#34;hex&#34;, &#34;cube&#34;):
-            self.setup_triaxial_weave_unit(**kwargs)
+            self._setup_triaxial_weave_unit(**kwargs)
             self.tile_shape = TileShape.HEXAGON
         else:
-            self.setup_biaxial_weave_unit(**kwargs)
+            self._setup_biaxial_weave_unit(**kwargs)
             self.tile_shape = TileShape.RECTANGLE
         return
 
@@ -120,14 +138,10 @@ class WeaveUnit(Tileable):
         if self.aspect &lt; 0 or self.aspect &gt; 1:
             logging.warning(&#34;&#34;&#34;Values of aspect outside the range 0 to 1 won&#39;t produce tiles that will look like weaves, but they might be pretty anyway! Values less than -1 seem particularly promising, especially with opacity set less than 1.&#34;&#34;&#34;)
 
-        # # maximum margin that will produce a weave-able tile
-        # max_margin = (1 - self.aspect) / 2
-        # if self.margin &gt; max_margin:
-        #     logging.warning(f&#34;&#34;&#34;With aspect set to {self.aspect:.3f} the largest margin that will work is {max_margin:.3f}. Lower values are required to produce proper tileable weaves. Specifically, with too wide a margin, strands in adjacent tiles will not &#39;join up&#39; when tiled. Higher values will make nice tilings with broken strands, which aren&#39;t &#39;proper&#39; weaves. The best alternative is to make the weave unit with margin = 0, then apply a negative buffer after you have tiled your map.&#34;&#34;&#34;)   
         return None
 
 
-    def setup_biaxial_weave_unit(self, **kwargs) -&gt; None:
+    def _setup_biaxial_weave_unit(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
 
         Args:
@@ -140,11 +154,11 @@ class WeaveUnit(Tileable):
             strands (str, optional): specification of strand labels. See 
                 weaving_space_utils.get_strand_ids() for details. 
                 Defaults to &#34;ab|cd&#34;.
-            tie_up (np.ndarray, optional): a weave pattern matrix to pass thru
+            _tie_up (np.ndarray, optional): a weave pattern matrix to pass thru
                 in the &#34;this&#34; case. Defaults to make_twill_matrix((2, 2)).
-            tr (np.ndarray, optional): treadling matrix for the &#34;this&#34; 
+            _tr (np.ndarray, optional): treadling matrix for the &#34;this&#34; 
                 case. Defaults to None.
-            th (np.ndarray, optional): threading matrix for the &#34;this&#34; 
+            _th (np.ndarray, optional): threading matrix for the &#34;this&#34; 
                 case. Defaults to None.
         &#34;&#34;&#34;    
         warp_threads, weft_threads, _ = \
@@ -155,21 +169,19 @@ class WeaveUnit(Tileable):
         
         p = weave_matrices.get_weave_pattern_matrix(
             weave_type = self.weave_type, n = self.n, warp = warp_threads,
-            weft = weft_threads, tie_up = self.tie_up, tr = self.tr, 
-            th = self.th)
+            weft = weft_threads, tie_up = self._tie_up, tr = self._tr, 
+            th = self._th)
 
-        self.make_shapes_from_coded_weave_matrix(
+        self._make_shapes_from_coded_weave_matrix(
             Loom(p), strand_labels = [weft_threads, warp_threads, []])
 
 
-    def get_triaxial_weave_matrices(self, 
+    def _get_triaxial_weave_matrices(self, 
             strands_1:Union[list[str],tuple[str]] = [&#34;a&#34;], 
             strands_2:Union[list[str],tuple[str]] = [&#34;b&#34;], 
             strands_3:Union[list[str],tuple[str]] = [&#34;c&#34;]
         ) -&gt; Loom:
         &#34;&#34;&#34;Returns encoded weave pattern matrix as Loom of three biaxial matrices.
-        
-        See encode_biaxial_weave() for the encoding.
 
         Allowed weave_types: &#34;cube&#34; or &#34;hex&#34;.
         
@@ -219,7 +231,7 @@ class WeaveUnit(Tileable):
         return loom
 
 
-    def setup_triaxial_weave_unit(self, **kwargs) -&gt; None:
+    def _setup_triaxial_weave_unit(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
 
         Args:
@@ -232,17 +244,17 @@ class WeaveUnit(Tileable):
         strands_1, strands_2, strands_3 = \
             tiling_utils.get_strand_ids(self.strands)
         
-        loom = self.get_triaxial_weave_matrices(
+        loom = self._get_triaxial_weave_matrices(
             strands_1 = strands_1, strands_2 = strands_2, strands_3 = strands_3)
         
-        self.make_shapes_from_coded_weave_matrix(
+        self._make_shapes_from_coded_weave_matrix(
             loom, strand_labels = [strands_1, strands_2, strands_3])
 
 
     # builds the geometric elements associated with a given weave supplied as
     # &#39;loom&#39; containing the coordinates in an appropriate grid (Cartesian or
     # triangular) and the orderings of the strands at each coordinate location
-    def make_shapes_from_coded_weave_matrix(self, loom:Loom, 
+    def _make_shapes_from_coded_weave_matrix(self, loom:Loom, 
             strand_labels:list[list[str]] = [[&#34;a&#34;], [&#34;b&#34;], [&#34;c&#34;]]) -&gt; None:
         &#34;&#34;&#34;Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
 
@@ -275,24 +287,22 @@ class WeaveUnit(Tileable):
         tile = grid.get_tile_from_cells(approx_tile)
         atc = approx_tile.centroid
         shift = (-atc.x, -atc.y)
-        self.elements = self.get_weave_elements_gdf(
+        self.elements = self._get_weave_elements_gdf(
             weave_polys, strand_ids, tile, shift)
         self.tile = gpd.GeoDataFrame(
             geometry = gpd.GeoSeries([tile]), crs = self.crs)
         return None
 
 
-    def get_weave_elements_gdf(
+    def _get_weave_elements_gdf(
             self, polys:list[geom.Polygon], strand_ids:list[str], 
-            bb:geom.Polygon, offset:tuple[float]
-        ) -&gt; gpd.GeoDataFrame:
+            offset:tuple[float]) -&gt; gpd.GeoDataFrame:
         &#34;&#34;&#34;Makes a GeoDataFrame from weave element polygons, labels, tile, etc.
 
         Args:
             polys (list[Polygon | MultiPolygon]): list of weave element 
                 polygons.
             strand_ids (list[str]): list of strand labels.
-            bb (Polygon): bounding shape tile.
             offset (tuple[float]): offset to centre the weave elements on the 
                 tile.
 
@@ -312,7 +322,7 @@ class WeaveUnit(Tileable):
         return weave.set_crs(self.crs)
 
 
-    def get_axis_from_label(self, label:str = &#34;a&#34;, strands:str = None):
+    def _get_axis_from_label(self, label:str = &#34;a&#34;, strands:str = None):
         &#34;&#34;&#34;Determines the axis of an element_id from the strands spec string.
 
         Args:
@@ -348,7 +358,7 @@ class WeaveUnit(Tileable):
         elements, rotations = [], []
         for id in element_ids:
             candidates = groups.get_group(id)
-            axis = self.get_axis_from_label(id, self.strands)
+            axis = self._get_axis_from_label(id, self.strands)
             elements.append(self._get_most_central_large_element(
                 candidates, elements))
             rotations.append(-angles[axis])
@@ -442,41 +452,24 @@ class WeaveUnit(Tileable):
 </code></dt>
 <dd>
 <div class="desc"><p>Extends Tileable to allow for tiles that appear like woven patterns.</p>
-<p>Stores any supplied attributes, sets up the tile, its elements,
-vectors and regularised tile.</p>
-<p>The <code>Tileable</code> constructor should not be called directly, but is
-instead accessed from the <code><a title="weavingspace.tile_unit.TileUnit" href="tile_unit.html#weavingspace.tile_unit.TileUnit">TileUnit</a></code> or
-<code><a title="weavingspace.weave_unit.WeaveUnit" href="#weavingspace.weave_unit.WeaveUnit">WeaveUnit</a></code> constructor. These can accept as
-arguments any of the arguments below.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>elements</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
-<dd>the strand geometries with associated
-element_id attribute encoding their different colouring.</dd>
-<dt><strong><code>tile</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
-<dd>the tileable polygon (a rectangle, a
-hexagon, or a diamond).</dd>
-<dt><strong><code>spacing</code></strong> :&ensp;<code>float</code></dt>
-<dd>the tile spacing &ndash; effectively the 'resolution' of
-the tiling. Defaults to <code>1000</code>.</dd>
-<dt><strong><code>tile_shape</code></strong> :&ensp;<code>TileShape</code></dt>
-<dd>the tile shape. Defaults to
-<code>TileShape.RECTANGLE</code>.</dd>
-<dt><strong><code>vectors</code></strong> :&ensp;<code>list[tuple[float]]</code></dt>
-<dd>translation vector symmetries of the
-tiling.</dd>
-<dt><strong><code>regularised_tile</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
-<dd>a polygon containing the
-elements of this <code><a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a></code> &mdash; most
-often a union of those polygons.</dd>
-<dt><strong><code>crs</code></strong> :&ensp;<code>int</code></dt>
-<dd>the coordinate reference system of the tile. Most often
-an EPSG code, but any valid geopandas CRS specification is
-valid. Defaults to 3857 (i.e. Web Mercator).</dd>
-<dt><strong><code>fudge_factor</code></strong> :&ensp;<code>float</code></dt>
-<dd>a distance in units of self.crs to be used in
-geometry clean ups (for example this buffer distance is applied
-before unioning polygons.) Defaults to <code>1e-3</code>.</dd>
+<dt><strong><code>weave_type</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the type of weave pattern, one of
+"plain",
+"twill", "basket", "this", "cube" or "hex". Defaults
+to "plain".</dd>
+<dt><strong><code>aspect</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>width of strands relative to the spacing.
+Defaults to 1.</dd>
+<dt><strong><code>n</code></strong> :&ensp;<code>Union[int,tuple[int]]</code></dt>
+<dd>number of over-under strands in biaxial
+weaves. Only one item is required in a plain weave. Twill and
+basket patterns expect an even number of elements in the tuple.
+Defaults to (2, 2).</dd>
+<dt><strong><code>strands</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>specification of the strand labels
+along each axis. Defaults to "a|b|c".</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -484,22 +477,35 @@ before unioning polygons.) Defaults to <code>1e-3</code>.</dd>
 </summary>
 <pre><code class="python">@dataclass
 class WeaveUnit(Tileable):
-    &#34;&#34;&#34; Extends Tileable to allow for tiles that appear like woven patterns.
+    &#34;&#34;&#34;Extends Tileable to allow for tiles that appear like woven patterns.
+
+    Args:
+        weave_type (str, optional): the type of weave pattern, one of 
+            &#34;plain&#34;,  &#34;twill&#34;, &#34;basket&#34;, &#34;this&#34;, &#34;cube&#34; or &#34;hex&#34;. Defaults
+            to &#34;plain&#34;.
+        aspect (float, optional): width of strands relative to the spacing. 
+            Defaults to 1.
+        n (Union[int,tuple[int]]): number of over-under strands in biaxial 
+            weaves. Only one item is required in a plain weave. Twill and 
+            basket patterns expect an even number of elements in the tuple. 
+            Defaults to (2, 2).
+        strands (str, optional): specification of the strand labels 
+            along each axis. Defaults to &#34;a|b|c&#34;.
     &#34;&#34;&#34;  
     weave_type:str = &#34;plain&#34;
     aspect:float = 1.
     n:Union[int, tuple[int]] = (2, 2)
     strands:str = &#34;a|b|c&#34;
-    tie_up:np.ndarray = None
-    tr:np.ndarray = None
-    th:np.ndarray = None
+    _tie_up:np.ndarray = None
+    _tr:np.ndarray = None
+    _th:np.ndarray = None
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.weave_type = self.weave_type.lower()
     
 
-    def setup_tile_and_elements(self, **kwargs) -&gt; None:
+    def _setup_tile_and_elements(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Returns dictionary with weave unit and tile GeoDataFrames
         
         Args:
@@ -514,22 +520,22 @@ class WeaveUnit(Tileable):
                 Defaults to (2, 2).
             strands (str, optional): specification of the strand labels 
                 along each axis. Defaults to &#34;a|b|c&#34;.
-            tie_up (numpy.ndarray, optional): used when type is &#34;this&#34; to
+            _tie_up (numpy.ndarray, optional): used when type is &#34;this&#34; to
                 specify a desired weave pattern. See: Glassner A, 2002, 
                 “Digital weaving. 1” IEEE Computer Graphics and Applications 22
                 (6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
-            tr (numpy.ndarray, optional): used when type is &#34;this&#34; to specify 
+            _tr (numpy.ndarray, optional): used when type is &#34;this&#34; to specify 
                 the treadling matrix. See: Glassner 2002. Defaults to None.
-            th (numpy.ndarray, optional): used when type is &#34;this&#34; to specify
+            _th (numpy.ndarray, optional): used when type is &#34;this&#34; to specify
                 the threading matrix. See: Glassner 2002. Defaults to None.
         &#34;&#34;&#34;
         self._parameter_info()
 
         if self.weave_type in (&#34;hex&#34;, &#34;cube&#34;):
-            self.setup_triaxial_weave_unit(**kwargs)
+            self._setup_triaxial_weave_unit(**kwargs)
             self.tile_shape = TileShape.HEXAGON
         else:
-            self.setup_biaxial_weave_unit(**kwargs)
+            self._setup_biaxial_weave_unit(**kwargs)
             self.tile_shape = TileShape.RECTANGLE
         return
 
@@ -544,14 +550,10 @@ class WeaveUnit(Tileable):
         if self.aspect &lt; 0 or self.aspect &gt; 1:
             logging.warning(&#34;&#34;&#34;Values of aspect outside the range 0 to 1 won&#39;t produce tiles that will look like weaves, but they might be pretty anyway! Values less than -1 seem particularly promising, especially with opacity set less than 1.&#34;&#34;&#34;)
 
-        # # maximum margin that will produce a weave-able tile
-        # max_margin = (1 - self.aspect) / 2
-        # if self.margin &gt; max_margin:
-        #     logging.warning(f&#34;&#34;&#34;With aspect set to {self.aspect:.3f} the largest margin that will work is {max_margin:.3f}. Lower values are required to produce proper tileable weaves. Specifically, with too wide a margin, strands in adjacent tiles will not &#39;join up&#39; when tiled. Higher values will make nice tilings with broken strands, which aren&#39;t &#39;proper&#39; weaves. The best alternative is to make the weave unit with margin = 0, then apply a negative buffer after you have tiled your map.&#34;&#34;&#34;)   
         return None
 
 
-    def setup_biaxial_weave_unit(self, **kwargs) -&gt; None:
+    def _setup_biaxial_weave_unit(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
 
         Args:
@@ -564,11 +566,11 @@ class WeaveUnit(Tileable):
             strands (str, optional): specification of strand labels. See 
                 weaving_space_utils.get_strand_ids() for details. 
                 Defaults to &#34;ab|cd&#34;.
-            tie_up (np.ndarray, optional): a weave pattern matrix to pass thru
+            _tie_up (np.ndarray, optional): a weave pattern matrix to pass thru
                 in the &#34;this&#34; case. Defaults to make_twill_matrix((2, 2)).
-            tr (np.ndarray, optional): treadling matrix for the &#34;this&#34; 
+            _tr (np.ndarray, optional): treadling matrix for the &#34;this&#34; 
                 case. Defaults to None.
-            th (np.ndarray, optional): threading matrix for the &#34;this&#34; 
+            _th (np.ndarray, optional): threading matrix for the &#34;this&#34; 
                 case. Defaults to None.
         &#34;&#34;&#34;    
         warp_threads, weft_threads, _ = \
@@ -579,21 +581,19 @@ class WeaveUnit(Tileable):
         
         p = weave_matrices.get_weave_pattern_matrix(
             weave_type = self.weave_type, n = self.n, warp = warp_threads,
-            weft = weft_threads, tie_up = self.tie_up, tr = self.tr, 
-            th = self.th)
+            weft = weft_threads, tie_up = self._tie_up, tr = self._tr, 
+            th = self._th)
 
-        self.make_shapes_from_coded_weave_matrix(
+        self._make_shapes_from_coded_weave_matrix(
             Loom(p), strand_labels = [weft_threads, warp_threads, []])
 
 
-    def get_triaxial_weave_matrices(self, 
+    def _get_triaxial_weave_matrices(self, 
             strands_1:Union[list[str],tuple[str]] = [&#34;a&#34;], 
             strands_2:Union[list[str],tuple[str]] = [&#34;b&#34;], 
             strands_3:Union[list[str],tuple[str]] = [&#34;c&#34;]
         ) -&gt; Loom:
         &#34;&#34;&#34;Returns encoded weave pattern matrix as Loom of three biaxial matrices.
-        
-        See encode_biaxial_weave() for the encoding.
 
         Allowed weave_types: &#34;cube&#34; or &#34;hex&#34;.
         
@@ -643,7 +643,7 @@ class WeaveUnit(Tileable):
         return loom
 
 
-    def setup_triaxial_weave_unit(self, **kwargs) -&gt; None:
+    def _setup_triaxial_weave_unit(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
 
         Args:
@@ -656,17 +656,17 @@ class WeaveUnit(Tileable):
         strands_1, strands_2, strands_3 = \
             tiling_utils.get_strand_ids(self.strands)
         
-        loom = self.get_triaxial_weave_matrices(
+        loom = self._get_triaxial_weave_matrices(
             strands_1 = strands_1, strands_2 = strands_2, strands_3 = strands_3)
         
-        self.make_shapes_from_coded_weave_matrix(
+        self._make_shapes_from_coded_weave_matrix(
             loom, strand_labels = [strands_1, strands_2, strands_3])
 
 
     # builds the geometric elements associated with a given weave supplied as
     # &#39;loom&#39; containing the coordinates in an appropriate grid (Cartesian or
     # triangular) and the orderings of the strands at each coordinate location
-    def make_shapes_from_coded_weave_matrix(self, loom:Loom, 
+    def _make_shapes_from_coded_weave_matrix(self, loom:Loom, 
             strand_labels:list[list[str]] = [[&#34;a&#34;], [&#34;b&#34;], [&#34;c&#34;]]) -&gt; None:
         &#34;&#34;&#34;Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
 
@@ -699,24 +699,22 @@ class WeaveUnit(Tileable):
         tile = grid.get_tile_from_cells(approx_tile)
         atc = approx_tile.centroid
         shift = (-atc.x, -atc.y)
-        self.elements = self.get_weave_elements_gdf(
+        self.elements = self._get_weave_elements_gdf(
             weave_polys, strand_ids, tile, shift)
         self.tile = gpd.GeoDataFrame(
             geometry = gpd.GeoSeries([tile]), crs = self.crs)
         return None
 
 
-    def get_weave_elements_gdf(
+    def _get_weave_elements_gdf(
             self, polys:list[geom.Polygon], strand_ids:list[str], 
-            bb:geom.Polygon, offset:tuple[float]
-        ) -&gt; gpd.GeoDataFrame:
+            offset:tuple[float]) -&gt; gpd.GeoDataFrame:
         &#34;&#34;&#34;Makes a GeoDataFrame from weave element polygons, labels, tile, etc.
 
         Args:
             polys (list[Polygon | MultiPolygon]): list of weave element 
                 polygons.
             strand_ids (list[str]): list of strand labels.
-            bb (Polygon): bounding shape tile.
             offset (tuple[float]): offset to centre the weave elements on the 
                 tile.
 
@@ -736,7 +734,7 @@ class WeaveUnit(Tileable):
         return weave.set_crs(self.crs)
 
 
-    def get_axis_from_label(self, label:str = &#34;a&#34;, strands:str = None):
+    def _get_axis_from_label(self, label:str = &#34;a&#34;, strands:str = None):
         &#34;&#34;&#34;Determines the axis of an element_id from the strands spec string.
 
         Args:
@@ -772,7 +770,7 @@ class WeaveUnit(Tileable):
         elements, rotations = [], []
         for id in element_ids:
             candidates = groups.get_group(id)
-            axis = self.get_axis_from_label(id, self.strands)
+            axis = self._get_axis_from_label(id, self.strands)
             elements.append(self._get_most_central_large_element(
                 candidates, elements))
             rotations.append(-angles[axis])
@@ -868,450 +866,9 @@ class WeaveUnit(Tileable):
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="weavingspace.weave_unit.WeaveUnit.th"><code class="name">var <span class="ident">th</span> : numpy.ndarray</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="weavingspace.weave_unit.WeaveUnit.tie_up"><code class="name">var <span class="ident">tie_up</span> : numpy.ndarray</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="weavingspace.weave_unit.WeaveUnit.tr"><code class="name">var <span class="ident">tr</span> : numpy.ndarray</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="weavingspace.weave_unit.WeaveUnit.weave_type"><code class="name">var <span class="ident">weave_type</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
-</dd>
-</dl>
-<h3>Methods</h3>
-<dl>
-<dt id="weavingspace.weave_unit.WeaveUnit.get_axis_from_label"><code class="name flex">
-<span>def <span class="ident">get_axis_from_label</span></span>(<span>self, label: str = 'a', strands: str = None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Determines the axis of an element_id from the strands spec string.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>label</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>the element_id. Defaults to "a".</dd>
-<dt><strong><code>strands</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>the strand spec. Defaults to the WeaveUnit
-strands attribute.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>_type_</code></dt>
-<dd>the axis in which the supplied element_is found.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_axis_from_label(self, label:str = &#34;a&#34;, strands:str = None):
-    &#34;&#34;&#34;Determines the axis of an element_id from the strands spec string.
-
-    Args:
-        label (str, optional): the element_id. Defaults to &#34;a&#34;.
-        strands (str, optional): the strand spec. Defaults to the WeaveUnit
-            strands attribute.
-
-    Returns:
-        _type_: the axis in which the supplied element_is found.
-    &#34;&#34;&#34;
-    if strands == None:
-        strands = self.strands
-    index = strands.index(label)
-    return strands[:index].count(&#34;|&#34;)</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.weave_unit.WeaveUnit.get_triaxial_weave_matrices"><code class="name flex">
-<span>def <span class="ident">get_triaxial_weave_matrices</span></span>(<span>self, strands_1: Union[list[str], tuple[str]] = ['a'], strands_2: Union[list[str], tuple[str]] = ['b'], strands_3: Union[list[str], tuple[str]] = ['c']) ‑> weavingspace._loom.Loom</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Returns encoded weave pattern matrix as Loom of three biaxial matrices.</p>
-<p>See encode_biaxial_weave() for the encoding.</p>
-<p>Allowed weave_types: "cube" or "hex".</p>
-<p>"hex" is not flexible and will fail with any strand label lists that are not length 3 and include more than one non-blank "-" item. You can generate the "hex" weave with the default settings in any case!</p>
-<p>Strand lists should be length 3 or length 1. "cube" tolerates more options than "hex" for the items in the strand lists.</p>
-<p>Defaults will produce 'mad weave'.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>strands_1</code></strong> :&ensp;<code>Union[list[str],tuple[str]]</code>, optional</dt>
-<dd>list of labels
-for warp strands. Defaults to ["a"].</dd>
-<dt><strong><code>strands_2</code></strong> :&ensp;<code>Union[list[str],tuple[str]]</code>, optional</dt>
-<dd>list of labels
-for weft strands. Defaults to ["b"].</dd>
-<dt><strong><code>strands_3</code></strong> :&ensp;<code>Union[list[str],tuple[str]]</code>, optional</dt>
-<dd>list of labels
-for weft strands. Defaults to ["c"].</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Loom</code></dt>
-<dd>which combines the three biaxial weaves 12, 23 and 31 implied
-by the strand label lists.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_triaxial_weave_matrices(self, 
-        strands_1:Union[list[str],tuple[str]] = [&#34;a&#34;], 
-        strands_2:Union[list[str],tuple[str]] = [&#34;b&#34;], 
-        strands_3:Union[list[str],tuple[str]] = [&#34;c&#34;]
-    ) -&gt; Loom:
-    &#34;&#34;&#34;Returns encoded weave pattern matrix as Loom of three biaxial matrices.
-    
-    See encode_biaxial_weave() for the encoding.
-
-    Allowed weave_types: &#34;cube&#34; or &#34;hex&#34;.
-    
-    &#34;hex&#34; is not flexible and will fail with any strand label lists that are not length 3 and include more than one non-blank &#34;-&#34; item. You can generate the &#34;hex&#34; weave with the default settings in any case!
-    
-    Strand lists should be length 3 or length 1. &#34;cube&#34; tolerates more options than &#34;hex&#34; for the items in the strand lists.
-    
-    Defaults will produce &#39;mad weave&#39;.
-
-    Args:
-        strands_1 (Union[list[str],tuple[str]], optional): list of labels 
-            for warp strands. Defaults to [&#34;a&#34;].
-        strands_2 (Union[list[str],tuple[str]], optional): list of labels 
-            for weft strands. Defaults to [&#34;b&#34;].
-        strands_3 (Union[list[str],tuple[str]], optional): list of labels 
-            for weft strands. Defaults to [&#34;c&#34;].
-
-    Returns:
-        Loom: which combines the three biaxial weaves 12, 23 and 31 implied 
-            by the strand label lists.
-    &#34;&#34;&#34;
-    if self.weave_type == &#34;hex&#34;:
-        loom = Loom(
-            weave_matrices.get_weave_pattern_matrix(
-                weave_type = &#34;this&#34;, tie_up = np.ones((6, 6)), 
-                warp = strands_1, weft = strands_2),
-            weave_matrices.get_weave_pattern_matrix(
-                weave_type = &#34;this&#34;, tie_up = np.ones((6, 6)), 
-                warp = strands_2, weft = strands_3),
-            weave_matrices.get_weave_pattern_matrix(
-                weave_type = &#34;this&#34;, tie_up = np.ones((6, 6)), 
-                warp = strands_3, weft = strands_1),
-        )
-    else: # &#34;cube&#34;
-        loom = Loom(  
-            # Note n = (1,2,1,2) is required here to force 6x6 twill
-            weave_matrices.get_weave_pattern_matrix(
-                weave_type = &#34;twill&#34;, n = (1, 2, 1, 2), 
-                warp = strands_1, weft = strands_2),
-            weave_matrices.get_weave_pattern_matrix(
-                weave_type = &#34;twill&#34;, n = (1, 2, 1, 2), 
-                warp = strands_2, weft = strands_3),
-            weave_matrices.get_weave_pattern_matrix(
-                weave_type = &#34;twill&#34;, n = (1, 2, 1, 2), 
-                warp = strands_3, weft = strands_1),
-        )
-    return loom</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.weave_unit.WeaveUnit.get_weave_elements_gdf"><code class="name flex">
-<span>def <span class="ident">get_weave_elements_gdf</span></span>(<span>self, polys: list[shapely.geometry.polygon.Polygon], strand_ids: list[str], bb: shapely.geometry.polygon.Polygon, offset: tuple[float]) ‑> geopandas.geodataframe.GeoDataFrame</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Makes a GeoDataFrame from weave element polygons, labels, tile, etc.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt>polys (list[Polygon | MultiPolygon]): list of weave element</dt>
-<dt>polygons.</dt>
-<dt><strong><code>strand_ids</code></strong> :&ensp;<code>list[str]</code></dt>
-<dd>list of strand labels.</dd>
-<dt><strong><code>bb</code></strong> :&ensp;<code>Polygon</code></dt>
-<dd>bounding shape tile.</dd>
-<dt><strong><code>offset</code></strong> :&ensp;<code>tuple[float]</code></dt>
-<dd>offset to centre the weave elements on the
-tile.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>geopandas.GeoDataFrame</code></dt>
-<dd>GeoDataFrame clipped to the tile, with
-margin applied.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_weave_elements_gdf(
-        self, polys:list[geom.Polygon], strand_ids:list[str], 
-        bb:geom.Polygon, offset:tuple[float]
-    ) -&gt; gpd.GeoDataFrame:
-    &#34;&#34;&#34;Makes a GeoDataFrame from weave element polygons, labels, tile, etc.
-
-    Args:
-        polys (list[Polygon | MultiPolygon]): list of weave element 
-            polygons.
-        strand_ids (list[str]): list of strand labels.
-        bb (Polygon): bounding shape tile.
-        offset (tuple[float]): offset to centre the weave elements on the 
-            tile.
-
-    Returns:
-        geopandas.GeoDataFrame: GeoDataFrame clipped to the tile, with 
-            margin applied.
-    &#34;&#34;&#34;
-    weave = gpd.GeoDataFrame(
-        data = {&#34;element_id&#34;: strand_ids},
-        geometry = gpd.GeoSeries(
-            [affine.translate(p, offset[0], offset[1]) for p in polys]))
-    weave = weave[weave.element_id != &#34;-&#34;]
-    weave.geometry = tiling_utils.clean_polygon(weave.geometry)
-    weave = weave.dissolve(by = &#34;element_id&#34;, as_index = False)
-    weave = weave.explode(index_parts = False, ignore_index = True)
-    weave.geometry = tiling_utils.clean_polygon(weave.geometry)
-    return weave.set_crs(self.crs)</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.weave_unit.WeaveUnit.make_shapes_from_coded_weave_matrix"><code class="name flex">
-<span>def <span class="ident">make_shapes_from_coded_weave_matrix</span></span>(<span>self, loom: weavingspace._loom.Loom, strand_labels: list[list[str]] = [['a'], ['b'], ['c']]) ‑> None</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>loom</code></strong> :&ensp;<code>Loom</code></dt>
-<dd>matrix or stack of matrices representing the weave
-pattern.</dd>
-<dt><strong><code>strand_labels</code></strong> :&ensp;<code>list[list[str]]</code>, optional</dt>
-<dd>list of lists of labels
-for strands in each direction. Defaults to [["a"], ["b"], ["c"]]</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def make_shapes_from_coded_weave_matrix(self, loom:Loom, 
-        strand_labels:list[list[str]] = [[&#34;a&#34;], [&#34;b&#34;], [&#34;c&#34;]]) -&gt; None:
-    &#34;&#34;&#34;Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
-
-    Args:
-        loom (Loom): matrix or stack of matrices representing the weave 
-            pattern.
-        strand_labels (list[list[str]], optional): list of lists of labels
-            for strands in each direction. Defaults to [[&#34;a&#34;], [&#34;b&#34;], [&#34;c&#34;]]
-    &#34;&#34;&#34;  
-    grid = WeaveGrid(loom.n_axes, loom.orientations, self.spacing)
-    # expand the list of strand labels if needed in each direction
-    labels = []
-    for dim, thread in zip(loom.dimensions, strand_labels):
-        labels.append(thread * int(np.ceil(dim // len(thread))))
-    weave_polys, cells, strand_ids = [], [], []
-    for coords, strand_order in zip(loom.indices, loom.orderings):
-        ids = [thread[coord] for coord, thread in zip(coords, labels)]
-        cells.append(grid.get_grid_cell_at(coords))
-        if strand_order is None: continue  # No strands present
-        if strand_order == &#34;NA&#34;: continue  # Inconsistency in layer order
-        n_slices = [len(id) for id in ids]
-        next_polys = grid.get_visible_cell_strands(
-            width = self.aspect, coords = coords,
-            strand_order = strand_order, n_slices = n_slices)
-        weave_polys.extend(next_polys)
-        next_labels = [list(ids[i]) for i in strand_order]  # list of lists
-        next_labels = list(itertools.chain(*next_labels))  # flatten 
-        strand_ids.extend(next_labels)
-    approx_tile = shapely.ops.unary_union(cells)
-    tile = grid.get_tile_from_cells(approx_tile)
-    atc = approx_tile.centroid
-    shift = (-atc.x, -atc.y)
-    self.elements = self.get_weave_elements_gdf(
-        weave_polys, strand_ids, tile, shift)
-    self.tile = gpd.GeoDataFrame(
-        geometry = gpd.GeoSeries([tile]), crs = self.crs)
-    return None</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.weave_unit.WeaveUnit.setup_biaxial_weave_unit"><code class="name flex">
-<span>def <span class="ident">setup_biaxial_weave_unit</span></span>(<span>self, **kwargs) ‑> None</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>weave_type</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>one of "plain", "twill", "basket" or
-"this". Defaults to "twill".</dd>
-<dt><strong><code>n</code></strong> :&ensp;<code>Union[int,tuple[int]]</code>, optional</dt>
-<dd>over under pattern. See
-make_over_under_row() for details. Defaults to 2.</dd>
-<dt><strong><code>aspect</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd>width of strands relative to the spacing.
-Defaults to 1.</dd>
-<dt><strong><code>strands</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>specification of strand labels. See
-weaving_space_utils.get_strand_ids() for details.
-Defaults to "ab|cd".</dd>
-<dt><strong><code>tie_up</code></strong> :&ensp;<code>np.ndarray</code>, optional</dt>
-<dd>a weave pattern matrix to pass thru
-in the "this" case. Defaults to make_twill_matrix((2, 2)).</dd>
-<dt><strong><code>tr</code></strong> :&ensp;<code>np.ndarray</code>, optional</dt>
-<dd>treadling matrix for the "this"
-case. Defaults to None.</dd>
-<dt><strong><code>th</code></strong> :&ensp;<code>np.ndarray</code>, optional</dt>
-<dd>threading matrix for the "this"
-case. Defaults to None.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def setup_biaxial_weave_unit(self, **kwargs) -&gt; None:
-    &#34;&#34;&#34;Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
-
-    Args:
-        weave_type (str, optional): one of &#34;plain&#34;, &#34;twill&#34;, &#34;basket&#34; or
-            &#34;this&#34;. Defaults to &#34;twill&#34;.
-        n (Union[int,tuple[int]], optional): over under pattern. See 
-            make_over_under_row() for details. Defaults to 2.
-        aspect (float, optional): width of strands relative to the spacing. 
-            Defaults to 1.
-        strands (str, optional): specification of strand labels. See 
-            weaving_space_utils.get_strand_ids() for details. 
-            Defaults to &#34;ab|cd&#34;.
-        tie_up (np.ndarray, optional): a weave pattern matrix to pass thru
-            in the &#34;this&#34; case. Defaults to make_twill_matrix((2, 2)).
-        tr (np.ndarray, optional): treadling matrix for the &#34;this&#34; 
-            case. Defaults to None.
-        th (np.ndarray, optional): threading matrix for the &#34;this&#34; 
-            case. Defaults to None.
-    &#34;&#34;&#34;    
-    warp_threads, weft_threads, _ = \
-        tiling_utils.get_strand_ids(self.strands)
-    
-    if self.weave_type == &#34;basket&#34; and isinstance(self.n, (list, tuple)):
-        self.n = self.n[0]
-    
-    p = weave_matrices.get_weave_pattern_matrix(
-        weave_type = self.weave_type, n = self.n, warp = warp_threads,
-        weft = weft_threads, tie_up = self.tie_up, tr = self.tr, 
-        th = self.th)
-
-    self.make_shapes_from_coded_weave_matrix(
-        Loom(p), strand_labels = [weft_threads, warp_threads, []])</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.weave_unit.WeaveUnit.setup_tile_and_elements"><code class="name flex">
-<span>def <span class="ident">setup_tile_and_elements</span></span>(<span>self, **kwargs) ‑> None</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Returns dictionary with weave unit and tile GeoDataFrames</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>weave_type</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>the type of weave pattern, one of
-"plain",
-"twill", "basket", "this", "cube" or "hex". Defaults
-to "plain".</dd>
-<dt><strong><code>aspect</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd>width of strands relative to the spacing.
-Defaults to 1.</dd>
-<dt><strong><code>n</code></strong> :&ensp;<code>tuple</code> of <code>ints</code></dt>
-<dd>number of over-under strands in biaxial weaves.
-Only one item is required in a plain weave. Twill and basket
-patterns expect an even number of elements in the tuple.
-Defaults to (2, 2).</dd>
-<dt><strong><code>strands</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>specification of the strand labels
-along each axis. Defaults to "a|b|c".</dd>
-<dt><strong><code>tie_up</code></strong> :&ensp;<code>numpy.ndarray</code>, optional</dt>
-<dd>used when type is "this" to
-specify a desired weave pattern. See: Glassner A, 2002,
-“Digital weaving. 1” IEEE Computer Graphics and Applications 22
-(6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.</dd>
-<dt><strong><code>tr</code></strong> :&ensp;<code>numpy.ndarray</code>, optional</dt>
-<dd>used when type is "this" to specify
-the treadling matrix. See: Glassner 2002. Defaults to None.</dd>
-<dt><strong><code>th</code></strong> :&ensp;<code>numpy.ndarray</code>, optional</dt>
-<dd>used when type is "this" to specify
-the threading matrix. See: Glassner 2002. Defaults to None.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def setup_tile_and_elements(self, **kwargs) -&gt; None:
-    &#34;&#34;&#34;Returns dictionary with weave unit and tile GeoDataFrames
-    
-    Args:
-        weave_type (str, optional): the type of weave pattern, one of 
-            &#34;plain&#34;,  &#34;twill&#34;, &#34;basket&#34;, &#34;this&#34;, &#34;cube&#34; or &#34;hex&#34;. Defaults
-            to &#34;plain&#34;.
-        aspect (float, optional): width of strands relative to the spacing. 
-            Defaults to 1.
-        n (tuple of ints): number of over-under strands in biaxial weaves. 
-            Only one item is required in a plain weave. Twill and basket 
-            patterns expect an even number of elements in the tuple. 
-            Defaults to (2, 2).
-        strands (str, optional): specification of the strand labels 
-            along each axis. Defaults to &#34;a|b|c&#34;.
-        tie_up (numpy.ndarray, optional): used when type is &#34;this&#34; to
-            specify a desired weave pattern. See: Glassner A, 2002, 
-            “Digital weaving. 1” IEEE Computer Graphics and Applications 22
-            (6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
-        tr (numpy.ndarray, optional): used when type is &#34;this&#34; to specify 
-            the treadling matrix. See: Glassner 2002. Defaults to None.
-        th (numpy.ndarray, optional): used when type is &#34;this&#34; to specify
-            the threading matrix. See: Glassner 2002. Defaults to None.
-    &#34;&#34;&#34;
-    self._parameter_info()
-
-    if self.weave_type in (&#34;hex&#34;, &#34;cube&#34;):
-        self.setup_triaxial_weave_unit(**kwargs)
-        self.tile_shape = TileShape.HEXAGON
-    else:
-        self.setup_biaxial_weave_unit(**kwargs)
-        self.tile_shape = TileShape.RECTANGLE
-    return</code></pre>
-</details>
-</dd>
-<dt id="weavingspace.weave_unit.WeaveUnit.setup_triaxial_weave_unit"><code class="name flex">
-<span>def <span class="ident">setup_triaxial_weave_unit</span></span>(<span>self, **kwargs) ‑> None</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>aspect</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd>width of strands relative to spacing.
-<br>
-Defaults to 1.0.</dd>
-<dt><strong><code>strands</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>specification of strand labels. See
-weaving_space_utils.get_strand_ids() for details.
-Defaults to "a|b|c".</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def setup_triaxial_weave_unit(self, **kwargs) -&gt; None:
-    &#34;&#34;&#34;Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
-
-    Args:
-        aspect (float, optional): width of strands relative to spacing.     
-            Defaults to 1.0.
-        strands (str, optional): specification of strand labels. See 
-            weaving_space_utils.get_strand_ids() for details. 
-            Defaults to &#34;a|b|c&#34;.
-    &#34;&#34;&#34;    
-    strands_1, strands_2, strands_3 = \
-        tiling_utils.get_strand_ids(self.strands)
-    
-    loom = self.get_triaxial_weave_matrices(
-        strands_1 = strands_1, strands_2 = strands_2, strands_3 = strands_3)
-    
-    self.make_shapes_from_coded_weave_matrix(
-        loom, strand_labels = [strands_1, strands_2, strands_3])</code></pre>
-</details>
 </dd>
 </dl>
 <h3>Inherited members</h3>
@@ -1351,18 +908,8 @@ Defaults to "a|b|c".</dd>
 <h4><code><a title="weavingspace.weave_unit.WeaveUnit" href="#weavingspace.weave_unit.WeaveUnit">WeaveUnit</a></code></h4>
 <ul class="">
 <li><code><a title="weavingspace.weave_unit.WeaveUnit.aspect" href="#weavingspace.weave_unit.WeaveUnit.aspect">aspect</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.get_axis_from_label" href="#weavingspace.weave_unit.WeaveUnit.get_axis_from_label">get_axis_from_label</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.get_triaxial_weave_matrices" href="#weavingspace.weave_unit.WeaveUnit.get_triaxial_weave_matrices">get_triaxial_weave_matrices</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.get_weave_elements_gdf" href="#weavingspace.weave_unit.WeaveUnit.get_weave_elements_gdf">get_weave_elements_gdf</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.make_shapes_from_coded_weave_matrix" href="#weavingspace.weave_unit.WeaveUnit.make_shapes_from_coded_weave_matrix">make_shapes_from_coded_weave_matrix</a></code></li>
 <li><code><a title="weavingspace.weave_unit.WeaveUnit.n" href="#weavingspace.weave_unit.WeaveUnit.n">n</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.setup_biaxial_weave_unit" href="#weavingspace.weave_unit.WeaveUnit.setup_biaxial_weave_unit">setup_biaxial_weave_unit</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.setup_tile_and_elements" href="#weavingspace.weave_unit.WeaveUnit.setup_tile_and_elements">setup_tile_and_elements</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.setup_triaxial_weave_unit" href="#weavingspace.weave_unit.WeaveUnit.setup_triaxial_weave_unit">setup_triaxial_weave_unit</a></code></li>
 <li><code><a title="weavingspace.weave_unit.WeaveUnit.strands" href="#weavingspace.weave_unit.WeaveUnit.strands">strands</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.th" href="#weavingspace.weave_unit.WeaveUnit.th">th</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.tie_up" href="#weavingspace.weave_unit.WeaveUnit.tie_up">tie_up</a></code></li>
-<li><code><a title="weavingspace.weave_unit.WeaveUnit.tr" href="#weavingspace.weave_unit.WeaveUnit.tr">tr</a></code></li>
 <li><code><a title="weavingspace.weave_unit.WeaveUnit.weave_type" href="#weavingspace.weave_unit.WeaveUnit.weave_type">weave_type</a></code></li>
 </ul>
 </li>
