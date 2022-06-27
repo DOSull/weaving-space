@@ -22,6 +22,9 @@ import shapely.affinity as affine
 import shapely.wkt as wkt
 import shapely.ops
 
+# this causes a circular import error and is only needed for typing
+# from weavingspace.tile_unit import TileUnit
+
 
 def _parse_strand_label(s:str) -> list[str]:
     """Breaks a strand label specifiction in to a list of labels
@@ -110,6 +113,10 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
     return geom.Polygon(corners)
 
 
+def is_convex(poly:geom.Polygon) -> bool:
+    return isclose(poly.area, poly.convex_hull.area)
+
+
 def incentre(poly:geom.Polygon) -> geom.Point:
     """A different polygon centre, which produces better results for some
     of the dual tilings where polygons are not regular... see
@@ -121,12 +128,19 @@ def incentre(poly:geom.Polygon) -> geom.Point:
     guaranteed to work on all polygons.
     
     Given that the polygon is tangential, the radius of the inscribed circle is 
-    2 x Area / Perimeter. We apply this buffer to every edge of the polygon and 
-    then find their intersection to determine the centre of the circle, which
-    is the incentre of the polygon. NOTE: there is some error here as the object
-    whose centroid is taken at the end of the algorithm is a much reduced copy 
-    of the original polygon, the centroid of which is not its incentre! But the
-    error involved is on the order <<1e-9.
+    the [apothem of the polygon](https://en.wikipedia.org/wiki/Apothem) given 
+    by 2 x Area / Perimeter. We apply a parallel offset of this size to two 
+    sides of the polygon and find their intersection to determine the centre of 
+    the circle, givng the incentre of the polygon.
+    
+    It is possible that intersecting two angle bisectors of the polygon would 
+    also work, but it is unclear if this is an equivalent construction (more
+    reading required...) 
+    
+    NOTE: there is some error here as the polygon whose centroid is taken at 
+    the end of the algorithm is a much reduced copy of the original polygon, 
+    the centroid of which is not its incentre! But the error involved is on the 
+    order <<1e-9.
 
     Args:
         poly (geom.Polygon): the polygon.
@@ -134,6 +148,7 @@ def incentre(poly:geom.Polygon) -> geom.Point:
     Returns:
         geom.Point: the incentre of the polygon.
     """
+    poly = ensure_ccw(poly)
     corners = [geom.Point(p[0], p[1]) 
                for p in list(poly.exterior.coords)]
     c = poly.centroid
@@ -142,25 +157,53 @@ def incentre(poly:geom.Polygon) -> geom.Point:
     if all([isclose(pt.distance(c), d0) for pt in corners[1:-1]]):
         return c
     else:  # find the incentre
-        edges = [geom.LineString([p, q]) 
-                 for p, q in zip(corners[:-1], corners[1:])]
-        perimeter = fsum([e.length for e in edges])
-        r = 2 * poly.area / perimeter
-        edge_buffers = [e.buffer(r + 1e-9, cap_style = 2) for e in edges]
-        x = edge_buffers[0].intersection(edge_buffers[1])
-        for b in edge_buffers[1:]:
-            x = x.intersection(b)
-        return x.centroid
+        r = get_apothem(poly)
+        # NOTE: for some reason a simple negative buffer here does not work
+        e1 = geom.LineString(corners[:2]).parallel_offset(r, side = "left")
+        e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = "left")
+        return e1.intersection(e2)  # TODO: add exception if no intersection
 
-    # lengths = [p.distance(q) 
-    #            for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
-    # lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
-    # perimeter = fsum(lengths)
-    # incentre = [0, 0]
-    # for p, l in zip(corners[:-1], lengths):
-    #     incentre[0] = incentre[0] + p.x * l / perimeter
-    #     incentre[1] = incentre[1] + p.y * l / perimeter
-    
+        # b1 = get_angle_bisector(poly, 0)
+        # b2 = get_angle_bisector(poly, 1)
+        # return b1.intersection(b2)
+
+        # edges = [geom.LineString([p, q]) 
+        #          for p, q in zip(corners[:-1], corners[1:])][:2]
+        # # add a small epsilon to the buffer to ensure intersections
+        # edge_buffers = [e.buffer(r + 1e-9, cap_style = 2) for e in edges]
+        # x = edge_buffers[0].intersection(edge_buffers[1])
+        # for b in edge_buffers[1:]:
+        #     x = x.intersection(b)
+        # return x.centroid
+
+
+def get_apothem(poly:geom.Polygon) -> float:
+    return 2 * poly.area / geom.LineString(poly.exterior.coords).length
+
+
+def ensure_ccw(poly:geom.Polygon) -> geom.Polygon:
+    if not geom.LinearRing(poly.exterior.coords).is_ccw:
+        return geom.Polygon(list(reversed(poly.exterior.coords))[:-1])
+    else:
+        return poly
+
+
+def get_angle_bisector(poly:geom.Polygon, v = 0) -> geom.LineString:
+    pts = [geom.Point(p) for p in poly.exterior.coords][:-1]
+    n = len(pts)
+    p0 = pts[v % n]
+    p1 = pts[(v + 1) % n]
+    p2 = pts[(v - 1) % n]
+    d01 = p0.distance(p1)
+    d02 = p0.distance(p2)
+    if d01 < d02:
+        p2 = geom.LineString([p0, p2]).interpolate(d01)
+    else:
+        p1 = geom.LineString([p0, p1]).interpolate(d02)    
+    m = geom.Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
+    # we have to scale this to much larger in case of an angle near 180
+    return affine.scale(geom.LineString([p0, m]), 100, 100, origin = p0)
+
 
 def _get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
     """Returns points not on the outer boundary of the supplied set 
@@ -346,6 +389,8 @@ def get_collapse_distance(geometry:geom.Polygon) -> float:
     Returns:
         float: its collapse distance.
     """
+    if is_convex(geometry):
+        return get_apothem(geometry)
     radius = np.sqrt(geometry.area / np.pi)
     lower = 0
     upper = radius

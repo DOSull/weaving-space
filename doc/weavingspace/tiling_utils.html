@@ -55,6 +55,9 @@ import shapely.affinity as affine
 import shapely.wkt as wkt
 import shapely.ops
 
+# this causes a circular import error and is only needed for typing
+# from weavingspace.tile_unit import TileUnit
+
 
 def _parse_strand_label(s:str) -&gt; list[str]:
     &#34;&#34;&#34;Breaks a strand label specifiction in to a list of labels
@@ -143,6 +146,10 @@ def get_regular_polygon(spacing, n:int) -&gt; geom.Polygon:
     return geom.Polygon(corners)
 
 
+def is_convex(poly:geom.Polygon) -&gt; bool:
+    return isclose(poly.area, poly.convex_hull.area)
+
+
 def incentre(poly:geom.Polygon) -&gt; geom.Point:
     &#34;&#34;&#34;A different polygon centre, which produces better results for some
     of the dual tilings where polygons are not regular... see
@@ -154,12 +161,19 @@ def incentre(poly:geom.Polygon) -&gt; geom.Point:
     guaranteed to work on all polygons.
     
     Given that the polygon is tangential, the radius of the inscribed circle is 
-    2 x Area / Perimeter. We apply this buffer to every edge of the polygon and 
-    then find their intersection to determine the centre of the circle, which
-    is the incentre of the polygon. NOTE: there is some error here as the object
-    whose centroid is taken at the end of the algorithm is a much reduced copy 
-    of the original polygon, the centroid of which is not its incentre! But the
-    error involved is on the order &lt;&lt;1e-9.
+    the [apothem of the polygon](https://en.wikipedia.org/wiki/Apothem) given 
+    by 2 x Area / Perimeter. We apply a parallel offset of this size to two 
+    sides of the polygon and find their intersection to determine the centre of 
+    the circle, givng the incentre of the polygon.
+    
+    It is possible that intersecting two angle bisectors of the polygon would 
+    also work, but it is unclear if this is an equivalent construction (more
+    reading required...) 
+    
+    NOTE: there is some error here as the polygon whose centroid is taken at 
+    the end of the algorithm is a much reduced copy of the original polygon, 
+    the centroid of which is not its incentre! But the error involved is on the 
+    order &lt;&lt;1e-9.
 
     Args:
         poly (geom.Polygon): the polygon.
@@ -167,6 +181,7 @@ def incentre(poly:geom.Polygon) -&gt; geom.Point:
     Returns:
         geom.Point: the incentre of the polygon.
     &#34;&#34;&#34;
+    poly = ensure_ccw(poly)
     corners = [geom.Point(p[0], p[1]) 
                for p in list(poly.exterior.coords)]
     c = poly.centroid
@@ -175,25 +190,53 @@ def incentre(poly:geom.Polygon) -&gt; geom.Point:
     if all([isclose(pt.distance(c), d0) for pt in corners[1:-1]]):
         return c
     else:  # find the incentre
-        edges = [geom.LineString([p, q]) 
-                 for p, q in zip(corners[:-1], corners[1:])]
-        perimeter = fsum([e.length for e in edges])
-        r = 2 * poly.area / perimeter
-        edge_buffers = [e.buffer(r + 1e-9, cap_style = 2) for e in edges]
-        x = edge_buffers[0].intersection(edge_buffers[1])
-        for b in edge_buffers[1:]:
-            x = x.intersection(b)
-        return x.centroid
+        r = get_apothem(poly)
+        # NOTE: for some reason a simple negative buffer here does not work
+        e1 = geom.LineString(corners[:2]).parallel_offset(r, side = &#34;left&#34;)
+        e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = &#34;left&#34;)
+        return e1.intersection(e2)  # TODO: add exception if no intersection
 
-    # lengths = [p.distance(q) 
-    #            for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
-    # lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
-    # perimeter = fsum(lengths)
-    # incentre = [0, 0]
-    # for p, l in zip(corners[:-1], lengths):
-    #     incentre[0] = incentre[0] + p.x * l / perimeter
-    #     incentre[1] = incentre[1] + p.y * l / perimeter
-    
+        # b1 = get_angle_bisector(poly, 0)
+        # b2 = get_angle_bisector(poly, 1)
+        # return b1.intersection(b2)
+
+        # edges = [geom.LineString([p, q]) 
+        #          for p, q in zip(corners[:-1], corners[1:])][:2]
+        # # add a small epsilon to the buffer to ensure intersections
+        # edge_buffers = [e.buffer(r + 1e-9, cap_style = 2) for e in edges]
+        # x = edge_buffers[0].intersection(edge_buffers[1])
+        # for b in edge_buffers[1:]:
+        #     x = x.intersection(b)
+        # return x.centroid
+
+
+def get_apothem(poly:geom.Polygon) -&gt; float:
+    return 2 * poly.area / geom.LineString(poly.exterior.coords).length
+
+
+def ensure_ccw(poly:geom.Polygon) -&gt; geom.Polygon:
+    if not geom.LinearRing(poly.exterior.coords).is_ccw:
+        return geom.Polygon(list(reversed(poly.exterior.coords))[:-1])
+    else:
+        return poly
+
+
+def get_angle_bisector(poly:geom.Polygon, v = 0) -&gt; geom.LineString:
+    pts = [geom.Point(p) for p in poly.exterior.coords][:-1]
+    n = len(pts)
+    p0 = pts[v % n]
+    p1 = pts[(v + 1) % n]
+    p2 = pts[(v - 1) % n]
+    d01 = p0.distance(p1)
+    d02 = p0.distance(p2)
+    if d01 &lt; d02:
+        p2 = geom.LineString([p0, p2]).interpolate(d01)
+    else:
+        p1 = geom.LineString([p0, p1]).interpolate(d02)    
+    m = geom.Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
+    # we have to scale this to much larger in case of an angle near 180
+    return affine.scale(geom.LineString([p0, m]), 100, 100, origin = p0)
+
 
 def _get_interior_vertices(polys:gpd.GeoDataFrame) -&gt; gpd.GeoSeries:
     &#34;&#34;&#34;Returns points not on the outer boundary of the supplied set 
@@ -379,6 +422,8 @@ def get_collapse_distance(geometry:geom.Polygon) -&gt; float:
     Returns:
         float: its collapse distance.
     &#34;&#34;&#34;
+    if is_convex(geometry):
+        return get_apothem(geometry)
     radius = np.sqrt(geometry.area / np.pi)
     lower = 0
     upper = radius
@@ -699,6 +744,61 @@ reverse. Defaults to True.</dd>
                 -res, resolution = 1, join_style = 2)</code></pre>
 </details>
 </dd>
+<dt id="weavingspace.tiling_utils.ensure_ccw"><code class="name flex">
+<span>def <span class="ident">ensure_ccw</span></span>(<span>poly: shapely.geometry.polygon.Polygon) ‑> shapely.geometry.polygon.Polygon</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ensure_ccw(poly:geom.Polygon) -&gt; geom.Polygon:
+    if not geom.LinearRing(poly.exterior.coords).is_ccw:
+        return geom.Polygon(list(reversed(poly.exterior.coords))[:-1])
+    else:
+        return poly</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_angle_bisector"><code class="name flex">
+<span>def <span class="ident">get_angle_bisector</span></span>(<span>poly: shapely.geometry.polygon.Polygon, v=0) ‑> shapely.geometry.linestring.LineString</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_angle_bisector(poly:geom.Polygon, v = 0) -&gt; geom.LineString:
+    pts = [geom.Point(p) for p in poly.exterior.coords][:-1]
+    n = len(pts)
+    p0 = pts[v % n]
+    p1 = pts[(v + 1) % n]
+    p2 = pts[(v - 1) % n]
+    d01 = p0.distance(p1)
+    d02 = p0.distance(p2)
+    if d01 &lt; d02:
+        p2 = geom.LineString([p0, p2]).interpolate(d01)
+    else:
+        p1 = geom.LineString([p0, p1]).interpolate(d02)    
+    m = geom.Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
+    # we have to scale this to much larger in case of an angle near 180
+    return affine.scale(geom.LineString([p0, m]), 100, 100, origin = p0)</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.get_apothem"><code class="name flex">
+<span>def <span class="ident">get_apothem</span></span>(<span>poly: shapely.geometry.polygon.Polygon) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_apothem(poly:geom.Polygon) -&gt; float:
+    return 2 * poly.area / geom.LineString(poly.exterior.coords).length</code></pre>
+</details>
+</dd>
 <dt id="weavingspace.tiling_utils.get_boundaries"><code class="name flex">
 <span>def <span class="ident">get_boundaries</span></span>(<span>shapes: geopandas.geoseries.GeoSeries) ‑> geopandas.geoseries.GeoSeries</span>
 </code></dt>
@@ -824,6 +924,8 @@ the circle of equal area to the polygon, and 0.</p>
     Returns:
         float: its collapse distance.
     &#34;&#34;&#34;
+    if is_convex(geometry):
+        return get_apothem(geometry)
     radius = np.sqrt(geometry.area / np.pi)
     lower = 0
     upper = radius
@@ -1235,12 +1337,17 @@ inscribed circle to which all sides of the polygon are tangent. It will
 work on all the polygons encountered in the Laves tilings, but is not
 guaranteed to work on all polygons.</p>
 <p>Given that the polygon is tangential, the radius of the inscribed circle is
-2 x Area / Perimeter. We apply this buffer to every edge of the polygon and
-then find their intersection to determine the centre of the circle, which
-is the incentre of the polygon. NOTE: there is some error here as the object
-whose centroid is taken at the end of the algorithm is a much reduced copy
-of the original polygon, the centroid of which is not its incentre! But the
-error involved is on the order &lt;&lt;1e-9.</p>
+the <a href="https://en.wikipedia.org/wiki/Apothem">apothem of the polygon</a> given
+by 2 x Area / Perimeter. We apply a parallel offset of this size to two
+sides of the polygon and find their intersection to determine the centre of
+the circle, givng the incentre of the polygon.</p>
+<p>It is possible that intersecting two angle bisectors of the polygon would
+also work, but it is unclear if this is an equivalent construction (more
+reading required&hellip;) </p>
+<p>NOTE: there is some error here as the polygon whose centroid is taken at
+the end of the algorithm is a much reduced copy of the original polygon,
+the centroid of which is not its incentre! But the error involved is on the
+order &lt;&lt;1e-9.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>poly</code></strong> :&ensp;<code>geom.Polygon</code></dt>
@@ -1266,12 +1373,19 @@ error involved is on the order &lt;&lt;1e-9.</p>
     guaranteed to work on all polygons.
     
     Given that the polygon is tangential, the radius of the inscribed circle is 
-    2 x Area / Perimeter. We apply this buffer to every edge of the polygon and 
-    then find their intersection to determine the centre of the circle, which
-    is the incentre of the polygon. NOTE: there is some error here as the object
-    whose centroid is taken at the end of the algorithm is a much reduced copy 
-    of the original polygon, the centroid of which is not its incentre! But the
-    error involved is on the order &lt;&lt;1e-9.
+    the [apothem of the polygon](https://en.wikipedia.org/wiki/Apothem) given 
+    by 2 x Area / Perimeter. We apply a parallel offset of this size to two 
+    sides of the polygon and find their intersection to determine the centre of 
+    the circle, givng the incentre of the polygon.
+    
+    It is possible that intersecting two angle bisectors of the polygon would 
+    also work, but it is unclear if this is an equivalent construction (more
+    reading required...) 
+    
+    NOTE: there is some error here as the polygon whose centroid is taken at 
+    the end of the algorithm is a much reduced copy of the original polygon, 
+    the centroid of which is not its incentre! But the error involved is on the 
+    order &lt;&lt;1e-9.
 
     Args:
         poly (geom.Polygon): the polygon.
@@ -1279,6 +1393,7 @@ error involved is on the order &lt;&lt;1e-9.</p>
     Returns:
         geom.Point: the incentre of the polygon.
     &#34;&#34;&#34;
+    poly = ensure_ccw(poly)
     corners = [geom.Point(p[0], p[1]) 
                for p in list(poly.exterior.coords)]
     c = poly.centroid
@@ -1287,24 +1402,37 @@ error involved is on the order &lt;&lt;1e-9.</p>
     if all([isclose(pt.distance(c), d0) for pt in corners[1:-1]]):
         return c
     else:  # find the incentre
-        edges = [geom.LineString([p, q]) 
-                 for p, q in zip(corners[:-1], corners[1:])]
-        perimeter = fsum([e.length for e in edges])
-        r = 2 * poly.area / perimeter
-        edge_buffers = [e.buffer(r + 1e-9, cap_style = 2) for e in edges]
-        x = edge_buffers[0].intersection(edge_buffers[1])
-        for b in edge_buffers[1:]:
-            x = x.intersection(b)
-        return x.centroid
+        r = get_apothem(poly)
+        # NOTE: for some reason a simple negative buffer here does not work
+        e1 = geom.LineString(corners[:2]).parallel_offset(r, side = &#34;left&#34;)
+        e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = &#34;left&#34;)
+        return e1.intersection(e2)  # TODO: add exception if no intersection
 
-    # lengths = [p.distance(q) 
-    #            for p, q in zip(corners[:-1], corners[1:])]  # AB, BC, CA
-    # lengths = lengths[1:] + lengths[:1]  # BC, CA, AB 
-    # perimeter = fsum(lengths)
-    # incentre = [0, 0]
-    # for p, l in zip(corners[:-1], lengths):
-    #     incentre[0] = incentre[0] + p.x * l / perimeter
-    #     incentre[1] = incentre[1] + p.y * l / perimeter</code></pre>
+        # b1 = get_angle_bisector(poly, 0)
+        # b2 = get_angle_bisector(poly, 1)
+        # return b1.intersection(b2)
+
+        # edges = [geom.LineString([p, q]) 
+        #          for p, q in zip(corners[:-1], corners[1:])][:2]
+        # # add a small epsilon to the buffer to ensure intersections
+        # edge_buffers = [e.buffer(r + 1e-9, cap_style = 2) for e in edges]
+        # x = edge_buffers[0].intersection(edge_buffers[1])
+        # for b in edge_buffers[1:]:
+        #     x = x.intersection(b)
+        # return x.centroid</code></pre>
+</details>
+</dd>
+<dt id="weavingspace.tiling_utils.is_convex"><code class="name flex">
+<span>def <span class="ident">is_convex</span></span>(<span>poly: shapely.geometry.polygon.Polygon) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_convex(poly:geom.Polygon) -&gt; bool:
+    return isclose(poly.area, poly.convex_hull.area)</code></pre>
 </details>
 </dd>
 <dt id="weavingspace.tiling_utils.relabel"><code class="name flex">
@@ -1547,6 +1675,9 @@ output file into layers. Defaults to "element_id".</dd>
 <ul class="">
 <li><code><a title="weavingspace.tiling_utils.centre_offset" href="#weavingspace.tiling_utils.centre_offset">centre_offset</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.clean_polygon" href="#weavingspace.tiling_utils.clean_polygon">clean_polygon</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.ensure_ccw" href="#weavingspace.tiling_utils.ensure_ccw">ensure_ccw</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_angle_bisector" href="#weavingspace.tiling_utils.get_angle_bisector">get_angle_bisector</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.get_apothem" href="#weavingspace.tiling_utils.get_apothem">get_apothem</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.get_boundaries" href="#weavingspace.tiling_utils.get_boundaries">get_boundaries</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.get_bounding_ellipse" href="#weavingspace.tiling_utils.get_bounding_ellipse">get_bounding_ellipse</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.get_collapse_distance" href="#weavingspace.tiling_utils.get_collapse_distance">get_collapse_distance</a></code></li>
@@ -1558,6 +1689,7 @@ output file into layers. Defaults to "element_id".</dd>
 <li><code><a title="weavingspace.tiling_utils.get_width_height_left_bottom" href="#weavingspace.tiling_utils.get_width_height_left_bottom">get_width_height_left_bottom</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.gridify" href="#weavingspace.tiling_utils.gridify">gridify</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.incentre" href="#weavingspace.tiling_utils.incentre">incentre</a></code></li>
+<li><code><a title="weavingspace.tiling_utils.is_convex" href="#weavingspace.tiling_utils.is_convex">is_convex</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.relabel" href="#weavingspace.tiling_utils.relabel">relabel</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.safe_union" href="#weavingspace.tiling_utils.safe_union">safe_union</a></code></li>
 <li><code><a title="weavingspace.tiling_utils.sort_ccw" href="#weavingspace.tiling_utils.sort_ccw">sort_ccw</a></code></li>

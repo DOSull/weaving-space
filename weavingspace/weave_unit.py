@@ -255,7 +255,7 @@ class WeaveUnit(Tileable):
         atc = approx_tile.centroid
         shift = (-atc.x, -atc.y)
         self.elements = self._get_weave_elements_gdf(
-            weave_polys, strand_ids, tile, shift)
+            weave_polys, strand_ids, shift)
         self.tile = gpd.GeoDataFrame(
             geometry = gpd.GeoSeries([tile]), crs = self.crs)
         return None
