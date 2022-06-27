@@ -56,6 +56,7 @@ import matplotlib.colors
 import matplotlib.pyplot as pyplot
 
 import shapely.geometry as geom
+import shapely.affinity as affine
 
 from weavingspace.tileable import Tileable
 from weavingspace.tileable import TileShape
@@ -65,181 +66,121 @@ import weavingspace.tiling_utils as tiling_utils
 
 
 @dataclass
-class _TileGrid:
+class _TileGrid():
     &#34;&#34;&#34;A class to represent the translation centres of a tiling.
     
-    Note that we store the grid as a GeoSeries of Point objects to make it
+    We store the grid as a GeoSeries of Point objects to make it
     simple to plot it in map views if required.
+    
+    Implementation relies on transforming the translation vectors into a square
+    space where the tile spacing is unit squares, then transforming this back 
+    into the original map space. Some member variables of the class are in 
+    the transformed grid generation space, some in the map space.
 
     Args:
-        tile (gpd.GeoSeries): the geometry of the base tile.
-        to_tile (gpd.GeoSeries): the geometry of the region to be tiled.
-        grid_type (TileShape): the type of tiling grid, RECTANGLE, 
-            HEXAGON or DIAMOND.
-        extent (gpd.GeoSeries): geometry of the (circular) extent of the tiling.
-        centre (tuple[float]): centre point of the extent.
-        points (gpd.GeoSeries): shapely.geometry.Points recording the
-            translation vectors of the grid.
+        tile (TileUnit): the base tile in map space.
+        to_tile (gpd.GeoSeries): geometry of region to be tiled in map space.
+        transform (tuple[float]): the forward transformation from map space to
+            the grid generation space. Stored in shapely&#39;s (a, b, d, e, dx, dy)
+            format.
+        inverse_transform (tuple[float]): the inverse transformation from
+            grid generation space to map space. Stored in shapely&#39;s (a, b, d, 
+            e, dx, dy) format.
+        centre (tuple[float]): centre point of the extent in map space.
+        points (gpd.GeoSeries): shapely.geometry.Points recording translation 
+            vectors of the tiling in map space.
+        _extent (gpd.GeoSeries): geometry of the (circular) extent of the   
+            tiling transformed to grid generation space.
     &#34;&#34;&#34;
-    tile:gpd.GeoSeries = None
+    tile:TileUnit = None
     to_tile:gpd.GeoSeries = None
-    grid_type:TileShape = None
-    extent:gpd.GeoSeries = None
+    transform:tuple[float] = None
+    inverse_transform:tuple[float] = None
     centre:tuple[float] = None
     points:gpd.GeoSeries = None
+    _extent:gpd.GeoSeries = None
     
-    def __init__(self, tile:gpd.GeoSeries, to_tile:gpd.GeoSeries, 
-                 grid_type:TileShape = TileShape.RECTANGLE) -&gt; None:
-        &#34;&#34;&#34;Class constructor.
-
-        Args:
-            tile (gpd.GeoSeries): geometry of the tiling base tile.
-            to_tile (gpd.GeoSeries): geometry of the region to be tiled.
-            grid_type (TileShape, optional): the type of the tiling in terms of
-                the TileShape of the base tile. Defaults to 
-                `TileShape.RECTANGLE`.
-        &#34;&#34;&#34;
-        self.grid_type = grid_type
+    def __init__(self, tile:TileUnit, to_tile:gpd.GeoSeries):
         self.tile = tile
         self.to_tile = tiling_utils.clean_polygon(
             gpd.GeoSeries([to_tile.unary_union]))
+        self.inverse_transform, self.transform = self.get_transforms()
         self.extent, self.centre = self._get_extent()
-        self.points = self._get_points()
-        
-    
+        self.points = self.get_grid()
+        self.points.crs = self.tile.crs
+
+
     def _get_extent(self) -&gt; tuple[gpd.GeoSeries, geom.Point]:
         &#34;&#34;&#34;Returns the extent and centre of the grid.
+        
+        Extent is in the grid-generation space.
 
         Returns:
             tuple[gpd.GeoSeries, geom.Point]: the extent of the grid and its 
                 centre.
         &#34;&#34;&#34;
-        mrr = self.to_tile.geometry[0].minimum_rotated_rectangle
+        mrr = self.to_tile[0].minimum_rotated_rectangle
         mrr_centre = geom.Point(mrr.centroid.coords[0])
         mrr_corner = geom.Point(mrr.exterior.coords[0])
         radius = mrr_centre.distance(mrr_corner)
-        return gpd.GeoSeries([mrr_centre.buffer(radius)]), mrr_centre
-    
+        ext = affine.affine_transform(mrr_centre.buffer(radius), 
+                                      self.transform)
+        return gpd.GeoSeries([ext]), (mrr_centre.x, mrr_centre.y)
+
+
+    def get_transforms(self) -&gt; tuple[float]:
+        &#34;&#34;&#34;Returns the forward and inverse transforms from map space to
+        grid generation space.
         
-    def _get_points(self) -&gt; gpd.GeoSeries:
-        &#34;&#34;&#34;Returns the translation vectors of the grid as GeoSeries of Point
-        geometries.
+        In grid generation space the translation vectors are (1, 0) and (0, 1)
+        so we can simply form a matrix from two translation vectors and invert
+        it to get the forward transform. The inverse transform is the matrix
+        formed from the vectors.
 
         Returns:
-            gpd.GeoSeries: GeoSeries of shapely.geometry.Point objects, whose 
-                coordinates are the translation vectors of the grid.
+            tuple[float]: shapely affine transform tuples (a, b, d, e, dx, dy).
+                See https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations for details.
         &#34;&#34;&#34;
-        if self.grid_type in (TileShape.RECTANGLE, ):
-            pts = self._get_rect_centres()
-        elif self.grid_type in (TileShape.HEXAGON, ):
-            pts = self._get_hex_centres()
-        elif self.grid_type in (TileShape.DIAMOND, ):
-            pts = self._get_diamond_centres()
-        pts = [geom.Point(p[0], p[1]) for p in pts]
-        return gpd.GeoSeries([p for p in pts if p.within(self.extent[0])])
-    
+        v = self.tile.get_vectors()
+        vector_array = np.array([[v[0][0], v[1][0]], 
+                                 [v[0][1], v[1][1]]])
+        inv_tfm = np.linalg.inv(vector_array)
+        return (self._np_to_shapely_transform(vector_array), 
+                self._np_to_shapely_transform(inv_tfm))
+
+
+    def get_grid(self) -&gt; gpd.GeoSeries:
+        &#34;&#34;&#34;Generates the grid transformed into map space
         
-    def _get_grid(self, ll: tuple[float], nums: tuple[int], 
-                  dim: tuple[float]) -&gt; np.ndarray:
-        &#34;&#34;&#34;Returns rectilinear grid of x,y coordinate pairs.
+        Obtain dimensions of the transformed region, then set down a uniform 
+        grid.
+        
+        Returns:
+            gpd.GeoSeries: the grid as a collection of geom.Points.
+        &#34;&#34;&#34;
+        _w, _h, _l, _b = tiling_utils.get_width_height_left_bottom(self.extent)
+        w = int(np.ceil(_w))
+        h = int(np.ceil(_h))
+        l = _l - (w - _w) / 2
+        b = _b - (h - _h) / 2
+        mesh = np.array(np.meshgrid(np.arange(w) + l,
+                                    np.arange(h) + b)).reshape((2, w * h)).T
+        pts = [geom.Point(p[0], p[1]) for p in mesh]
+        return gpd.GeoSeries([p for p in pts 
+                              if p.within(self.extent[0])]).affine_transform(
+                                  self.inverse_transform)
+
+
+    def _np_to_shapely_transform(self, mat:np.ndarray) -&gt; tuple[float]:
+        &#34;&#34;&#34;Converts a numpy affine transform matrix to shapely format.
 
         Args:
-            ll (tuple[float]): lower left corner coordinates of the grid as 
-                (x, y). 
-            nums (tuple[int]): grid extent as (number of columns, number 
-                of rows).
-            tdim (tuple[float]): grid resolution as (column width, column 
-                height)
+            mat (np.ndarray): numpy array to convert.
 
         Returns:
-            np.ndarray: a matrix of nums[0] * nums[1] rows and 2 columns, 
-                each row
-            containing an x, y coordinate pair.
-        &#34;&#34;&#34;    
-        return np.array(np.meshgrid(np.arange(nums[0]) * dim[0] + ll[0],
-                                    np.arange(nums[1]) * dim[1] + ll[1])
-                        ).reshape(2, nums[0] * nums[1]).transpose()
-        
-
-    def _get_rect_centres(self) -&gt; np.ndarray:
-        &#34;&#34;&#34;Returns a grid of translation vectors for a rectangular tiling.
-
-        Returns:
-            np.ndarray: A 2 column array each row being an x, y translation
-                vector.
-        &#34;&#34;&#34;    
-        tt_w, tt_h, tt_x0, tt_y0 = \
-            tiling_utils.get_width_height_left_bottom(self.extent)
-        tile_w, tile_h, tile_x0, tile_y0 = \
-            tiling_utils.get_width_height_left_bottom(self.tile)
-        # number of tiles in each direction
-        nx = int(np.ceil(tt_w / tile_w))
-        ny = int(np.ceil(tt_h / tile_h))
-        grid_w, grid_h = nx * tile_w, ny * tile_h
-        margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
-        x0 = tt_x0 + margin_w / 2
-        y0 = tt_y0 + margin_h / 2
-        return self._get_grid((x0, y0), (nx + 1, ny + 1), (tile_w, tile_h))
-
-
-    def _get_hex_centres(self) -&gt; np.ndarray:
-        &#34;&#34;&#34;Returns a grid of translation vectors for a hexagonal tiling.
-        
-        This is implemented by making two appropriately scaled and offset
-        rectangular grids.
-        
-        Returns:
-            np.ndarray: A 2 column array each row being an x, y translation
-                vector.
-        &#34;&#34;&#34;    
-        tt_w, tt_h, tt_x0, tt_y0  = \
-            tiling_utils.get_width_height_left_bottom(self.extent)
-        tile_w, tile_h, tile_x0, tile_y0 = \
-            tiling_utils.get_width_height_left_bottom(self.tile)
-        nx = int(np.ceil(tt_w / (tile_w * 3 / 2)))
-        ny = int(np.ceil(tt_h / tile_h))
-        # the effective width of two columns of hexagonal tiles is 3w/2
-        grid_w, grid_h = nx * tile_w * 3 / 2, ny * tile_h
-        margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
-        x0 = tt_x0 + margin_w / 2
-        y0 = tt_y0 + margin_h / 2
-        # get two offset rectangular grids and combine them
-        g1 = self._get_grid((x0, y0 + tile_h / 4), 
-                            (nx + 1, ny + 1), 
-                            (tile_w * 3 / 2, tile_h))
-        g2 = self._get_grid((x0 + tile_w * 3 / 4, y0 - tile_h / 4), 
-                            (nx, ny), 
-                            (tile_w * 3 / 2, tile_h))
-        return np.append(g1, g2).reshape((g1.shape[0] + g2.shape[0], 2))
-
-    
-    def _get_diamond_centres(self) -&gt; np.ndarray:
-        &#34;&#34;&#34;Reurns a grid of translation vectors for a diamond tiling.
-
-        This is implemented by making two appropriately scaled and offset
-        rectangular grids.
-        
-        Returns:
-            np.ndarray: A 2 column array each row being an x, y translation
-                vector.
+            tuple[float]: shapely affine transform tuple
         &#34;&#34;&#34;
-        tt_w, tt_h, tt_x0, tt_y0 = \
-            tiling_utils.get_width_height_left_bottom(self.extent)
-        tile_w, tile_h, tile_x0, tile_y0 = \
-            tiling_utils.get_width_height_left_bottom(self.tile)
-        nx = int(np.ceil(tt_w / tile_w))
-        ny = int(np.ceil(tt_h / tile_h))
-        grid_w, grid_h = nx * tile_w, ny * tile_h
-        margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
-        x0 = tt_x0 + margin_w / 2
-        y0 = tt_y0 + margin_h / 2
-        g1 = self._get_grid((x0, y0), 
-                            (nx + 1, ny + 1), 
-                            (tile_w, tile_h))
-        g2 = self._get_grid((x0 - tile_w / 2, y0 - tile_h / 2),
-                            (nx + 1, ny + 1), 
-                            (tile_w, tile_h))
-        return np.append(g1, g2).reshape(g1.shape[0] + g2.shape[0], 2)
+        return (mat[0][0], mat[0][1], mat[1][0], mat[1][1], 0, 0)
 
 
 @dataclass
@@ -255,6 +196,7 @@ class Tiling:
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
     grid:_TileGrid = None
+    # grid:old_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
@@ -288,7 +230,7 @@ class Tiling:
             elements_sf (float, optional): _description_. Defaults to 1.
             elements_margin (float, optional): _description_. Defaults to 0.
         &#34;&#34;&#34;
-        self.tile_shape = unit.tile_shape
+        # self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         if elements_margin &gt; 0:
             self.tile_unit = self.tile_unit.inset_elements(elements_margin) 
@@ -304,8 +246,9 @@ class Tiling:
                 print(f&#34;&#34;&#34;Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.&#34;&#34;&#34;)        
         self.region = region
         self.region_id_var = (&#34;ID&#34; if id_var is None else id_var)
-        self.grid = _TileGrid(self.tile_unit.tile.geometry,
-                             self.region.geometry, self.tile_shape)
+        self.grid = _TileGrid(self.tile_unit, self.region.geometry)
+        # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
+        #                      self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
 
 
@@ -883,7 +826,185 @@ class TiledMap:
     def explore(self) -&gt; None:
         &#34;&#34;&#34;TODO: add wrapper to make tiled web map via geopandas.explore.
         &#34;&#34;&#34;
-        return None</code></pre>
+        return None
+
+
+# @dataclass
+# class old_TileGrid:
+#     &#34;&#34;&#34;A class to represent the translation centres of a tiling.
+    
+#     Note that we store the grid as a GeoSeries of Point objects to make it
+#     simple to plot it in map views if required.
+
+#     Args:
+#         tile (gpd.GeoSeries): the geometry of the base tile.
+#         to_tile (gpd.GeoSeries): the geometry of the region to be tiled.
+#         grid_type (TileShape): the type of tiling grid, RECTANGLE, 
+#             HEXAGON or DIAMOND.
+#         extent (gpd.GeoSeries): geometry of the (circular) extent of the tiling.
+#         centre (tuple[float]): centre point of the extent.
+#         points (gpd.GeoSeries): shapely.geometry.Points recording the
+#             translation vectors of the grid.
+#     &#34;&#34;&#34;
+#     tile:gpd.GeoSeries = None
+#     to_tile:gpd.GeoSeries = None
+#     grid_type:TileShape = None
+#     extent:gpd.GeoSeries = None
+#     centre:tuple[float] = None
+#     points:gpd.GeoSeries = None
+    
+#     def __init__(self, tile:gpd.GeoSeries, to_tile:gpd.GeoSeries, 
+#                  grid_type:TileShape = TileShape.RECTANGLE) -&gt; None:
+#         &#34;&#34;&#34;Class constructor.
+
+#         Args:
+#             tile (gpd.GeoSeries): geometry of the tiling base tile.
+#             to_tile (gpd.GeoSeries): geometry of the region to be tiled.
+#             grid_type (TileShape, optional): the type of the tiling in terms of
+#                 the TileShape of the base tile. Defaults to 
+#                 `TileShape.RECTANGLE`.
+#         &#34;&#34;&#34;
+#         self.grid_type = grid_type
+#         self.tile = tile
+#         self.to_tile = tiling_utils.clean_polygon(
+#             gpd.GeoSeries([to_tile.unary_union]))
+#         self.extent, self.centre = self._get_extent()
+#         self.points = self._get_points()
+        
+    
+#     def _get_extent(self) -&gt; tuple[gpd.GeoSeries, geom.Point]:
+#         &#34;&#34;&#34;Returns the extent and centre of the grid.
+
+#         Returns:
+#             tuple[gpd.GeoSeries, geom.Point]: the extent of the grid and its 
+#                 centre.
+#         &#34;&#34;&#34;
+#         mrr = self.to_tile.geometry[0].minimum_rotated_rectangle
+#         mrr_centre = geom.Point(mrr.centroid.coords[0])
+#         mrr_corner = geom.Point(mrr.exterior.coords[0])
+#         radius = mrr_centre.distance(mrr_corner)
+#         return gpd.GeoSeries([mrr_centre.buffer(radius)]), mrr_centre
+    
+        
+#     def _get_points(self) -&gt; gpd.GeoSeries:
+#         &#34;&#34;&#34;Returns the translation vectors of the grid as GeoSeries of Point
+#         geometries.
+
+#         Returns:
+#             gpd.GeoSeries: GeoSeries of shapely.geometry.Point objects, whose 
+#                 coordinates are the translation vectors of the grid.
+#         &#34;&#34;&#34;
+#         if self.grid_type in (TileShape.RECTANGLE, ):
+#             pts = self._get_rect_centres()
+#         elif self.grid_type in (TileShape.HEXAGON, ):
+#             pts = self._get_hex_centres()
+#         elif self.grid_type in (TileShape.DIAMOND, ):
+#             pts = self._get_diamond_centres()
+#         pts = [geom.Point(p[0], p[1]) for p in pts]
+#         return gpd.GeoSeries([p for p in pts if p.within(self.extent[0])])
+    
+        
+#     def _get_grid(self, ll: tuple[float], nums: tuple[int], 
+#                   dim: tuple[float]) -&gt; np.ndarray:
+#         &#34;&#34;&#34;Returns rectilinear grid of x,y coordinate pairs.
+
+#         Args:
+#             ll (tuple[float]): lower left corner coordinates of the grid as 
+#                 (x, y). 
+#             nums (tuple[int]): grid extent as (number of columns, number 
+#                 of rows).
+#             tdim (tuple[float]): grid resolution as (column width, column 
+#                 height)
+
+#         Returns:
+#             np.ndarray: a matrix of nums[0] * nums[1] rows and 2 columns, 
+#                 each row
+#             containing an x, y coordinate pair.
+#         &#34;&#34;&#34;    
+#         return np.array(np.meshgrid(np.arange(nums[0]) * dim[0] + ll[0],
+#                                     np.arange(nums[1]) * dim[1] + ll[1])
+#                         ).reshape(2, nums[0] * nums[1]).transpose()
+        
+
+#     def _get_rect_centres(self) -&gt; np.ndarray:
+#         &#34;&#34;&#34;Returns a grid of translation vectors for a rectangular tiling.
+
+#         Returns:
+#             np.ndarray: A 2 column array each row being an x, y translation
+#                 vector.
+#         &#34;&#34;&#34;    
+#         tt_w, tt_h, tt_x0, tt_y0 = \
+#             tiling_utils.get_width_height_left_bottom(self.extent)
+#         tile_w, tile_h, tile_x0, tile_y0 = \
+#             tiling_utils.get_width_height_left_bottom(self.tile)
+#         # number of tiles in each direction
+#         nx = int(np.ceil(tt_w / tile_w))
+#         ny = int(np.ceil(tt_h / tile_h))
+#         grid_w, grid_h = nx * tile_w, ny * tile_h
+#         margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
+#         x0 = tt_x0 + margin_w / 2
+#         y0 = tt_y0 + margin_h / 2
+#         return self._get_grid((x0, y0), (nx + 1, ny + 1), (tile_w, tile_h))
+
+
+#     def _get_hex_centres(self) -&gt; np.ndarray:
+#         &#34;&#34;&#34;Returns a grid of translation vectors for a hexagonal tiling.
+        
+#         This is implemented by making two appropriately scaled and offset
+#         rectangular grids.
+        
+#         Returns:
+#             np.ndarray: A 2 column array each row being an x, y translation
+#                 vector.
+#         &#34;&#34;&#34;    
+#         tt_w, tt_h, tt_x0, tt_y0  = \
+#             tiling_utils.get_width_height_left_bottom(self.extent)
+#         tile_w, tile_h, tile_x0, tile_y0 = \
+#             tiling_utils.get_width_height_left_bottom(self.tile)
+#         nx = int(np.ceil(tt_w / (tile_w * 3 / 2)))
+#         ny = int(np.ceil(tt_h / tile_h))
+#         # the effective width of two columns of hexagonal tiles is 3w/2
+#         grid_w, grid_h = nx * tile_w * 3 / 2, ny * tile_h
+#         margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
+#         x0 = tt_x0 + margin_w / 2
+#         y0 = tt_y0 + margin_h / 2
+#         # get two offset rectangular grids and combine them
+#         g1 = self._get_grid((x0, y0 + tile_h / 4), 
+#                             (nx + 1, ny + 1), 
+#                             (tile_w * 3 / 2, tile_h))
+#         g2 = self._get_grid((x0 + tile_w * 3 / 4, y0 - tile_h / 4), 
+#                             (nx, ny), 
+#                             (tile_w * 3 / 2, tile_h))
+#         return np.append(g1, g2).reshape((g1.shape[0] + g2.shape[0], 2))
+
+    
+#     def _get_diamond_centres(self) -&gt; np.ndarray:
+#         &#34;&#34;&#34;Reurns a grid of translation vectors for a diamond tiling.
+
+#         This is implemented by making two appropriately scaled and offset
+#         rectangular grids.
+        
+#         Returns:
+#             np.ndarray: A 2 column array each row being an x, y translation
+#                 vector.
+#         &#34;&#34;&#34;
+#         tt_w, tt_h, tt_x0, tt_y0 = \
+#             tiling_utils.get_width_height_left_bottom(self.extent)
+#         tile_w, tile_h, tile_x0, tile_y0 = \
+#             tiling_utils.get_width_height_left_bottom(self.tile)
+#         nx = int(np.ceil(tt_w / tile_w))
+#         ny = int(np.ceil(tt_h / tile_h))
+#         grid_w, grid_h = nx * tile_w, ny * tile_h
+#         margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
+#         x0 = tt_x0 + margin_w / 2
+#         y0 = tt_y0 + margin_h / 2
+#         g1 = self._get_grid((x0, y0), 
+#                             (nx + 1, ny + 1), 
+#                             (tile_w, tile_h))
+#         g2 = self._get_grid((x0 - tile_w / 2, y0 - tile_h / 2),
+#                             (nx + 1, ny + 1), 
+#                             (tile_w, tile_h))
+#         return np.append(g1, g2).reshape(g1.shape[0] + g2.shape[0], 2)</code></pre>
 </details>
 </section>
 <section>
@@ -1808,6 +1929,7 @@ class Tiling:
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
     grid:_TileGrid = None
+    # grid:old_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
@@ -1841,7 +1963,7 @@ class Tiling:
             elements_sf (float, optional): _description_. Defaults to 1.
             elements_margin (float, optional): _description_. Defaults to 0.
         &#34;&#34;&#34;
-        self.tile_shape = unit.tile_shape
+        # self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         if elements_margin &gt; 0:
             self.tile_unit = self.tile_unit.inset_elements(elements_margin) 
@@ -1857,8 +1979,9 @@ class Tiling:
                 print(f&#34;&#34;&#34;Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.&#34;&#34;&#34;)        
         self.region = region
         self.region_id_var = (&#34;ID&#34; if id_var is None else id_var)
-        self.grid = _TileGrid(self.tile_unit.tile.geometry,
-                             self.region.geometry, self.tile_shape)
+        self.grid = _TileGrid(self.tile_unit, self.region.geometry)
+        # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
+        #                      self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
 
 

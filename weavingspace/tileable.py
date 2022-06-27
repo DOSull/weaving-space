@@ -90,7 +90,7 @@ class Tileable:
         return None
     
         
-    def get_vectors(self, return_values:bool = True
+    def get_vectors(self, as_dict:bool = False
         ) -> Union[ dict[tuple[int], tuple[float]],list[tuple[float]] ]:
         """
         Returns symmetry translation vectors as floating point pairs. 
@@ -109,9 +109,9 @@ class Tileable:
         have three components. See https://www.redblobgames.com/grids/hexagons/ 
         
         Args:
-            return_values (bool): If `True` returns the vectors only. If
-                `False` returns a dictionary of the vectors indexed by tuples
-                in the grid coordinate system. Defaults to `True`.
+            as_dict (bool): If `False` returns the vectors only. If
+                `True` returns a dictionary of the vectors indexed by tuples
+                in the grid coordinate system. Defaults to `False`.
         
         Returns:
             Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]: 
@@ -139,9 +139,9 @@ class Tileable:
             vec_dict[(0, 1)] = (-w / 2, h / 2)
             vec_dict[(-1, 0)] = (-w / 2, -h / 2)
             vec_dict[(0, -1)] = (w / 2, -h / 2)
-        return (list(vec_dict.values())
-                if return_values
-                else vec_dict)
+        return (vec_dict
+                if as_dict
+                else list(vec_dict.values()))
         
         
     # Make up a regularised tile by carefully unioning the elements
@@ -286,7 +286,7 @@ class Tileable:
         # get the translation vectors in a dictionary indexed by coordinates
         # we keep track of the sum of vectors using the (integer) coordinates
         # to avoid duplication of moves due to floating point inaccuracies 
-        vectors = self.get_vectors(return_values = False)
+        vectors = self.get_vectors(as_dict = True)
         for i in range(r):
             new_vecs = {}
             for k1, v1 in last_vecs.items():
