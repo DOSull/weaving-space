@@ -1,0 +1,100 @@
+---
+title: "Tiled maps of multivariate data"
+author: David O'Sullivan and Luke Bergmann
+format: 
+  revealjs:
+    theme: simple
+    transition: slide
+    navigation-mode: vertical
+    controls-layout: bottom-right
+    controls-tutorial: true
+    slide-number: h.v
+    logo: images/logo.png
+    footer: "GeoCart 2022 - Tiled and Woven Maps"
+jupyter: python3
+---
+
+```{python}
+import sys
+sys.path.append("../..") # so I can find weavingspace
+
+import os
+os.chdir("/home/osullid3/Documents/code/weaving-space")
+
+import geopandas as gpd
+
+from weavingspace import TileUnit
+from weavingspace import WeaveUnit
+from weavingspace import Tiling
+```
+
+# Multivariate data mapping
+
+## But first, where we are headed
+Two new kinds of thematic map for handling complex multivariate data associated with polygons:
+
++ Tiled maps
++ Woven maps
+
+::: aside
+Many of the maps we show are of Dan Exeter's index of multiple deprivation (IMD). See: Exeter DJ, Zhao J, Crengle S, Lee A, Browne M, 2017, [The New Zealand Indices of Multiple Deprivation (IMD): A new suite of indicators for social and health research in Aotearoa, New Zealand](https://dx.plos.org/10.1371/journal.pone.0181260) _PLOS ONE_ **12**(8) e0181260
+:::
+
+```{python}
+ak = gpd.read_file("data/imd-auckland-2018.gpkg")
+vars = [v for v in ak.columns if "Rank" in v][:4]
+variables = dict(zip(list("abcd"), vars))
+colourmaps = dict(zip(variables.values(), 4 * ["viridis"]))
+```
+
+## {transition="slide-in none-out"}
+
+```{python}
+tile_unit = TileUnit(tiling_type = "laves", code = "4.8.8",
+                      crs = ak.crs, spacing = 500)
+
+tiling = Tiling(tile_unit, ak, id_var = "DZ2018")
+
+fig = tiling.get_tiled_map(prioritise_tiles = True) \
+  .render(variables = variables, colourmaps = colourmaps,
+          legend = False, figsize = (10, 7))
+```
+
+## {transition="none-in slide-out"}
+
+```{python}
+tile_unit = WeaveUnit(weave_type = "twill", strands = "ab|cd",
+                      aspect = 0.75, crs = ak.crs, spacing = 250)
+tile_unit = tile_unit.inset_elements(5)
+tile_unit = tile_unit.transform_rotate(45)
+tiling = Tiling(tile_unit, ak, id_var = "DZ2018")
+
+fig = tiling.get_tiled_map(prioritise_tiles = True) \
+  .render(variables = variables, colourmaps = colourmaps,
+          legend = False, figsize = (10, 7))
+```
+
+## Some other approaches
+
+# Tiling
+
+## Some theory
+
+## Tile units
+
+```{python}
+from weavingspace import TileUnit
+#| echo: true
+tile = TileUnit(tiling_type = "cairo")
+tile.plot(r = 1)
+```
+
+# Weaving
+
+## Some weaving theory
+
+## Weave units
+
+# Some maps
+
+# Conclusions
