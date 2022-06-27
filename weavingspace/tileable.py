@@ -118,27 +118,27 @@ class Tileable:
                 either the vectors as a list of float tuples, or a dictionary 
                 of those vectors indexed by integer coordinate tuples. 
         """
-        bb = self.tile.geometry[0].bounds
-        w, h = bb[2] - bb[0], bb[3] - bb[1]
+        t = self.tile.geometry[0]
+        pts = [p for p in t.exterior.coords][:-1]
+        n_pts = len(pts)
         vec_dict = {}
-        if self.tile_shape in (TileShape.RECTANGLE, ):
-            vec_dict[(1, 0)] = (w, 0)
-            vec_dict[(0, 1)] = (0, h)
-            vec_dict[(-1, 0)] = (-w, 0)
-            vec_dict[(0, -1)] = (0, -h)
-        elif self.tile_shape in (TileShape.HEXAGON, ):
+        if n_pts == 4:
+            vecs = [(q[0] - p[0], q[1] - p[1]) 
+                    for p, q in zip(pts, pts[1:] + pts[:1])]
+            vec_dict[(1, 0)] = vecs[0]  # (w, 0)
+            vec_dict[(0, 1)] = vecs[1]  # (0, h)
+            vec_dict[(-1, 0)] = vecs[2]  # (-w, 0)
+            vec_dict[(0, -1)] = vecs[3]  # (0, -h)
+        elif n_pts == 6:
+            vecs = [(q[0] - p[0], q[1] - p[1]) 
+                    for p, q in zip(pts, pts[2:] + pts[:2])]
             # hex grid coordinates associated with each of the vectors
             i = [0, 1, 1, 0, -1, -1]
             j = [1, 0, -1, -1, 0, 1]
             k = [-1, -1, 0, 1, 1, 0]
-            angles = [np.pi * 2 * i / 12 for i in range(1, 12, 2)]
-            vecs = [(h * np.cos(a), h * np.sin(a)) for a in angles]
             vec_dict = {(i, j, k): v for i, j, k, v in zip(i, j, k, vecs)}
-        else: # DIAMOND
-            vec_dict[(1, 0)] = (w / 2, h / 2)
-            vec_dict[(0, 1)] = (-w / 2, h / 2)
-            vec_dict[(-1, 0)] = (-w / 2, -h / 2)
-            vec_dict[(0, -1)] = (w / 2, -h / 2)
+        else: # garbage
+            pass
         return (vec_dict
                 if as_dict
                 else list(vec_dict.values()))
@@ -446,3 +446,66 @@ class Tileable:
         elements = copy.deepcopy(self.elements)
         elements["rotation"] = 0
         return elements
+    
+    
+    def transform_scale(self, xscale:float = 1.0, 
+                        yscale:float = 1.0) -> "Tileable":
+        """Transforms tileable by scaling.
+
+        Args:
+            xscale (float, optional): x scale factor. Defaults to 1.0.
+            yscale (float, optional): y scale factor. Defaults to 1.0.
+
+        Returns:
+            Tileable: the transformed Tileable.
+        """
+        result = copy.deepcopy(self)
+        result.elements.geometry = self.elements.geometry.scale(
+            xscale, yscale, origin = (0, 0))
+        result.tile.geometry = self.tile.geometry.scale(
+            xscale, yscale, origin = (0, 0))
+        result.regularised_tile.geometry = self.regularised_tile.geometry.scale(
+            xscale, yscale, origin = (0, 0))
+        result.vectors = result.get_vectors()
+        return result
+    
+    
+    def transform_rotate(self, angle:float = 0.0) -> "Tileable":
+        """Transforms tiling by rotation.
+
+        Args:
+            angle (float, optional): angle to rotate by. Defaults to 0.0.
+
+        Returns:
+            Tileable: the transformed Tileable.
+        """
+        result = copy.deepcopy(self)
+        result.elements.geometry = self.elements.geometry.rotate(
+            angle, origin = (0, 0))
+        result.tile.geometry = self.tile.geometry.rotate(
+            angle, origin = (0, 0))
+        result.regularised_tile.geometry = \
+            self.regularised_tile.geometry.rotate(angle, origin = (0, 0))
+        result.vectors = result.get_vectors()
+        return result
+    
+    
+    def transform_skew(self, xa:float = 0.0, ya:float = 0.0) -> "Tileable":
+        """Transforms tiling by skewing
+
+        Args:
+            xa (float, optional): x direction skew. Defaults to 0.0.
+            ya (float, optional): y direction skew. Defaults to 0.0.
+
+        Returns:
+            Tileable: the transformed Tileable.
+        """
+        result = copy.deepcopy(self)
+        result.elements.geometry = self.elements.geometry.skew(
+            xa, ya, origin = (0, 0))
+        result.tile.geometry = self.tile.geometry.skew(
+            xa, ya, origin = (0, 0))
+        result.regularised_tile.geometry = \
+            self.regularised_tile.geometry.skew(xa, ya, origin = (0, 0))
+        result.vectors = result.get_vectors()
+        return result

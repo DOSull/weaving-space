@@ -470,9 +470,9 @@ def get_bounding_ellipse(
         gpd.GeoSeries: the set of shapes.
     """
 
-    w, h, *_ = get_width_height_left_bottom(shapes)
+    w, h, l, b = get_width_height_left_bottom(shapes)
     
-    c = shapes.unary_union.centroid
+    c = geom.Point(l + w / 2, b + h / 2)
     r = min(w, h) * np.sqrt(2)
     circle = [c.buffer(r)]
     return gpd.GeoSeries(circle, crs = shapes.crs).scale(
@@ -593,7 +593,8 @@ def safe_union(gs:gpd.GeoSeries, res:float = 1e-3,
     """
     union = gs.buffer(res, resolution = 1, join_style = 2) \
                 .unary_union \
-                .buffer(-res, resolution = 1, join_style = 2)
+                .buffer(-res, resolution = 1, join_style = 2) \
+                .simplify(1)  ## Not clear this is particularly safe!
     if as_polygon:
         return union
     else:

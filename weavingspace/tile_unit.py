@@ -149,22 +149,16 @@ class TileUnit(Tileable):
 
     def _modify_tile(self) -> None:
         """It is not trivial to tile a triangular tile so this function 
-        changes the tile to a diamond by copying and joining a 180 degree
-        rotated copy. Operation is 'in-place'.
+        changes the tile to a diamond by manually altering the tile in place
+        to be a diamond shape.
         """
         tile = self.tile.geometry[0]
         # translate to sit on x-axis
         tile = affine.translate(tile, 0, -tile.bounds[1])
-        # make rotated copies
-        # buffering applied to ensure union 'sticks'
-        twins = [affine.rotate(tile, a, origin = (0, 0)) \
-                    .buffer(self.fudge_factor, resolution = 1, join_style = 2) 
-                 for a in range(0, 360, 180)]
-        # and here we undo the buffer
-        merged_tile = gpd.GeoSeries(twins).unary_union.buffer(
-                -self.fudge_factor, resolution = 1, join_style = 2)
+        pts = [p for p in tile.exterior.coords]
+        pts[-1] = (pts[1][0], -pts[1][1])
+        self.tile.geometry = gpd.GeoSeries([geom.Polygon(pts)], crs = self.crs)
         self.tile_shape = TileShape.DIAMOND
-        self.tile.geometry = gpd.GeoSeries([merged_tile])
         return None
 
     

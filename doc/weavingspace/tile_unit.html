@@ -227,22 +227,16 @@ class TileUnit(Tileable):
 
     def _modify_tile(self) -&gt; None:
         &#34;&#34;&#34;It is not trivial to tile a triangular tile so this function 
-        changes the tile to a diamond by copying and joining a 180 degree
-        rotated copy. Operation is &#39;in-place&#39;.
+        changes the tile to a diamond by manually altering the tile in place
+        to be a diamond shape.
         &#34;&#34;&#34;
         tile = self.tile.geometry[0]
         # translate to sit on x-axis
         tile = affine.translate(tile, 0, -tile.bounds[1])
-        # make rotated copies
-        # buffering applied to ensure union &#39;sticks&#39;
-        twins = [affine.rotate(tile, a, origin = (0, 0)) \
-                    .buffer(self.fudge_factor, resolution = 1, join_style = 2) 
-                 for a in range(0, 360, 180)]
-        # and here we undo the buffer
-        merged_tile = gpd.GeoSeries(twins).unary_union.buffer(
-                -self.fudge_factor, resolution = 1, join_style = 2)
+        pts = [p for p in tile.exterior.coords]
+        pts[-1] = (pts[1][0], -pts[1][1])
+        self.tile.geometry = gpd.GeoSeries([geom.Polygon(pts)], crs = self.crs)
         self.tile_shape = TileShape.DIAMOND
-        self.tile.geometry = gpd.GeoSeries([merged_tile])
         return None
 
     
@@ -443,22 +437,16 @@ class TileUnit(Tileable):
 
     def _modify_tile(self) -&gt; None:
         &#34;&#34;&#34;It is not trivial to tile a triangular tile so this function 
-        changes the tile to a diamond by copying and joining a 180 degree
-        rotated copy. Operation is &#39;in-place&#39;.
+        changes the tile to a diamond by manually altering the tile in place
+        to be a diamond shape.
         &#34;&#34;&#34;
         tile = self.tile.geometry[0]
         # translate to sit on x-axis
         tile = affine.translate(tile, 0, -tile.bounds[1])
-        # make rotated copies
-        # buffering applied to ensure union &#39;sticks&#39;
-        twins = [affine.rotate(tile, a, origin = (0, 0)) \
-                    .buffer(self.fudge_factor, resolution = 1, join_style = 2) 
-                 for a in range(0, 360, 180)]
-        # and here we undo the buffer
-        merged_tile = gpd.GeoSeries(twins).unary_union.buffer(
-                -self.fudge_factor, resolution = 1, join_style = 2)
+        pts = [p for p in tile.exterior.coords]
+        pts[-1] = (pts[1][0], -pts[1][1])
+        self.tile.geometry = gpd.GeoSeries([geom.Polygon(pts)], crs = self.crs)
         self.tile_shape = TileShape.DIAMOND
-        self.tile.geometry = gpd.GeoSeries([merged_tile])
         return None
 
     
@@ -657,6 +645,9 @@ a negative buffer d has been applied.</p>
 <li><code><a title="weavingspace.tileable.Tileable.regularise_elements" href="tileable.html#weavingspace.tileable.Tileable.regularise_elements">regularise_elements</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.setup_regularised_tile_from_elements" href="tileable.html#weavingspace.tileable.Tileable.setup_regularised_tile_from_elements">setup_regularised_tile_from_elements</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.setup_vectors" href="tileable.html#weavingspace.tileable.Tileable.setup_vectors">setup_vectors</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.transform_rotate" href="tileable.html#weavingspace.tileable.Tileable.transform_rotate">transform_rotate</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.transform_scale" href="tileable.html#weavingspace.tileable.Tileable.transform_scale">transform_scale</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.transform_skew" href="tileable.html#weavingspace.tileable.Tileable.transform_skew">transform_skew</a></code></li>
 </ul>
 </li>
 </ul>
