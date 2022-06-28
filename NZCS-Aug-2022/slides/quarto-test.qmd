@@ -1,18 +1,18 @@
 ---
-title: "Tiled maps of multivariate data"
-author: David O'Sullivan and Luke Bergmann
+title: "Tiled & woven thematic maps"
+author: David O'Sullivan & Luke Bergmann
 format: 
   revealjs:
-    theme: simple
-    transition: slide
+    theme: [beige, custom.scss]
+    transition: fade
     navigation-mode: vertical
     controls-layout: bottom-right
     controls-tutorial: true
-    slide-number: h.v
+    slide-number: true
     logo: images/logo.png
-    footer: "GeoCart 2022 - Tiled and Woven Maps"
+    footer: "GeoCart 2022 - Tiled & woven maps - O'Sullivan & Bergmann"
+    reference-location: document
 jupyter: python3
-css: styles.css
 ---
 
 ```{python}
@@ -26,21 +26,23 @@ import matplotlib.pyplot as pyplot
 import geopandas as gpd
 
 from weavingspace import TileUnit
+from weavingspace import TileShape
 from weavingspace import WeaveUnit
 from weavingspace import Tiling
 ```
 
-# Multivariate data mapping
+# Multivariate data mapping {background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 2px 2px 5px #ffc;"}
+Some background to the problem.
 
-## But first, where we are headed
-Two new kinds of thematic map for handling complex multivariate data associated with polygons:
+## But first... where we are headed
+Two new kinds of thematic map for handling complex multivariate data associated with polygons.
 
-+ Tiled maps
-+ Woven maps
+We've [developed python code](https://github.com/DOSull/weaving-space) that helps you make tiled and woven maps.
 
 ::: aside
 Many of the maps we show are of Dan Exeter's index of multiple deprivation (IMD). See: Exeter DJ, Zhao J, Crengle S, Lee A, Browne M, 2017, [The New Zealand Indices of Multiple Deprivation (IMD): A new suite of indicators for social and health research in Aotearoa, New Zealand](https://dx.plos.org/10.1371/journal.pone.0181260) _PLOS ONE_ **12**(8) e0181260
 :::
+
 
 ```{python}
 ak = gpd.read_file("data/imd-auckland-2018.gpkg")
@@ -76,20 +78,180 @@ fig = tiling.get_tiled_map(prioritise_tiles = True) \
           legend = False, figsize = (10, 7))
 ```
 
-## Some other approaches
+## Some other approaches {.title-slide}
+This is a perennially challenging problem, so many different ways of tackling it have been attempted...
 
-# Tiling
+##
 
-## Some theory
+::: {.r-stack}
+![](images/small-multiples.png){.fragment .fade-out fragment-index=1 width="800"}
 
-## Tile units
+![](images/bivariate-choropleth-stevens-qgis.png){.fragment .fade-in-then-out fragment-index=1 width="800"}
 
+![](images/tricolore.png){.fragment .fade-in-then-out fragment-index=2 width="800"}
+
+![](images/choropleth-with-symbols-qgis.png){.fragment .fade-in-then-out fragment-index=3 width="800"}
+
+![](images/dorling-chernoff-faces.jpg){.fragment .fade-in-then-out fragment-index=4 width="500"}
+
+![](images/dot-map.png){.fragment .fade-in fragment-index=5 width="800"}
+:::
+
+# Tiling theory {background-image="images/mosaic-south-america.jpg" background-opacity=0.5 style="text-shadow: 2px 2px 5px #ffc;"}
+
+A mosaic map of the world by Chris Chamberlain, see
+[this video](https://www.youtube.com/watch?v=bgcc3w0-9X0) for more.
+
+
+## A _plane tiling_ is...
+
+> "... a countable family of closed sets $\mathcal{T}=\{T_1,T_2,\ldots\}$ which covers the plane without gaps or overlaps. More explicitly, the union of the sets $T_1,T_2,\ldots$ (which are known as the *tiles* of $\mathcal{T}$) is to be the whole plane, and the interiors of the sets $T_i$ are to be pairwise disjoint" (Grünbaum and Shephard 1987, page 16)
+
+. . . 
+
+... a GIS coverage!
+
+::: aside
+Grünbaum B, Shephard GC, 1987 _Tilings and Patterns_ (WH Freeman and Company, New York)
+:::
+
+## How many tilings?
+It's a lot. 
+
+Systematic enumeration up to a certain complexity yields a ‘galaxy’ of 2.4 billion tilings (Zeller et al. 2021). You can explore the galaxy here: [_Tegula_](https://github.com/husonlab/tegula).
+
+Grünbaum and Shephard repeatedly narrow focus to tilings with specific properties so they can say anything at all.
+
+::: aside
+Zeller R, Delgado-Friedrichs O, Huson DH, 2021, “[_Tegula_ – exploring a galaxy of two-dimensional periodic tilings](https://doi.org/10.1016/j.cagd.2021.102027)” _Computer Aided Geometric Design_ **90** 102027
+:::
+
+## Symmetry
+Central to tiling is symmetry, and it is symmetry which we aim to exploit for mapping.
+
+
+
+# Tile units {background-image="images/wooden-diamond-triangle-tiling-toy.jpg" background-opacity=0.5 style="text-shadow: 2px 2px 5px #ffc;"}
+The building blocks of our approach.
+
+It may (not) surprise you to know I had a toy very much like this as a child...
+
+## The basic pattern
 ```{python}
 #| echo: true
 #| output-location: fragment
-#| code-line-numbers: "1|2"
-tile = TileUnit(tiling_type = "cairo")
-tile.plot(r = 1, figsize = (8, 8))
+#| code-line-numbers: "1|2-3"
+cairo_tile = TileUnit(tiling_type = "cairo")
+cairo_tile.plot(r = 1, show_vectors = True, 
+                figsize = (7, 7)).set_axis_off()
+```
+
+## Triangles, squares, hexagons
+```{python}
+#| echo: true
+triangles = TileUnit(tile_shape = TileShape.TRIANGLE)
+squares = TileUnit() 
+hexagons = TileUnit(tile_shape = TileShape.HEXAGON)
+```
+```{python}
+fig = pyplot.figure(figsize = (12, 4))
+for u, posn in zip((triangles, squares, hexagons), range(131, 134)):
+    ax = fig.add_subplot(posn)
+    u.plot(ax = ax, r = 1, show_vectors = True).set_axis_off()
+```
+
+## Archimedean tilings by regular polygons
+```{python}
+units = [
+  TileUnit(tiling_type = "archimedean", code = "3.3.4.3.4"),
+  TileUnit(tiling_type = "archimedean", code = "3.3.3.3.6"),
+  TileUnit(tiling_type = "archimedean", code = "3.4.6.4"),
+  TileUnit(tiling_type = "archimedean", code = "3.6.3.6"),
+  TileUnit(tiling_type = "archimedean", code = "4.6.12"),
+  TileUnit(tiling_type = "archimedean", code = "4.8.8")
+]
+fig = pyplot.figure(figsize = (11, 7))
+for u, posn in zip(units, range(231, 237)):
+    ax = fig.add_subplot(posn)
+    u.plot(ax = ax, r = 1, show_ids = False).set_axis_off()
+```
+
+## Laves (the Archimedean duals)
+```{python}
+units = [
+  TileUnit(tiling_type = "laves", code = "3.3.3.3.6"),
+  TileUnit(tiling_type = "laves", code = "3.4.6.4"),
+  TileUnit(tiling_type = "laves", code = "3.6.3.6"),
+  TileUnit(tiling_type = "laves", code = "3.12.12"),
+  TileUnit(tiling_type = "laves", code = "4.6.12"),
+  TileUnit(tiling_type = "laves", code = "4.8.8")
+]
+laves2 = units[1]
+fig = pyplot.figure(figsize = (11, 7))
+for u, posn in zip(units, range(231, 237)):
+    ax = fig.add_subplot(posn)
+    u.plot(ax = ax, r = 1, show_ids = False).set_axis_off()
+```
+
+## Hexagon dissections and colourings
+```{python}
+units = [
+  TileUnit(tiling_type = "hex-dissection", n = 2),
+  TileUnit(tiling_type = "hex-dissection", n = 3, dissection_offset = 1),
+  TileUnit(tiling_type = "hex-dissection", n = 12, dissection_offset = 1),
+  TileUnit(tiling_type = "hex-colouring", n = 3),
+  TileUnit(tiling_type = "hex-colouring", n = 4),
+  TileUnit(tiling_type = "hex-colouring", n = 7)
+]
+hexc3 = units[3]
+fig = pyplot.figure(figsize = (11, 7))
+for u, posn in zip(units, range(231, 237)):
+    ax = fig.add_subplot(posn)
+    u.plot(ax = ax, r = 1, show_ids = False).set_axis_off()
+```
+
+## In general
+These (and more) are all available with the same command:
+
+```{python} 
+#| echo: true
+#| eval: false
+tile = TileUnit(
+  tiling_type = "cairo|archimedean|laves|hex-dissection|square-dissection",
+  n = ..., code = "3.3.4.3.4", dissection_offset = 0|1,  # optional
+  spacing = 500, crs = 2193
+)
+```
+
+We can then make various adjustments:
+
+```{python} 
+#| echo: true
+#| eval: false
+tile = tile.transform_rotate(...)
+tile = tile.transform_scale(...)
+tile = tile.transform_skew(...)
+tile = tile.inset_tile(...)
+tile = tile.inset_elements(...)
+tile = tile.scale_elements(...)
+```
+
+## 'Insetting'
+Insetting relative to the repeating tile unit helps distinguish elements.
+```{python}
+laves2 = laves2.inset_tile(25).transform_rotate(15)
+hexc3 = hexc3.inset_tile(25)
+cairo_tile = cairo_tile.inset_tile(25).transform_rotate(-45)
+fig = pyplot.figure(figsize = (12, 4))
+ax = fig.add_subplot(131)
+laves2.plot(ax = ax, r = 1, show_ids = False, 
+            show_tile = False, show_reg_tile = False).set_axis_off()
+ax = fig.add_subplot(132)
+hexc3.plot(ax = ax, r = 1, show_ids = False, 
+            show_tile = False, show_reg_tile = False).set_axis_off()
+ax = fig.add_subplot(133)
+cairo_tile.plot(ax = ax, r = 2, show_ids = False, 
+            show_tile = False, show_reg_tile = False).set_axis_off()
 ```
 
 # Weaving

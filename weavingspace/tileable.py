@@ -18,6 +18,8 @@ from typing import Union
 from dataclasses import dataclass
 import copy
 
+import matplotlib.pyplot as pyplot
+
 import geopandas as gpd
 import numpy as np
 import shapely.geometry as geom
@@ -377,7 +379,7 @@ class Tileable:
              show_ids = True, show_vectors:bool = False, r:int = 0,
              tile_edgecolor:str = "k", reg_tile_edgcolor:str = "r", 
              cmap:list[str] = None, figsize:tuple[float] = (8, 8), 
-             **kwargs) -> None:
+             **kwargs) -> pyplot.axes:
         """Plots a representation of the Tileable on the supplied axis. **kwargs
         are passed on to matplotlib.plot()
 
@@ -434,6 +436,7 @@ class Tileable:
         if show_reg_tile:
             self.regularised_tile.plot(ax = ax, ec = reg_tile_edgcolor, 
                                        fc = "#00000000", lw = 2, **kwargs)
+        return ax
 
 
     def _get_legend_elements(self):

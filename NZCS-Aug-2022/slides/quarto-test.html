@@ -9,8 +9,8 @@
 <link href="quarto-test_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
   <meta name="generator" content="quarto-0.9.600">
 
-  <meta name="author" content="David O’Sullivan and Luke Bergmann">
-  <title>Tiled maps of multivariate data</title>
+  <meta name="author" content="David O’Sullivan &amp; Luke Bergmann">
+  <title>Tiled &amp; woven thematic maps</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -89,7 +89,6 @@
     code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="quarto-test_files/libs/revealjs/dist/theme/quarto.css" id="theme">
-  <link rel="stylesheet" href="styles.css">
   <link href="quarto-test_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="quarto-test_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="quarto-test_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -384,22 +383,19 @@
     <div class="slides">
 
 <section id="title-slide" class="center">
-  <h1 class="title">Tiled maps of multivariate data</h1>
-  <p class="author">David O’Sullivan and Luke Bergmann</p>
+  <h1 class="title">Tiled &amp; woven thematic maps</h1>
+  <p class="author">David O’Sullivan &amp; Luke Bergmann</p>
 </section>
 
 <section>
-<section id="multivariate-data-mapping" class="title-slide slide level1 center">
+<section id="multivariate-data-mapping" class="title-slide slide level1 center" data-background-image="images/detailed-weave.png" data-background-opacity="0.5" style="text-shadow: 2px 2px 5px #ffc;">
 <h1>Multivariate data mapping</h1>
-
+<p>Some background to the problem.</p>
 </section>
 <section id="but-first-where-we-are-headed" class="slide level2">
-<h2>But first, where we are headed</h2>
-<p>Two new kinds of thematic map for handling complex multivariate data associated with polygons:</p>
-<ul>
-<li>Tiled maps</li>
-<li>Woven maps</li>
-</ul>
+<h2>But first… where we are headed</h2>
+<p>Two new kinds of thematic map for handling complex multivariate data associated with polygons.</p>
+<p>We’ve <a href="https://github.com/DOSull/weaving-space">developed python code</a> that helps you make tiled and woven maps.</p>
 
 <aside><div>
 <p>Many of the maps we show are of Dan Exeter’s index of multiple deprivation (IMD). See: Exeter DJ, Zhao J, Crengle S, Lee A, Browne M, 2017, <a href="https://dx.plos.org/10.1371/journal.pone.0181260">The New Zealand Indices of Multiple Deprivation (IMD): A new suite of indicators for social and health research in Aotearoa, New Zealand</a> <em>PLOS ONE</em> <strong>12</strong>(8) e0181260</p>
@@ -420,26 +416,127 @@
 </div>
 </div>
 </section>
-<section id="some-other-approaches" class="slide level2">
+<section id="some-other-approaches" class="slide level2 title-slide center">
 <h2>Some other approaches</h2>
+<p>This is a perennially challenging problem, so many different ways of tackling it have been attempted…</p>
+</section>
+<section id="section-2" class="slide level2">
+<h2></h2>
+<div class="r-stack">
+<p><img data-src="images/small-multiples.png" class="fragment fade-out" data-fragment-index="1" width="800"></p>
+<p><img data-src="images/bivariate-choropleth-stevens-qgis.png" class="fragment fade-in-then-out" data-fragment-index="1" width="800"></p>
+<p><img data-src="images/tricolore.png" class="fragment fade-in-then-out" data-fragment-index="2" width="800"></p>
+<p><img data-src="images/choropleth-with-symbols-qgis.png" class="fragment fade-in-then-out" data-fragment-index="3" width="800"></p>
+<p><img data-src="images/dorling-chernoff-faces.jpg" class="fragment fade-in-then-out" data-fragment-index="4" width="500"></p>
+<p><img data-src="images/dot-map.png" class="fragment fade-in" data-fragment-index="5" width="800"></p>
+</div>
 </section></section>
 <section>
-<section id="tiling" class="title-slide slide level1 center">
-<h1>Tiling</h1>
+<section id="tiling-theory" class="title-slide slide level1 center" data-background-image="images/mosaic-south-america.jpg" data-background-opacity="0.5" style="text-shadow: 2px 2px 5px #ffc;">
+<h1>Tiling theory</h1>
+<p>A mosaic map of the world by Chris Chamberlain, see <a href="https://www.youtube.com/watch?v=bgcc3w0-9X0">this video</a> for more.</p>
+</section>
+<section id="a-plane-tiling-is" class="slide level2">
+<h2>A <em>plane tiling</em> is…</h2>
+<blockquote>
+<p>“… a countable family of closed sets <span class="math inline">\(\mathcal{T}=\{T_1,T_2,\ldots\}\)</span> which covers the plane without gaps or overlaps. More explicitly, the union of the sets <span class="math inline">\(T_1,T_2,\ldots\)</span> (which are known as the <em>tiles</em> of <span class="math inline">\(\mathcal{T}\)</span>) is to be the whole plane, and the interiors of the sets <span class="math inline">\(T_i\)</span> are to be pairwise disjoint” (Grünbaum and Shephard 1987, page 16)</p>
+</blockquote>
+<div class="fragment">
+<p>… a GIS coverage!</p>
 
+</div>
+<aside><div>
+<p>Grünbaum B, Shephard GC, 1987 <em>Tilings and Patterns</em> (WH Freeman and Company, New York)</p>
+</div></aside></section>
+<section id="how-many-tilings" class="slide level2">
+<h2>How many tilings?</h2>
+<p>It’s a lot.</p>
+<p>Systematic enumeration up to a certain complexity yields a ‘galaxy’ of 2.4 billion tilings (Zeller et al.&nbsp;2021). You can explore the galaxy here: <a href="https://github.com/husonlab/tegula"><em>Tegula</em></a>.</p>
+<p>Grünbaum and Shephard repeatedly narrow focus to tilings with specific properties so they can say anything at all.</p>
+
+<aside><div>
+<p>Zeller R, Delgado-Friedrichs O, Huson DH, 2021, “<a href="https://doi.org/10.1016/j.cagd.2021.102027"><em>Tegula</em> – exploring a galaxy of two-dimensional periodic tilings</a>” <em>Computer Aided Geometric Design</em> <strong>90</strong> 102027</p>
+</div></aside></section>
+<section id="symmetry" class="slide level2">
+<h2>Symmetry</h2>
+<p>Central to tiling is symmetry, and it is symmetry which we aim to exploit for mapping.</p>
+</section></section>
+<section>
+<section id="tile-units" class="title-slide slide level1 center" data-background-image="images/wooden-diamond-triangle-tiling-toy.jpg" data-background-opacity="0.5" style="text-shadow: 2px 2px 5px #ffc;">
+<h1>Tile units</h1>
+<p>The building blocks of our approach.</p>
+<p>It may (not) surprise you to know I had a toy very much like this as a child…</p>
 </section>
-<section id="some-theory" class="slide level2">
-<h2>Some theory</h2>
-</section>
-<section id="tile-units" class="slide level2">
-<h2>Tile units</h2>
+<section id="the-basic-pattern" class="slide level2">
+<h2>The basic pattern</h2>
 <div class="cell" data-execution_count="5">
-<div class="sourceCode cell-code" id="cb1" data-code-line-numbers="1|2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1"></a>tile <span class="op">=</span> TileUnit(tiling_type <span class="op">=</span> <span class="st">"cairo"</span>)</span>
-<span id="cb1-2"><a href="#cb1-2"></a>tile.plot(r <span class="op">=</span> <span class="dv">1</span>, figsize <span class="op">=</span> (<span class="dv">8</span>, <span class="dv">8</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1" data-code-line-numbers="1|2-3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1"></a>cairo_tile <span class="op">=</span> TileUnit(tiling_type <span class="op">=</span> <span class="st">"cairo"</span>)</span>
+<span id="cb1-2"><a href="#cb1-2"></a>cairo_tile.plot(r <span class="op">=</span> <span class="dv">1</span>, show_vectors <span class="op">=</span> <span class="va">True</span>, </span>
+<span id="cb1-3"><a href="#cb1-3"></a>                figsize <span class="op">=</span> (<span class="dv">7</span>, <span class="dv">7</span>)).set_axis_off()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell fragment" data-execution_count="5">
 <div class="cell-output cell-output-display">
-<p><img data-src="quarto-test_files/figure-revealjs/cell-6-output-1.png" width="654" height="621"></p>
+<p><img data-src="quarto-test_files/figure-revealjs/cell-6-output-1.png" width="527" height="527"></p>
+</div>
+</div>
+</section>
+<section id="triangles-squares-hexagons" class="slide level2">
+<h2>Triangles, squares, hexagons</h2>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1"></a>triangles <span class="op">=</span> TileUnit(tile_shape <span class="op">=</span> TileShape.TRIANGLE)</span>
+<span id="cb2-2"><a href="#cb2-2"></a>squares <span class="op">=</span> TileUnit() </span>
+<span id="cb2-3"><a href="#cb2-3"></a>hexagons <span class="op">=</span> TileUnit(tile_shape <span class="op">=</span> TileShape.HEXAGON)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-execution_count="7">
+<div class="cell-output cell-output-display">
+<p><img data-src="quarto-test_files/figure-revealjs/cell-8-output-1.png" width="864" height="309"></p>
+</div>
+</div>
+</section>
+<section id="archimedean-tilings-by-regular-polygons" class="slide level2">
+<h2>Archimedean tilings by regular polygons</h2>
+<div class="cell" data-execution_count="8">
+<div class="cell-output cell-output-display">
+<p><img data-src="quarto-test_files/figure-revealjs/cell-9-output-1.png" width="828" height="527"></p>
+</div>
+</div>
+</section>
+<section id="laves-the-archimedean-duals" class="slide level2">
+<h2>Laves (the Archimedean duals)</h2>
+<div class="cell" data-execution_count="9">
+<div class="cell-output cell-output-display">
+<p><img data-src="quarto-test_files/figure-revealjs/cell-10-output-1.png" width="823" height="527"></p>
+</div>
+</div>
+</section>
+<section id="hexagon-dissections-and-colourings" class="slide level2">
+<h2>Hexagon dissections and colourings</h2>
+<div class="cell" data-execution_count="10">
+<div class="cell-output cell-output-display">
+<p><img data-src="quarto-test_files/figure-revealjs/cell-11-output-1.png" width="819" height="527"></p>
+</div>
+</div>
+</section>
+<section id="in-general" class="slide level2">
+<h2>In general</h2>
+<p>These (and more) are all available with the same command:</p>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1"></a>tile <span class="op">=</span> TileUnit(</span>
+<span id="cb3-2"><a href="#cb3-2"></a>  tiling_type <span class="op">=</span> <span class="st">"cairo|archimedean|laves|hex-dissection|square-dissection"</span>,</span>
+<span id="cb3-3"><a href="#cb3-3"></a>  n <span class="op">=</span> ..., code <span class="op">=</span> <span class="st">"3.3.4.3.4"</span>, dissection_offset <span class="op">=</span> <span class="dv">0</span><span class="op">|</span><span class="dv">1</span>,  <span class="co"># optional</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a>  spacing <span class="op">=</span> <span class="dv">500</span>, crs <span class="op">=</span> <span class="dv">2193</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We can then make various adjustments:</p>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1"></a>tile <span class="op">=</span> tile.transform_rotate(...)</span>
+<span id="cb4-2"><a href="#cb4-2"></a>tile <span class="op">=</span> tile.transform_scale(...)</span>
+<span id="cb4-3"><a href="#cb4-3"></a>tile <span class="op">=</span> tile.transform_skew(...)</span>
+<span id="cb4-4"><a href="#cb4-4"></a>tile <span class="op">=</span> tile.inset_tile(...)</span>
+<span id="cb4-5"><a href="#cb4-5"></a>tile <span class="op">=</span> tile.inset_elements(...)</span>
+<span id="cb4-6"><a href="#cb4-6"></a>tile <span class="op">=</span> tile.scale_elements(...)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="insetting" class="slide level2">
+<h2>‘Insetting’</h2>
+<p>Insetting relative to the repeating tile unit helps distinguish elements.</p>
+<div class="cell" data-execution_count="13">
+<div class="cell-output cell-output-display">
+<p><img data-src="quarto-test_files/figure-revealjs/cell-14-output-1.png" width="912" height="307"></p>
 </div>
 </div>
 </section></section>
@@ -463,7 +560,7 @@
 <h1>Conclusions</h1>
 
 <img src="images/logo.png" class="slide-logo r-stretch"><div class="footer footer-default">
-<p>GeoCart 2022 - Tiled and Woven Maps</p>
+<p>GeoCart 2022 - Tiled &amp; woven maps - O’Sullivan &amp; Bergmann</p>
 </div>
 </section>
     </div>
@@ -623,7 +720,7 @@
         previewLinks: false,
 
         // Transition style (none/fade/slide/convex/concave/zoom)
-        transition: 'slide',
+        transition: 'fade',
 
         // Transition speed (default/fast/slow)
         transitionSpeed: 'default',
