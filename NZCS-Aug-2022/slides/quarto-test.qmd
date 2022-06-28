@@ -84,8 +84,9 @@ fig = tiling.get_tiled_map(prioritise_tiles = True) \
 ## Tile units
 
 ```{python}
-from weavingspace import TileUnit
 #| echo: true
+#| output-location: fragment
+#| code-line-numbers: "|1|2"
 tile = TileUnit(tiling_type = "cairo")
 tile.plot(r = 1)
 ```
