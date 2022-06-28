@@ -22,6 +22,7 @@ sys.path.append("../..") # so I can find weavingspace
 import os
 os.chdir("/home/osullid3/Documents/code/weaving-space")
 
+import matplotlib.pyplot as pyplot
 import geopandas as gpd
 
 from weavingspace import TileUnit
@@ -86,9 +87,9 @@ fig = tiling.get_tiled_map(prioritise_tiles = True) \
 ```{python}
 #| echo: true
 #| output-location: fragment
-#| code-line-numbers: "|1|2"
+#| code-line-numbers: "1|2"
 tile = TileUnit(tiling_type = "cairo")
-tile.plot(r = 1)
+tile.plot(r = 1, figsize = (8, 8))
 ```
 
 # Weaving
