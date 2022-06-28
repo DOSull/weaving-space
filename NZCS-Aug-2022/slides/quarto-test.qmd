@@ -12,6 +12,7 @@ format:
     logo: images/logo.png
     footer: "GeoCart 2022 - Tiled and Woven Maps"
 jupyter: python3
+css: styles.css
 ---
 
 ```{python}
