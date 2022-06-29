@@ -416,25 +416,26 @@
 </div>
 </div>
 </section>
-<section id="some-other-approaches" class="slide level2 title-slide center">
+<section id="some-other-approaches" class="slide level2">
 <h2>Some other approaches</h2>
 <p>This is a perennially challenging problem, so many different ways of tackling it have been attempted…</p>
+<p>A little more context for these was provided in <a href="https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html">our earlier talk</a>.</p>
 </section>
 <section id="section-2" class="slide level2">
 <h2></h2>
 <div class="r-stack">
-<p><img data-src="images/small-multiples.png" class="fragment fade-out" data-fragment-index="1" width="800"></p>
-<p><img data-src="images/bivariate-choropleth-stevens-qgis.png" class="fragment fade-in-then-out" data-fragment-index="1" width="800"></p>
-<p><img data-src="images/tricolore.png" class="fragment fade-in-then-out" data-fragment-index="2" width="800"></p>
-<p><img data-src="images/choropleth-with-symbols-qgis.png" class="fragment fade-in-then-out" data-fragment-index="3" width="800"></p>
-<p><img data-src="images/dorling-chernoff-faces.jpg" class="fragment fade-in-then-out" data-fragment-index="4" width="500"></p>
-<p><img data-src="images/dot-map.png" class="fragment fade-in" data-fragment-index="5" width="800"></p>
+<p><img data-src="images/small-multiples.png" title="Tufte recommends this approach" class="fragment fade-out" data-fragment-index="1" width="800"></p>
+<p><img data-src="images/bivariate-choropleth-stevens-qgis.png" title="2-colours, OK" class="fragment fade-in-then-out" data-fragment-index="1" width="800"></p>
+<p><img data-src="images/tricolore.png" title="3-colours, brown" class="fragment fade-in-then-out" data-fragment-index="2" width="800"></p>
+<p><img data-src="images/choropleth-with-symbols-qgis.png" title="Probably the most conventional option" class="fragment fade-in-then-out" data-fragment-index="3" width="800"></p>
+<p><img data-src="images/dorling-chernoff-faces.jpg" title="Probably the least conventional option" class="fragment fade-in-then-out" data-fragment-index="4" width="500"></p>
+<p><img data-src="images/dot-map.png" title="This approach is older than you might imagine, see Jenks GF, 1953, “‘Pointilism’ as a cartographic technique” The Professional Geographer 5(5) 4–6" class="fragment fade-in" data-fragment-index="5" width="800"></p>
 </div>
 </section></section>
 <section>
 <section id="tiling-theory" class="title-slide slide level1 center" data-background-image="images/mosaic-south-america.jpg" data-background-opacity="0.5" style="text-shadow: 2px 2px 5px #ffc;">
 <h1>Tiling theory</h1>
-<p>A mosaic map of the world by Chris Chamberlain, see <a href="https://www.youtube.com/watch?v=bgcc3w0-9X0">this video</a> for more.</p>
+<p>A mosaic map of the world by Chris Chamberlain; see <a href="https://mymodernmet.com/chris-chamberlain-jewel-of-the-universe/">this article</a> and <a href="https://www.youtube.com/watch?v=bgcc3w0-9X0">this video</a> for more.</p>
 </section>
 <section id="a-plane-tiling-is" class="slide level2">
 <h2>A <em>plane tiling</em> is…</h2>
@@ -457,9 +458,46 @@
 <aside><div>
 <p>Zeller R, Delgado-Friedrichs O, Huson DH, 2021, “<a href="https://doi.org/10.1016/j.cagd.2021.102027"><em>Tegula</em> – exploring a galaxy of two-dimensional periodic tilings</a>” <em>Computer Aided Geometric Design</em> <strong>90</strong> 102027</p>
 </div></aside></section>
-<section id="symmetry" class="slide level2">
-<h2>Symmetry</h2>
-<p>Central to tiling is symmetry, and it is symmetry which we aim to exploit for mapping.</p>
+<section id="symmetry-in-mathematical-tiling" class="slide level2">
+<h2>Symmetry in mathematical tiling</h2>
+<p>The symmetries of a tiling map tiles on to other tiles.</p>
+<p>The sets of tiles related to one another in this way are the <em>transitivity groups</em> of the tiling.</p>
+<p>An <em>isohedral</em> tiling has only one transitivity group.</p>
+<div class="cell" data-execution_count="5">
+<div class="cell-output cell-output-display">
+<p><img data-src="quarto-test_files/figure-revealjs/cell-6-output-1.png" width="912" height="329"></p>
+</div>
+</div>
+</section>
+<section id="symmetry-in-cartographic-tiling" class="slide level2">
+<h2>Symmetry in cartographic tiling</h2>
+<div class="columns">
+<div class="column" style="font-size:75%;">
+<p><em>Directionality</em> or <em>orientation</em> is irrelevant to mathematicians because they consider tiles and tilings identical under rotation.</p>
+<p>However, they <em>are</em> important for mapping. Many isohedral tilings contain directionally distinguishable tiles.</p>
+<p>We likely need a new cartographic notion of the transitivity groups where different tile orientations ‘count’ as different.</p>
+</div><div class="column" style="width:40%;">
+<div class="cell" data-execution_count="6">
+<div class="cell-output cell-output-display">
+<p><img data-src="quarto-test_files/figure-revealjs/cell-7-output-1.png" width="466" height="285"></p>
+</div>
+</div>
+</div>
+</div>
+
+<aside><div>
+<p>Olson RK, Attneave F, 1970, “<a href="https://doi.org/10.2307/1420852">What Variables Produce Similarity Grouping?</a>” <em>The American Journal of Psychology</em> <strong>83</strong>(1) 1</p>
+</div></aside></section>
+<section id="what-we-learned-from-tiling-theory" class="slide level2">
+<h2>What we learned from tiling theory</h2>
+<div class="fragment">
+<div class="r-fit-text">
+<p>¯\_(ツ)_/¯</p>
+</div>
+</div>
+<div class="fragment">
+<p>We are not entirely sure… <span class="fragment">yet!</span></p>
+</div>
 </section></section>
 <section>
 <section id="tile-units" class="title-slide slide level1 center" data-background-image="images/wooden-diamond-triangle-tiling-toy.jpg" data-background-opacity="0.5" style="text-shadow: 2px 2px 5px #ffc;">
@@ -469,14 +507,14 @@
 </section>
 <section id="the-basic-pattern" class="slide level2">
 <h2>The basic pattern</h2>
-<div class="cell" data-execution_count="5">
+<div class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb1" data-code-line-numbers="1|2-3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1"></a>cairo_tile <span class="op">=</span> TileUnit(tiling_type <span class="op">=</span> <span class="st">"cairo"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2"></a>cairo_tile.plot(r <span class="op">=</span> <span class="dv">1</span>, show_vectors <span class="op">=</span> <span class="va">True</span>, </span>
 <span id="cb1-3"><a href="#cb1-3"></a>                figsize <span class="op">=</span> (<span class="dv">7</span>, <span class="dv">7</span>)).set_axis_off()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell fragment" data-execution_count="5">
+<div class="cell fragment" data-execution_count="7">
 <div class="cell-output cell-output-display">
-<p><img data-src="quarto-test_files/figure-revealjs/cell-6-output-1.png" width="527" height="527"></p>
+<p><img data-src="quarto-test_files/figure-revealjs/cell-8-output-1.png" width="527" height="527"></p>
 </div>
 </div>
 </section>
@@ -485,33 +523,33 @@
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1"></a>triangles <span class="op">=</span> TileUnit(tile_shape <span class="op">=</span> TileShape.TRIANGLE)</span>
 <span id="cb2-2"><a href="#cb2-2"></a>squares <span class="op">=</span> TileUnit() </span>
 <span id="cb2-3"><a href="#cb2-3"></a>hexagons <span class="op">=</span> TileUnit(tile_shape <span class="op">=</span> TileShape.HEXAGON)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell" data-execution_count="7">
+<div class="cell" data-execution_count="9">
 <div class="cell-output cell-output-display">
-<p><img data-src="quarto-test_files/figure-revealjs/cell-8-output-1.png" width="864" height="309"></p>
+<p><img data-src="quarto-test_files/figure-revealjs/cell-10-output-1.png" width="864" height="309"></p>
 </div>
 </div>
 </section>
 <section id="archimedean-tilings-by-regular-polygons" class="slide level2">
 <h2>Archimedean tilings by regular polygons</h2>
-<div class="cell" data-execution_count="8">
+<div class="cell" data-execution_count="10">
 <div class="cell-output cell-output-display">
-<p><img data-src="quarto-test_files/figure-revealjs/cell-9-output-1.png" width="828" height="527"></p>
+<p><img data-src="quarto-test_files/figure-revealjs/cell-11-output-1.png" width="828" height="527"></p>
 </div>
 </div>
 </section>
 <section id="laves-the-archimedean-duals" class="slide level2">
 <h2>Laves (the Archimedean duals)</h2>
-<div class="cell" data-execution_count="9">
+<div class="cell" data-execution_count="11">
 <div class="cell-output cell-output-display">
-<p><img data-src="quarto-test_files/figure-revealjs/cell-10-output-1.png" width="823" height="527"></p>
+<p><img data-src="quarto-test_files/figure-revealjs/cell-12-output-1.png" width="823" height="527"></p>
 </div>
 </div>
 </section>
 <section id="hexagon-dissections-and-colourings" class="slide level2">
 <h2>Hexagon dissections and colourings</h2>
-<div class="cell" data-execution_count="10">
+<div class="cell" data-execution_count="12">
 <div class="cell-output cell-output-display">
-<p><img data-src="quarto-test_files/figure-revealjs/cell-11-output-1.png" width="819" height="527"></p>
+<p><img data-src="quarto-test_files/figure-revealjs/cell-13-output-1.png" width="819" height="527"></p>
 </div>
 </div>
 </section>
@@ -534,28 +572,95 @@
 <section id="insetting" class="slide level2">
 <h2>‘Insetting’</h2>
 <p>Insetting relative to the repeating tile unit helps distinguish elements.</p>
-<div class="cell" data-execution_count="13">
+<div class="cell" data-execution_count="15">
 <div class="cell-output cell-output-display">
-<p><img data-src="quarto-test_files/figure-revealjs/cell-14-output-1.png" width="912" height="307"></p>
+<p><img data-src="quarto-test_files/figure-revealjs/cell-16-output-1.png" width="912" height="307"></p>
 </div>
 </div>
 </section></section>
 <section>
-<section id="weaving" class="title-slide slide level1 center">
+<section id="weaving" class="title-slide slide level1 center" data-background-image="images/weave-pic-2.jpg" data-background-opacity="0.5" style="text-shadow: 2px 2px 5px #ffc;">
 <h1>Weaving</h1>
-
+<p>For a lot more on woven maps, see <a href="https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html">our earlier talk</a>.</p>
 </section>
 <section id="some-weaving-theory" class="slide level2">
 <h2>Some weaving theory</h2>
-</section>
+<p>Weaving theory leads to useful matrix-based approaches.</p>
+<p>Primarily for <em>biaxial weaves</em>.</p>
+<p>We (eventually) figured out how to extend the matrix approach to <em>triaxial</em> weaves (see <a href="https://dosull.github.io/weaving-space/code-junkyard/three-way-matrices.html">our notes</a>).</p>
+
+<aside><div>
+<p>This video by Lea Albaugh provided a nice way into the topic:</p>
+<p><a href="https://www.youtube.com/watch?v=oMOSiag3dxg">“It’s Just Matrix Multiplication”: Notation for Weaving</a>, presented at the Strange Loop conference, St Louis, 27-28 Sept, 2018.</p>
+<p>And this paper spells out the details:</p>
+<p>Glassner A. 2002. <a href="https://dx.doi.org/10.1109/MCG.2002.1046635"><em>Digital weaving 1</em></a>. IEEE Computer Graphics and Applications <strong>22</strong>(6):108–118.</p>
+</div></aside></section>
 <section id="weave-units" class="slide level2">
 <h2>Weave units</h2>
+<p>We make these the same way we make tile units.</p>
+<div class="sourceCode cell-code" id="cb5" data-code-line-numbers="2,5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1"></a>w1 <span class="op">=</span> WeaveUnit(weave_type <span class="op">=</span> <span class="st">"twill"</span>, n <span class="op">=</span> <span class="dv">3</span>, aspect <span class="op">=</span> <span class="fl">.9</span>, </span>
+<span id="cb5-2"><a href="#cb5-2"></a>               strands <span class="op">=</span> <span class="st">"ab-|cde-"</span>)</span>
+<span id="cb5-3"><a href="#cb5-3"></a></span>
+<span id="cb5-4"><a href="#cb5-4"></a>w2 <span class="op">=</span> WeaveUnit(weave_type <span class="op">=</span> <span class="st">"cube"</span>, aspect <span class="op">=</span> <span class="fl">.8</span>, </span>
+<span id="cb5-5"><a href="#cb5-5"></a>               strands <span class="op">=</span> <span class="st">"a-c|d-f|g-i"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>strands</code> parameter specifies which strands in each axis separated by the <code>"|"</code> are distinct, and also allows us to ‘skip’ strands on <code>"-"</code> characters .</p>
+</section>
+<section id="section-3" class="slide level2">
+<h2></h2>
+<div class="cell" data-execution_count="17">
+<div class="cell-output cell-output-display">
+<p><img data-src="quarto-test_files/figure-revealjs/cell-18-output-1.png" width="1069" height="692"></p>
+</div>
+</div>
 </section></section>
-<section id="some-maps" class="title-slide slide level1 center">
+<section>
+<section id="some-maps" class="title-slide slide level1 center" data-background-image="images/vermeer-the-geographer.jpg" data-background-opacity="0.5" style="text-shadow: 2px 2px 5px #ffc;">
 <h1>Some maps</h1>
+<p>Vermeer’s <em>The Geographer</em> (∽1675) because geography. Image from <a href="https://commons.wikimedia.org/wiki/File:Johannes_Vermeer_-_The_Geographer_-_WGA24687.jpg">commons.wikimedia.org</a>.</p>
+</section>
+<section id="making-a-tiled-map" class="slide level2">
+<h2>Making a tiled map</h2>
+<p>When tiling a map, <code>TileUnit</code> and <code>WeaveUnit</code> objects are the same.</p>
+<p>We have to specify the mapping from tileable unit identifiers (<code>"a"</code>, <code>"b"</code>, <code>"c"</code> …) to data variable names.</p>
+<p>We also have to specify the mapping from variable names to preferred colour palettes.</p>
+<p>It’s also possible to export a tiled map out to a geospatial or graphical format and work in some other preferred tool.</p>
+</section>
+<section id="the-code-and-a-map" class="slide level2">
+<h2>The code and a map</h2>
+<p>Make a <code>Tiling</code>.</p>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1"></a>tiling <span class="op">=</span> Tiling(cairo_tile, region, id_var <span class="op">=</span> <span class="st">"DZ2018"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Generate a <code>TiledMap</code> from the <code>Tiling</code> and configure variables and colour specifications.</p>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1"></a>tiled_map <span class="op">=</span> tiling.get_tiled_map(prioritise_tiles <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb7-2"><a href="#cb7-2"></a>tiled_map.variables <span class="op">=</span> <span class="bu">dict</span>(a <span class="op">=</span> <span class="st">"Rank_Emplo"</span>, b <span class="op">=</span> <span class="st">"Rank_Incom"</span>, </span>
+<span id="cb7-3"><a href="#cb7-3"></a>                           c <span class="op">=</span> <span class="st">"Rank_Crime"</span>, d <span class="op">=</span> <span class="st">"Rank_Housi"</span>)</span>
+<span id="cb7-4"><a href="#cb7-4"></a>tiled_map.colourmaps <span class="op">=</span> <span class="bu">dict</span>(<span class="bu">zip</span>(tiled_map.variables.values(),</span>
+<span id="cb7-5"><a href="#cb7-5"></a>                                (<span class="st">"Reds"</span>, <span class="st">"Blues"</span>, <span class="st">"Greens"</span>, <span class="st">"Greys"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then render the map.</p>
+<div class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1"></a>fig <span class="op">=</span> tiled_map.render(use_ellipse <span class="op">=</span> <span class="va">True</span>, figsize <span class="op">=</span> (<span class="dv">12</span>, <span class="dv">6</span>),</span>
+<span id="cb8-2"><a href="#cb8-2"></a>                        legend_dx <span class="op">=</span> <span class="op">-</span><span class="fl">0.05</span>, legend_dy <span class="op">=</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+
+</section><section the-code-and-a-map-output="the-code-and-a-map-output" class="slide level2 output-location-slide"><h2>The code and a map</h2><div class="cell output-location-slide" data-execution_count="21">
+<div class="cell-output cell-output-display">
+<p><img data-src="quarto-test_files/figure-revealjs/cell-22-output-1.png" width="1073" height="616"></p>
+</div>
+</div></section></section>
+<section>
+<section id="some-more-examples" class="title-slide slide level1 center" data-background-image="images/imd-escher-clip.png" data-background-opacity="0.5" style="text-shadow: 2px 2px 5px #ffc;">
+<h1>Some more examples</h1>
 
 </section>
-
+<section id="section-4" class="slide level2">
+<h2></h2>
+<div class="r-stack">
+<p><img data-src="images/imd-weave.png" class="fragment fade-out" data-fragment-index="1" width="950"></p>
+<p><img data-src="images/imd-arrows.png" class="fragment fade-in-then-out" data-fragment-index="1" width="950"></p>
+<p><img data-src="images/imd-escher.png" class="fragment fade-in-then-out" data-fragment-index="2" width="950"></p>
+<p><img data-src="images/gwr-example.png" class="fragment fade-in-then-out" data-fragment-index="3" width="950"></p>
+<p><img data-src="images/election-2016-weave.png" class="fragment fade-in" data-fragment-index="4" width="900"></p>
+</div>
+</section></section>
 <section id="conclusions" class="title-slide slide level1 center">
 <h1>Conclusions</h1>
 
