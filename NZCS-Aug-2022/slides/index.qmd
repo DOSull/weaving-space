@@ -1,10 +1,11 @@
 ---
-title: "Tiled & woven thematic maps"
-author: David O'Sullivan & Luke Bergmann
+title: Tiled & woven thematic maps
+author: David O'Sullivan & Luke R Bergmann
 format: 
   revealjs:
     theme: [beige, custom.scss]
     transition: fade
+    transition-speed: slow
     navigation-mode: vertical
     controls-layout: bottom-right
     controls-tutorial: true
@@ -28,12 +29,12 @@ from shapely.geometry import Polygon
 from shapely.affinity import rotate
 
 from weavingspace import TileUnit
-from weavingspace import TileShape
+from weavingspace import TileShape  
 from weavingspace import WeaveUnit
 from weavingspace import Tiling
 ```
 
-# Multivariate data mapping {background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 2px 2px 5px #ffc;"}
+# Multivariate maps {.smaller background-image="images/detailed-weave.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 Some background to the problem.
 
 ## But first... where we are headed
@@ -103,9 +104,9 @@ A little more context for these was provided in [our earlier talk](https://dosul
 :::
 
 
-# Tiling theory {background-image="images/mosaic-south-america.jpg" background-opacity=0.5 style="text-shadow: 2px 2px 5px #ffc;"}
+# Tiling theory {.smaller background-image="images/mosaic-south-america.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 
-A mosaic map of the world by Chris Chamberlain; see [this article](https://mymodernmet.com/chris-chamberlain-jewel-of-the-universe/) and 
+Mosaic world map by Chris Chamberlain; see [this article](https://mymodernmet.com/chris-chamberlain-jewel-of-the-universe/) and 
 [this video](https://www.youtube.com/watch?v=bgcc3w0-9X0) for more.
 
 
@@ -166,7 +167,7 @@ for a, t, n in zip(ax, tilings, ("iso", "2-", "2-")):
 ## Symmetry in cartographic tiling
 :::: {.columns}
 
-::: {.column width="60%" style="font-size:75%;"}
+::: {.column width="60%" style="font-size:72%;"}
 *Directionality* or *orientation* is irrelevant to mathematicians because they consider tiles and tilings identical under rotation. 
 
 However, they *are* important for mapping. Many isohedral tilings contain directionally distinguishable tiles.
@@ -213,10 +214,8 @@ Olson RK, Attneave F, 1970, “[What Variables Produce Similarity Grouping?](htt
 We are not entirely sure... <span class="fragment">yet!</span> 
 
 
-# Tile units {background-image="images/wooden-diamond-triangle-tiling-toy.jpg" background-opacity=0.5 style="text-shadow: 2px 2px 5px #ffc;"}
+# Tile units {.smaller background-image="images/wooden-diamond-triangle-tiling-toy.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 The building blocks of our approach.
-
-It may (not) surprise you to know I had a toy very much like this as a child...
 
 ## The basic pattern
 ```{python}
@@ -336,7 +335,7 @@ cairo_tile.plot(ax = ax, r = 2, show_ids = False,
             show_tile = False, show_reg_tile = False).set_axis_off()
 ```
 
-# Weaving {background-image="images/weave-pic-2.jpg" background-opacity=0.5 style="text-shadow: 2px 2px 5px #ffc;"}
+# Weaving {.smaller background-image="images/weave-pic-2.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 For a lot more on woven maps, see [our earlier talk](https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html).
 
 ## Some weaving theory
@@ -381,17 +380,8 @@ for a, w in zip(ax, (w1, w2)):
 ```
 
 
-# Some maps {background-image="images/vermeer-the-geographer.jpg" background-opacity=0.5 style="text-shadow: 2px 2px 5px #ffc;"}
-Vermeer's _The Geographer_ (&bsim;1675) because geography. Image from [commons.wikimedia.org](https://commons.wikimedia.org/wiki/File:Johannes_Vermeer_-_The_Geographer_-_WGA24687.jpg).
-
-## Making a tiled map
-When tiling a map, `TileUnit` and `WeaveUnit` objects are the same.
-
-We have to specify the mapping from tileable unit identifiers (`"a"`, `"b"`, `"c"` ...) to data variable names.
-
-We also have to specify the mapping from variable names to preferred colour palettes. 
-
-It's also possible to export a tiled map out to a geospatial or graphical format  and work in some other preferred tool.
+# Making maps {.smaller background-image="images/vermeer-the-geographer.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+Vermeer's _The Geographer_ (&bsim;1675) from [commons.wikimedia.org](https://commons.wikimedia.org/wiki/File:Johannes_Vermeer_-_The_Geographer_-_WGA24687.jpg).
 
 ```{python}
 region = gpd.read_file("/home/osullid3/Documents/code/weaving-space/data/imd-auckland-2018.gpkg")
@@ -400,36 +390,62 @@ cairo_tile.crs = region.crs
 cairo_tile = cairo_tile.transform_scale(0.5, 0.5)
 ```
 
-## The code and a map
+## Tiling a dataset
+Making a tiled map, `TileUnit` and `WeaveUnit` objects are both `Tileable` objects and can be treated the same.
 
-Make a `Tiling`.
+We make a `Tiling` object from one of these and a polygon dataset to be tiled. 
 
 ```{python}
 #| echo: true
 tiling = Tiling(cairo_tile, region, id_var = "DZ2018")
 ```
 
-Generate a `TiledMap` from the `Tiling` and configure variables and colour specifications.
+## The tiling process
+The `Tiling` generates a `TileGrid` which governs a process of copying, translating and dissolving the tileable units into a tiled or woven map.
+
+![](images/the-tiling-process.png)
+
+## Making a tiled map
+Next, make a `TiledMap` by calling the `get_tiled_map()` method of the `Tiling`.
 
 ```{python}
 #| echo: true
 tiled_map = tiling.get_tiled_map(prioritise_tiles = True)
+```
+
+Here we can choose to emphasize tile boundaries, or zone boundaries in the dataset using the  `prioritise_tiles` setting.
+
+## Designing the final map
+We then have to specify the mapping from tileable unit identifiers (`"a"`, `"b"`, `"c"` ...) to data variable names.
+
+```{python}
+#| echo: true
 tiled_map.variables = dict(a = "Rank_Emplo", b = "Rank_Incom", 
                            c = "Rank_Crime", d = "Rank_Housi")
+```
+
+We also specify the mapping from variable names to preferred colour palettes. 
+
+```{python}
+#| echo: true
 tiled_map.colourmaps = dict(zip(tiled_map.variables.values(),
                                 ("Reds", "Blues", "Greens", "Greys")))
 ```
 
-Then render the map.
+Now we are ready to render a map.
 
+##
 ```{python}
 #| echo: true
 #| output-location: slide
 fig = tiled_map.render(use_ellipse = True, figsize = (12, 6),
-                        legend_dx = -0.05, legend_dy = 0.05)
+                       legend_dx = -0.05, legend_dy = 0.05)
 ```
 
-# Some more examples {background-image="images/imd-escher-clip.png" background-opacity=0.5 style="text-shadow: 2px 2px 5px #ffc;"}
+There a range of options here particularly in relation to the tricky business of generating a legend.
+
+# Some more examples {.smaller background-image="images/imd-escher-clip.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+Because we can...
 
 ##
 
@@ -447,4 +463,23 @@ fig = tiled_map.render(use_ellipse = True, figsize = (12, 6),
 :::
 
 
-# Conclusions
+# Further work {.smaller background-image="images/chevron-fabric.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+Image from [publicdomainpictures.net](https://www.publicdomainpictures.net/en/view-image.php?image=371246&picture=tejido-textil-con-estampado-de-chevon) by [Andrea Stöckel](https://www.publicdomainpictures.net/en/browse-author.php?a=149229)
+
+
+##
+This work is an exploration or pattern, orientation, texture, and colour as visual variables. We invite collaboration! 
+
+The code used to make this talk is available at [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space).
+
+We're close to finalizing a release, and are keen to get feedback, contributions, and ideas, especially:
+
++ Actual use of the approach
++ QGIS plugin development
+
+If you have a project that might benefit from our approach, please reach out!
+
+## {style="text-align:center;"}
+### Questions? {.r-fit-text} 
+[github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
+
