@@ -468,7 +468,7 @@ Image from [publicdomainpictures.net](https://www.publicdomainpictures.net/en/vi
 
 
 ##
-This work is an exploration or pattern, orientation, texture, and colour as visual variables. We invite collaboration! 
+This work is an exploration of pattern, orientation, texture, and colour as visual variables. We invite collaboration! 
 
 The code used to make this talk is available at [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space).
 
