@@ -360,7 +360,6 @@ We make these the same way we make tile units.
 
 ```{python}
 #| echo: true
-#| code-line-numbers: "2,5"
 w1 = WeaveUnit(weave_type = "twill", n = 3, aspect = .9, 
                strands = "ab-|cde-")
 
