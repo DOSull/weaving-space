@@ -12,6 +12,7 @@ format:
     slide-number: true
     logo: images/logo.png
     footer: "GeoCart 2022 - Tiled & woven maps - O'Sullivan & Bergmann"
+    self-contained: true
 jupyter: python3
 ---
 
@@ -32,12 +33,17 @@ from weavingspace import TileUnit
 from weavingspace import TileShape  
 from weavingspace import WeaveUnit
 from weavingspace import Tiling
+
+ak = gpd.read_file("data/imd-auckland-2018.gpkg")
+vars = [v for v in ak.columns if "Rank" in v][:4]
+variables = dict(zip(list("abcd"), vars))
+colourmaps = dict(zip(variables.values(), 4 * ["viridis"]))
 ```
 
-# Multivariate maps {.smaller background-image="images/detailed-weave.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
-Some background to the problem.
+# A preview {.smaller background-image="images/detailed-weave.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+The TL;DR;
 
-## But first... where we are headed
+## Where we are headed
 Two new kinds of thematic map for handling complex multivariate data associated with polygons.
 
 We've [developed python code](https://github.com/DOSull/weaving-space) that helps you make tiled and woven maps.
@@ -46,13 +52,6 @@ We've [developed python code](https://github.com/DOSull/weaving-space) that help
 Many of the maps we show are of Dan Exeter's index of multiple deprivation (IMD). See: Exeter DJ, Zhao J, Crengle S, Lee A, Browne M, 2017, [The New Zealand Indices of Multiple Deprivation (IMD): A new suite of indicators for social and health research in Aotearoa, New Zealand](https://dx.plos.org/10.1371/journal.pone.0181260) _PLOS ONE_ **12**(8) e0181260
 :::
 
-
-```{python}
-ak = gpd.read_file("data/imd-auckland-2018.gpkg")
-vars = [v for v in ak.columns if "Rank" in v][:4]
-variables = dict(zip(list("abcd"), vars))
-colourmaps = dict(zip(variables.values(), 4 * ["viridis"]))
-```
 
 ## {transition="slide-in none-out"}
 
@@ -81,6 +80,22 @@ fig = tiling.get_tiled_map(prioritise_tiles = True) \
           legend = False, figsize = (10, 7))
 ```
 
+
+<!-- An earlier version of this section included these extra materials -->
+
+<!-- # Multivariate maps {.smaller background-image="images/detai
+led-weave.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+Some background to the problem.
+
+## But first... where we are headed
+Two new kinds of thematic map for handling complex multivariate data associated with polygons.
+
+We've [developed python code](https://github.com/DOSull/weaving-space) that helps you make tiled and woven maps.
+
+::: aside
+Many of the maps we show are of Dan Exeter's index of multiple deprivation (IMD). See: Exeter DJ, Zhao J, Crengle S, Lee A, Browne M, 2017, [The New Zealand Indices of Multiple Deprivation (IMD): A new suite of indicators for social and health research in Aotearoa, New Zealand](https://dx.plos.org/10.1371/journal.pone.0181260) _PLOS ONE_ **12**(8) e0181260
+::: 
+
 ## Some other approaches
 This is a perennially challenging problem, so many different ways of tackling it have been attempted...
 
@@ -101,7 +116,7 @@ A little more context for these was provided in [our earlier talk](https://dosul
 
 ![](images/dot-map.png "This approach is older than you might imagine, see Jenks GF, 1953, “‘Pointilism’ as a cartographic technique” The Professional Geographer 5(5) 4–6
 "){.fragment .fade-in fragment-index=5 width="800"}
-:::
+::: -->
 
 
 # Tiling theory {.smaller background-image="images/mosaic-south-america.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
@@ -122,7 +137,7 @@ Mosaic world map by Chris Chamberlain; see [this article](https://mymodernmet.co
 Grünbaum B, Shephard GC, 1987 _Tilings and Patterns_ (WH Freeman and Company, New York)
 :::
 
-## How many tilings?
+<!-- ## How many tilings?
 It's a lot. 
 
 Systematic enumeration up to a certain complexity yields a ‘galaxy’ of 2.4 billion tilings (Zeller et al. 2021). You can explore the galaxy here: [_Tegula_](https://github.com/husonlab/tegula).
@@ -131,7 +146,7 @@ Grünbaum and Shephard repeatedly narrow focus to tilings with specific properti
 
 ::: aside
 Zeller R, Delgado-Friedrichs O, Huson DH, 2021, “[_Tegula_ – exploring a galaxy of two-dimensional periodic tilings](https://doi.org/10.1016/j.cagd.2021.102027)” _Computer Aided Geometric Design_ **90** 102027
-:::
+::: -->
 
 ## Symmetry in mathematical tiling
 The symmetries of a tiling map tiles on to other tiles. 
@@ -367,7 +382,7 @@ w2 = WeaveUnit(weave_type = "cube", aspect = .8,
                strands = "a-c|d-f|g-i")
 ```
 
-The `strands` parameter specifies which strands in each axis separated by the `"|"` are distinct, and also allows us to 'skip' strands on `"-"` characters  .
+The `strands` parameter specifies which strands in each axis (separated by the `"|"`) are distinct, and also allows us to 'skip' strands on `"-"` characters  .
 
 ##
 
@@ -379,7 +394,7 @@ for a, w in zip(ax, (w1, w2)):
 ```
 
 
-# Making maps {.smaller background-image="images/vermeer-the-geographer.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+# Making a map {.smaller background-image="images/vermeer-the-geographer.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 Vermeer's _The Geographer_ (&bsim;1675) from [commons.wikimedia.org](https://commons.wikimedia.org/wiki/File:Johannes_Vermeer_-_The_Geographer_-_WGA24687.jpg).
 
 ```{python}
@@ -390,9 +405,9 @@ cairo_tile = cairo_tile.transform_scale(0.5, 0.5)
 ```
 
 ## Tiling a dataset
-Making a tiled map, `TileUnit` and `WeaveUnit` objects are both `Tileable` objects and can be treated the same.
+Making a tiled map, `TileUnit`s and `WeaveUnit`s are both `Tileable` objects and are treated the same.
 
-We make a `Tiling` object from one of these and a polygon dataset to be tiled. 
+We make a `Tiling` from one of these along with a polygon dataset to be tiled. 
 
 ```{python}
 #| echo: true
@@ -400,7 +415,7 @@ tiling = Tiling(cairo_tile, region, id_var = "DZ2018")
 ```
 
 ## The tiling process
-The `Tiling` generates a `TileGrid` which governs a process of copying, translating and dissolving the tileable units into a tiled or woven map.
+The `Tiling` generates a `TileGrid` which controls copying and translating the tileable units into a tiled or woven map.
 
 ![](images/the-tiling-process.png)
 
@@ -412,10 +427,12 @@ Next, make a `TiledMap` by calling the `get_tiled_map()` method of the `Tiling`.
 tiled_map = tiling.get_tiled_map(prioritise_tiles = True)
 ```
 
+This controls combining the `Tiling` with the geospatial data by overlay and dissolve operations.
+
 Here we can choose to emphasize tile boundaries, or zone boundaries in the dataset using the  `prioritise_tiles` setting.
 
 ## Designing the final map
-We then have to specify the mapping from tileable unit identifiers (`"a"`, `"b"`, `"c"` ...) to data variable names.
+Here we have to specify the mapping from tileable element identifiers (`"a"`, `"b"`, `"c"` ...) to data variables.
 
 ```{python}
 #| echo: true
@@ -423,7 +440,7 @@ tiled_map.variables = dict(a = "Rank_Emplo", b = "Rank_Incom",
                            c = "Rank_Crime", d = "Rank_Housi")
 ```
 
-We also specify the mapping from variable names to preferred colour palettes. 
+We also specify the mapping from variable names to chosen colour palettes. 
 
 ```{python}
 #| echo: true
@@ -431,7 +448,7 @@ tiled_map.colourmaps = dict(zip(tiled_map.variables.values(),
                                 ("Reds", "Blues", "Greens", "Greys")))
 ```
 
-Now we are ready to render a map.
+Now we can render a map...
 
 ##
 ```{python}
@@ -441,7 +458,8 @@ fig = tiled_map.render(use_ellipse = True, figsize = (12, 6),
                        legend_dx = -0.05, legend_dy = 0.05)
 ```
 
-There a range of options here particularly in relation to the tricky business of generating a legend.
+There are a range of options here particularly in relation to the tricky business of generating a legend.
+
 
 # Some more examples {.smaller background-image="images/imd-escher-clip.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 Because we can...
