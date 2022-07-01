@@ -9,7 +9,7 @@ format:
     navigation-mode: vertical
     controls-layout: bottom-right
     controls-tutorial: true
-    slide-number: true
+    slide-number: c/t
     logo: images/logo.png
     footer: "GeoCart 2022 - Tiled & woven maps - O'Sullivan & Bergmann"
     self-contained: true
@@ -33,6 +33,7 @@ from weavingspace import TileUnit
 from weavingspace import TileShape  
 from weavingspace import WeaveUnit
 from weavingspace import Tiling
+from weavingspace import tiling_utils
 
 ak = gpd.read_file("data/imd-auckland-2018.gpkg")
 vars = [v for v in ak.columns if "Rank" in v][:4]
@@ -69,10 +70,10 @@ fig = tiling.get_tiled_map(prioritise_tiles = True) \
 ## {transition="none-in slide-out"}
 
 ```{python}
-tile_unit = WeaveUnit(weave_type = "twill", strands = "ab|cd",
-                      aspect = 0.75, crs = ak.crs, spacing = 250)
-tile_unit = tile_unit.inset_elements(5)
-tile_unit = tile_unit.transform_rotate(45)
+tile_unit = WeaveUnit(weave_type = "twill", n = 3, strands = "ab|cd",
+                      aspect = .75, crs = ak.crs, spacing = 150)
+# tile_unit = tile_unit.inset_elements(10)
+tile_unit = tile_unit.transform_rotate(30)
 tiling = Tiling(tile_unit, ak, id_var = "DZ2018")
 
 fig = tiling.get_tiled_map(prioritise_tiles = True) \
@@ -148,49 +149,44 @@ Grünbaum and Shephard repeatedly narrow focus to tilings with specific properti
 Zeller R, Delgado-Friedrichs O, Huson DH, 2021, “[_Tegula_ – exploring a galaxy of two-dimensional periodic tilings](https://doi.org/10.1016/j.cagd.2021.102027)” _Computer Aided Geometric Design_ **90** 102027
 ::: -->
 
-## Symmetry in mathematical tiling
+## Symmetry in mathematical tiling theory
 The symmetries of a tiling map tiles on to other tiles. 
 
-The sets of tiles related to one another in this way are the *transitivity groups* of the tiling. 
+Sets of tiles mapped onto one another like this are *transitivity groups*, of which an *isohedral* tiling has only one.
 
-An *isohedral* tiling has only one transitivity group.
+Cartographically it probably doesn't work like that...
 
 ```{python}
 fig, ax = pyplot.subplots(1, 3, figsize = (12, 4))
 
 tilings = [
-  TileUnit(tiling_type = "cairo") \
-    .transform_rotate(45) \
-    .get_local_patch(r = 2, include_0 = True)["geometry"],
+  TileUnit(tiling_type = "cairo") .transform_rotate(45), 
 
   TileUnit(tiling_type = "archimedean", code = "4.8.8") \
-    .transform_rotate(45) \
-    .get_local_patch(r = 2, include_0 = True)["geometry"],  
+    .transform_rotate(45),
 
   WeaveUnit(weave_type = "plain", strands = "(abc)|(def)") \
-    .transform_rotate(45) \
-    .get_local_patch(r = 2, include_0 = True)["geometry"]
+    .transform_rotate(45)
 ]
 
 for a, t, n in zip(ax, tilings, ("iso", "2-", "2-")):
-  t.plot(ax = a, fc = "#00000040", ec = "w", lw = 0.5) \
+  t.plot(ax = a, r = 2, show_ids = False, 
+          show_reg_tile = False, show_tile = False, ec = "w", lw = 0.75) \
     .set_axis_off()
   a.set_title(f"{n}hedral") 
 ```
 
 
-## Symmetry in cartographic tiling
+## Symmetry in cartographic tiling theory
 :::: {.columns}
 
-::: {.column width="60%" style="font-size:72%;"}
-*Directionality* or *orientation* is irrelevant to mathematicians because they consider tiles and tilings identical under rotation. 
+::: {.column width="50%"}
+*Directionality* or *orientation* is irrelevant to mathematicians. 
 
-However, they *are* important for mapping. Many isohedral tilings contain directionally distinguishable tiles.
-
-We likely need a new cartographic notion of the transitivity groups where different tile orientations ‘count’ as different.
+However, it *is* important for mapping: we need a concept of cartographic transitivity groups where different tile orientations ‘count’.
 :::
 
-::: {.column width="40%"}
+::: {.column width="50%"}
 ```{python}
 arrow_tile = TileUnit()
 d = arrow_tile.spacing
@@ -211,7 +207,6 @@ arrow_tile.plot(show_vectors = True, show_ids = False,
 :::
 ::::
 
-
 ::: aside
 Olson RK, Attneave F, 1970, “[What Variables Produce Similarity Grouping?](https://doi.org/10.2307/1420852)” _The American Journal of Psychology_ **83**(1) 1
 :::
@@ -226,7 +221,7 @@ Olson RK, Attneave F, 1970, “[What Variables Produce Similarity Grouping?](htt
 
 . . .
 
-We are not entirely sure... <span class="fragment">yet!</span> 
+We are not entirely sure... <span class="fragment">but we'll keep looking!</span> 
 
 
 # Tile units {.smaller background-image="images/wooden-diamond-triangle-tiling-toy.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
@@ -250,7 +245,7 @@ squares = TileUnit()
 hexagons = TileUnit(tile_shape = TileShape.HEXAGON)
 ```
 ```{python}
-fig = pyplot.figure(figsize = (12, 4))
+fig = pyplot.figure(figsize = (13, 5))
 for u, posn in zip((triangles, squares, hexagons), range(131, 134)):
     ax = fig.add_subplot(posn)
     u.plot(ax = ax, r = 1, show_vectors = True).set_axis_off()
@@ -261,32 +256,36 @@ for u, posn in zip((triangles, squares, hexagons), range(131, 134)):
 units = [
   TileUnit(tiling_type = "archimedean", code = "3.3.4.3.4"),
   TileUnit(tiling_type = "archimedean", code = "3.3.3.3.6"),
-  TileUnit(tiling_type = "archimedean", code = "3.4.6.4"),
+  TileUnit(tiling_type = "archimedean", code = "4.8.8"),
   TileUnit(tiling_type = "archimedean", code = "3.6.3.6"),
   TileUnit(tiling_type = "archimedean", code = "4.6.12"),
-  TileUnit(tiling_type = "archimedean", code = "4.8.8")
+  TileUnit(tiling_type = "archimedean", code = "3.4.6.4")
 ]
-fig = pyplot.figure(figsize = (11, 7))
+fig = pyplot.figure(figsize = (12, 8))
 for u, posn in zip(units, range(231, 237)):
     ax = fig.add_subplot(posn)
     u.plot(ax = ax, r = 1, show_ids = False).set_axis_off()
+ax = tiling_utils.get_dual_tile_unit(units[5]).plot(
+                      ax = ax, fc = "#00000000", ec = "w")
 ```
 
 ## Laves (the Archimedean duals)
 ```{python}
 units = [
+  TileUnit(tiling_type = "laves", code = "3.3.4.3.4"),
   TileUnit(tiling_type = "laves", code = "3.3.3.3.6"),
-  TileUnit(tiling_type = "laves", code = "3.4.6.4"),
+  TileUnit(tiling_type = "laves", code = "4.8.8"),
   TileUnit(tiling_type = "laves", code = "3.6.3.6"),
-  TileUnit(tiling_type = "laves", code = "3.12.12"),
   TileUnit(tiling_type = "laves", code = "4.6.12"),
-  TileUnit(tiling_type = "laves", code = "4.8.8")
+  TileUnit(tiling_type = "laves", code = "3.4.6.4")
 ]
 laves2 = units[1]
-fig = pyplot.figure(figsize = (11, 7))
+fig = pyplot.figure(figsize = (12, 8))
 for u, posn in zip(units, range(231, 237)):
     ax = fig.add_subplot(posn)
     u.plot(ax = ax, r = 1, show_ids = False).set_axis_off()
+ax = tiling_utils.get_dual_tile_unit(units[5]).plot(
+                      ax = ax, fc = "#00000000", ec = "w")
 ```
 
 ## Hexagon dissections and colourings
@@ -300,14 +299,14 @@ units = [
   TileUnit(tiling_type = "hex-colouring", n = 7)
 ]
 hexc3 = units[3]
-fig = pyplot.figure(figsize = (11, 7))
+fig = pyplot.figure(figsize = (12, 8))
 for u, posn in zip(units, range(231, 237)):
     ax = fig.add_subplot(posn)
     u.plot(ax = ax, r = 1, show_ids = False).set_axis_off()
 ```
 
 ## In general
-These (and more) are all available with the same command:
+These (and more) are made the same way:
 
 ```{python} 
 #| echo: true
@@ -319,11 +318,12 @@ tile = TileUnit(
 )
 ```
 
-We can then make various adjustments:
+We can also make various adjustments:
 
 ```{python} 
 #| echo: true
 #| eval: false
+#| code-line-numbers: "4"
 tile = tile.transform_rotate(...)
 tile = tile.transform_scale(...)
 tile = tile.transform_skew(...)
@@ -338,7 +338,7 @@ Insetting relative to the repeating tile unit helps distinguish elements.
 laves2 = laves2.inset_tile(25).transform_rotate(15)
 hexc3 = hexc3.inset_tile(25)
 cairo_tile = cairo_tile.inset_tile(25).transform_rotate(-45)
-fig = pyplot.figure(figsize = (12, 4))
+fig = pyplot.figure(figsize = (13, 5))
 ax = fig.add_subplot(131)
 laves2.plot(ax = ax, r = 1, show_ids = False, 
             show_tile = False, show_reg_tile = False).set_axis_off()
@@ -353,15 +353,15 @@ cairo_tile.plot(ax = ax, r = 2, show_ids = False,
 # Weaving {.smaller background-image="images/weave-pic-2.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 For a lot more on woven maps, see [our earlier talk](https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html).
 
-## Some weaving theory
+## Weaving theory &Gt; tiling theory!
 Weaving theory leads to useful matrix-based approaches.
 
 Primarily for *biaxial weaves*.
 
-We (eventually) figured out how to extend the matrix approach to *triaxial* weaves (see [our notes](https://dosull.github.io/weaving-space/code-junkyard/three-way-matrices.html)).
+We have extended the matrix approach to *triaxial* weaves (see [our notes](https://dosull.github.io/weaving-space/code-junkyard/three-way-matrices.html)).
 
 :::aside
-This video by Lea Albaugh provided a nice way into the topic: 
+This video by Lea Albaugh provides a nice introduction: 
 
 ["It's Just Matrix Multiplication": Notation for Weaving](https://www.youtube.com/watch?v=oMOSiag3dxg), presented at the Strange Loop conference, St Louis, 27-28 Sept, 2018. 
 
@@ -382,7 +382,7 @@ w2 = WeaveUnit(weave_type = "cube", aspect = .8,
                strands = "a-c|d-f|g-i")
 ```
 
-The `strands` parameter specifies which strands in each axis (separated by the `"|"`) are distinct, and also allows us to 'skip' strands on `"-"` characters  .
+The `strands` parameter specifies which strands in each axis (separated by the `|`) are distinct, and also allows us to 'skip' strands on `-` characters  .
 
 ##
 
@@ -405,34 +405,43 @@ cairo_tile = cairo_tile.transform_scale(0.5, 0.5)
 ```
 
 ## Tiling a dataset
-Making a tiled map, `TileUnit`s and `WeaveUnit`s are both `Tileable` objects and are treated the same.
+`TileUnit`s and `WeaveUnit`s are both `Tileable` objects that can be used to make a `Tiling`.
 
-We make a `Tiling` from one of these along with a polygon dataset to be tiled. 
+To make a `Tiling` we also need a polygon dataset to be tiled and its unique ID variable. 
 
 ```{python}
 #| echo: true
 tiling = Tiling(cairo_tile, region, id_var = "DZ2018")
 ```
 
+
 ## The tiling process
-The `Tiling` generates a `TileGrid` which controls copying and translating the tileable units into a tiled or woven map.
+The `Tiling` holds a `TileGrid` which determines where to translate copies of the tileable units to form a tiled map.
 
 ![](images/the-tiling-process.png)
 
-## Making a tiled map
-Next, make a `TiledMap` by calling the `get_tiled_map()` method of the `Tiling`.
+## Getting a tiled map
+Next, get a `TiledMap` from the the `Tiling`.
 
 ```{python}
 #| echo: true
 tiled_map = tiling.get_tiled_map(prioritise_tiles = True)
 ```
 
-This controls combining the `Tiling` with the geospatial data by overlay and dissolve operations.
+This overlays the `Tiling` with the geospatial data polygons, pulling their data, and dissolves based on tile element IDs.
 
-Here we can choose to emphasize tile boundaries, or zone boundaries in the dataset using the  `prioritise_tiles` setting.
+We emphasize tile boundaries or zone boundaries in the data depending on the  `prioritise_tiles` setting.
+
+At this point, you can export to a dataset.
+
+```{python}
+#| eval: false
+#| echo: true
+tiled_map.to_file("my_tiled_map.gpkg") 
+```
 
 ## Designing the final map
-Here we have to specify the mapping from tileable element identifiers (`"a"`, `"b"`, `"c"` ...) to data variables.
+We have to specify the mapping from tileable element identifiers (`"a"`, `"b"`, `"c"` ...) to data variables.
 
 ```{python}
 #| echo: true
@@ -440,7 +449,7 @@ tiled_map.variables = dict(a = "Rank_Emplo", b = "Rank_Incom",
                            c = "Rank_Crime", d = "Rank_Housi")
 ```
 
-We also specify the mapping from variable names to chosen colour palettes. 
+We also specify a mapping from variable names to colour palettes. 
 
 ```{python}
 #| echo: true
@@ -454,47 +463,64 @@ Now we can render a map...
 ```{python}
 #| echo: true
 #| output-location: slide
-fig = tiled_map.render(use_ellipse = True, figsize = (12, 6),
+fig = tiled_map.render(use_ellipse = True, figsize = (12, 5.5),
                        legend_dx = -0.05, legend_dy = 0.05)
 ```
 
 There are a range of options here particularly in relation to the tricky business of generating a legend.
 
-
-# Some more examples {.smaller background-image="images/imd-escher-clip.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+## Some more examples {.smaller background-image="images/imd-escher-clip.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 Because we can...
 
 ##
 
 ::: {.r-stack}
 
-![](images/imd-weave.png){.fragment .fade-out fragment-index=1 width="950"}
+![](images/imd-weave.png){.fragment .fade-out fragment-index=1 width="1000"}
 
-![](images/imd-arrows.png){.fragment .fade-in-then-out fragment-index=1 width="950"}
+![](images/imd-arrows.png){.fragment .fade-in-then-out fragment-index=1 width="1000"}
 
-![](images/imd-escher.png){.fragment .fade-in-then-out fragment-index=2 width="950"}
+![](images/imd-escher.png){.fragment .fade-in-then-out fragment-index=2 width="1000"}
 
-![](images/gwr-example.png){.fragment .fade-in-then-out fragment-index=3 width="950"}
+![](images/gwr-example.png){.fragment .fade-in-then-out fragment-index=3 width="1000"}
 
-![](images/election-2016-weave.png){.fragment .fade-in fragment-index=4 width="900"}
+![](images/election-2016-weave.png){.fragment .fade-in fragment-index=4 width="1000"}
 :::
 
 
-# Further work {.smaller background-image="images/chevron-fabric.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+# Conclusions {.smaller background-image="images/chevron-fabric.jpg" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 Image from [publicdomainpictures.net](https://www.publicdomainpictures.net/en/view-image.php?image=371246&picture=tejido-textil-con-estampado-de-chevon) by [Andrea Stöckel](https://www.publicdomainpictures.net/en/browse-author.php?a=149229)
 
 
-##
-This work is an exploration of pattern, orientation, texture, and colour as visual variables. We invite collaboration! 
+## Thoughts {background-image="images/chevron-fabric.jpg" background-opacity=0.65 background-transition="none"} 
+This work is an exploration of the *combined* effect of pattern, orientation, texture, and colour as visual 'multi-variables'. Along the way we've seen some things that appear promising:
 
+::: {.incremental}
++ Contrasting variables by applying the same colour scheme to multiple attributes
++ Emergent multivariate regions (with uncertain boundaries)  
++ (Related) an overall sense of complex landscapes
+:::
+
+## Challenges {background-image="images/chevron-fabric.jpg" background-opacity=0.65 background-transition="none"} 
+There is plenty to think about
+
+:::{.incremental}
++ Using colour well is hard at the best of times&mdash;using several colours at once is even harder!
++ Legends are a challenge&mdash;ideas welcome!
++ We've worked hard to make the code easy to use... 
++ ... but it's still code
+:::
+
+
+## Further work {background-image="images/chevron-fabric.jpg" background-opacity=0.65 background-transition="none"} 
 The code used to make this talk is available at [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space).
 
 We're close to finalizing a release, and are keen to get feedback, contributions, and ideas, especially:
 
-+ Actual use of the approach
++ Actual users of the approach
 + QGIS plugin development
 
-If you have a project that might benefit from our approach, please reach out!
+If you have a project where this might work, please reach out!
 
 ## {style="text-align:center;"}
 ### Questions? {.r-fit-text} 
