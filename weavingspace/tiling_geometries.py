@@ -5,7 +5,7 @@
 element geometries. Some care is required in adding new functions that use 
 exisitng ones to get the sequence of setup operations right. Modify with care!
 
-The available tilings can be viewed in [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/all-the-tiles.ipynb).
+The available tilings can be viewed in [this notebook](https://github.com/DOSull/weaving-space/blob/main/all-the-tiles.ipynb).
 
 These tilings (and many many more!) are discussed in 
 
