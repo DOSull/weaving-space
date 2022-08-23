@@ -15,10 +15,15 @@ Some earlier abortive work in python based on generating geometries directly is 
 
 Some sketches figuring things out are in `sketches`.
 
-### Two talks
+## Talks
 An overview of the concepts assembled from the proof-of-concept _R_ code is on [this webpage](https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html).
 
 Slides from a more recent talk explaining the work, extended to tiled maps (of which woven maps are a special case) is available [here](https://dosull.github.io/weaving-space/NZCS-Aug-2022/slides/).
+
+## Other explanatory stuff
+Any of the notebooks in the main file list above may be of interest. Some background material and thinking about tiling is in [this notebook](notes-on-tiling-april-2022.ipynb).
+
+Preliminary documentation of the python codebase is [here](https://dosull.github.io/weaving-space/doc/weavingspace/).
 
 ## Notes
 The follow documents describe aspects of the project
