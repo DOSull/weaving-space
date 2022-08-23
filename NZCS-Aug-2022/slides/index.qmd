@@ -417,8 +417,24 @@ tiling = Tiling(cairo_tile, region, id_var = "DZ2018")
 
 ## The tiling process
 <!-- The `Tiling` holds a `TileGrid` which determines where to translate copies of the tileable units to form a tiled map.
- -->
-![](images/the-tiling-process.png)
+
+![](images/the-tiling-process.png)-->
+
+::: {.r-stack}
+
+![](images/the-tiling-process-1.png){width="1482"}
+
+![](images/the-tiling-process-2.png){.fragment .fade-in fragment-index=1 width="1482"}
+
+![](images/the-tiling-process-3.png){.fragment .fade-in fragment-index=2 width="1482"}
+
+![](images/the-tiling-process-4.png){.fragment .fade-in fragment-index=3 width="1482"}
+
+![](images/the-tiling-process-5.png){.fragment .fade-in fragment-index=4 width="1482"}
+
+![](images/the-tiling-process-6.png){.fragment .fade-in fragment-index=5 width="1482"}
+:::
+
 
 ## Getting a tiled map
 Next, get a `TiledMap` from the the `Tiling`.
