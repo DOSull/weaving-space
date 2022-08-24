@@ -531,14 +531,13 @@ There is plenty to think about
 ## Further work {background-image="images/chevron-fabric.jpg" background-opacity=0.65 background-transition="none"} 
 The code used to make this talk is available at [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space).
 
-We're close to finalizing a release, and are keen to get feedback, contributions, and ideas, especially:
+We are keen to get feedback, contributions, and ideas, especially:
 
 + Actual users of the approach
 + QGIS plugin development
 
-If you have a project where this might work, please reach out!
+If you have a project where this approach might work, please reach out!
 
 ## {style="text-align:center;"}
 ### Questions? {.r-fit-text} 
 [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
-
