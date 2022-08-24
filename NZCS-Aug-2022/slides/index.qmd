@@ -239,13 +239,12 @@ cairo_tile.plot(r = 1, show_vectors = True,
 
 ## Triangles, squares, hexagons
 ```{python}
-#| echo: true
 triangles = TileUnit(tile_shape = TileShape.TRIANGLE)
 squares = TileUnit() 
 hexagons = TileUnit(tile_shape = TileShape.HEXAGON)
 ```
 ```{python}
-fig = pyplot.figure(figsize = (13, 5))
+fig = pyplot.figure(figsize = (13, 6))
 for u, posn in zip((triangles, squares, hexagons), range(131, 134)):
     ax = fig.add_subplot(posn)
     u.plot(ax = ax, r = 1, show_vectors = True).set_axis_off()
