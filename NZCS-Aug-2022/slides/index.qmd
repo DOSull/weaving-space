@@ -485,7 +485,7 @@ fig = tiled_map.render(use_ellipse = True, figsize = (12, 5.5),
 
 There are a range of options here particularly in relation to the tricky business of generating a legend.
 
-## Some more examples {.smaller background-image="images/imd-escher-clip.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+## Some more examples {.smaller background-image="images/imd-arrows-clip.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 Because we can...
 
 ##
@@ -494,13 +494,13 @@ Because we can...
 
 ![](images/imd-weave.png){.fragment .fade-out fragment-index=1 width="1000"}
 
-![](images/imd-arrows.png){.fragment .fade-in-then-out fragment-index=1 width="1000"}
+<!-- ![](images/imd-arrows.png){.fragment .fade-in-then-out fragment-index=1 width="1000"}
+ -->
+![](images/imd-escher.png){.fragment .fade-in-then-out fragment-index=1 width="1000"}
 
-![](images/imd-escher.png){.fragment .fade-in-then-out fragment-index=2 width="1000"}
+![](images/gwr-example.png){.fragment .fade-in-then-out fragment-index=2 width="1000"}
 
-![](images/gwr-example.png){.fragment .fade-in-then-out fragment-index=3 width="1000"}
-
-![](images/election-2016-weave.png){.fragment .fade-in fragment-index=4 width="1000"}
+![](images/election-2016-weave.png){.fragment .fade-in fragment-index=3 width="1000"}
 :::
 
 
