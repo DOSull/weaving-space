@@ -3,20 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
+<meta name="generator" content="pdoc 0.8.1" />
 <title>weavingspace.tile_map API documentation</title>
 <meta name="description" content="Classes for tiling maps. `weavingspace.tile_map.Tiling` and
 `weavingspace.tile_map.TiledMap` are exposed in the
 public API and
 respectively enable …" />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
 </head>
 <body>
 <main>
@@ -91,6 +89,9 @@ class _TileGrid():
             vectors of the tiling in map space.
         _extent (gpd.GeoSeries): geometry of the (circular) extent of the   
             tiling transformed to grid generation space.
+        _at_centroids (bool): if True the grid will consist of the centroids of
+            the spatial units in the to_tile region, allowing a simple way to
+            use a tile unit as a point symbol.
     &#34;&#34;&#34;
     tile:TileUnit = None
     to_tile:gpd.GeoSeries = None
@@ -99,14 +100,20 @@ class _TileGrid():
     centre:tuple[float] = None
     points:gpd.GeoSeries = None
     _extent:gpd.GeoSeries = None
+    _at_centroids:bool = False
     
-    def __init__(self, tile:TileUnit, to_tile:gpd.GeoSeries):
+    def __init__(self, tile:TileUnit, to_tile:gpd.GeoSeries, 
+                 at_centroids:bool = False):
         self.tile = tile
         self.to_tile = tiling_utils.clean_polygon(
             gpd.GeoSeries([to_tile.unary_union]))
         self.inverse_transform, self.transform = self.get_transforms()
         self.extent, self.centre = self._get_extent()
-        self.points = self.get_grid()
+        self._at_centroids = at_centroids
+        if self._at_centroids:
+            self.points = to_tile.centroid
+        else:
+            self.points = self.get_grid()
         self.points.crs = self.tile.crs
 
 
@@ -196,13 +203,12 @@ class Tiling:
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
     grid:_TileGrid = None
-    # grid:old_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
-    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
+    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame,
                  id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
-                 elements_margin:float = 0) -&gt; None:
+                 elements_margin:float = 0, as_icons:bool = False) -&gt; None:
         &#34;&#34;&#34;Class to persist a tiling by filling an area relative to 
         a region sufficient to apply the tiling at any rotation.
         
@@ -226,9 +232,15 @@ class Tiling:
             unit (Tileable): the tile_unit to use.
             region (gpd.GeoDataFrame): the region to be tiled.
             id_var (str): a unique identifier variable in the region.
-            tile_margin (float, optional): _description_. Defaults to 0.
-            elements_sf (float, optional): _description_. Defaults to 1.
-            elements_margin (float, optional): _description_. Defaults to 0.
+            tile_margin (float, optional): values greater than one apply an 
+                inset margin to the tile unit. Defaults to 0.
+            elements_sf (float, optional): scales the tile unit elements. 
+                Defaults to 1.
+            elements_margin (float, optional): applies a negative buffer to 
+                the tile unit elements. Defaults to 0.
+            as_icons (bool, optional): if True tiles will only be placed at
+                the region&#39;s zone centroids, one per zone. Defaults to 
+                False. 
         &#34;&#34;&#34;
         # self.tile_shape = unit.tile_shape
         self.tile_unit = unit
@@ -246,14 +258,17 @@ class Tiling:
                 print(f&#34;&#34;&#34;Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.&#34;&#34;&#34;)        
         self.region = region
         self.region_id_var = (&#34;ID&#34; if id_var is None else id_var)
-        self.grid = _TileGrid(self.tile_unit, self.region.geometry)
-        # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
-        #                      self.region.geometry, self.tile_shape)
+        if as_icons:
+            self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
+        else:
+            self.grid = _TileGrid(self.tile_unit, self.region.geometry)
+            # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
+            #                      self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
 
 
     def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                      prioritise_tiles:bool = False) -&gt; &#34;TiledMap&#34;:
+                      prioritise_tiles:bool = True) -&gt; &#34;TiledMap&#34;:
         &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
         
         HERE BE DRAGONS! This function took a lot of trial and error to get 
@@ -275,7 +290,7 @@ class Tiling:
             rotation (float, optional): An optional rotation to apply. Defaults 
                 to 0. orientatijnto 
             prioritise_tiles (bool, optional): When True tiles will not be 
-                broken at boundaries in the region dataset. Defaults to False.
+                broken at boundaries in the region dataset. Defaults to True.
 
         Returns:
             TiledMap: a TiledMap of the source region.
@@ -1018,7 +1033,7 @@ class TiledMap:
 <dl>
 <dt id="weavingspace.tile_map.TiledMap"><code class="flex name class">
 <span>class <span class="ident">TiledMap</span></span>
-<span>(</span><span>tiling: <a title="weavingspace.tile_map.Tiling" href="#weavingspace.tile_map.Tiling">Tiling</a> = None, map: geopandas.geodataframe.GeoDataFrame = None, variables: dict[str, str] = None, colourmaps: dict[str, typing.Union[str, dict]] = None, legend: bool = True, legend_zoom: float = 1.0, legend_dx: float = 0.0, legend_dy: float = 0.0, use_ellipse: bool = False, ellipse_magnification: float = 1.0, radial_key: bool = False, draft_mode: bool = False, scheme: str = 'equalinterval', k: int = 100, figsize: tuple[float] = (20, 15), dpi: float = 72)</span>
+<span>(</span><span>tiling: <a title="weavingspace.tile_map.Tiling" href="#weavingspace.tile_map.Tiling">Tiling</a> = None, map: geopandas.geodataframe.GeoDataFrame = None, variables: dict[str, str] = None, colourmaps: dict[str, typing.Union[str, dict]] = None, legend: bool = True, legend_zoom: float = 1.0, legend_dx: float = 0.0, legend_dy: float = 0.0, use_ellipse: bool = False, ellipse_magnification: float = 1.0, radial_key: bool = False, draft_mode: bool = False, scheme: str = 'equalinterval', k: int = 100, figsize: tuple[float] = (20, 15), dpi: float = 72)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class representing a tiled map. Should not be accessed directly, but
@@ -1495,73 +1510,73 @@ class TiledMap:
 <dl>
 <dt id="weavingspace.tile_map.TiledMap.colourmaps"><code class="name">var <span class="ident">colourmaps</span> : dict[str, typing.Union[str, dict]]</code></dt>
 <dd>
-<div class="desc"><p>lookup from variables to cmaps</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.dpi"><code class="name">var <span class="ident">dpi</span> : float</code></dt>
 <dd>
-<div class="desc"><p>dots per inch for bitmap formats</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.draft_mode"><code class="name">var <span class="ident">draft_mode</span> : bool</code></dt>
 <dd>
-<div class="desc"><p>if True plot only the map coloured by element_id</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.ellipse_magnification"><code class="name">var <span class="ident">ellipse_magnification</span> : float</code></dt>
 <dd>
-<div class="desc"><p>magnification to apply to clip ellipse</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.figsize"><code class="name">var <span class="ident">figsize</span> : tuple[float]</code></dt>
 <dd>
-<div class="desc"><p>maptlotlib figsize</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.k"><code class="name">var <span class="ident">k</span> : int</code></dt>
 <dd>
-<div class="desc"><p>geopandas number of classes to apply</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.legend"><code class="name">var <span class="ident">legend</span> : bool</code></dt>
 <dd>
-<div class="desc"><p>whether or not to show a legend</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.legend_dx"><code class="name">var <span class="ident">legend_dx</span> : float</code></dt>
 <dd>
-<div class="desc"><p>horizontal shift of legend relative to the map</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.legend_dy"><code class="name">var <span class="ident">legend_dy</span> : float</code></dt>
 <dd>
-<div class="desc"><p>vertical shift of legend relative to the map</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.legend_zoom"><code class="name">var <span class="ident">legend_zoom</span> : float</code></dt>
 <dd>
-<div class="desc"><p>&lt;1 zooms out from legend to show more context</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.map"><code class="name">var <span class="ident">map</span> : geopandas.geodataframe.GeoDataFrame</code></dt>
 <dd>
-<div class="desc"><p>the GeoDataFrame on which this map is based</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.radial_key"><code class="name">var <span class="ident">radial_key</span> : bool</code></dt>
 <dd>
-<div class="desc"><p>if True use radial key even for ordinal/ratio data (normally these will be shown by concentric elements)</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.scheme"><code class="name">var <span class="ident">scheme</span> : str</code></dt>
 <dd>
-<div class="desc"><p>geopandas scheme to apply</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.tiling"><code class="name">var <span class="ident">tiling</span> : <a title="weavingspace.tile_map.Tiling" href="#weavingspace.tile_map.Tiling">Tiling</a></code></dt>
 <dd>
-<div class="desc"><p>the Tiling with the required tiles</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.use_ellipse"><code class="name">var <span class="ident">use_ellipse</span> : bool</code></dt>
 <dd>
-<div class="desc"><p>if True clips legend with an ellipse</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.variables"><code class="name">var <span class="ident">variables</span> : dict[str, str]</code></dt>
 <dd>
-<div class="desc"><p>lookup from element_id to variable names</p></div>
+<div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
 <dt id="weavingspace.tile_map.TiledMap.explore"><code class="name flex">
-<span>def <span class="ident">explore</span></span>(<span>self) ‑> None</span>
+<span>def <span class="ident">explore</span></span>(<span>self) -> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>TODO: add wrapper to make tiled web map via geopandas.explore.</p></div>
@@ -1576,7 +1591,7 @@ class TiledMap:
 </details>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.plot_legend"><code class="name flex">
-<span>def <span class="ident">plot_legend</span></span>(<span>self, ax: matplotlib.axes._axes.Axes = None, **kwargs) ‑> None</span>
+<span>def <span class="ident">plot_legend</span></span>(<span>self, ax: matplotlib.axes._axes.Axes = None, **kwargs) -> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Plots a legend for this tiled map.</p>
@@ -1666,7 +1681,7 @@ class TiledMap:
 </details>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.render"><code class="name flex">
-<span>def <span class="ident">render</span></span>(<span>self, **kwargs) ‑> matplotlib.figure.Figure</span>
+<span>def <span class="ident">render</span></span>(<span>self, **kwargs) -> matplotlib.figure.Figure</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Renders the current state to a map.</p>
@@ -1842,7 +1857,7 @@ plot. Defaults to (20,15).</dd>
 </details>
 </dd>
 <dt id="weavingspace.tile_map.TiledMap.to_file"><code class="name flex">
-<span>def <span class="ident">to_file</span></span>(<span>self, fname: str = None) ‑> None</span>
+<span>def <span class="ident">to_file</span></span>(<span>self, fname: str = None) -> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Outputs the tiled map to a layered GPKG file. </p>
@@ -1872,7 +1887,7 @@ plot. Defaults to (20,15).</dd>
 </dd>
 <dt id="weavingspace.tile_map.Tiling"><code class="flex name class">
 <span>class <span class="ident">Tiling</span></span>
-<span>(</span><span>unit: <a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a>, region: geopandas.geodataframe.GeoDataFrame, id_var: str, tile_margin: float = 0, elements_sf: float = 1, elements_margin: float = 0)</span>
+<span>(</span><span>unit: <a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a>, region: geopandas.geodataframe.GeoDataFrame, id_var: str, tile_margin: float = 0, elements_sf: float = 1, elements_margin: float = 0, as_icons: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class that applies a <code>Tileable</code> object to a region to be mapped.</p>
@@ -1906,11 +1921,18 @@ the specified distance to every element in the tile by applying the
 <dt><strong><code>id_var</code></strong> :&ensp;<code>str</code></dt>
 <dd>a unique identifier variable in the region.</dd>
 <dt><strong><code>tile_margin</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd><em>description</em>. Defaults to 0.</dd>
+<dd>values greater than one apply an
+inset margin to the tile unit. Defaults to 0.</dd>
 <dt><strong><code>elements_sf</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd><em>description</em>. Defaults to 1.</dd>
+<dd>scales the tile unit elements.
+Defaults to 1.</dd>
 <dt><strong><code>elements_margin</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd><em>description</em>. Defaults to 0.</dd>
+<dd>applies a negative buffer to
+the tile unit elements. Defaults to 0.</dd>
+<dt><strong><code>as_icons</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>if True tiles will only be placed at
+the region's zone centroids, one per zone. Defaults to
+False.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1929,13 +1951,12 @@ class Tiling:
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
     grid:_TileGrid = None
-    # grid:old_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
-    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
+    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame,
                  id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
-                 elements_margin:float = 0) -&gt; None:
+                 elements_margin:float = 0, as_icons:bool = False) -&gt; None:
         &#34;&#34;&#34;Class to persist a tiling by filling an area relative to 
         a region sufficient to apply the tiling at any rotation.
         
@@ -1959,9 +1980,15 @@ class Tiling:
             unit (Tileable): the tile_unit to use.
             region (gpd.GeoDataFrame): the region to be tiled.
             id_var (str): a unique identifier variable in the region.
-            tile_margin (float, optional): _description_. Defaults to 0.
-            elements_sf (float, optional): _description_. Defaults to 1.
-            elements_margin (float, optional): _description_. Defaults to 0.
+            tile_margin (float, optional): values greater than one apply an 
+                inset margin to the tile unit. Defaults to 0.
+            elements_sf (float, optional): scales the tile unit elements. 
+                Defaults to 1.
+            elements_margin (float, optional): applies a negative buffer to 
+                the tile unit elements. Defaults to 0.
+            as_icons (bool, optional): if True tiles will only be placed at
+                the region&#39;s zone centroids, one per zone. Defaults to 
+                False. 
         &#34;&#34;&#34;
         # self.tile_shape = unit.tile_shape
         self.tile_unit = unit
@@ -1979,14 +2006,17 @@ class Tiling:
                 print(f&#34;&#34;&#34;Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.&#34;&#34;&#34;)        
         self.region = region
         self.region_id_var = (&#34;ID&#34; if id_var is None else id_var)
-        self.grid = _TileGrid(self.tile_unit, self.region.geometry)
-        # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
-        #                      self.region.geometry, self.tile_shape)
+        if as_icons:
+            self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
+        else:
+            self.grid = _TileGrid(self.tile_unit, self.region.geometry)
+            # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
+            #                      self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
 
 
     def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                      prioritise_tiles:bool = False) -&gt; &#34;TiledMap&#34;:
+                      prioritise_tiles:bool = True) -&gt; &#34;TiledMap&#34;:
         &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
         
         HERE BE DRAGONS! This function took a lot of trial and error to get 
@@ -2008,7 +2038,7 @@ class Tiling:
             rotation (float, optional): An optional rotation to apply. Defaults 
                 to 0. orientatijnto 
             prioritise_tiles (bool, optional): When True tiles will not be 
-                broken at boundaries in the region dataset. Defaults to False.
+                broken at boundaries in the region dataset. Defaults to True.
 
         Returns:
             TiledMap: a TiledMap of the source region.
@@ -2164,7 +2194,7 @@ class Tiling:
 <h3>Methods</h3>
 <dl>
 <dt id="weavingspace.tile_map.Tiling.get_tiled_map"><code class="name flex">
-<span>def <span class="ident">get_tiled_map</span></span>(<span>self, id_var: str = None, rotation: float = 0.0, prioritise_tiles: bool = False) ‑> <a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></span>
+<span>def <span class="ident">get_tiled_map</span></span>(<span>self, id_var: str = None, rotation: float = 0.0, prioritise_tiles: bool = True) -> <a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns a <code><a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></code> filling a region at the requested rotation.</p>
@@ -2189,7 +2219,7 @@ name set on initialisation of the Tiling. Defaults to None.</dd>
 to 0. orientatijnto </dd>
 <dt><strong><code>prioritise_tiles</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>When True tiles will not be
-broken at boundaries in the region dataset. Defaults to False.</dd>
+broken at boundaries in the region dataset. Defaults to True.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -2201,7 +2231,7 @@ broken at boundaries in the region dataset. Defaults to False.</dd>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                  prioritise_tiles:bool = False) -&gt; &#34;TiledMap&#34;:
+                  prioritise_tiles:bool = True) -&gt; &#34;TiledMap&#34;:
     &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
     
     HERE BE DRAGONS! This function took a lot of trial and error to get 
@@ -2223,7 +2253,7 @@ broken at boundaries in the region dataset. Defaults to False.</dd>
         rotation (float, optional): An optional rotation to apply. Defaults 
             to 0. orientatijnto 
         prioritise_tiles (bool, optional): When True tiles will not be 
-            broken at boundaries in the region dataset. Defaults to False.
+            broken at boundaries in the region dataset. Defaults to True.
 
     Returns:
         TiledMap: a TiledMap of the source region.
@@ -2273,7 +2303,7 @@ broken at boundaries in the region dataset. Defaults to False.</dd>
 </details>
 </dd>
 <dt id="weavingspace.tile_map.Tiling.make_tiling"><code class="name flex">
-<span>def <span class="ident">make_tiling</span></span>(<span>self) ‑> geopandas.geodataframe.GeoDataFrame</span>
+<span>def <span class="ident">make_tiling</span></span>(<span>self) -> geopandas.geodataframe.GeoDataFrame</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Tiles the region with a weave unit tile, returning a GeoDataFrame</p>
@@ -2314,7 +2344,7 @@ weave unit.</dd>
 </details>
 </dd>
 <dt id="weavingspace.tile_map.Tiling.rotated"><code class="name flex">
-<span>def <span class="ident">rotated</span></span>(<span>self, rotation: float = None) ‑> geopandas.geodataframe.GeoDataFrame</span>
+<span>def <span class="ident">rotated</span></span>(<span>self, rotation: float = None) -> geopandas.geodataframe.GeoDataFrame</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the stored tiling rotated.</p>
@@ -2418,7 +2448,9 @@ Defaults to None.</dd>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
 </footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
 </body>
 </html>

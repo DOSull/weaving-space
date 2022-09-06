@@ -55,6 +55,9 @@ class _TileGrid():
             vectors of the tiling in map space.
         _extent (gpd.GeoSeries): geometry of the (circular) extent of the   
             tiling transformed to grid generation space.
+        _at_centroids (bool): if True the grid will consist of the centroids of
+            the spatial units in the to_tile region, allowing a simple way to
+            use a tile unit as a point symbol.
     """
     tile:TileUnit = None
     to_tile:gpd.GeoSeries = None
@@ -63,14 +66,20 @@ class _TileGrid():
     centre:tuple[float] = None
     points:gpd.GeoSeries = None
     _extent:gpd.GeoSeries = None
+    _at_centroids:bool = False
     
-    def __init__(self, tile:TileUnit, to_tile:gpd.GeoSeries):
+    def __init__(self, tile:TileUnit, to_tile:gpd.GeoSeries, 
+                 at_centroids:bool = False):
         self.tile = tile
         self.to_tile = tiling_utils.clean_polygon(
             gpd.GeoSeries([to_tile.unary_union]))
         self.inverse_transform, self.transform = self.get_transforms()
         self.extent, self.centre = self._get_extent()
-        self.points = self.get_grid()
+        self._at_centroids = at_centroids
+        if self._at_centroids:
+            self.points = to_tile.centroid
+        else:
+            self.points = self.get_grid()
         self.points.crs = self.tile.crs
 
 
@@ -160,13 +169,12 @@ class Tiling:
     region:gpd.GeoDataFrame = None
     region_id_var:str = None
     grid:_TileGrid = None
-    # grid:old_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
-    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, 
+    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame,
                  id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
-                 elements_margin:float = 0) -> None:
+                 elements_margin:float = 0, as_icons:bool = False) -> None:
         """Class to persist a tiling by filling an area relative to 
         a region sufficient to apply the tiling at any rotation.
         
@@ -190,9 +198,15 @@ class Tiling:
             unit (Tileable): the tile_unit to use.
             region (gpd.GeoDataFrame): the region to be tiled.
             id_var (str): a unique identifier variable in the region.
-            tile_margin (float, optional): _description_. Defaults to 0.
-            elements_sf (float, optional): _description_. Defaults to 1.
-            elements_margin (float, optional): _description_. Defaults to 0.
+            tile_margin (float, optional): values greater than one apply an 
+                inset margin to the tile unit. Defaults to 0.
+            elements_sf (float, optional): scales the tile unit elements. 
+                Defaults to 1.
+            elements_margin (float, optional): applies a negative buffer to 
+                the tile unit elements. Defaults to 0.
+            as_icons (bool, optional): if True tiles will only be placed at
+                the region's zone centroids, one per zone. Defaults to 
+                False. 
         """
         # self.tile_shape = unit.tile_shape
         self.tile_unit = unit
@@ -210,14 +224,17 @@ class Tiling:
                 print(f"""Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.""")        
         self.region = region
         self.region_id_var = ("ID" if id_var is None else id_var)
-        self.grid = _TileGrid(self.tile_unit, self.region.geometry)
-        # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
-        #                      self.region.geometry, self.tile_shape)
+        if as_icons:
+            self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
+        else:
+            self.grid = _TileGrid(self.tile_unit, self.region.geometry)
+            # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
+            #                      self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
 
 
     def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                      prioritise_tiles:bool = False) -> "TiledMap":
+                      prioritise_tiles:bool = True) -> "TiledMap":
         """Returns a `TiledMap` filling a region at the requested rotation.
         
         HERE BE DRAGONS! This function took a lot of trial and error to get 
@@ -239,7 +256,7 @@ class Tiling:
             rotation (float, optional): An optional rotation to apply. Defaults 
                 to 0. orientatijnto 
             prioritise_tiles (bool, optional): When True tiles will not be 
-                broken at boundaries in the region dataset. Defaults to False.
+                broken at boundaries in the region dataset. Defaults to True.
 
         Returns:
             TiledMap: a TiledMap of the source region.
