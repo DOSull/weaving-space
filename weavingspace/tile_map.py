@@ -277,8 +277,85 @@ class Tiling:
 
             # tiled_map.geometry = gpd.GeoSeries([
             #     g for g in tiled_map.geometry if g.overlaps(
-            #         self.region.buffer(self.tile_unit.spacing).unary_union)])
+            #         self.region.geometry.unary_union)])
             tiled_map = tiled_map.overlay(self.region)  
+
+            # determine areas of overlaid tile elements and drop the data
+            # we join the data back later, so dropping makes that easier
+            tiled_map["area"] = tiled_map.geometry.area
+            tiled_map = tiled_map.drop(columns = region_vars)
+            # make a lookup by largest area element to the region id variable
+            lookup = tiled_map \
+                .iloc[tiled_map.groupby("tileUID")["area"] \
+                .agg(pd.Series.idxmax)][["tileUID", id_var]]
+            # remove the id_var before we replace it with a new one
+            tiled_map = tiled_map.drop(columns = [id_var])
+            # now join the lookup and from there the region data
+            tiled_map = tiled_map \
+                .merge(lookup, on = "tileUID") \
+                .merge(self.region.drop(columns = ["geometry"]), on = id_var) 
+        else:  # much simpler, we just overlay
+            tiled_map = self.region.overlay(tiled_map)
+        
+        # make a dissolve variable from element_id and id_var, dissolve and drop
+        tiled_map["diss_var"] = (tiled_map.element_id + 
+                                 tiled_map[id_var].astype(str))
+        tiled_map = tiled_map \
+            .dissolve(by = "diss_var", as_index = False) \
+            .drop(["diss_var"], axis = 1)
+        
+        tm = TiledMap()
+        tm.tiling = self
+        tm.map = tiled_map
+        return tm
+
+
+    def get_tiled_map_2(self, id_var:str = None, rotation:float = 0., 
+                      prioritise_tiles:bool = True) -> "TiledMap":
+        """Returns a `TiledMap` filling a region at the requested rotation.
+        
+        HERE BE DRAGONS! This function took a lot of trial and error to get 
+        right, so modify with CAUTION!
+        
+        The `proritise_tiles = True` option means that the tiling will not 
+        break up the elements in `TileUnit`s at the boundaries between areas 
+        in the mapped region, but will instead ensure that tile elements remain
+        complete, picking up their data from the region zone which they overlap
+        the most. 
+        
+        As should be apparent from the volume of code, the prioritise_tiles = 
+        True option is where the tricky bits are mostly found.
+
+        Args:
+            id_var (str, optional): the variable the distinguishes areas in the
+                region to be tiled. None will be overwritten by the variable    
+                name set on initialisation of the Tiling. Defaults to None.
+            rotation (float, optional): An optional rotation to apply. Defaults 
+                to 0. orientatijnto 
+            prioritise_tiles (bool, optional): When True tiles will not be 
+                broken at boundaries in the region dataset. Defaults to True.
+
+        Returns:
+            TiledMap: a TiledMap of the source region.
+        """
+        # if no id_var is supplied overwrite it with the class id_var
+        id_var = (self.region_id_var if id_var is None else id_var)
+        tiled_map = self.rotated(rotation)
+        # compile a list of the variable names we are NOT going to change
+        # i.e. everything except the geometry and the id_var
+        region_vars = list(self.region.columns)
+        region_vars.remove("geometry")
+        region_vars.remove(id_var)
+        
+        if prioritise_tiles:  # maintain tile continuity across zone boundaries
+            # make column with unique ID for every element in the tiling
+            tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
+            # overlay with the zones from the region to be tiled
+
+            tiled_map.geometry = gpd.GeoSeries([
+                g for g in tiled_map.geometry if g.overlaps(
+                    self.region.geometry.unary_union)])
+            # tiled_map = tiled_map.overlay(self.region)  
 
             # determine areas of overlaid tile elements and drop the data
             # we join the data back later, so dropping makes that easier
