@@ -274,7 +274,11 @@ class Tiling:
             # make column with unique ID for every element in the tiling
             tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
             # overlay with the zones from the region to be tiled
-            tiled_map = tiled_map.overlay(self.region)  
+            tiled_map.geometry = gpd.GeoSeries([
+                g for g in tiled_map.geometry if g.overlaps(
+                    self.region.buffer(self.tile_unit.spacing).unary_union)])
+            # tiled_map = tiled_map.overlay(self.region)  
+
             # determine areas of overlaid tile elements and drop the data
             # we join the data back later, so dropping makes that easier
             tiled_map["area"] = tiled_map.geometry.area

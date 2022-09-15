@@ -7,7 +7,6 @@ __pycache__/
 other-data/
 an12*
 QGIS/
-__*
 *.pdf
 data/0*.gpkg
 odds-and-ends/
