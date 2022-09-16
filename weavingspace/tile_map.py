@@ -71,8 +71,9 @@ class _TileGrid():
     def __init__(self, tile:TileUnit, to_tile:gpd.GeoSeries, 
                  at_centroids:bool = False):
         self.tile = tile
-        self.to_tile = tiling_utils.clean_polygon(
-            gpd.GeoSeries([to_tile.unary_union]))
+        # self.to_tile = tiling_utils.clean_polygon(
+        #     gpd.GeoSeries([to_tile.unary_union]))
+        self.to_tile = self._get_area_to_tile(to_tile)
         self.inverse_transform, self.transform = self.get_transforms()
         self.extent, self.centre = self._get_extent()
         self._at_centroids = at_centroids
@@ -81,6 +82,15 @@ class _TileGrid():
         else:
             self.points = self.get_grid()
         self.points.crs = self.tile.crs
+    
+    
+    def _get_area_to_tile(self, to_tile) -> geom.Polygon:
+        bb = to_tile.total_bounds
+        poly = geom.Polygon(((bb[0], bb[1]), 
+                             (bb[2], bb[1]), 
+                             (bb[2], bb[3]), 
+                             (bb[2], bb[1])))
+        return gpd.GeoSeries([poly])
 
 
     def _get_extent(self) -> tuple[gpd.GeoSeries, geom.Point]:
@@ -275,10 +285,10 @@ class Tiling:
         region_vars.remove("geometry")
         region_vars.remove(id_var)
 
-        # It's quicker if we select only tiles inside the region
-        mask = self.region.buffer(self.tile_unit.spacing).unary_union
-        tiled_map = self.tiles.loc[
-            [g.within(mask) for g in self.tiles.geometry]]
+        # # It's quicker if we select only tiles inside the region
+        # mask = self.region.buffer(self.tile_unit.spacing).unary_union
+        # tiled_map = self.tiles.loc[
+        #     [g.within(mask) for g in self.tiles.geometry]]
 
         if prioritise_tiles:  # maintain tile continuity across zone boundaries
             # select only tiles inside a spacing buffer of the region
