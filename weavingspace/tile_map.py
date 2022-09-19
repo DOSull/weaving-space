@@ -305,33 +305,41 @@ class Tiling:
             # make column with unique ID for every element in the tiling
             tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
 
-            # determine areas of overlaid tile elements and drop the data
+            # determine areas of overlapping tile elements and drop the data
             # we join the data back later, so dropping makes that easier
             overlaps = self.region.overlay(tiled_map) #.overlay(self.region) 
-            overlaps["area"] = overlaps.geometry.area
-            overlaps =  overlaps.drop(columns = region_vars)
-
             if debug:
                 t3 = perf_counter()
                 print(f"Time to overlay tiling with zones: {t3 - t2:.3f}")
+            overlaps["area"] = overlaps.geometry.area
+            if debug:
+                t4 = perf_counter()
+                print(f"Time to calculate areas: {t4 - t3:.3f}")
+            overlaps =  overlaps.drop(columns = region_vars)
+
+            if debug:
+                t5 = perf_counter()
+                print(f"Time to overlay tiling with zones: {t5 - t4:.3f}")
 
             # make a lookup by largest area element to the region id variable
             lookup = overlaps \
                 .iloc[overlaps.groupby("tileUID")["area"] \
                 .agg(pd.Series.idxmax)][["tileUID", id_var]]
             # now join the lookup and from there the region data
+            if debug:
+                t6 = perf_counter()
+                print(f"Time to build lookup for join: {t6 - t5:.3f}")
             tiled_map = tiled_map \
                 .merge(lookup, on = "tileUID") \
                 .merge(self.region.drop(columns = ["geometry"]), on = id_var) 
-
             if debug:
-                t4 = perf_counter()
-                print(f"Time to build lookup for join: {t4 - t3:.3f}")
+                t7 = perf_counter()
+                print(f"Time to perform lookup join: {t7 - t6:.3f}")
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
-            t4 = perf_counter()
+            t7 = perf_counter()
             if debug:
-                print(f"Time to overlay tiling with zones: {t4 - t2:.3f}")
+                print(f"Time to overlay tiling with zones: {t7 - t2:.3f}")
         
         # make a dissolve variable from element_id and id_var, dissolve and drop
         tiled_map["diss_var"] = (tiled_map.element_id + 
@@ -341,15 +349,15 @@ class Tiling:
             .drop(["diss_var"], axis = 1)
 
         if debug:
-            t5 = perf_counter()
-            print(f"Time to dissolve tiles within zones: {t5 - t4:.3f}")
+            t8 = perf_counter()
+            print(f"Time to dissolve tiles within zones: {t8 - t7:.3f}")
         
         # if we've retained tiles and want 'clean' edges, then clip
         if prioritise_tiles and not ragged_edges:
             tiled_map.sindex
             tiled_map = tiled_map.clip(self.region)
             if debug:
-                print(f"Time to clip map to region: {perf_counter() - t5:.3f}")
+                print(f"Time to clip map to region: {perf_counter() - t8:.3f}")
 
         tm = TiledMap()
         tm.tiling = self
