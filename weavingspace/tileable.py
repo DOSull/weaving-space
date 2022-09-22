@@ -64,7 +64,9 @@ class Tileable:
         fudge_factor (float): a distance in units of self.crs to be used in
             geometry clean ups (for example this buffer distance is applied
             before unioning polygons.) Defaults to `1e-3`.
-   """
+        debug (bool, optional): if True prints debug messages. Defaults to
+            False.
+    """
     elements:gpd.GeoDataFrame = None
     tile:gpd.GeoDataFrame = None
     spacing:float = 1000.
