@@ -309,10 +309,10 @@ class Tiling:
         if prioritise_tiles:  # maintain tile continuity across zone boundaries
             # select only tiles inside a spacing buffer of the region
             # make column with unique ID for every element in the tiling
+            tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
 
             if use_centroid_lookup_approximation:
                 t5 = perf_counter()
-                tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
                 tile_pts = copy.deepcopy(tiled_map)
                 tile_pts.geometry = tile_pts.centroid
                 lookup = tile_pts.sjoin(

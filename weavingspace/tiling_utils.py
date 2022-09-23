@@ -436,7 +436,7 @@ def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -> bool:
         bool: True if they neighbour along an edge
     """
     return p1.buffer(1e-3, resolution = 1, join_style = 2).intersection(
-        p2.buffer(1e-3, resolution = 1, join_style = 2)).area > 4e-6
+        p2.buffer(1e-3, resolution = 1, join_style = 2)).area > 1e-5
 
 
 def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
@@ -561,12 +561,10 @@ def clean_polygon(p:Union[geom.Polygon, gpd.GeoSeries],
         Union[geom.Polygon, gpd.GeoSeries]: the cleaned Polygon or GeoSeries.
     """
     if shrink_then_grow:
-        return p.buffer(
-            -res, resolution = 1, join_style = 2).buffer(
+        return p.buffer(-res, resolution = 1, join_style = 2).buffer(
                 res, resolution = 1, join_style = 2)
     else:
-        return p.buffer(
-            res, resolution = 1, join_style = 2).buffer(
+        return p.buffer(res, resolution = 1, join_style = 2).buffer(
                 -res, resolution = 1, join_style = 2)
     
 

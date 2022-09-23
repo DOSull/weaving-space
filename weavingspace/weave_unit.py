@@ -208,6 +208,13 @@ class WeaveUnit(Tileable):
             next_labels = [list(ids[i]) for i in strand_order]  # list of lists
             next_labels = list(itertools.chain(*next_labels))  # flatten 
             strand_ids.extend(next_labels)
+        # sometimes empty polygons make it to here, so 
+        # filter those out along with the associated IDs
+        real_polys = [not p.is_empty for p in weave_polys]
+        weave_polys = [p for p, b in zip(weave_polys, real_polys) if b]
+        strand_ids = [id for id, b in zip(strand_ids, real_polys) if b]
+        # note that the approx_tile is important for the 
+        # biaxial case, which is not necessarily centred on (0, 0)
         approx_tile = shapely.ops.unary_union(cells)
         tile = grid.get_tile_from_cells(approx_tile)
         atc = approx_tile.centroid
@@ -240,7 +247,7 @@ class WeaveUnit(Tileable):
             geometry = gpd.GeoSeries(
                 [affine.translate(p, offset[0], offset[1]) for p in polys]))
         weave = weave[weave.element_id != "-"]
-        weave.geometry = tiling_utils.clean_polygon(weave.geometry)
+        # weave.geometry = tiling_utils.clean_polygon(weave.geometry)
         weave = weave.dissolve(by = "element_id", as_index = False)
         weave = weave.explode(index_parts = False, ignore_index = True)
         weave.geometry = tiling_utils.clean_polygon(weave.geometry)

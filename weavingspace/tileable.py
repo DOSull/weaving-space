@@ -75,11 +75,15 @@ class Tileable:
     regularised_tile:gpd.GeoDataFrame = None
     crs:int = 3857
     fudge_factor:float = 1e-3
+    debug:bool = False
     
     # Tileable constructor called by subclasses - should not be used directly
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             self.__dict__[k] = v
+        if self.debug:
+            print(f"""Debugging messages enabled for Tileable (but there aren't
+                  any at the moment...)""")
         self._setup_tile_and_elements()
         self.setup_vectors()
         if self.regularised_tile is None:
@@ -187,6 +191,8 @@ class Tileable:
         while changes_made:
             changes_made = False
             for v in self.vectors:
+                # empty list to collect the new fragments
+                # assembled in this iteration
                 next_frags = []
                 t_fragments = [affine.translate(f, v[0], v[1]) 
                                for f in fragments]
@@ -209,9 +215,13 @@ class Tileable:
                                     resolution = 1, join_style = 2))
                     u2 = affine.translate(u1, -v[0], -v[1])
                     if tile.intersection(u1).area > tile.intersection(u2).area:
+                        u1 = u1.buffer(-self.fudge_factor,
+                                       resolution = 1, join_style = 2)
                         next_frags.append(u1)
                         reg_tile = (reg_tile | u1) - u2
                     else:
+                        u2 = u2.buffer(-self.fudge_factor,
+                                       resolution = 1, join_style = 2)
                         next_frags.append(u2)
                         reg_tile = (reg_tile | u2) - u1
                     changes_made = True
@@ -222,7 +232,7 @@ class Tileable:
                 fragments = next_frags + fragments
         self.regularised_tile.geometry[0] = \
             reg_tile.buffer(-self.fudge_factor, resolution = 1, join_style = 2)
-        return fragments
+        return [f for f in fragments if not f.is_empty] # don't return any duds
 
 
     def regularise_elements(self) -> None:
@@ -233,9 +243,6 @@ class Tileable:
         attribute accordingly.
         """
         self.regularised_tile = copy.deepcopy(self.tile)
-        self.regularised_tile.geometry = \
-            self.regularised_tile.geometry.buffer(
-                self.fudge_factor, resolution = 1, join_style = 2)
         # This preserves order while finding uniques, unlike list(set()).
         # Reordering ids might cause confusion when colour palettes
         # are not assigned explicitly to each id, but in the order
@@ -259,7 +266,6 @@ class Tileable:
         if self.regularised_tile.geometry.shape[0] > 1:
             self.regularised_tile.geometry = \
                 tiling_utils.get_largest_polygon(self.regularised_tile.geometry)
-        # This simplification seems very crude but fixes all kinds of issues...
         self.regularised_tile.geometry[0] = \
             self.regularised_tile.geometry[0].simplify(self.spacing / 100)
         return None
