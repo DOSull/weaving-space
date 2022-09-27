@@ -137,12 +137,7 @@ def incentre(poly:geom.Polygon) -> geom.Point:
     also work, but it is unclear if this is an equivalent construction (more
     reading required...) 
     
-    NOTE: there is some error here as the polygon whose centroid is taken at 
-    the end of the algorithm is a much reduced copy of the original polygon, 
-    the centroid of which is not its incentre! But the error involved is on the 
-    order <<1e-9.
-
-    Args:
+        Args:
         poly (geom.Polygon): the polygon.
 
     Returns:
@@ -154,7 +149,7 @@ def incentre(poly:geom.Polygon) -> geom.Point:
     c = poly.centroid
     # if corners are equidistant from the centroid, then return that
     d0 = corners[0].distance(c)
-    if all([isclose(pt.distance(c), d0) for pt in corners[1:-1]]):
+    if all([isclose(pt.distance(c), d0) for pt in corners[0:-1]]):
         return c
     else:  # find the incentre
         r = get_apothem(poly)
@@ -166,15 +161,6 @@ def incentre(poly:geom.Polygon) -> geom.Point:
         # b1 = get_angle_bisector(poly, 0)
         # b2 = get_angle_bisector(poly, 1)
         # return b1.intersection(b2)
-
-        # edges = [geom.LineString([p, q]) 
-        #          for p, q in zip(corners[:-1], corners[1:])][:2]
-        # # add a small epsilon to the buffer to ensure intersections
-        # edge_buffers = [e.buffer(r + 1e-9, cap_style = 2) for e in edges]
-        # x = edge_buffers[0].intersection(edge_buffers[1])
-        # for b in edge_buffers[1:]:
-        #     x = x.intersection(b)
-        # return x.centroid
 
 
 def get_apothem(poly:geom.Polygon) -> float:
