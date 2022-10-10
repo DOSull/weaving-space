@@ -382,9 +382,6 @@ def setup_archimedean(unit:TileUnit) -> None:
         unit.elements = tiling_utils.get_dual_tile_unit(unit)
         unit.setup_regularised_tile_from_elements()
         return
-        # # our dual tiling code isn't correct for this one
-        # _setup_archimedean_3464(unit)
-        # return
     elif unit.code == "3.6.3.6":
         setup_laves(unit)
         unit.elements = tiling_utils.get_dual_tile_unit(unit)

@@ -10,6 +10,7 @@ multivariate map.
 from dataclasses import dataclass
 from typing import Union
 import itertools
+import copy
 
 import numpy as np
 import geopandas as gpd
@@ -247,8 +248,11 @@ class Tiling:
 
 
     def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                      prioritise_tiles:bool = True, 
-                      ragged_edges:bool = True, debug = False) -> "TiledMap":
+                      prioritise_tiles:bool = True,
+                      tiles_or_elements:str = "elements",
+                      ragged_edges:bool = True, 
+                      use_centroid_lookup_approximation = False,
+                      debug = False) -> "TiledMap":
         """Returns a `TiledMap` filling a region at the requested rotation.
         
         HERE BE DRAGONS! This function took a lot of trial and error to get 
@@ -258,7 +262,9 @@ class Tiling:
         break up the elements in `TileUnit`s at the boundaries between areas 
         in the mapped region, but will instead ensure that tile elements remain
         complete, picking up their data from the region zone which they overlap
-        the most. 
+        the most. The `tiles_or_elements` flag (experimental!) potentially 
+        allows prioritisation at the level of tile unit, not element. Possibly
+        just a 'hook' for now to be checked later.
         
         The exact order in which operations are performed affects performance. 
         For example, the final clipping to self.region when ragged_edges = False
@@ -273,10 +279,17 @@ class Tiling:
                 to 0.
             prioritise_tiles (bool, optional): if True tiles will not be 
                 broken at boundaries in the region dataset. Defaults to True.
+            tiles_or_elements (str, optional): if "tiles" then the tile 
+                prioritisation applies to tiles; if "elements" then it applies
+                to tile unit elements. Defaults to "elements".
             ragged_edges (bool, optional): if True tiles at the edge of the 
                 region will not be cut by the region extent - ignored if 
                 prioritise_tiles is False when edges will always be clipped to 
                 the region extent. Defaults to True.
+            use_centroid_lookup_approximation (bool, optional): if True use
+                element centroids for lookup of region data - ignored if 
+                prioritise_tiles is False when it is irrelevant. Defaults to
+                False.
             debug (bool, optional): if True prints timing messages. Defaults
                 to False.
 
@@ -285,7 +298,6 @@ class Tiling:
         """
         if debug:
             t1 = perf_counter()
-            print(f"Time at start of get_tiled_map(): {t1:.3f}")
         
         # if no id_var is supplied overwrite it with the class id_var
         id_var = (self.region_id_var if id_var is None else id_var)
@@ -298,58 +310,79 @@ class Tiling:
 
         if debug:
             t2 = perf_counter()
-            print(f"Time to prep data (rotation if requested): {t2 - t1:.3f}")
-
+            print(f"STEP 1: prep data (rotation if requested): {t2 - t1:.3f}")
+            
         if prioritise_tiles:  # maintain tile continuity across zone boundaries
             # select only tiles inside a spacing buffer of the region
             # make column with unique ID for every element in the tiling
-            tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
+            if tiles_or_elements == "tiles":
+                # the join ID is based on the tile
+                tiled_map["joinUID"] = self.tiles.tile_id
+            else:
+                # the join ID is unique per element
+                tiled_map["joinUID"] = list(range(tiled_map.shape[0]))
 
-            # determine areas of overlaid tile elements and drop the data
-            # we join the data back later, so dropping makes that easier
-            overlaps = self.region.overlay(tiled_map) #.overlay(self.region) 
-            overlaps["area"] = overlaps.geometry.area
-            overlaps =  overlaps.drop(columns = region_vars)
-
+            if use_centroid_lookup_approximation:
+                t5 = perf_counter()
+                tile_pts = copy.deepcopy(tiled_map)
+                tile_pts.geometry = tile_pts.centroid
+                lookup = tile_pts.sjoin(
+                    self.region, how = "inner")[["joinUID", id_var]]
+            else:
+                # determine areas of overlapping tile elements and drop the data
+                # we join the data back later, so dropping makes that easier
+                # overlaying in region.overlay(tiles) seems to be faster??
+                # TODO: also... this part is performance-critical, think about # fixes -- possibly including the above centroid-based approx
+                overlaps = self.region.overlay(tiled_map, make_valid = False)
+                if debug:
+                    t3 = perf_counter()
+                    print(f"STEP A2: overlay zones with tiling: {t3 - t2:.3f}")
+                overlaps["area"] = overlaps.geometry.area
+                if debug:
+                    t4 = perf_counter()
+                    print(f"STEP A3: calculate areas: {t4 - t3:.3f}")
+                overlaps =  overlaps.drop(columns = region_vars)
+                if debug:
+                    t5 = perf_counter()
+                    print(f"STEP A4: drop columns prior to join: {t5 - t4:.3f}")
+                # make a lookup by largest area element to region id
+                lookup = overlaps \
+                    .iloc[overlaps.groupby("joinUID")["area"] \
+                    .agg(pd.Series.idxmax)][["joinUID", id_var]]
+                # now join the lookup and from there the region data
             if debug:
-                t3 = perf_counter()
-                print(f"Time to overlay tiling with zones: {t3 - t2:.3f}")
-
-            # make a lookup by largest area element to the region id variable
-            lookup = overlaps \
-                .iloc[overlaps.groupby("tileUID")["area"] \
-                .agg(pd.Series.idxmax)][["tileUID", id_var]]
-            # now join the lookup and from there the region data
+                t6 = perf_counter()
+                print(f"STEP A5: build lookup for join: {t6 - t5:.3f}")
             tiled_map = tiled_map \
-                .merge(lookup, on = "tileUID") \
+                .merge(lookup, on = "joinUID") \
                 .merge(self.region.drop(columns = ["geometry"]), on = id_var) 
-
             if debug:
-                t4 = perf_counter()
-                print(f"Time to build lookup for join: {t4 - t3:.3f}")
+                t7 = perf_counter()
+                print(f"STEP A6: perform lookup join: {t7 - t6:.3f}")
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
-            t4 = perf_counter()
+            t7 = perf_counter()
             if debug:
-                print(f"Time to overlay tiling with zones: {t4 - t2:.3f}")
+                print(f"STEP B2: overlay tiling with zones: {t7 - t2:.3f}")
         
         # make a dissolve variable from element_id and id_var, dissolve and drop
-        tiled_map["diss_var"] = (tiled_map.element_id + 
-                                 tiled_map[id_var].astype(str))
-        tiled_map = tiled_map \
-            .dissolve(by = "diss_var", as_index = False) \
-            .drop(["diss_var"], axis = 1)
+        # tiled_map["diss_var"] = (tiled_map.element_id + 
+        #                          tiled_map[id_var].astype(str))
+        # tiled_map = tiled_map \
+        #     .dissolve(by = "diss_var", as_index = False) \
+        #     .drop(["diss_var"], axis = 1)
 
         if debug:
-            t5 = perf_counter()
-            print(f"Time to dissolve tiles within zones: {t5 - t4:.3f}")
+            t8 = perf_counter()
+            print(f"STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}")
         
         # if we've retained tiles and want 'clean' edges, then clip
+        # note that this step is slow: geopandas unary_unions the clip layer
         if prioritise_tiles and not ragged_edges:
             tiled_map.sindex
             tiled_map = tiled_map.clip(self.region)
             if debug:
-                print(f"Time to clip map to region: {perf_counter() - t5:.3f}")
+                print(f"STEP A8: clip map to region: {perf_counter() - t8:.3f}")
 
         tm = TiledMap()
         tm.tiling = self
@@ -401,9 +434,12 @@ class Tiling:
             for p in self.grid.points])
         # replicate the element ids
         ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
+        tile_ids = sorted(list(range(len(self.grid.points))) * 
+                          self.tile_unit.elements.shape[0])
         tiles_gs = gpd.GeoSeries(tiles)
         # assemble and return as a GeoDataFrame
-        tiles_gdf = gpd.GeoDataFrame(data = {"element_id": ids},
+        tiles_gdf = gpd.GeoDataFrame(data = {"element_id": ids,
+                                             "tile_id": tile_ids},
                                      geometry = tiles_gs, 
                                      crs = self.tile_unit.crs)
         # unclear if we need the below or not...
@@ -426,7 +462,9 @@ class Tiling:
         if self.rotation == 0:
             return self.tiles
         return gpd.GeoDataFrame(
-            data = {"element_id": self.tiles.element_id}, crs = self.tiles.crs,
+            data = {"element_id": self.tiles.element_id,
+                    "tile_id": self.tiles.tile_id}, 
+            crs = self.tiles.crs,
             geometry = self.tiles.geometry.rotate(rotation, 
                                                   origin = self.grid.centre))
 

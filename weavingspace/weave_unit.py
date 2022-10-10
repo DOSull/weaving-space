@@ -46,6 +46,8 @@ class WeaveUnit(Tileable):
             Defaults to (2, 2).
         strands (str, optional): specification of the strand labels 
             along each axis. Defaults to "a|b|c".
+        debug (bool, optional): if True prints debug messages. Defaults to
+            False.
     """  
     weave_type:str = "plain"
     aspect:float = 1.
@@ -60,43 +62,23 @@ class WeaveUnit(Tileable):
         self.weave_type = self.weave_type.lower()
     
 
-    def _setup_tile_and_elements(self, **kwargs) -> None:
-        """Returns dictionary with weave unit and tile GeoDataFrames
-        
-        Args:
-            weave_type (str, optional): the type of weave pattern, one of 
-                "plain",  "twill", "basket", "this", "cube" or "hex". Defaults
-                to "plain".
-            aspect (float, optional): width of strands relative to the spacing. 
-                Defaults to 1.
-            n (tuple of ints): number of over-under strands in biaxial weaves. 
-                Only one item is required in a plain weave. Twill and basket 
-                patterns expect an even number of elements in the tuple. 
-                Defaults to (2, 2).
-            strands (str, optional): specification of the strand labels 
-                along each axis. Defaults to "a|b|c".
-            _tie_up (numpy.ndarray, optional): used when type is "this" to
-                specify a desired weave pattern. See: Glassner A, 2002, 
-                “Digital weaving. 1” IEEE Computer Graphics and Applications 22
-                (6) 108–118 DOI: 10.1109/MCG.2002.1046635. Defaults to None.
-            _tr (numpy.ndarray, optional): used when type is "this" to specify 
-                the treadling matrix. See: Glassner 2002. Defaults to None.
-            _th (numpy.ndarray, optional): used when type is "this" to specify
-                the threading matrix. See: Glassner 2002. Defaults to None.
+    def _setup_tile_and_elements(self) -> None:
+        """Returns dictionary with weave unit and tile GeoDataFrames based on
+        parameters already supplied to the constructor.
         """
         self._parameter_info()
 
         if self.weave_type in ("hex", "cube"):
-            self._setup_triaxial_weave_unit(**kwargs)
+            self._setup_triaxial_weave_unit()
             self.tile_shape = TileShape.HEXAGON
         else:
-            self._setup_biaxial_weave_unit(**kwargs)
+            self._setup_biaxial_weave_unit()
             self.tile_shape = TileShape.RECTANGLE
         return
 
 
     def _parameter_info(self) -> None:
-        """Outputs logging message concerning the supplied margin and aspect settings.
+        """Outputs logging message concerning the supplied aspect settings.
         """    
         
         if self.aspect == 0:
@@ -108,25 +90,8 @@ class WeaveUnit(Tileable):
         return None
 
 
-    def _setup_biaxial_weave_unit(self, **kwargs) -> None:
-        """Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
-
-        Args:
-            weave_type (str, optional): one of "plain", "twill", "basket" or
-                "this". Defaults to "twill".
-            n (Union[int,tuple[int]], optional): over under pattern. See 
-                make_over_under_row() for details. Defaults to 2.
-            aspect (float, optional): width of strands relative to the spacing. 
-                Defaults to 1.
-            strands (str, optional): specification of strand labels. See 
-                weaving_space_utils.get_strand_ids() for details. 
-                Defaults to "ab|cd".
-            _tie_up (np.ndarray, optional): a weave pattern matrix to pass thru
-                in the "this" case. Defaults to make_twill_matrix((2, 2)).
-            _tr (np.ndarray, optional): treadling matrix for the "this" 
-                case. Defaults to None.
-            _th (np.ndarray, optional): threading matrix for the "this" 
-                case. Defaults to None.
+    def _setup_biaxial_weave_unit(self) -> None:
+        """Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary based on paramters already supplied to constructor.
         """    
         warp_threads, weft_threads, _ = \
             tiling_utils.get_strand_ids(self.strands)
@@ -198,15 +163,8 @@ class WeaveUnit(Tileable):
         return loom
 
 
-    def _setup_triaxial_weave_unit(self, **kwargs) -> None:
-        """Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary
-
-        Args:
-            aspect (float, optional): width of strands relative to spacing.     
-                Defaults to 1.0.
-            strands (str, optional): specification of strand labels. See 
-                weaving_space_utils.get_strand_ids() for details. 
-                Defaults to "a|b|c".
+    def _setup_triaxial_weave_unit(self) -> None:
+        """Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary based on parameters already supplied to constructor.
         """    
         strands_1, strands_2, strands_3 = \
             tiling_utils.get_strand_ids(self.strands)
@@ -250,6 +208,13 @@ class WeaveUnit(Tileable):
             next_labels = [list(ids[i]) for i in strand_order]  # list of lists
             next_labels = list(itertools.chain(*next_labels))  # flatten 
             strand_ids.extend(next_labels)
+        # sometimes empty polygons make it to here, so 
+        # filter those out along with the associated IDs
+        real_polys = [not p.is_empty for p in weave_polys]
+        weave_polys = [p for p, b in zip(weave_polys, real_polys) if b]
+        strand_ids = [id for id, b in zip(strand_ids, real_polys) if b]
+        # note that the approx_tile is important for the 
+        # biaxial case, which is not necessarily centred on (0, 0)
         approx_tile = shapely.ops.unary_union(cells)
         tile = grid.get_tile_from_cells(approx_tile)
         atc = approx_tile.centroid
@@ -282,7 +247,7 @@ class WeaveUnit(Tileable):
             geometry = gpd.GeoSeries(
                 [affine.translate(p, offset[0], offset[1]) for p in polys]))
         weave = weave[weave.element_id != "-"]
-        weave.geometry = tiling_utils.clean_polygon(weave.geometry)
+        # weave.geometry = tiling_utils.clean_polygon(weave.geometry)
         weave = weave.dissolve(by = "element_id", as_index = False)
         weave = weave.explode(index_parts = False, ignore_index = True)
         weave.geometry = tiling_utils.clean_polygon(weave.geometry)
