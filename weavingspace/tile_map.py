@@ -309,14 +309,14 @@ class Tiling:
         if prioritise_tiles:  # maintain tile continuity across zone boundaries
             # select only tiles inside a spacing buffer of the region
             # make column with unique ID for every element in the tiling
-            tiled_map["tileUID"] = list(range(tiled_map.shape[0]))
+            tiled_map["elementUID"] = list(range(tiled_map.shape[0]))
 
             if use_centroid_lookup_approximation:
                 t5 = perf_counter()
                 tile_pts = copy.deepcopy(tiled_map)
                 tile_pts.geometry = tile_pts.centroid
                 lookup = tile_pts.sjoin(
-                    self.region, how = "inner")[["tileUID", id_var]]
+                    self.region, how = "inner")[["elementUID", id_var]]
             else:
                 # determine areas of overlapping tile elements and drop the data
                 # we join the data back later, so dropping makes that easier
@@ -336,14 +336,14 @@ class Tiling:
                     print(f"STEP A4: drop columns prior to join: {t5 - t4:.3f}")
                 # make a lookup by largest area element to region id
                 lookup = overlaps \
-                    .iloc[overlaps.groupby("tileUID")["area"] \
-                    .agg(pd.Series.idxmax)][["tileUID", id_var]]
+                    .iloc[overlaps.groupby("elementUID")["area"] \
+                    .agg(pd.Series.idxmax)][["elementUID", id_var]]
                 # now join the lookup and from there the region data
             if debug:
                 t6 = perf_counter()
                 print(f"STEP A5: build lookup for join: {t6 - t5:.3f}")
             tiled_map = tiled_map \
-                .merge(lookup, on = "tileUID") \
+                .merge(lookup, on = "elementUID") \
                 .merge(self.region.drop(columns = ["geometry"]), on = id_var) 
             if debug:
                 t7 = perf_counter()
