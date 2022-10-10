@@ -423,9 +423,12 @@ class Tiling:
             for p in self.grid.points])
         # replicate the element ids
         ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
+        tile_ids = sorted(list(range(len(self.grid.points))) * 
+                          self.tile_unit.elements.shape[0])
         tiles_gs = gpd.GeoSeries(tiles)
         # assemble and return as a GeoDataFrame
-        tiles_gdf = gpd.GeoDataFrame(data = {"element_id": ids},
+        tiles_gdf = gpd.GeoDataFrame(data = {"element_id": ids,
+                                             "tile_id": tile_ids},
                                      geometry = tiles_gs, 
                                      crs = self.tile_unit.crs)
         # unclear if we need the below or not...
