@@ -248,7 +248,8 @@ class Tiling:
 
 
     def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                      prioritise_tiles:bool = True, 
+                      prioritise_tiles:bool = True,
+                      tiles_or_elements:str = "elements",
                       ragged_edges:bool = True, 
                       use_centroid_lookup_approximation = False,
                       debug = False) -> "TiledMap":
@@ -261,7 +262,9 @@ class Tiling:
         break up the elements in `TileUnit`s at the boundaries between areas 
         in the mapped region, but will instead ensure that tile elements remain
         complete, picking up their data from the region zone which they overlap
-        the most. 
+        the most. The `tiles_or_elements` flag (experimental!) potentially 
+        allows prioritisation at the level of tile unit, not element. Possibly
+        just a 'hook' for now to be checked later.
         
         The exact order in which operations are performed affects performance. 
         For example, the final clipping to self.region when ragged_edges = False
@@ -276,6 +279,9 @@ class Tiling:
                 to 0.
             prioritise_tiles (bool, optional): if True tiles will not be 
                 broken at boundaries in the region dataset. Defaults to True.
+            tiles_or_elements (str, optional): if "tiles" then the tile 
+                prioritisation applies to tiles; if "elements" then it applies
+                to tile unit elements. Defaults to "elements".
             ragged_edges (bool, optional): if True tiles at the edge of the 
                 region will not be cut by the region extent - ignored if 
                 prioritise_tiles is False when edges will always be clipped to 
@@ -309,14 +315,19 @@ class Tiling:
         if prioritise_tiles:  # maintain tile continuity across zone boundaries
             # select only tiles inside a spacing buffer of the region
             # make column with unique ID for every element in the tiling
-            tiled_map["elementUID"] = list(range(tiled_map.shape[0]))
+            if tiles_or_elements == "tiles":
+                # the join ID is based on the tile
+                tiled_map["joinUID"] = self.tiles.tile_id
+            else:
+                # the join ID is unique per element
+                tiled_map["joinUID"] = list(range(tiled_map.shape[0]))
 
             if use_centroid_lookup_approximation:
                 t5 = perf_counter()
                 tile_pts = copy.deepcopy(tiled_map)
                 tile_pts.geometry = tile_pts.centroid
                 lookup = tile_pts.sjoin(
-                    self.region, how = "inner")[["elementUID", id_var]]
+                    self.region, how = "inner")[["joinUID", id_var]]
             else:
                 # determine areas of overlapping tile elements and drop the data
                 # we join the data back later, so dropping makes that easier
@@ -336,14 +347,14 @@ class Tiling:
                     print(f"STEP A4: drop columns prior to join: {t5 - t4:.3f}")
                 # make a lookup by largest area element to region id
                 lookup = overlaps \
-                    .iloc[overlaps.groupby("elementUID")["area"] \
-                    .agg(pd.Series.idxmax)][["elementUID", id_var]]
+                    .iloc[overlaps.groupby("joinUID")["area"] \
+                    .agg(pd.Series.idxmax)][["joinUID", id_var]]
                 # now join the lookup and from there the region data
             if debug:
                 t6 = perf_counter()
                 print(f"STEP A5: build lookup for join: {t6 - t5:.3f}")
             tiled_map = tiled_map \
-                .merge(lookup, on = "elementUID") \
+                .merge(lookup, on = "joinUID") \
                 .merge(self.region.drop(columns = ["geometry"]), on = id_var) 
             if debug:
                 t7 = perf_counter()
@@ -451,7 +462,9 @@ class Tiling:
         if self.rotation == 0:
             return self.tiles
         return gpd.GeoDataFrame(
-            data = {"element_id": self.tiles.element_id}, crs = self.tiles.crs,
+            data = {"element_id": self.tiles.element_id,
+                    "tile_id": self.tiles.tile_id}, 
+            crs = self.tiles.crs,
             geometry = self.tiles.geometry.rotate(rotation, 
                                                   origin = self.grid.centre))
 
