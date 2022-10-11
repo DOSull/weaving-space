@@ -349,7 +349,7 @@ class Tiling:
                 lookup = overlaps \
                     .iloc[overlaps.groupby("joinUID")["area"] \
                     .agg(pd.Series.idxmax)][["joinUID", id_var]]
-                # now join the lookup and from there the region data
+            # now join the lookup and from there the region data
             if debug:
                 t6 = perf_counter()
                 print(f"STEP A5: build lookup for join: {t6 - t5:.3f}")
