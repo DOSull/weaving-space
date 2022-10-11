@@ -179,13 +179,12 @@ class Tiling:
     tile_unit:Tileable = None
     tile_shape:TileShape = None
     region:gpd.GeoDataFrame = None
-    region_id_var:str = None
     grid:_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
-    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame,
-                 id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
+    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, id_var = None,
+                 tile_margin:float = 0, elements_sf:float = 1, 
                  elements_margin:float = 0, as_icons:bool = False) -> None:
         """Class to persist a tiling by filling an area relative to 
         a region sufficient to apply the tiling at any rotation.
@@ -209,7 +208,6 @@ class Tiling:
         Args:
             unit (Tileable): the tile_unit to use.
             region (gpd.GeoDataFrame): the region to be tiled.
-            id_var (str): a unique identifier variable in the region.
             tile_margin (float, optional): values greater than one apply an 
                 inset margin to the tile unit. Defaults to 0.
             elements_sf (float, optional): scales the tile unit elements. 
@@ -236,7 +234,8 @@ class Tiling:
                 print(f"""Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.""")        
         self.region = region
         self.region.sindex
-        self.region_id_var = ("ID" if id_var is None else id_var)
+        if id_var != None:
+            print("""id_var is no longer required and will be deprecated soon. A temporary unique index attribute is added and removed when generating the tiled map.""")
         if as_icons:
             self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
         else:
@@ -247,7 +246,7 @@ class Tiling:
         self.tiles.sindex
 
 
-    def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
+    def get_tiled_map(self, rotation:float = 0.,
                       prioritise_tiles:bool = True,
                       tiles_or_elements:str = "elements",
                       ragged_edges:bool = True, 
@@ -272,9 +271,6 @@ class Tiling:
         elements into the region zones. So... again... modify CAREFULLY!
         
         Args:
-            id_var (str, optional): the variable the distinguishes areas in the
-                region to be tiled. None will be overwritten by the variable    
-                name set on initialisation of the Tiling. Defaults to None.
             rotation (float, optional): An optional rotation to apply. Defaults 
                 to 0.
             prioritise_tiles (bool, optional): if True tiles will not be 
@@ -299,8 +295,7 @@ class Tiling:
         if debug:
             t1 = perf_counter()
         
-        # if no id_var is supplied overwrite it with the class id_var
-        id_var = (self.region_id_var if id_var is None else id_var)
+        id_var = self._setup_region_DZID()
         tiled_map = self.rotated(rotation)
         # compile a list of the variable names we are NOT going to change
         # i.e. everything except the geometry and the id_var
@@ -359,19 +354,14 @@ class Tiling:
             if debug:
                 t7 = perf_counter()
                 print(f"STEP A6: perform lookup join: {t7 - t6:.3f}")
+            self.region.drop(columns = [id_var])
+
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
             t7 = perf_counter()
             if debug:
                 print(f"STEP B2: overlay tiling with zones: {t7 - t2:.3f}")
         
-        # make a dissolve variable from element_id and id_var, dissolve and drop
-        # tiled_map["diss_var"] = (tiled_map.element_id + 
-        #                          tiled_map[id_var].astype(str))
-        # tiled_map = tiled_map \
-        #     .dissolve(by = "diss_var", as_index = False) \
-        #     .drop(["diss_var"], axis = 1)
-
         if debug:
             t8 = perf_counter()
             print(f"STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}")
@@ -388,6 +378,16 @@ class Tiling:
         tm.tiling = self
         tm.map = tiled_map
         return tm
+
+
+    def _setup_region_DZID(self) -> str:
+        dzid = "DZID"
+        i = 0
+        while dzid in self.region.columns: 
+            dzid = "DZID" + str(i)
+            i = i + 1
+        self.region[dzid] = list(range(self.region.shape[0]))
+        return dzid
     
     
     def _rotate_gdf_to_geoseries(
