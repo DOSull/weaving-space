@@ -100,7 +100,9 @@ class Tileable:
         fudge_factor (float): a distance in units of self.crs to be used in
             geometry clean ups (for example this buffer distance is applied
             before unioning polygons.) Defaults to `1e-3`.
-   &#34;&#34;&#34;
+        debug (bool, optional): if True prints debug messages. Defaults to
+            False.
+    &#34;&#34;&#34;
     elements:gpd.GeoDataFrame = None
     tile:gpd.GeoDataFrame = None
     spacing:float = 1000.
@@ -109,11 +111,15 @@ class Tileable:
     regularised_tile:gpd.GeoDataFrame = None
     crs:int = 3857
     fudge_factor:float = 1e-3
+    debug:bool = False
     
     # Tileable constructor called by subclasses - should not be used directly
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             self.__dict__[k] = v
+        if self.debug:
+            print(f&#34;&#34;&#34;Debugging messages enabled for Tileable (but there aren&#39;t
+                  any at the moment...)&#34;&#34;&#34;)
         self._setup_tile_and_elements()
         self.setup_vectors()
         if self.regularised_tile is None:
@@ -221,6 +227,8 @@ class Tileable:
         while changes_made:
             changes_made = False
             for v in self.vectors:
+                # empty list to collect the new fragments
+                # assembled in this iteration
                 next_frags = []
                 t_fragments = [affine.translate(f, v[0], v[1]) 
                                for f in fragments]
@@ -243,9 +251,13 @@ class Tileable:
                                     resolution = 1, join_style = 2))
                     u2 = affine.translate(u1, -v[0], -v[1])
                     if tile.intersection(u1).area &gt; tile.intersection(u2).area:
+                        u1 = u1.buffer(-self.fudge_factor,
+                                       resolution = 1, join_style = 2)
                         next_frags.append(u1)
                         reg_tile = (reg_tile | u1) - u2
                     else:
+                        u2 = u2.buffer(-self.fudge_factor,
+                                       resolution = 1, join_style = 2)
                         next_frags.append(u2)
                         reg_tile = (reg_tile | u2) - u1
                     changes_made = True
@@ -256,7 +268,7 @@ class Tileable:
                 fragments = next_frags + fragments
         self.regularised_tile.geometry[0] = \
             reg_tile.buffer(-self.fudge_factor, resolution = 1, join_style = 2)
-        return fragments
+        return [f for f in fragments if not f.is_empty] # don&#39;t return any duds
 
 
     def regularise_elements(self) -&gt; None:
@@ -267,9 +279,6 @@ class Tileable:
         attribute accordingly.
         &#34;&#34;&#34;
         self.regularised_tile = copy.deepcopy(self.tile)
-        self.regularised_tile.geometry = \
-            self.regularised_tile.geometry.buffer(
-                self.fudge_factor, resolution = 1, join_style = 2)
         # This preserves order while finding uniques, unlike list(set()).
         # Reordering ids might cause confusion when colour palettes
         # are not assigned explicitly to each id, but in the order
@@ -293,7 +302,6 @@ class Tileable:
         if self.regularised_tile.geometry.shape[0] &gt; 1:
             self.regularised_tile.geometry = \
                 tiling_utils.get_largest_polygon(self.regularised_tile.geometry)
-        # This simplification seems very crude but fixes all kinds of issues...
         self.regularised_tile.geometry[0] = \
             self.regularised_tile.geometry[0].simplify(self.spacing / 100)
         return None
@@ -641,6 +649,9 @@ valid. Defaults to 3857 (i.e. Web Mercator).</dd>
 <dd>a distance in units of self.crs to be used in
 geometry clean ups (for example this buffer distance is applied
 before unioning polygons.) Defaults to <code>1e-3</code>.</dd>
+<dt><strong><code>debug</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>if True prints debug messages. Defaults to
+False.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -670,7 +681,9 @@ class Tileable:
         fudge_factor (float): a distance in units of self.crs to be used in
             geometry clean ups (for example this buffer distance is applied
             before unioning polygons.) Defaults to `1e-3`.
-   &#34;&#34;&#34;
+        debug (bool, optional): if True prints debug messages. Defaults to
+            False.
+    &#34;&#34;&#34;
     elements:gpd.GeoDataFrame = None
     tile:gpd.GeoDataFrame = None
     spacing:float = 1000.
@@ -679,11 +692,15 @@ class Tileable:
     regularised_tile:gpd.GeoDataFrame = None
     crs:int = 3857
     fudge_factor:float = 1e-3
+    debug:bool = False
     
     # Tileable constructor called by subclasses - should not be used directly
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             self.__dict__[k] = v
+        if self.debug:
+            print(f&#34;&#34;&#34;Debugging messages enabled for Tileable (but there aren&#39;t
+                  any at the moment...)&#34;&#34;&#34;)
         self._setup_tile_and_elements()
         self.setup_vectors()
         if self.regularised_tile is None:
@@ -791,6 +808,8 @@ class Tileable:
         while changes_made:
             changes_made = False
             for v in self.vectors:
+                # empty list to collect the new fragments
+                # assembled in this iteration
                 next_frags = []
                 t_fragments = [affine.translate(f, v[0], v[1]) 
                                for f in fragments]
@@ -813,9 +832,13 @@ class Tileable:
                                     resolution = 1, join_style = 2))
                     u2 = affine.translate(u1, -v[0], -v[1])
                     if tile.intersection(u1).area &gt; tile.intersection(u2).area:
+                        u1 = u1.buffer(-self.fudge_factor,
+                                       resolution = 1, join_style = 2)
                         next_frags.append(u1)
                         reg_tile = (reg_tile | u1) - u2
                     else:
+                        u2 = u2.buffer(-self.fudge_factor,
+                                       resolution = 1, join_style = 2)
                         next_frags.append(u2)
                         reg_tile = (reg_tile | u2) - u1
                     changes_made = True
@@ -826,7 +849,7 @@ class Tileable:
                 fragments = next_frags + fragments
         self.regularised_tile.geometry[0] = \
             reg_tile.buffer(-self.fudge_factor, resolution = 1, join_style = 2)
-        return fragments
+        return [f for f in fragments if not f.is_empty] # don&#39;t return any duds
 
 
     def regularise_elements(self) -&gt; None:
@@ -837,9 +860,6 @@ class Tileable:
         attribute accordingly.
         &#34;&#34;&#34;
         self.regularised_tile = copy.deepcopy(self.tile)
-        self.regularised_tile.geometry = \
-            self.regularised_tile.geometry.buffer(
-                self.fudge_factor, resolution = 1, join_style = 2)
         # This preserves order while finding uniques, unlike list(set()).
         # Reordering ids might cause confusion when colour palettes
         # are not assigned explicitly to each id, but in the order
@@ -863,7 +883,6 @@ class Tileable:
         if self.regularised_tile.geometry.shape[0] &gt; 1:
             self.regularised_tile.geometry = \
                 tiling_utils.get_largest_polygon(self.regularised_tile.geometry)
-        # This simplification seems very crude but fixes all kinds of issues...
         self.regularised_tile.geometry[0] = \
             self.regularised_tile.geometry[0].simplify(self.spacing / 100)
         return None
@@ -1127,6 +1146,10 @@ class Tileable:
 <h3>Class variables</h3>
 <dl>
 <dt id="weavingspace.tileable.Tileable.crs"><code class="name">var <span class="ident">crs</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="weavingspace.tileable.Tileable.debug"><code class="name">var <span class="ident">debug</span> : bool</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1474,6 +1497,8 @@ tiling of map regions.</p>
     while changes_made:
         changes_made = False
         for v in self.vectors:
+            # empty list to collect the new fragments
+            # assembled in this iteration
             next_frags = []
             t_fragments = [affine.translate(f, v[0], v[1]) 
                            for f in fragments]
@@ -1496,9 +1521,13 @@ tiling of map regions.</p>
                                 resolution = 1, join_style = 2))
                 u2 = affine.translate(u1, -v[0], -v[1])
                 if tile.intersection(u1).area &gt; tile.intersection(u2).area:
+                    u1 = u1.buffer(-self.fudge_factor,
+                                   resolution = 1, join_style = 2)
                     next_frags.append(u1)
                     reg_tile = (reg_tile | u1) - u2
                 else:
+                    u2 = u2.buffer(-self.fudge_factor,
+                                   resolution = 1, join_style = 2)
                     next_frags.append(u2)
                     reg_tile = (reg_tile | u2) - u1
                 changes_made = True
@@ -1509,11 +1538,11 @@ tiling of map regions.</p>
             fragments = next_frags + fragments
     self.regularised_tile.geometry[0] = \
         reg_tile.buffer(-self.fudge_factor, resolution = 1, join_style = 2)
-    return fragments</code></pre>
+    return [f for f in fragments if not f.is_empty] # don&#39;t return any duds</code></pre>
 </details>
 </dd>
 <dt id="weavingspace.tileable.Tileable.plot"><code class="name flex">
-<span>def <span class="ident">plot</span></span>(<span>self, ax=None, show_tile: bool = True, show_reg_tile: bool = True, show_ids=True, show_vectors: bool = False, r: int = 0, tile_edgecolor: str = 'k', reg_tile_edgcolor: str = 'r', cmap: list[str] = None, figsize: tuple[float] = (8, 8), **kwargs) -> <function axes at 0x7f653c73c310></span>
+<span>def <span class="ident">plot</span></span>(<span>self, ax=None, show_tile: bool = True, show_reg_tile: bool = True, show_ids=True, show_vectors: bool = False, r: int = 0, tile_edgecolor: str = 'k', reg_tile_edgcolor: str = 'r', cmap: list[str] = None, figsize: tuple[float] = (8, 8), **kwargs) -> <function axes at 0x7fe00f78c310></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Plots a representation of the Tileable on the supplied axis. **kwargs
@@ -1639,9 +1668,6 @@ attribute accordingly.</p></div>
     attribute accordingly.
     &#34;&#34;&#34;
     self.regularised_tile = copy.deepcopy(self.tile)
-    self.regularised_tile.geometry = \
-        self.regularised_tile.geometry.buffer(
-            self.fudge_factor, resolution = 1, join_style = 2)
     # This preserves order while finding uniques, unlike list(set()).
     # Reordering ids might cause confusion when colour palettes
     # are not assigned explicitly to each id, but in the order
@@ -1665,7 +1691,6 @@ attribute accordingly.</p></div>
     if self.regularised_tile.geometry.shape[0] &gt; 1:
         self.regularised_tile.geometry = \
             tiling_utils.get_largest_polygon(self.regularised_tile.geometry)
-    # This simplification seems very crude but fixes all kinds of issues...
     self.regularised_tile.geometry[0] = \
         self.regularised_tile.geometry[0].simplify(self.spacing / 100)
     return None</code></pre>
@@ -1863,6 +1888,7 @@ attribute accordingly.</p></div>
 <h4><code><a title="weavingspace.tileable.Tileable" href="#weavingspace.tileable.Tileable">Tileable</a></code></h4>
 <ul class="">
 <li><code><a title="weavingspace.tileable.Tileable.crs" href="#weavingspace.tileable.Tileable.crs">crs</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.debug" href="#weavingspace.tileable.Tileable.debug">debug</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.elements" href="#weavingspace.tileable.Tileable.elements">elements</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.fit_elements_to_tile" href="#weavingspace.tileable.Tileable.fit_elements_to_tile">fit_elements_to_tile</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.fudge_factor" href="#weavingspace.tileable.Tileable.fudge_factor">fudge_factor</a></code></li>
