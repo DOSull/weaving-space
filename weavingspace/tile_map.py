@@ -151,7 +151,7 @@ class _TileGrid():
         mesh = np.array(np.meshgrid(np.arange(w) + l,
                                     np.arange(h) + b)).reshape((2, w * h)).T
         pts = [geom.Point(p[0], p[1]) for p in mesh]
-        return gpd.GeoSeries([p for p in pts if p.within(self.extent)]) \
+        return gpd.GeoSeries([p for p in pts if p.within(self.extent[0])]) \
             .affine_transform(self.inverse_transform)
 
 
