@@ -386,8 +386,8 @@ class Tileable:
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
              show_ids:str = "element_id", show_vectors:bool = False, r:int = 0,
              tile_edgecolor:str = "k", reg_tile_edgcolor:str = "r", 
-             cmap:list[str] = None, figsize:tuple[float] = (8, 8), 
-             **kwargs) -> pyplot.axes:
+             r_alpha:float = 0.3, cmap:list[str] = None, 
+             figsize:tuple[float] = (8, 8), **kwargs) -> pyplot.axes:
         """Plots a representation of the Tileable on the supplied axis. **kwargs
         are passed on to matplotlib.plot()
 
@@ -405,6 +405,8 @@ class Tileable:
                 `get_local_patch()`). Defaults to `False`.
             r (int, optional): passed to `get_local_patch()` to show context if 
                 greater than 0. Defaults to `0`.
+            r_alpha (float, optional): alpha setting for units other than the 
+                central one. Defaults to 0.3.
             tile_edgecolor (str, optional): outline colour for the tile. 
                 Defaults to `"k"`.
             reg_tile_edgcolor (str, optional): outline colour for the 
@@ -441,7 +443,8 @@ class Tileable:
                                 bbox = {"lw": 0, "fc": "#ffffff40"})
         if r > 0:
             self.get_local_patch(r = r).plot(ax = ax, column = "element_id",
-                                             alpha = 0.3, cmap = cm, **kwargs)
+                                             alpha = r_alpha, cmap = cm,
+                                             **kwargs)
         if show_tile:
             self.tile.plot(ax = ax, ec = tile_edgecolor, lw = 0.5,
                            fc = "#00000000", **kwargs) 
