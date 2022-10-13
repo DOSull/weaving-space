@@ -384,7 +384,7 @@ class Tileable:
     
 
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
-             show_ids = True, show_vectors:bool = False, r:int = 0,
+             show_ids:str = "element_id", show_vectors:bool = False, r:int = 0,
              tile_edgecolor:str = "k", reg_tile_edgcolor:str = "r", 
              cmap:list[str] = None, figsize:tuple[float] = (8, 8), 
              **kwargs) -> pyplot.axes:
@@ -397,8 +397,9 @@ class Tileable:
                 Defaults to `True`.
             show_reg_tile (bool, optional): if `True` show the regularised tile 
                 outline. Defaults to `True`.
-            show_ids (bool, optional): if `True` show the element_ids. 
-                Defaults to `True`.
+            show_ids (str, optional): if `element_id` show the element_ids. If
+                `id` show index number. If None or `""` don't label elements.
+                Defaults to `element_id`.
             show_vectors (bool, optional): if `True` show the translation 
                 vectors (not the minimal pair, but those used by 
                 `get_local_patch()`). Defaults to `False`.
@@ -425,12 +426,19 @@ class Tileable:
         else:
             self.elements.plot(ax = ax, column = "element_id", cmap = cm, 
                                figsize = figsize, **kwargs)
-        if show_ids:
-            for id, tile in zip(self.elements.element_id, 
-                                self.elements.geometry):
-                ax.annotate(id, (tile.centroid.x, tile.centroid.y),
-                            ha = "center", va = "center",
-                            bbox = {"lw": 0, "fc": "#ffffff40"})
+        if show_ids != None and show_ids != "":
+            do_label = True
+            if show_ids == "element_id" or show_ids == True:
+                labels = self.elements.element_id
+            elif show_ids == "id":
+                labels = [str(i) for i in range(self.elements.shape[0])]
+            else:
+                do_label = False
+            if do_label:
+                for id, tile in zip(labels, self.elements.geometry):
+                    ax.annotate(id, (tile.centroid.x, tile.centroid.y),
+                                ha = "center", va = "center",
+                                bbox = {"lw": 0, "fc": "#ffffff40"})
         if r > 0:
             self.get_local_patch(r = r).plot(ax = ax, column = "element_id",
                                              alpha = 0.3, cmap = cm, **kwargs)

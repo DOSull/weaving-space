@@ -44,6 +44,7 @@ multivariate map.
 from dataclasses import dataclass
 from typing import Union
 import itertools
+import copy
 
 import numpy as np
 import geopandas as gpd
@@ -62,6 +63,7 @@ from weavingspace.tile_unit import TileUnit
 
 import weavingspace.tiling_utils as tiling_utils
 
+from time import perf_counter
 
 @dataclass
 class _TileGrid():
@@ -105,8 +107,9 @@ class _TileGrid():
     def __init__(self, tile:TileUnit, to_tile:gpd.GeoSeries, 
                  at_centroids:bool = False):
         self.tile = tile
-        self.to_tile = tiling_utils.clean_polygon(
-            gpd.GeoSeries([to_tile.unary_union]))
+        # self.to_tile = tiling_utils.clean_polygon(
+        #     gpd.GeoSeries([to_tile.unary_union]))
+        self.to_tile = self._get_area_to_tile(to_tile)
         self.inverse_transform, self.transform = self.get_transforms()
         self.extent, self.centre = self._get_extent()
         self._at_centroids = at_centroids
@@ -115,6 +118,15 @@ class _TileGrid():
         else:
             self.points = self.get_grid()
         self.points.crs = self.tile.crs
+    
+    
+    def _get_area_to_tile(self, to_tile) -&gt; geom.Polygon:
+        bb = to_tile.total_bounds
+        poly = geom.Polygon(((bb[0], bb[1]), 
+                             (bb[2], bb[1]), 
+                             (bb[2], bb[3]), 
+                             (bb[0], bb[3])))
+        return gpd.GeoSeries([poly])
 
 
     def _get_extent(self) -&gt; tuple[gpd.GeoSeries, geom.Point]:
@@ -201,13 +213,12 @@ class Tiling:
     tile_unit:Tileable = None
     tile_shape:TileShape = None
     region:gpd.GeoDataFrame = None
-    region_id_var:str = None
     grid:_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
-    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame,
-                 id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
+    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, id_var = None,
+                 tile_margin:float = 0, elements_sf:float = 1, 
                  elements_margin:float = 0, as_icons:bool = False) -&gt; None:
         &#34;&#34;&#34;Class to persist a tiling by filling an area relative to 
         a region sufficient to apply the tiling at any rotation.
@@ -231,7 +242,6 @@ class Tiling:
         Args:
             unit (Tileable): the tile_unit to use.
             region (gpd.GeoDataFrame): the region to be tiled.
-            id_var (str): a unique identifier variable in the region.
             tile_margin (float, optional): values greater than one apply an 
                 inset margin to the tile unit. Defaults to 0.
             elements_sf (float, optional): scales the tile unit elements. 
@@ -257,7 +267,9 @@ class Tiling:
             else:
                 print(f&#34;&#34;&#34;Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.&#34;&#34;&#34;)        
         self.region = region
-        self.region_id_var = (&#34;ID&#34; if id_var is None else id_var)
+        self.region.sindex
+        if id_var != None:
+            print(&#34;&#34;&#34;id_var is no longer required and will be deprecated soon. A temporary unique index attribute is added and removed when generating the tiled map.&#34;&#34;&#34;)
         if as_icons:
             self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
         else:
@@ -265,10 +277,15 @@ class Tiling:
             # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
             #                      self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
+        self.tiles.sindex
 
 
-    def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                      prioritise_tiles:bool = True) -&gt; &#34;TiledMap&#34;:
+    def get_tiled_map(self, rotation:float = 0.,
+                      prioritise_tiles:bool = True,
+                      tiles_or_elements:str = &#34;elements&#34;,
+                      ragged_edges:bool = True, 
+                      use_centroid_lookup_approximation = False,
+                      debug = False) -&gt; &#34;TiledMap&#34;:
         &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
         
         HERE BE DRAGONS! This function took a lot of trial and error to get 
@@ -278,65 +295,133 @@ class Tiling:
         break up the elements in `TileUnit`s at the boundaries between areas 
         in the mapped region, but will instead ensure that tile elements remain
         complete, picking up their data from the region zone which they overlap
-        the most. 
+        the most. The `tiles_or_elements` flag (experimental!) potentially 
+        allows prioritisation at the level of tile unit, not element. Possibly
+        just a &#39;hook&#39; for now to be checked later.
         
-        As should be apparent from the volume of code, the prioritise_tiles = 
-        True option is where the tricky bits are mostly found.
-
+        The exact order in which operations are performed affects performance. 
+        For example, the final clipping to self.region when ragged_edges = False
+        is _much_ slower if it is carried out before the dissolving of tile 
+        elements into the region zones. So... again... modify CAREFULLY!
+        
         Args:
-            id_var (str, optional): the variable the distinguishes areas in the
-                region to be tiled. None will be overwritten by the variable    
-                name set on initialisation of the Tiling. Defaults to None.
             rotation (float, optional): An optional rotation to apply. Defaults 
-                to 0. orientatijnto 
-            prioritise_tiles (bool, optional): When True tiles will not be 
+                to 0.
+            prioritise_tiles (bool, optional): if True tiles will not be 
                 broken at boundaries in the region dataset. Defaults to True.
+            tiles_or_elements (str, optional): if &#34;tiles&#34; then the tile 
+                prioritisation applies to tiles; if &#34;elements&#34; then it applies
+                to tile unit elements. Defaults to &#34;elements&#34;.
+            ragged_edges (bool, optional): if True tiles at the edge of the 
+                region will not be cut by the region extent - ignored if 
+                prioritise_tiles is False when edges will always be clipped to 
+                the region extent. Defaults to True.
+            use_centroid_lookup_approximation (bool, optional): if True use
+                element centroids for lookup of region data - ignored if 
+                prioritise_tiles is False when it is irrelevant. Defaults to
+                False.
+            debug (bool, optional): if True prints timing messages. Defaults
+                to False.
 
         Returns:
             TiledMap: a TiledMap of the source region.
         &#34;&#34;&#34;
-        # if no id_var is supplied overwrite it with the class id_var
-        id_var = (self.region_id_var if id_var is None else id_var)
+        if debug:
+            t1 = perf_counter()
+        
+        id_var = self._setup_region_DZID()
         tiled_map = self.rotated(rotation)
         # compile a list of the variable names we are NOT going to change
         # i.e. everything except the geometry and the id_var
         region_vars = list(self.region.columns)
         region_vars.remove(&#34;geometry&#34;)
         region_vars.remove(id_var)
-        
+
+        if debug:
+            t2 = perf_counter()
+            print(f&#34;STEP 1: prep data (rotation if requested): {t2 - t1:.3f}&#34;)
+            
         if prioritise_tiles:  # maintain tile continuity across zone boundaries
+            # select only tiles inside a spacing buffer of the region
             # make column with unique ID for every element in the tiling
-            tiled_map[&#34;tileUID&#34;] = list(range(tiled_map.shape[0]))
-            # overlay with the zones from the region to be tiled
-            tiled_map = tiled_map.overlay(self.region)  
-            # determine areas of overlaid tile elements and drop the data
-            # we join the data back later, so dropping makes that easier
-            tiled_map[&#34;area&#34;] = tiled_map.geometry.area
-            tiled_map = tiled_map.drop(columns = region_vars)
-            # make a lookup by largest area element to the region id variable
-            lookup = tiled_map \
-                .iloc[tiled_map.groupby(&#34;tileUID&#34;)[&#34;area&#34;] \
-                .agg(pd.Series.idxmax)][[&#34;tileUID&#34;, id_var]]
-            # remove the id_var before we replace it with a new one
-            tiled_map = tiled_map.drop(columns = [id_var])
+            if tiles_or_elements == &#34;tiles&#34;:
+                # the join ID is based on the tile
+                tiled_map[&#34;joinUID&#34;] = self.tiles.tile_id
+            else:
+                # the join ID is unique per element
+                tiled_map[&#34;joinUID&#34;] = list(range(tiled_map.shape[0]))
+
+            if use_centroid_lookup_approximation:
+                t5 = perf_counter()
+                tile_pts = copy.deepcopy(tiled_map)
+                tile_pts.geometry = tile_pts.centroid
+                lookup = tile_pts.sjoin(
+                    self.region, how = &#34;inner&#34;)[[&#34;joinUID&#34;, id_var]]
+            else:
+                # determine areas of overlapping tile elements and drop the data
+                # we join the data back later, so dropping makes that easier
+                # overlaying in region.overlay(tiles) seems to be faster??
+                # TODO: also... this part is performance-critical, think about # fixes -- possibly including the above centroid-based approx
+                overlaps = self.region.overlay(tiled_map, make_valid = False)
+                if debug:
+                    t3 = perf_counter()
+                    print(f&#34;STEP A2: overlay zones with tiling: {t3 - t2:.3f}&#34;)
+                overlaps[&#34;area&#34;] = overlaps.geometry.area
+                if debug:
+                    t4 = perf_counter()
+                    print(f&#34;STEP A3: calculate areas: {t4 - t3:.3f}&#34;)
+                overlaps =  overlaps.drop(columns = region_vars)
+                if debug:
+                    t5 = perf_counter()
+                    print(f&#34;STEP A4: drop columns prior to join: {t5 - t4:.3f}&#34;)
+                # make a lookup by largest area element to region id
+                lookup = overlaps \
+                    .iloc[overlaps.groupby(&#34;joinUID&#34;)[&#34;area&#34;] \
+                    .agg(pd.Series.idxmax)][[&#34;joinUID&#34;, id_var]]
             # now join the lookup and from there the region data
+            if debug:
+                t6 = perf_counter()
+                print(f&#34;STEP A5: build lookup for join: {t6 - t5:.3f}&#34;)
             tiled_map = tiled_map \
-                .merge(lookup, on = &#34;tileUID&#34;) \
+                .merge(lookup, on = &#34;joinUID&#34;) \
                 .merge(self.region.drop(columns = [&#34;geometry&#34;]), on = id_var) 
-        else:  # much simpler, we just overlay
+            if debug:
+                t7 = perf_counter()
+                print(f&#34;STEP A6: perform lookup join: {t7 - t6:.3f}&#34;)
+            self.region.drop(columns = [id_var])
+
+        else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
+            t7 = perf_counter()
+            if debug:
+                print(f&#34;STEP B2: overlay tiling with zones: {t7 - t2:.3f}&#34;)
         
-        # make a dissolve variable from element_id and id_var, dissolve and drop
-        tiled_map[&#34;diss_var&#34;] = (tiled_map.element_id + 
-                                 tiled_map[id_var].astype(str))
-        tiled_map = tiled_map \
-            .dissolve(by = &#34;diss_var&#34;, as_index = False) \
-            .drop([&#34;diss_var&#34;], axis = 1)
+        if debug:
+            t8 = perf_counter()
+            print(f&#34;STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}&#34;)
         
+        # if we&#39;ve retained tiles and want &#39;clean&#39; edges, then clip
+        # note that this step is slow: geopandas unary_unions the clip layer
+        if prioritise_tiles and not ragged_edges:
+            tiled_map.sindex
+            tiled_map = tiled_map.clip(self.region)
+            if debug:
+                print(f&#34;STEP A8: clip map to region: {perf_counter() - t8:.3f}&#34;)
+
         tm = TiledMap()
         tm.tiling = self
         tm.map = tiled_map
         return tm
+
+
+    def _setup_region_DZID(self) -&gt; str:
+        dzid = &#34;DZID&#34;
+        i = 0
+        while dzid in self.region.columns: 
+            dzid = &#34;DZID&#34; + str(i)
+            i = i + 1
+        self.region[dzid] = list(range(self.region.shape[0]))
+        return dzid
     
     
     def _rotate_gdf_to_geoseries(
@@ -383,9 +468,12 @@ class Tiling:
             for p in self.grid.points])
         # replicate the element ids
         ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
+        tile_ids = sorted(list(range(len(self.grid.points))) * 
+                          self.tile_unit.elements.shape[0])
         tiles_gs = gpd.GeoSeries(tiles)
         # assemble and return as a GeoDataFrame
-        tiles_gdf = gpd.GeoDataFrame(data = {&#34;element_id&#34;: ids},
+        tiles_gdf = gpd.GeoDataFrame(data = {&#34;element_id&#34;: ids,
+                                             &#34;tile_id&#34;: tile_ids},
                                      geometry = tiles_gs, 
                                      crs = self.tile_unit.crs)
         # unclear if we need the below or not...
@@ -408,7 +496,9 @@ class Tiling:
         if self.rotation == 0:
             return self.tiles
         return gpd.GeoDataFrame(
-            data = {&#34;element_id&#34;: self.tiles.element_id}, crs = self.tiles.crs,
+            data = {&#34;element_id&#34;: self.tiles.element_id,
+                    &#34;tile_id&#34;: self.tiles.tile_id}, 
+            crs = self.tiles.crs,
             geometry = self.tiles.geometry.rotate(rotation, 
                                                   origin = self.grid.centre))
 
@@ -1887,7 +1977,7 @@ plot. Defaults to (20,15).</dd>
 </dd>
 <dt id="weavingspace.tile_map.Tiling"><code class="flex name class">
 <span>class <span class="ident">Tiling</span></span>
-<span>(</span><span>unit: <a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a>, region: geopandas.geodataframe.GeoDataFrame, id_var: str, tile_margin: float = 0, elements_sf: float = 1, elements_margin: float = 0, as_icons: bool = False)</span>
+<span>(</span><span>unit: <a title="weavingspace.tileable.Tileable" href="tileable.html#weavingspace.tileable.Tileable">Tileable</a>, region: geopandas.geodataframe.GeoDataFrame, id_var=None, tile_margin: float = 0, elements_sf: float = 1, elements_margin: float = 0, as_icons: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class that applies a <code>Tileable</code> object to a region to be mapped.</p>
@@ -1918,8 +2008,6 @@ the specified distance to every element in the tile by applying the
 <dd>the tile_unit to use.</dd>
 <dt><strong><code>region</code></strong> :&ensp;<code>gpd.GeoDataFrame</code></dt>
 <dd>the region to be tiled.</dd>
-<dt><strong><code>id_var</code></strong> :&ensp;<code>str</code></dt>
-<dd>a unique identifier variable in the region.</dd>
 <dt><strong><code>tile_margin</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>values greater than one apply an
 inset margin to the tile unit. Defaults to 0.</dd>
@@ -1949,13 +2037,12 @@ class Tiling:
     tile_unit:Tileable = None
     tile_shape:TileShape = None
     region:gpd.GeoDataFrame = None
-    region_id_var:str = None
     grid:_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
-    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame,
-                 id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
+    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, id_var = None,
+                 tile_margin:float = 0, elements_sf:float = 1, 
                  elements_margin:float = 0, as_icons:bool = False) -&gt; None:
         &#34;&#34;&#34;Class to persist a tiling by filling an area relative to 
         a region sufficient to apply the tiling at any rotation.
@@ -1979,7 +2066,6 @@ class Tiling:
         Args:
             unit (Tileable): the tile_unit to use.
             region (gpd.GeoDataFrame): the region to be tiled.
-            id_var (str): a unique identifier variable in the region.
             tile_margin (float, optional): values greater than one apply an 
                 inset margin to the tile unit. Defaults to 0.
             elements_sf (float, optional): scales the tile unit elements. 
@@ -2005,7 +2091,9 @@ class Tiling:
             else:
                 print(f&#34;&#34;&#34;Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.&#34;&#34;&#34;)        
         self.region = region
-        self.region_id_var = (&#34;ID&#34; if id_var is None else id_var)
+        self.region.sindex
+        if id_var != None:
+            print(&#34;&#34;&#34;id_var is no longer required and will be deprecated soon. A temporary unique index attribute is added and removed when generating the tiled map.&#34;&#34;&#34;)
         if as_icons:
             self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
         else:
@@ -2013,10 +2101,15 @@ class Tiling:
             # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
             #                      self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
+        self.tiles.sindex
 
 
-    def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                      prioritise_tiles:bool = True) -&gt; &#34;TiledMap&#34;:
+    def get_tiled_map(self, rotation:float = 0.,
+                      prioritise_tiles:bool = True,
+                      tiles_or_elements:str = &#34;elements&#34;,
+                      ragged_edges:bool = True, 
+                      use_centroid_lookup_approximation = False,
+                      debug = False) -&gt; &#34;TiledMap&#34;:
         &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
         
         HERE BE DRAGONS! This function took a lot of trial and error to get 
@@ -2026,65 +2119,133 @@ class Tiling:
         break up the elements in `TileUnit`s at the boundaries between areas 
         in the mapped region, but will instead ensure that tile elements remain
         complete, picking up their data from the region zone which they overlap
-        the most. 
+        the most. The `tiles_or_elements` flag (experimental!) potentially 
+        allows prioritisation at the level of tile unit, not element. Possibly
+        just a &#39;hook&#39; for now to be checked later.
         
-        As should be apparent from the volume of code, the prioritise_tiles = 
-        True option is where the tricky bits are mostly found.
-
+        The exact order in which operations are performed affects performance. 
+        For example, the final clipping to self.region when ragged_edges = False
+        is _much_ slower if it is carried out before the dissolving of tile 
+        elements into the region zones. So... again... modify CAREFULLY!
+        
         Args:
-            id_var (str, optional): the variable the distinguishes areas in the
-                region to be tiled. None will be overwritten by the variable    
-                name set on initialisation of the Tiling. Defaults to None.
             rotation (float, optional): An optional rotation to apply. Defaults 
-                to 0. orientatijnto 
-            prioritise_tiles (bool, optional): When True tiles will not be 
+                to 0.
+            prioritise_tiles (bool, optional): if True tiles will not be 
                 broken at boundaries in the region dataset. Defaults to True.
+            tiles_or_elements (str, optional): if &#34;tiles&#34; then the tile 
+                prioritisation applies to tiles; if &#34;elements&#34; then it applies
+                to tile unit elements. Defaults to &#34;elements&#34;.
+            ragged_edges (bool, optional): if True tiles at the edge of the 
+                region will not be cut by the region extent - ignored if 
+                prioritise_tiles is False when edges will always be clipped to 
+                the region extent. Defaults to True.
+            use_centroid_lookup_approximation (bool, optional): if True use
+                element centroids for lookup of region data - ignored if 
+                prioritise_tiles is False when it is irrelevant. Defaults to
+                False.
+            debug (bool, optional): if True prints timing messages. Defaults
+                to False.
 
         Returns:
             TiledMap: a TiledMap of the source region.
         &#34;&#34;&#34;
-        # if no id_var is supplied overwrite it with the class id_var
-        id_var = (self.region_id_var if id_var is None else id_var)
+        if debug:
+            t1 = perf_counter()
+        
+        id_var = self._setup_region_DZID()
         tiled_map = self.rotated(rotation)
         # compile a list of the variable names we are NOT going to change
         # i.e. everything except the geometry and the id_var
         region_vars = list(self.region.columns)
         region_vars.remove(&#34;geometry&#34;)
         region_vars.remove(id_var)
-        
+
+        if debug:
+            t2 = perf_counter()
+            print(f&#34;STEP 1: prep data (rotation if requested): {t2 - t1:.3f}&#34;)
+            
         if prioritise_tiles:  # maintain tile continuity across zone boundaries
+            # select only tiles inside a spacing buffer of the region
             # make column with unique ID for every element in the tiling
-            tiled_map[&#34;tileUID&#34;] = list(range(tiled_map.shape[0]))
-            # overlay with the zones from the region to be tiled
-            tiled_map = tiled_map.overlay(self.region)  
-            # determine areas of overlaid tile elements and drop the data
-            # we join the data back later, so dropping makes that easier
-            tiled_map[&#34;area&#34;] = tiled_map.geometry.area
-            tiled_map = tiled_map.drop(columns = region_vars)
-            # make a lookup by largest area element to the region id variable
-            lookup = tiled_map \
-                .iloc[tiled_map.groupby(&#34;tileUID&#34;)[&#34;area&#34;] \
-                .agg(pd.Series.idxmax)][[&#34;tileUID&#34;, id_var]]
-            # remove the id_var before we replace it with a new one
-            tiled_map = tiled_map.drop(columns = [id_var])
+            if tiles_or_elements == &#34;tiles&#34;:
+                # the join ID is based on the tile
+                tiled_map[&#34;joinUID&#34;] = self.tiles.tile_id
+            else:
+                # the join ID is unique per element
+                tiled_map[&#34;joinUID&#34;] = list(range(tiled_map.shape[0]))
+
+            if use_centroid_lookup_approximation:
+                t5 = perf_counter()
+                tile_pts = copy.deepcopy(tiled_map)
+                tile_pts.geometry = tile_pts.centroid
+                lookup = tile_pts.sjoin(
+                    self.region, how = &#34;inner&#34;)[[&#34;joinUID&#34;, id_var]]
+            else:
+                # determine areas of overlapping tile elements and drop the data
+                # we join the data back later, so dropping makes that easier
+                # overlaying in region.overlay(tiles) seems to be faster??
+                # TODO: also... this part is performance-critical, think about # fixes -- possibly including the above centroid-based approx
+                overlaps = self.region.overlay(tiled_map, make_valid = False)
+                if debug:
+                    t3 = perf_counter()
+                    print(f&#34;STEP A2: overlay zones with tiling: {t3 - t2:.3f}&#34;)
+                overlaps[&#34;area&#34;] = overlaps.geometry.area
+                if debug:
+                    t4 = perf_counter()
+                    print(f&#34;STEP A3: calculate areas: {t4 - t3:.3f}&#34;)
+                overlaps =  overlaps.drop(columns = region_vars)
+                if debug:
+                    t5 = perf_counter()
+                    print(f&#34;STEP A4: drop columns prior to join: {t5 - t4:.3f}&#34;)
+                # make a lookup by largest area element to region id
+                lookup = overlaps \
+                    .iloc[overlaps.groupby(&#34;joinUID&#34;)[&#34;area&#34;] \
+                    .agg(pd.Series.idxmax)][[&#34;joinUID&#34;, id_var]]
             # now join the lookup and from there the region data
+            if debug:
+                t6 = perf_counter()
+                print(f&#34;STEP A5: build lookup for join: {t6 - t5:.3f}&#34;)
             tiled_map = tiled_map \
-                .merge(lookup, on = &#34;tileUID&#34;) \
+                .merge(lookup, on = &#34;joinUID&#34;) \
                 .merge(self.region.drop(columns = [&#34;geometry&#34;]), on = id_var) 
-        else:  # much simpler, we just overlay
+            if debug:
+                t7 = perf_counter()
+                print(f&#34;STEP A6: perform lookup join: {t7 - t6:.3f}&#34;)
+            self.region.drop(columns = [id_var])
+
+        else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
+            t7 = perf_counter()
+            if debug:
+                print(f&#34;STEP B2: overlay tiling with zones: {t7 - t2:.3f}&#34;)
         
-        # make a dissolve variable from element_id and id_var, dissolve and drop
-        tiled_map[&#34;diss_var&#34;] = (tiled_map.element_id + 
-                                 tiled_map[id_var].astype(str))
-        tiled_map = tiled_map \
-            .dissolve(by = &#34;diss_var&#34;, as_index = False) \
-            .drop([&#34;diss_var&#34;], axis = 1)
+        if debug:
+            t8 = perf_counter()
+            print(f&#34;STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}&#34;)
         
+        # if we&#39;ve retained tiles and want &#39;clean&#39; edges, then clip
+        # note that this step is slow: geopandas unary_unions the clip layer
+        if prioritise_tiles and not ragged_edges:
+            tiled_map.sindex
+            tiled_map = tiled_map.clip(self.region)
+            if debug:
+                print(f&#34;STEP A8: clip map to region: {perf_counter() - t8:.3f}&#34;)
+
         tm = TiledMap()
         tm.tiling = self
         tm.map = tiled_map
         return tm
+
+
+    def _setup_region_DZID(self) -&gt; str:
+        dzid = &#34;DZID&#34;
+        i = 0
+        while dzid in self.region.columns: 
+            dzid = &#34;DZID&#34; + str(i)
+            i = i + 1
+        self.region[dzid] = list(range(self.region.shape[0]))
+        return dzid
     
     
     def _rotate_gdf_to_geoseries(
@@ -2131,9 +2292,12 @@ class Tiling:
             for p in self.grid.points])
         # replicate the element ids
         ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
+        tile_ids = sorted(list(range(len(self.grid.points))) * 
+                          self.tile_unit.elements.shape[0])
         tiles_gs = gpd.GeoSeries(tiles)
         # assemble and return as a GeoDataFrame
-        tiles_gdf = gpd.GeoDataFrame(data = {&#34;element_id&#34;: ids},
+        tiles_gdf = gpd.GeoDataFrame(data = {&#34;element_id&#34;: ids,
+                                             &#34;tile_id&#34;: tile_ids},
                                      geometry = tiles_gs, 
                                      crs = self.tile_unit.crs)
         # unclear if we need the below or not...
@@ -2156,7 +2320,9 @@ class Tiling:
         if self.rotation == 0:
             return self.tiles
         return gpd.GeoDataFrame(
-            data = {&#34;element_id&#34;: self.tiles.element_id}, crs = self.tiles.crs,
+            data = {&#34;element_id&#34;: self.tiles.element_id,
+                    &#34;tile_id&#34;: self.tiles.tile_id}, 
+            crs = self.tiles.crs,
             geometry = self.tiles.geometry.rotate(rotation, 
                                                   origin = self.grid.centre))</code></pre>
 </details>
@@ -2167,10 +2333,6 @@ class Tiling:
 <div class="desc"></div>
 </dd>
 <dt id="weavingspace.tile_map.Tiling.region"><code class="name">var <span class="ident">region</span> : geopandas.geodataframe.GeoDataFrame</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="weavingspace.tile_map.Tiling.region_id_var"><code class="name">var <span class="ident">region_id_var</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -2194,7 +2356,7 @@ class Tiling:
 <h3>Methods</h3>
 <dl>
 <dt id="weavingspace.tile_map.Tiling.get_tiled_map"><code class="name flex">
-<span>def <span class="ident">get_tiled_map</span></span>(<span>self, id_var: str = None, rotation: float = 0.0, prioritise_tiles: bool = True) -> <a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></span>
+<span>def <span class="ident">get_tiled_map</span></span>(<span>self, rotation: float = 0.0, prioritise_tiles: bool = True, tiles_or_elements: str = 'elements', ragged_edges: bool = True, use_centroid_lookup_approximation=False, debug=False) -> <a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns a <code><a title="weavingspace.tile_map.TiledMap" href="#weavingspace.tile_map.TiledMap">TiledMap</a></code> filling a region at the requested rotation.</p>
@@ -2204,22 +2366,38 @@ right, so modify with CAUTION!</p>
 break up the elements in <code>TileUnit</code>s at the boundaries between areas
 in the mapped region, but will instead ensure that tile elements remain
 complete, picking up their data from the region zone which they overlap
-the most. </p>
-<p>As should be apparent from the volume of code, the prioritise_tiles =
-True option is where the tricky bits are mostly found.</p>
+the most. The <code>tiles_or_elements</code> flag (experimental!) potentially
+allows prioritisation at the level of tile unit, not element. Possibly
+just a 'hook' for now to be checked later.</p>
+<p>The exact order in which operations are performed affects performance.
+For example, the final clipping to self.region when ragged_edges = False
+is <em>much</em> slower if it is carried out before the dissolving of tile
+elements into the region zones. So&hellip; again&hellip; modify CAREFULLY!</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>id_var</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>the variable the distinguishes areas in the
-region to be tiled. None will be overwritten by the variable
-<br>
-name set on initialisation of the Tiling. Defaults to None.</dd>
 <dt><strong><code>rotation</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>An optional rotation to apply. Defaults
-to 0. orientatijnto </dd>
+to 0.</dd>
 <dt><strong><code>prioritise_tiles</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>When True tiles will not be
+<dd>if True tiles will not be
 broken at boundaries in the region dataset. Defaults to True.</dd>
+<dt><strong><code>tiles_or_elements</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>if "tiles" then the tile
+prioritisation applies to tiles; if "elements" then it applies
+to tile unit elements. Defaults to "elements".</dd>
+<dt><strong><code>ragged_edges</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>if True tiles at the edge of the
+region will not be cut by the region extent - ignored if
+prioritise_tiles is False when edges will always be clipped to
+the region extent. Defaults to True.</dd>
+<dt><strong><code>use_centroid_lookup_approximation</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>if True use
+element centroids for lookup of region data - ignored if
+prioritise_tiles is False when it is irrelevant. Defaults to
+False.</dd>
+<dt><strong><code>debug</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>if True prints timing messages. Defaults
+to False.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -2230,8 +2408,12 @@ broken at boundaries in the region dataset. Defaults to True.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
-                  prioritise_tiles:bool = True) -&gt; &#34;TiledMap&#34;:
+<pre><code class="python">def get_tiled_map(self, rotation:float = 0.,
+                  prioritise_tiles:bool = True,
+                  tiles_or_elements:str = &#34;elements&#34;,
+                  ragged_edges:bool = True, 
+                  use_centroid_lookup_approximation = False,
+                  debug = False) -&gt; &#34;TiledMap&#34;:
     &#34;&#34;&#34;Returns a `TiledMap` filling a region at the requested rotation.
     
     HERE BE DRAGONS! This function took a lot of trial and error to get 
@@ -2241,61 +2423,119 @@ broken at boundaries in the region dataset. Defaults to True.</dd>
     break up the elements in `TileUnit`s at the boundaries between areas 
     in the mapped region, but will instead ensure that tile elements remain
     complete, picking up their data from the region zone which they overlap
-    the most. 
+    the most. The `tiles_or_elements` flag (experimental!) potentially 
+    allows prioritisation at the level of tile unit, not element. Possibly
+    just a &#39;hook&#39; for now to be checked later.
     
-    As should be apparent from the volume of code, the prioritise_tiles = 
-    True option is where the tricky bits are mostly found.
-
+    The exact order in which operations are performed affects performance. 
+    For example, the final clipping to self.region when ragged_edges = False
+    is _much_ slower if it is carried out before the dissolving of tile 
+    elements into the region zones. So... again... modify CAREFULLY!
+    
     Args:
-        id_var (str, optional): the variable the distinguishes areas in the
-            region to be tiled. None will be overwritten by the variable    
-            name set on initialisation of the Tiling. Defaults to None.
         rotation (float, optional): An optional rotation to apply. Defaults 
-            to 0. orientatijnto 
-        prioritise_tiles (bool, optional): When True tiles will not be 
+            to 0.
+        prioritise_tiles (bool, optional): if True tiles will not be 
             broken at boundaries in the region dataset. Defaults to True.
+        tiles_or_elements (str, optional): if &#34;tiles&#34; then the tile 
+            prioritisation applies to tiles; if &#34;elements&#34; then it applies
+            to tile unit elements. Defaults to &#34;elements&#34;.
+        ragged_edges (bool, optional): if True tiles at the edge of the 
+            region will not be cut by the region extent - ignored if 
+            prioritise_tiles is False when edges will always be clipped to 
+            the region extent. Defaults to True.
+        use_centroid_lookup_approximation (bool, optional): if True use
+            element centroids for lookup of region data - ignored if 
+            prioritise_tiles is False when it is irrelevant. Defaults to
+            False.
+        debug (bool, optional): if True prints timing messages. Defaults
+            to False.
 
     Returns:
         TiledMap: a TiledMap of the source region.
     &#34;&#34;&#34;
-    # if no id_var is supplied overwrite it with the class id_var
-    id_var = (self.region_id_var if id_var is None else id_var)
+    if debug:
+        t1 = perf_counter()
+    
+    id_var = self._setup_region_DZID()
     tiled_map = self.rotated(rotation)
     # compile a list of the variable names we are NOT going to change
     # i.e. everything except the geometry and the id_var
     region_vars = list(self.region.columns)
     region_vars.remove(&#34;geometry&#34;)
     region_vars.remove(id_var)
-    
+
+    if debug:
+        t2 = perf_counter()
+        print(f&#34;STEP 1: prep data (rotation if requested): {t2 - t1:.3f}&#34;)
+        
     if prioritise_tiles:  # maintain tile continuity across zone boundaries
+        # select only tiles inside a spacing buffer of the region
         # make column with unique ID for every element in the tiling
-        tiled_map[&#34;tileUID&#34;] = list(range(tiled_map.shape[0]))
-        # overlay with the zones from the region to be tiled
-        tiled_map = tiled_map.overlay(self.region)  
-        # determine areas of overlaid tile elements and drop the data
-        # we join the data back later, so dropping makes that easier
-        tiled_map[&#34;area&#34;] = tiled_map.geometry.area
-        tiled_map = tiled_map.drop(columns = region_vars)
-        # make a lookup by largest area element to the region id variable
-        lookup = tiled_map \
-            .iloc[tiled_map.groupby(&#34;tileUID&#34;)[&#34;area&#34;] \
-            .agg(pd.Series.idxmax)][[&#34;tileUID&#34;, id_var]]
-        # remove the id_var before we replace it with a new one
-        tiled_map = tiled_map.drop(columns = [id_var])
+        if tiles_or_elements == &#34;tiles&#34;:
+            # the join ID is based on the tile
+            tiled_map[&#34;joinUID&#34;] = self.tiles.tile_id
+        else:
+            # the join ID is unique per element
+            tiled_map[&#34;joinUID&#34;] = list(range(tiled_map.shape[0]))
+
+        if use_centroid_lookup_approximation:
+            t5 = perf_counter()
+            tile_pts = copy.deepcopy(tiled_map)
+            tile_pts.geometry = tile_pts.centroid
+            lookup = tile_pts.sjoin(
+                self.region, how = &#34;inner&#34;)[[&#34;joinUID&#34;, id_var]]
+        else:
+            # determine areas of overlapping tile elements and drop the data
+            # we join the data back later, so dropping makes that easier
+            # overlaying in region.overlay(tiles) seems to be faster??
+            # TODO: also... this part is performance-critical, think about # fixes -- possibly including the above centroid-based approx
+            overlaps = self.region.overlay(tiled_map, make_valid = False)
+            if debug:
+                t3 = perf_counter()
+                print(f&#34;STEP A2: overlay zones with tiling: {t3 - t2:.3f}&#34;)
+            overlaps[&#34;area&#34;] = overlaps.geometry.area
+            if debug:
+                t4 = perf_counter()
+                print(f&#34;STEP A3: calculate areas: {t4 - t3:.3f}&#34;)
+            overlaps =  overlaps.drop(columns = region_vars)
+            if debug:
+                t5 = perf_counter()
+                print(f&#34;STEP A4: drop columns prior to join: {t5 - t4:.3f}&#34;)
+            # make a lookup by largest area element to region id
+            lookup = overlaps \
+                .iloc[overlaps.groupby(&#34;joinUID&#34;)[&#34;area&#34;] \
+                .agg(pd.Series.idxmax)][[&#34;joinUID&#34;, id_var]]
         # now join the lookup and from there the region data
+        if debug:
+            t6 = perf_counter()
+            print(f&#34;STEP A5: build lookup for join: {t6 - t5:.3f}&#34;)
         tiled_map = tiled_map \
-            .merge(lookup, on = &#34;tileUID&#34;) \
+            .merge(lookup, on = &#34;joinUID&#34;) \
             .merge(self.region.drop(columns = [&#34;geometry&#34;]), on = id_var) 
-    else:  # much simpler, we just overlay
+        if debug:
+            t7 = perf_counter()
+            print(f&#34;STEP A6: perform lookup join: {t7 - t6:.3f}&#34;)
+        self.region.drop(columns = [id_var])
+
+    else:  # here we overlay
         tiled_map = self.region.overlay(tiled_map)
+        t7 = perf_counter()
+        if debug:
+            print(f&#34;STEP B2: overlay tiling with zones: {t7 - t2:.3f}&#34;)
     
-    # make a dissolve variable from element_id and id_var, dissolve and drop
-    tiled_map[&#34;diss_var&#34;] = (tiled_map.element_id + 
-                             tiled_map[id_var].astype(str))
-    tiled_map = tiled_map \
-        .dissolve(by = &#34;diss_var&#34;, as_index = False) \
-        .drop([&#34;diss_var&#34;], axis = 1)
+    if debug:
+        t8 = perf_counter()
+        print(f&#34;STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}&#34;)
     
+    # if we&#39;ve retained tiles and want &#39;clean&#39; edges, then clip
+    # note that this step is slow: geopandas unary_unions the clip layer
+    if prioritise_tiles and not ragged_edges:
+        tiled_map.sindex
+        tiled_map = tiled_map.clip(self.region)
+        if debug:
+            print(f&#34;STEP A8: clip map to region: {perf_counter() - t8:.3f}&#34;)
+
     tm = TiledMap()
     tm.tiling = self
     tm.map = tiled_map
@@ -2334,9 +2574,12 @@ weave unit.</dd>
         for p in self.grid.points])
     # replicate the element ids
     ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
+    tile_ids = sorted(list(range(len(self.grid.points))) * 
+                      self.tile_unit.elements.shape[0])
     tiles_gs = gpd.GeoSeries(tiles)
     # assemble and return as a GeoDataFrame
-    tiles_gdf = gpd.GeoDataFrame(data = {&#34;element_id&#34;: ids},
+    tiles_gdf = gpd.GeoDataFrame(data = {&#34;element_id&#34;: ids,
+                                         &#34;tile_id&#34;: tile_ids},
                                  geometry = tiles_gs, 
                                  crs = self.tile_unit.crs)
     # unclear if we need the below or not...
@@ -2379,7 +2622,9 @@ Defaults to None.</dd>
     if self.rotation == 0:
         return self.tiles
     return gpd.GeoDataFrame(
-        data = {&#34;element_id&#34;: self.tiles.element_id}, crs = self.tiles.crs,
+        data = {&#34;element_id&#34;: self.tiles.element_id,
+                &#34;tile_id&#34;: self.tiles.tile_id}, 
+        crs = self.tiles.crs,
         geometry = self.tiles.geometry.rotate(rotation, 
                                               origin = self.grid.centre))</code></pre>
 </details>
@@ -2434,7 +2679,6 @@ Defaults to None.</dd>
 <li><code><a title="weavingspace.tile_map.Tiling.grid" href="#weavingspace.tile_map.Tiling.grid">grid</a></code></li>
 <li><code><a title="weavingspace.tile_map.Tiling.make_tiling" href="#weavingspace.tile_map.Tiling.make_tiling">make_tiling</a></code></li>
 <li><code><a title="weavingspace.tile_map.Tiling.region" href="#weavingspace.tile_map.Tiling.region">region</a></code></li>
-<li><code><a title="weavingspace.tile_map.Tiling.region_id_var" href="#weavingspace.tile_map.Tiling.region_id_var">region_id_var</a></code></li>
 <li><code><a title="weavingspace.tile_map.Tiling.rotated" href="#weavingspace.tile_map.Tiling.rotated">rotated</a></code></li>
 <li><code><a title="weavingspace.tile_map.Tiling.rotation" href="#weavingspace.tile_map.Tiling.rotation">rotation</a></code></li>
 <li><code><a title="weavingspace.tile_map.Tiling.tile_shape" href="#weavingspace.tile_map.Tiling.tile_shape">tile_shape</a></code></li>

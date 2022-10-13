@@ -151,9 +151,8 @@ class _TileGrid():
         mesh = np.array(np.meshgrid(np.arange(w) + l,
                                     np.arange(h) + b)).reshape((2, w * h)).T
         pts = [geom.Point(p[0], p[1]) for p in mesh]
-        return gpd.GeoSeries([p for p in pts 
-                              if p.within(self.extent[0])]).affine_transform(
-                                  self.inverse_transform)
+        return gpd.GeoSeries([p for p in pts if p.within(self.extent[0])]) \
+            .affine_transform(self.inverse_transform)
 
 
     def _np_to_shapely_transform(self, mat:np.ndarray) -> tuple[float]:
@@ -179,13 +178,12 @@ class Tiling:
     tile_unit:Tileable = None
     tile_shape:TileShape = None
     region:gpd.GeoDataFrame = None
-    region_id_var:str = None
     grid:_TileGrid = None
     tiles:gpd.GeoDataFrame = None
     rotation:float = 0.
 
-    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame,
-                 id_var:str, tile_margin:float = 0, elements_sf:float = 1, 
+    def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, id_var = None,
+                 tile_margin:float = 0, elements_sf:float = 1, 
                  elements_margin:float = 0, as_icons:bool = False) -> None:
         """Class to persist a tiling by filling an area relative to 
         a region sufficient to apply the tiling at any rotation.
@@ -209,7 +207,6 @@ class Tiling:
         Args:
             unit (Tileable): the tile_unit to use.
             region (gpd.GeoDataFrame): the region to be tiled.
-            id_var (str): a unique identifier variable in the region.
             tile_margin (float, optional): values greater than one apply an 
                 inset margin to the tile unit. Defaults to 0.
             elements_sf (float, optional): scales the tile unit elements. 
@@ -220,7 +217,6 @@ class Tiling:
                 the region's zone centroids, one per zone. Defaults to 
                 False. 
         """
-        # self.tile_shape = unit.tile_shape
         self.tile_unit = unit
         if elements_margin > 0:
             self.tile_unit = self.tile_unit.inset_elements(elements_margin) 
@@ -236,18 +232,17 @@ class Tiling:
                 print(f"""Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.""")        
         self.region = region
         self.region.sindex
-        self.region_id_var = ("ID" if id_var is None else id_var)
+        if id_var != None:
+            print("""id_var is no longer required and will be deprecated soon. A temporary unique index attribute is added and removed when generating the tiled map.""")
         if as_icons:
             self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
         else:
             self.grid = _TileGrid(self.tile_unit, self.region.geometry)
-            # self.grid = old_TileGrid(self.tile_unit.tile.geometry,
-            #                      self.region.geometry, self.tile_shape)
         self.tiles = self.make_tiling()
         self.tiles.sindex
 
 
-    def get_tiled_map(self, id_var:str = None, rotation:float = 0., 
+    def get_tiled_map(self, rotation:float = 0.,
                       prioritise_tiles:bool = True,
                       tiles_or_elements:str = "elements",
                       ragged_edges:bool = True, 
@@ -272,9 +267,6 @@ class Tiling:
         elements into the region zones. So... again... modify CAREFULLY!
         
         Args:
-            id_var (str, optional): the variable the distinguishes areas in the
-                region to be tiled. None will be overwritten by the variable    
-                name set on initialisation of the Tiling. Defaults to None.
             rotation (float, optional): An optional rotation to apply. Defaults 
                 to 0.
             prioritise_tiles (bool, optional): if True tiles will not be 
@@ -299,8 +291,7 @@ class Tiling:
         if debug:
             t1 = perf_counter()
         
-        # if no id_var is supplied overwrite it with the class id_var
-        id_var = (self.region_id_var if id_var is None else id_var)
+        id_var = self._setup_region_DZID()
         tiled_map = self.rotated(rotation)
         # compile a list of the variable names we are NOT going to change
         # i.e. everything except the geometry and the id_var
@@ -349,7 +340,7 @@ class Tiling:
                 lookup = overlaps \
                     .iloc[overlaps.groupby("joinUID")["area"] \
                     .agg(pd.Series.idxmax)][["joinUID", id_var]]
-                # now join the lookup and from there the region data
+            # now join the lookup and from there the region data
             if debug:
                 t6 = perf_counter()
                 print(f"STEP A5: build lookup for join: {t6 - t5:.3f}")
@@ -359,19 +350,14 @@ class Tiling:
             if debug:
                 t7 = perf_counter()
                 print(f"STEP A6: perform lookup join: {t7 - t6:.3f}")
+            self.region.drop(columns = [id_var])
+
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
             t7 = perf_counter()
             if debug:
                 print(f"STEP B2: overlay tiling with zones: {t7 - t2:.3f}")
         
-        # make a dissolve variable from element_id and id_var, dissolve and drop
-        # tiled_map["diss_var"] = (tiled_map.element_id + 
-        #                          tiled_map[id_var].astype(str))
-        # tiled_map = tiled_map \
-        #     .dissolve(by = "diss_var", as_index = False) \
-        #     .drop(["diss_var"], axis = 1)
-
         if debug:
             t8 = perf_counter()
             print(f"STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}")
@@ -388,6 +374,24 @@ class Tiling:
         tm.tiling = self
         tm.map = tiled_map
         return tm
+
+
+    def _setup_region_DZID(self) -> str:
+        """Creates a new guaranteed-unique attribute in the self.region 
+        dataframe, and returns its name.
+        
+        Avoids a name clash with any existing attribute in the dataframe.
+
+        Returns:
+            str: name of the added attribute.
+        """
+        dzid = "DZID"
+        i = 0
+        while dzid in self.region.columns: 
+            dzid = "DZID" + str(i)
+            i = i + 1
+        self.region[dzid] = list(range(self.region.shape[0]))
+        return dzid
     
     
     def _rotate_gdf_to_geoseries(
@@ -898,181 +902,3 @@ class TiledMap:
         """TODO: add wrapper to make tiled web map via geopandas.explore.
         """
         return None
-
-
-# @dataclass
-# class old_TileGrid:
-#     """A class to represent the translation centres of a tiling.
-    
-#     Note that we store the grid as a GeoSeries of Point objects to make it
-#     simple to plot it in map views if required.
-
-#     Args:
-#         tile (gpd.GeoSeries): the geometry of the base tile.
-#         to_tile (gpd.GeoSeries): the geometry of the region to be tiled.
-#         grid_type (TileShape): the type of tiling grid, RECTANGLE, 
-#             HEXAGON or DIAMOND.
-#         extent (gpd.GeoSeries): geometry of the (circular) extent of the tiling.
-#         centre (tuple[float]): centre point of the extent.
-#         points (gpd.GeoSeries): shapely.geometry.Points recording the
-#             translation vectors of the grid.
-#     """
-#     tile:gpd.GeoSeries = None
-#     to_tile:gpd.GeoSeries = None
-#     grid_type:TileShape = None
-#     extent:gpd.GeoSeries = None
-#     centre:tuple[float] = None
-#     points:gpd.GeoSeries = None
-    
-#     def __init__(self, tile:gpd.GeoSeries, to_tile:gpd.GeoSeries, 
-#                  grid_type:TileShape = TileShape.RECTANGLE) -> None:
-#         """Class constructor.
-
-#         Args:
-#             tile (gpd.GeoSeries): geometry of the tiling base tile.
-#             to_tile (gpd.GeoSeries): geometry of the region to be tiled.
-#             grid_type (TileShape, optional): the type of the tiling in terms of
-#                 the TileShape of the base tile. Defaults to 
-#                 `TileShape.RECTANGLE`.
-#         """
-#         self.grid_type = grid_type
-#         self.tile = tile
-#         self.to_tile = tiling_utils.clean_polygon(
-#             gpd.GeoSeries([to_tile.unary_union]))
-#         self.extent, self.centre = self._get_extent()
-#         self.points = self._get_points()
-        
-    
-#     def _get_extent(self) -> tuple[gpd.GeoSeries, geom.Point]:
-#         """Returns the extent and centre of the grid.
-
-#         Returns:
-#             tuple[gpd.GeoSeries, geom.Point]: the extent of the grid and its 
-#                 centre.
-#         """
-#         mrr = self.to_tile.geometry[0].minimum_rotated_rectangle
-#         mrr_centre = geom.Point(mrr.centroid.coords[0])
-#         mrr_corner = geom.Point(mrr.exterior.coords[0])
-#         radius = mrr_centre.distance(mrr_corner)
-#         return gpd.GeoSeries([mrr_centre.buffer(radius)]), mrr_centre
-    
-        
-#     def _get_points(self) -> gpd.GeoSeries:
-#         """Returns the translation vectors of the grid as GeoSeries of Point
-#         geometries.
-
-#         Returns:
-#             gpd.GeoSeries: GeoSeries of shapely.geometry.Point objects, whose 
-#                 coordinates are the translation vectors of the grid.
-#         """
-#         if self.grid_type in (TileShape.RECTANGLE, ):
-#             pts = self._get_rect_centres()
-#         elif self.grid_type in (TileShape.HEXAGON, ):
-#             pts = self._get_hex_centres()
-#         elif self.grid_type in (TileShape.DIAMOND, ):
-#             pts = self._get_diamond_centres()
-#         pts = [geom.Point(p[0], p[1]) for p in pts]
-#         return gpd.GeoSeries([p for p in pts if p.within(self.extent[0])])
-    
-        
-#     def _get_grid(self, ll: tuple[float], nums: tuple[int], 
-#                   dim: tuple[float]) -> np.ndarray:
-#         """Returns rectilinear grid of x,y coordinate pairs.
-
-#         Args:
-#             ll (tuple[float]): lower left corner coordinates of the grid as 
-#                 (x, y). 
-#             nums (tuple[int]): grid extent as (number of columns, number 
-#                 of rows).
-#             tdim (tuple[float]): grid resolution as (column width, column 
-#                 height)
-
-#         Returns:
-#             np.ndarray: a matrix of nums[0] * nums[1] rows and 2 columns, 
-#                 each row
-#             containing an x, y coordinate pair.
-#         """    
-#         return np.array(np.meshgrid(np.arange(nums[0]) * dim[0] + ll[0],
-#                                     np.arange(nums[1]) * dim[1] + ll[1])
-#                         ).reshape(2, nums[0] * nums[1]).transpose()
-        
-
-#     def _get_rect_centres(self) -> np.ndarray:
-#         """Returns a grid of translation vectors for a rectangular tiling.
-
-#         Returns:
-#             np.ndarray: A 2 column array each row being an x, y translation
-#                 vector.
-#         """    
-#         tt_w, tt_h, tt_x0, tt_y0 = \
-#             tiling_utils.get_width_height_left_bottom(self.extent)
-#         tile_w, tile_h, tile_x0, tile_y0 = \
-#             tiling_utils.get_width_height_left_bottom(self.tile)
-#         # number of tiles in each direction
-#         nx = int(np.ceil(tt_w / tile_w))
-#         ny = int(np.ceil(tt_h / tile_h))
-#         grid_w, grid_h = nx * tile_w, ny * tile_h
-#         margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
-#         x0 = tt_x0 + margin_w / 2
-#         y0 = tt_y0 + margin_h / 2
-#         return self._get_grid((x0, y0), (nx + 1, ny + 1), (tile_w, tile_h))
-
-
-#     def _get_hex_centres(self) -> np.ndarray:
-#         """Returns a grid of translation vectors for a hexagonal tiling.
-        
-#         This is implemented by making two appropriately scaled and offset
-#         rectangular grids.
-        
-#         Returns:
-#             np.ndarray: A 2 column array each row being an x, y translation
-#                 vector.
-#         """    
-#         tt_w, tt_h, tt_x0, tt_y0  = \
-#             tiling_utils.get_width_height_left_bottom(self.extent)
-#         tile_w, tile_h, tile_x0, tile_y0 = \
-#             tiling_utils.get_width_height_left_bottom(self.tile)
-#         nx = int(np.ceil(tt_w / (tile_w * 3 / 2)))
-#         ny = int(np.ceil(tt_h / tile_h))
-#         # the effective width of two columns of hexagonal tiles is 3w/2
-#         grid_w, grid_h = nx * tile_w * 3 / 2, ny * tile_h
-#         margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
-#         x0 = tt_x0 + margin_w / 2
-#         y0 = tt_y0 + margin_h / 2
-#         # get two offset rectangular grids and combine them
-#         g1 = self._get_grid((x0, y0 + tile_h / 4), 
-#                             (nx + 1, ny + 1), 
-#                             (tile_w * 3 / 2, tile_h))
-#         g2 = self._get_grid((x0 + tile_w * 3 / 4, y0 - tile_h / 4), 
-#                             (nx, ny), 
-#                             (tile_w * 3 / 2, tile_h))
-#         return np.append(g1, g2).reshape((g1.shape[0] + g2.shape[0], 2))
-
-    
-#     def _get_diamond_centres(self) -> np.ndarray:
-#         """Reurns a grid of translation vectors for a diamond tiling.
-
-#         This is implemented by making two appropriately scaled and offset
-#         rectangular grids.
-        
-#         Returns:
-#             np.ndarray: A 2 column array each row being an x, y translation
-#                 vector.
-#         """
-#         tt_w, tt_h, tt_x0, tt_y0 = \
-#             tiling_utils.get_width_height_left_bottom(self.extent)
-#         tile_w, tile_h, tile_x0, tile_y0 = \
-#             tiling_utils.get_width_height_left_bottom(self.tile)
-#         nx = int(np.ceil(tt_w / tile_w))
-#         ny = int(np.ceil(tt_h / tile_h))
-#         grid_w, grid_h = nx * tile_w, ny * tile_h
-#         margin_w, margin_h = tt_w - grid_w, tt_h - grid_h
-#         x0 = tt_x0 + margin_w / 2
-#         y0 = tt_y0 + margin_h / 2
-#         g1 = self._get_grid((x0, y0), 
-#                             (nx + 1, ny + 1), 
-#                             (tile_w, tile_h))
-#         g2 = self._get_grid((x0 - tile_w / 2, y0 - tile_h / 2),
-#                             (nx + 1, ny + 1), 
-#                             (tile_w, tile_h))
-#         return np.append(g1, g2).reshape(g1.shape[0] + g2.shape[0], 2)
