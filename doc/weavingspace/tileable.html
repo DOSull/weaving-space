@@ -420,10 +420,10 @@ class Tileable:
     
 
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
-             show_ids = True, show_vectors:bool = False, r:int = 0,
+             show_ids:str = &#34;element_id&#34;, show_vectors:bool = False, r:int = 0,
              tile_edgecolor:str = &#34;k&#34;, reg_tile_edgcolor:str = &#34;r&#34;, 
-             cmap:list[str] = None, figsize:tuple[float] = (8, 8), 
-             **kwargs) -&gt; pyplot.axes:
+             r_alpha:float = 0.3, cmap:list[str] = None, 
+             figsize:tuple[float] = (8, 8), **kwargs) -&gt; pyplot.axes:
         &#34;&#34;&#34;Plots a representation of the Tileable on the supplied axis. **kwargs
         are passed on to matplotlib.plot()
 
@@ -433,13 +433,16 @@ class Tileable:
                 Defaults to `True`.
             show_reg_tile (bool, optional): if `True` show the regularised tile 
                 outline. Defaults to `True`.
-            show_ids (bool, optional): if `True` show the element_ids. 
-                Defaults to `True`.
+            show_ids (str, optional): if `element_id` show the element_ids. If
+                `id` show index number. If None or `&#34;&#34;` don&#39;t label elements.
+                Defaults to `element_id`.
             show_vectors (bool, optional): if `True` show the translation 
                 vectors (not the minimal pair, but those used by 
                 `get_local_patch()`). Defaults to `False`.
             r (int, optional): passed to `get_local_patch()` to show context if 
                 greater than 0. Defaults to `0`.
+            r_alpha (float, optional): alpha setting for units other than the 
+                central one. Defaults to 0.3.
             tile_edgecolor (str, optional): outline colour for the tile. 
                 Defaults to `&#34;k&#34;`.
             reg_tile_edgcolor (str, optional): outline colour for the 
@@ -461,15 +464,23 @@ class Tileable:
         else:
             self.elements.plot(ax = ax, column = &#34;element_id&#34;, cmap = cm, 
                                figsize = figsize, **kwargs)
-        if show_ids:
-            for id, tile in zip(self.elements.element_id, 
-                                self.elements.geometry):
-                ax.annotate(id, (tile.centroid.x, tile.centroid.y),
-                            ha = &#34;center&#34;, va = &#34;center&#34;,
-                            bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
+        if show_ids != None and show_ids != &#34;&#34;:
+            do_label = True
+            if show_ids == &#34;element_id&#34; or show_ids == True:
+                labels = self.elements.element_id
+            elif show_ids == &#34;id&#34;:
+                labels = [str(i) for i in range(self.elements.shape[0])]
+            else:
+                do_label = False
+            if do_label:
+                for id, tile in zip(labels, self.elements.geometry):
+                    ax.annotate(id, (tile.centroid.x, tile.centroid.y),
+                                ha = &#34;center&#34;, va = &#34;center&#34;,
+                                bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
         if r &gt; 0:
             self.get_local_patch(r = r).plot(ax = ax, column = &#34;element_id&#34;,
-                                             alpha = 0.3, cmap = cm, **kwargs)
+                                             alpha = r_alpha, cmap = cm,
+                                             **kwargs)
         if show_tile:
             self.tile.plot(ax = ax, ec = tile_edgecolor, lw = 0.5,
                            fc = &#34;#00000000&#34;, **kwargs) 
@@ -1001,10 +1012,10 @@ class Tileable:
     
 
     def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
-             show_ids = True, show_vectors:bool = False, r:int = 0,
+             show_ids:str = &#34;element_id&#34;, show_vectors:bool = False, r:int = 0,
              tile_edgecolor:str = &#34;k&#34;, reg_tile_edgcolor:str = &#34;r&#34;, 
-             cmap:list[str] = None, figsize:tuple[float] = (8, 8), 
-             **kwargs) -&gt; pyplot.axes:
+             r_alpha:float = 0.3, cmap:list[str] = None, 
+             figsize:tuple[float] = (8, 8), **kwargs) -&gt; pyplot.axes:
         &#34;&#34;&#34;Plots a representation of the Tileable on the supplied axis. **kwargs
         are passed on to matplotlib.plot()
 
@@ -1014,13 +1025,16 @@ class Tileable:
                 Defaults to `True`.
             show_reg_tile (bool, optional): if `True` show the regularised tile 
                 outline. Defaults to `True`.
-            show_ids (bool, optional): if `True` show the element_ids. 
-                Defaults to `True`.
+            show_ids (str, optional): if `element_id` show the element_ids. If
+                `id` show index number. If None or `&#34;&#34;` don&#39;t label elements.
+                Defaults to `element_id`.
             show_vectors (bool, optional): if `True` show the translation 
                 vectors (not the minimal pair, but those used by 
                 `get_local_patch()`). Defaults to `False`.
             r (int, optional): passed to `get_local_patch()` to show context if 
                 greater than 0. Defaults to `0`.
+            r_alpha (float, optional): alpha setting for units other than the 
+                central one. Defaults to 0.3.
             tile_edgecolor (str, optional): outline colour for the tile. 
                 Defaults to `&#34;k&#34;`.
             reg_tile_edgcolor (str, optional): outline colour for the 
@@ -1042,15 +1056,23 @@ class Tileable:
         else:
             self.elements.plot(ax = ax, column = &#34;element_id&#34;, cmap = cm, 
                                figsize = figsize, **kwargs)
-        if show_ids:
-            for id, tile in zip(self.elements.element_id, 
-                                self.elements.geometry):
-                ax.annotate(id, (tile.centroid.x, tile.centroid.y),
-                            ha = &#34;center&#34;, va = &#34;center&#34;,
-                            bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
+        if show_ids != None and show_ids != &#34;&#34;:
+            do_label = True
+            if show_ids == &#34;element_id&#34; or show_ids == True:
+                labels = self.elements.element_id
+            elif show_ids == &#34;id&#34;:
+                labels = [str(i) for i in range(self.elements.shape[0])]
+            else:
+                do_label = False
+            if do_label:
+                for id, tile in zip(labels, self.elements.geometry):
+                    ax.annotate(id, (tile.centroid.x, tile.centroid.y),
+                                ha = &#34;center&#34;, va = &#34;center&#34;,
+                                bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
         if r &gt; 0:
             self.get_local_patch(r = r).plot(ax = ax, column = &#34;element_id&#34;,
-                                             alpha = 0.3, cmap = cm, **kwargs)
+                                             alpha = r_alpha, cmap = cm,
+                                             **kwargs)
         if show_tile:
             self.tile.plot(ax = ax, ec = tile_edgecolor, lw = 0.5,
                            fc = &#34;#00000000&#34;, **kwargs) 
@@ -1542,7 +1564,7 @@ tiling of map regions.</p>
 </details>
 </dd>
 <dt id="weavingspace.tileable.Tileable.plot"><code class="name flex">
-<span>def <span class="ident">plot</span></span>(<span>self, ax=None, show_tile: bool = True, show_reg_tile: bool = True, show_ids=True, show_vectors: bool = False, r: int = 0, tile_edgecolor: str = 'k', reg_tile_edgcolor: str = 'r', cmap: list[str] = None, figsize: tuple[float] = (8, 8), **kwargs) -> <function axes at 0x7fe00f78c310></span>
+<span>def <span class="ident">plot</span></span>(<span>self, ax=None, show_tile: bool = True, show_reg_tile: bool = True, show_ids: str = 'element_id', show_vectors: bool = False, r: int = 0, tile_edgecolor: str = 'k', reg_tile_edgcolor: str = 'r', r_alpha: float = 0.3, cmap: list[str] = None, figsize: tuple[float] = (8, 8), **kwargs) -> <function axes at 0x7f27209345e0></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Plots a representation of the Tileable on the supplied axis. **kwargs
@@ -1557,9 +1579,10 @@ Defaults to <code>True</code>.</dd>
 <dt><strong><code>show_reg_tile</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>if <code>True</code> show the regularised tile
 outline. Defaults to <code>True</code>.</dd>
-<dt><strong><code>show_ids</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>if <code>True</code> show the element_ids.
-Defaults to <code>True</code>.</dd>
+<dt><strong><code>show_ids</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>if <code>element_id</code> show the element_ids. If
+<code>id</code> show index number. If None or <code>""</code> don't label elements.
+Defaults to <code>element_id</code>.</dd>
 <dt><strong><code>show_vectors</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>if <code>True</code> show the translation
 vectors (not the minimal pair, but those used by
@@ -1567,6 +1590,9 @@ vectors (not the minimal pair, but those used by
 <dt><strong><code>r</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>passed to <code>get_local_patch()</code> to show context if
 greater than 0. Defaults to <code>0</code>.</dd>
+<dt><strong><code>r_alpha</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>alpha setting for units other than the
+central one. Defaults to 0.3.</dd>
 <dt><strong><code>tile_edgecolor</code></strong> :&ensp;<code>str</code>, optional</dt>
 <dd>outline colour for the tile.
 Defaults to <code>"k"</code>.</dd>
@@ -1585,10 +1611,10 @@ Defaults to <code>(8, 8)</code>.</dd>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def plot(self, ax = None, show_tile:bool = True, show_reg_tile:bool = True, 
-         show_ids = True, show_vectors:bool = False, r:int = 0,
+         show_ids:str = &#34;element_id&#34;, show_vectors:bool = False, r:int = 0,
          tile_edgecolor:str = &#34;k&#34;, reg_tile_edgcolor:str = &#34;r&#34;, 
-         cmap:list[str] = None, figsize:tuple[float] = (8, 8), 
-         **kwargs) -&gt; pyplot.axes:
+         r_alpha:float = 0.3, cmap:list[str] = None, 
+         figsize:tuple[float] = (8, 8), **kwargs) -&gt; pyplot.axes:
     &#34;&#34;&#34;Plots a representation of the Tileable on the supplied axis. **kwargs
     are passed on to matplotlib.plot()
 
@@ -1598,13 +1624,16 @@ Defaults to <code>(8, 8)</code>.</dd>
             Defaults to `True`.
         show_reg_tile (bool, optional): if `True` show the regularised tile 
             outline. Defaults to `True`.
-        show_ids (bool, optional): if `True` show the element_ids. 
-            Defaults to `True`.
+        show_ids (str, optional): if `element_id` show the element_ids. If
+            `id` show index number. If None or `&#34;&#34;` don&#39;t label elements.
+            Defaults to `element_id`.
         show_vectors (bool, optional): if `True` show the translation 
             vectors (not the minimal pair, but those used by 
             `get_local_patch()`). Defaults to `False`.
         r (int, optional): passed to `get_local_patch()` to show context if 
             greater than 0. Defaults to `0`.
+        r_alpha (float, optional): alpha setting for units other than the 
+            central one. Defaults to 0.3.
         tile_edgecolor (str, optional): outline colour for the tile. 
             Defaults to `&#34;k&#34;`.
         reg_tile_edgcolor (str, optional): outline colour for the 
@@ -1626,15 +1655,23 @@ Defaults to <code>(8, 8)</code>.</dd>
     else:
         self.elements.plot(ax = ax, column = &#34;element_id&#34;, cmap = cm, 
                            figsize = figsize, **kwargs)
-    if show_ids:
-        for id, tile in zip(self.elements.element_id, 
-                            self.elements.geometry):
-            ax.annotate(id, (tile.centroid.x, tile.centroid.y),
-                        ha = &#34;center&#34;, va = &#34;center&#34;,
-                        bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
+    if show_ids != None and show_ids != &#34;&#34;:
+        do_label = True
+        if show_ids == &#34;element_id&#34; or show_ids == True:
+            labels = self.elements.element_id
+        elif show_ids == &#34;id&#34;:
+            labels = [str(i) for i in range(self.elements.shape[0])]
+        else:
+            do_label = False
+        if do_label:
+            for id, tile in zip(labels, self.elements.geometry):
+                ax.annotate(id, (tile.centroid.x, tile.centroid.y),
+                            ha = &#34;center&#34;, va = &#34;center&#34;,
+                            bbox = {&#34;lw&#34;: 0, &#34;fc&#34;: &#34;#ffffff40&#34;})
     if r &gt; 0:
         self.get_local_patch(r = r).plot(ax = ax, column = &#34;element_id&#34;,
-                                         alpha = 0.3, cmap = cm, **kwargs)
+                                         alpha = r_alpha, cmap = cm,
+                                         **kwargs)
     if show_tile:
         self.tile.plot(ax = ax, ec = tile_edgecolor, lw = 0.5,
                        fc = &#34;#00000000&#34;, **kwargs) 

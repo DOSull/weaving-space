@@ -60,7 +60,7 @@ Many of the maps we show are of Dan Exeter's index of multiple deprivation (IMD)
 tile_unit = TileUnit(tiling_type = "laves", code = "4.8.8",
                       crs = ak.crs, spacing = 500)
 
-tiling = Tiling(tile_unit, ak, id_var = "DZ2018")
+tiling = Tiling(tile_unit, ak)
 
 fig = tiling.get_tiled_map(prioritise_tiles = True) \
   .render(variables = variables, colourmaps = colourmaps,
@@ -74,7 +74,7 @@ tile_unit = WeaveUnit(weave_type = "twill", n = 3, strands = "ab|cd",
                       aspect = .75, crs = ak.crs, spacing = 150)
 # tile_unit = tile_unit.inset_elements(10)
 tile_unit = tile_unit.transform_rotate(30)
-tiling = Tiling(tile_unit, ak, id_var = "DZ2018")
+tiling = Tiling(tile_unit, ak)
 
 fig = tiling.get_tiled_map(prioritise_tiles = True) \
   .render(variables = variables, colourmaps = colourmaps,
@@ -406,11 +406,11 @@ cairo_tile = cairo_tile.transform_scale(0.5, 0.5)
 ## Tiling a dataset
 `TileUnit`s and `WeaveUnit`s are both `Tileable` objects that can be used to make a `Tiling`.
 
-To make a `Tiling` we also need a polygon dataset to be tiled and its unique ID variable. 
+To make a `Tiling` we also need a polygon dataset to be tiled ~~and its unique ID variable~~.^[Not required in latest version of the code (10/2022)] 
 
 ```{python}
 #| echo: true
-tiling = Tiling(cairo_tile, region, id_var = "DZ2018")
+tiling = Tiling(cairo_tile, region)
 ```
 
 
