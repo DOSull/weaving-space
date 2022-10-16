@@ -332,7 +332,7 @@ class Tiling:
                 if debug:
                     t4 = perf_counter()
                     print(f"STEP A3: calculate areas: {t4 - t3:.3f}")
-                overlaps =  overlaps.drop(columns = region_vars)
+                overlaps.drop(columns = region_vars, inplace = True)
                 if debug:
                     t5 = perf_counter()
                     print(f"STEP A4: drop columns prior to join: {t5 - t4:.3f}")
@@ -350,7 +350,6 @@ class Tiling:
             if debug:
                 t7 = perf_counter()
                 print(f"STEP A6: perform lookup join: {t7 - t6:.3f}")
-            self.region.drop(columns = [id_var])
 
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
@@ -358,9 +357,8 @@ class Tiling:
             if debug:
                 print(f"STEP B2: overlay tiling with zones: {t7 - t2:.3f}")
         
-        if debug:
-            t8 = perf_counter()
-            print(f"STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}")
+        tiled_map.drop(columns = [id_var, "joinUID"], inplace = True)
+        self.region.drop(columns = [id_var], inplace = True)
         
         # if we've retained tiles and want 'clean' edges, then clip
         # note that this step is slow: geopandas unary_unions the clip layer
@@ -368,7 +366,8 @@ class Tiling:
             tiled_map.sindex
             tiled_map = tiled_map.clip(self.region)
             if debug:
-                print(f"STEP A8: clip map to region: {perf_counter() - t8:.3f}")
+                print(f"""STEP A7/B3: clip map to region: 
+                      {perf_counter() - t7:.3f}""")
 
         tm = TiledMap()
         tm.tiling = self

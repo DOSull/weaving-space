@@ -158,10 +158,10 @@ class Tileable:
         """
         self.regularised_tile = copy.deepcopy(self.tile)
         self.regularised_tile.geometry = tiling_utils.safe_union(
-            self.elements.geometry)
+            self.elements.geometry, self.spacing * 1e-6)
         # This simplification seems very crude but fixes all kinds of issues...
         self.regularised_tile.geometry[0] = \
-            self.regularised_tile.geometry[0].simplify(self.spacing / 100)
+            self.regularised_tile.geometry[0].simplify(self.spacing * 1e-6)
         return
         
     
