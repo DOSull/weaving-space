@@ -180,7 +180,7 @@ class Tiling:
     region:gpd.GeoDataFrame = None
     grid:_TileGrid = None
     tiles:gpd.GeoDataFrame = None
-    rotation:float = 0.
+    rotation:float = 0.0
 
     def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, id_var = None,
                  tile_margin:float = 0, elements_sf:float = 1, 
@@ -218,6 +218,7 @@ class Tiling:
                 False. 
         """
         self.tile_unit = unit
+        self.rotation = self.tile_unit.rotation
         if elements_margin > 0:
             self.tile_unit = self.tile_unit.inset_elements(elements_margin) 
         if elements_sf != 1:

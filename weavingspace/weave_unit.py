@@ -293,7 +293,7 @@ class WeaveUnit(Tileable):
             axis = self._get_axis_from_label(id, self.strands)
             elements.append(self._get_most_central_large_element(
                 candidates, elements))
-            rotations.append(-angles[axis])
+            rotations.append(-angles[axis] + self.rotation)
         return gpd.GeoDataFrame(
             data = {"element_id": element_ids, "rotation": rotations}, 
             crs = self.crs,

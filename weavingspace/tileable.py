@@ -75,6 +75,7 @@ class Tileable:
     regularised_tile:gpd.GeoDataFrame = None
     crs:int = 3857
     fudge_factor:float = 1e-3
+    rotation:float = 0.0
     debug:bool = False
     
     # Tileable constructor called by subclasses - should not be used directly
@@ -509,6 +510,7 @@ class Tileable:
         result.regularised_tile.geometry = \
             self.regularised_tile.geometry.rotate(angle, origin = (0, 0))
         result.vectors = result.get_vectors()
+        result.rotation = result.rotation + angle
         return result
     
     
