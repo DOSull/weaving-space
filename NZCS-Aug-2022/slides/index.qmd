@@ -17,9 +17,6 @@ jupyter: python3
 ---
 
 ```{python}
-import sys
-sys.path.append("../..") # so I can find weavingspace
-
 import os
 os.chdir("/home/osullid3/Documents/code/weaving-space")
 
