@@ -75,6 +75,7 @@ class Tileable:
     regularised_tile:gpd.GeoDataFrame = None
     crs:int = 3857
     fudge_factor:float = 1e-3
+    rotation:float = 0.0
     debug:bool = False
     
     # Tileable constructor called by subclasses - should not be used directly
@@ -158,10 +159,10 @@ class Tileable:
         """
         self.regularised_tile = copy.deepcopy(self.tile)
         self.regularised_tile.geometry = tiling_utils.safe_union(
-            self.elements.geometry)
+            self.elements.geometry, self.spacing * 1e-6)
         # This simplification seems very crude but fixes all kinds of issues...
         self.regularised_tile.geometry[0] = \
-            self.regularised_tile.geometry[0].simplify(self.spacing / 100)
+            self.regularised_tile.geometry[0].simplify(self.spacing * 1e-6)
         return
         
     
@@ -509,6 +510,7 @@ class Tileable:
         result.regularised_tile.geometry = \
             self.regularised_tile.geometry.rotate(angle, origin = (0, 0))
         result.vectors = result.get_vectors()
+        result.rotation = result.rotation + angle
         return result
     
     

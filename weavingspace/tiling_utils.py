@@ -577,8 +577,7 @@ def safe_union(gs:gpd.GeoSeries, res:float = 1e-3,
     """
     union = gs.buffer(res, resolution = 1, join_style = 2) \
                 .unary_union \
-                .buffer(-res, resolution = 1, join_style = 2) \
-                .simplify(1)  ## Not clear this is particularly safe!
+                .buffer(-res, resolution = 1, join_style = 2) 
     if as_polygon:
         return union
     else:
