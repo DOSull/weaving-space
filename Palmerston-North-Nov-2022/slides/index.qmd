@@ -192,8 +192,7 @@ The building blocks of our approach.
 #| output-location: fragment
 #| code-line-numbers: "1|2-3"
 cairo_tile = TileUnit(tiling_type = "cairo")
-cairo_tile.plot(r = 1, show_vectors = True, 
-                figsize = (7, 7)).set_axis_off()
+cairo_tile.plot(r = 1, show_vectors = True).set_axis_off()
 ```
 
 ## Triangles, squares, hexagons
