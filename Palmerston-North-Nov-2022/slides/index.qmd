@@ -8,7 +8,6 @@ format:
     transition-speed: slow
     navigation-mode: vertical
     controls-layout: bottom-right
-    controls-tutorial: true
     slide-number: c/t
     logo: images/logo.png
     footer: "Palmerston North, 11 Nov 2022 - Tiled & woven maps - O'Sullivan & Bergmann"
@@ -269,7 +268,8 @@ These (and more) are made the same way:
 #| echo: true
 #| eval: false
 tile = TileUnit(
-  tiling_type = "cairo|archimedean|laves|hex-dissection|square-dissection",
+  tiling_type = """cairo|archimedean|laves|hex-dissection|
+  square-colouring|hex-colouring""",
   n = ..., code = "3.3.4.3.4", dissection_offset = 0|1,  # optional
   spacing = 500, crs = 2193
 )
@@ -481,6 +481,7 @@ There is plenty to think about
 
 :::{.incremental}
 + Using colour well is hard at the best of times&mdash;using several colours at once is even harder!
++ Potential for use in combination with hierarchical indices like H3?
 + Legends are a challenge&mdash;ideas welcome!
 + We've worked hard to make the code easy to use... 
 + ... but it's still code
