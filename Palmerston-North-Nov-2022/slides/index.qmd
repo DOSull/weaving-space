@@ -40,7 +40,31 @@ colourmaps = dict(zip(variables.values(), 4 * ["viridis"]))
 # A preview {.smaller background-image="images/detailed-weave.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
 The TL;DR;
 
-## Where we are headed
+<!-- An earlier version of this section included these extra materials -->
+
+## Some other multivariate mapping approaches
+This is a perennially challenging problem, so many different ways of tackling it have been attempted...
+
+A little more context for these was provided in [our earlier talk](https://dosull.github.io/weaving-space/NZCS-Nov-2021/make-weave-map.html).
+
+##
+
+::: {.r-stack}
+![](images/small-multiples.png "Tufte recommends this approach"){.fragment .fade-out fragment-index=1 width="800"}
+
+![](images/bivariate-choropleth-stevens-qgis.png "2-colours, OK"){.fragment .fade-in-then-out fragment-index=1 width="800"}
+
+![](images/tricolore.png "3-colours, brown"){.fragment .fade-in-then-out fragment-index=2 width="800"}
+
+![](images/choropleth-with-symbols-qgis.png "Probably the most conventional option"){.fragment .fade-in-then-out fragment-index=3 width="800"}
+
+![](images/dorling-chernoff-faces.jpg "Probably the least conventional option"){.fragment .fade-in-then-out fragment-index=4 width="500"}
+
+![](images/dot-map.png "This approach is older than you might imagine, see Jenks GF, 1953, “‘Pointilism’ as a cartographic technique” The Professional Geographer 5(5) 4–6
+"){.fragment .fade-in fragment-index=5 width="800"}
+:::
+
+## Our approach
 Two new kinds of thematic map for handling complex multivariate data associated with polygons.
 
 We've [developed python code](https://github.com/DOSull/weaving-space) that helps you make tiled and woven maps.
@@ -247,9 +271,9 @@ ax = tiling_utils.get_dual_tile_unit(units[5]).plot(
 ## Dissections and colourings
 ```{python}
 units = [
-  TileUnit(tiling_type = "square-colouring", n = 5),
   TileUnit(tiling_type = "hex-dissection", n = 3, dissection_offset = 1),
   TileUnit(tiling_type = "hex-dissection", n = 12, dissection_offset = 1),
+  TileUnit(tiling_type = "square-colouring", n = 5),
   TileUnit(tiling_type = "hex-colouring", n = 3),
   TileUnit(tiling_type = "hex-colouring", n = 4),
   TileUnit(tiling_type = "hex-colouring", n = 7)
@@ -346,7 +370,7 @@ The `strands` parameter specifies which strands in each axis (separated by the `
 ```{python}
 fig, ax = pyplot.subplots(1, 2, figsize = (15, 9))
 for a, w in zip(ax, (w1, w2)):
-  w.plot(ax = a, show_ids = False).set_axis_off()
+  w.plot(ax = a, r = 1, show_ids = False).set_axis_off()
   a.set_title(f'strands = "{w.strands}"')
 ```
 
@@ -481,7 +505,7 @@ There is plenty to think about
 
 :::{.incremental}
 + Using colour well is hard at the best of times&mdash;using several colours at once is even harder!
-+ Potential for use in combination with hierarchical indices like H3?
++ Potential for use in combination with hierarchical spatial indices like H3?
 + Legends are a challenge&mdash;ideas welcome!
 + We've worked hard to make the code easy to use... 
 + ... but it's still code
