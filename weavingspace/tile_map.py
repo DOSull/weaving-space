@@ -532,14 +532,16 @@ class TiledMap:
     # the below parameters can be set either before calling self.render() 
     # or passed in as parameters to self.render()
     # these are solely TiledMap.render() options
-    legend:bool = True  #: whether or not to show a legend
-    legend_zoom:float = 1.0  #: <1 zooms out from legend to show more context
-    legend_dx:float = 0.  #: horizontal shift of legend relative to the map
-    legend_dy:float = 0.  #: vertical shift of legend relative to the map
-    use_ellipse:bool = False  #: if True clips legend with an ellipse
-    ellipse_magnification:float = 1.0  #: magnification to apply to clip ellipse
-    radial_key:bool = False  #: if True use radial key even for ordinal/ratio data (normally these will be shown by concentric elements)
-    draft_mode:bool = False  #: if True plot only the map coloured by element_id
+    legend:bool = True        # whether or not to show a legend
+    legend_zoom:float = 1.0   # <1 zooms out from legend to show more context
+    legend_dx:float = 0.      # horizontal shift of legend relative to the map
+    legend_dy:float = 0.      # vertical shift of legend relative to the map
+    use_ellipse:bool = False  # if True clips legend with an ellipse
+    ellipse_magnification:float = 1.0  # magnification to apply to clip ellipse
+    radial_key:bool = False   # if True use radial key even for ordinal/ratio 
+                              # data (normally these will be shown by 
+                              # concentric elements)
+    draft_mode:bool = False   # if True plot only the map coloured by element_id
     
     # the parameters below are geopandas.plot options which we intercept to
     # ensure they are applied appropriately when we plot a GDF
