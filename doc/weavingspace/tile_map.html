@@ -385,6 +385,7 @@ class Tiling:
             if debug:
                 t7 = perf_counter()
                 print(f&#34;STEP A6: perform lookup join: {t7 - t6:.3f}&#34;)
+            tiled_map.drop(columns = [&#34;joinUID&#34;], inplace = True)
 
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
@@ -392,7 +393,7 @@ class Tiling:
             if debug:
                 print(f&#34;STEP B2: overlay tiling with zones: {t7 - t2:.3f}&#34;)
         
-        tiled_map.drop(columns = [id_var, &#34;joinUID&#34;], inplace = True)
+        tiled_map.drop(columns = [id_var], inplace = True)
         self.region.drop(columns = [id_var], inplace = True)
         
         # if we&#39;ve retained tiles and want &#39;clean&#39; edges, then clip
@@ -2040,6 +2041,7 @@ class Tiling:
             if debug:
                 t7 = perf_counter()
                 print(f&#34;STEP A6: perform lookup join: {t7 - t6:.3f}&#34;)
+            tiled_map.drop(columns = [&#34;joinUID&#34;], inplace = True)
 
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
@@ -2047,7 +2049,7 @@ class Tiling:
             if debug:
                 print(f&#34;STEP B2: overlay tiling with zones: {t7 - t2:.3f}&#34;)
         
-        tiled_map.drop(columns = [id_var, &#34;joinUID&#34;], inplace = True)
+        tiled_map.drop(columns = [id_var], inplace = True)
         self.region.drop(columns = [id_var], inplace = True)
         
         # if we&#39;ve retained tiles and want &#39;clean&#39; edges, then clip
@@ -2351,6 +2353,7 @@ to False.</dd>
         if debug:
             t7 = perf_counter()
             print(f&#34;STEP A6: perform lookup join: {t7 - t6:.3f}&#34;)
+        tiled_map.drop(columns = [&#34;joinUID&#34;], inplace = True)
 
     else:  # here we overlay
         tiled_map = self.region.overlay(tiled_map)
@@ -2358,7 +2361,7 @@ to False.</dd>
         if debug:
             print(f&#34;STEP B2: overlay tiling with zones: {t7 - t2:.3f}&#34;)
     
-    tiled_map.drop(columns = [id_var, &#34;joinUID&#34;], inplace = True)
+    tiled_map.drop(columns = [id_var], inplace = True)
     self.region.drop(columns = [id_var], inplace = True)
     
     # if we&#39;ve retained tiles and want &#39;clean&#39; edges, then clip

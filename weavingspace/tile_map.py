@@ -351,6 +351,7 @@ class Tiling:
             if debug:
                 t7 = perf_counter()
                 print(f"STEP A6: perform lookup join: {t7 - t6:.3f}")
+            tiled_map.drop(columns = ["joinUID"], inplace = True)
 
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
@@ -358,7 +359,7 @@ class Tiling:
             if debug:
                 print(f"STEP B2: overlay tiling with zones: {t7 - t2:.3f}")
         
-        tiled_map.drop(columns = [id_var, "joinUID"], inplace = True)
+        tiled_map.drop(columns = [id_var], inplace = True)
         self.region.drop(columns = [id_var], inplace = True)
         
         # if we've retained tiles and want 'clean' edges, then clip
