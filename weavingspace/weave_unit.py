@@ -330,7 +330,7 @@ class WeaveUnit(Tileable):
 
 
     def _get_legend_key_shapes(self, polygon:geom.Polygon, 
-                               counts:Iterable, angle:float = 0,
+                               counts:Iterable = [1] * 25, angle:float = 0,
                                radial:bool = False) -> list[geom.Polygon]:
         """Returns a list of polygons obtained by slicing the supplied polygon
         across its length inton n slices. Orientation of the polygon is 
@@ -341,7 +341,8 @@ class WeaveUnit(Tileable):
 
         Args:
             polygon (geom.Polygon): the weave strand polygon to slice.
-            n (int, optional): the number of slices required. Defaults to 25.
+            counts (Iterable, optional): an iterable list of the numbers of 
+                slices in each category. Defaults to [1] * 25.
             angle (float, optional): orientation of the polygon. Defaults to 0.
             categorical (bool, optional): ignored by WeaveUnit.
 

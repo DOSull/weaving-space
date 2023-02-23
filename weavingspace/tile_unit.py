@@ -59,6 +59,7 @@ Examples:
 
 import copy
 from dataclasses import dataclass
+from typing import Iterable
 import string
 
 import geopandas as gpd
@@ -163,7 +164,7 @@ class TileUnit(Tileable):
 
     
     def _get_legend_key_shapes(self, polygon:geom.Polygon, 
-                               counts:int = 25, angle:float = 0, 
+                               counts:Iterable = [1] * 25, angle:float = 0, 
                                radial:bool = False) -> list[geom.Polygon]:
         """Returns a set of shapes that can be used to make a legend key 
         symbol for the supplied polygon. In TileUnit this is a set of 'nested
@@ -171,7 +172,8 @@ class TileUnit(Tileable):
 
         Args:
             polygon (geom.Polygon): the polygon to symbolise.
-            n (int, optional): number of steps. Defaults to 25.
+            count (Iterable, optional): iterable of the counts of each slice.
+                Defaults to [1] * 25.
             rot (float, optional): rotation that may have to be applied.  
                 Not used in the TileUnit case. Defaults to 0.
 

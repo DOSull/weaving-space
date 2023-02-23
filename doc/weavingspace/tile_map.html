@@ -214,7 +214,7 @@ class Tiling:
     region:gpd.GeoDataFrame = None
     grid:_TileGrid = None
     tiles:gpd.GeoDataFrame = None
-    rotation:float = 0.
+    rotation:float = 0.0
 
     def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, id_var = None,
                  tile_margin:float = 0, elements_sf:float = 1, 
@@ -252,6 +252,7 @@ class Tiling:
                 False. 
         &#34;&#34;&#34;
         self.tile_unit = unit
+        self.rotation = self.tile_unit.rotation
         if elements_margin &gt; 0:
             self.tile_unit = self.tile_unit.inset_elements(elements_margin) 
         if elements_sf != 1:
@@ -366,7 +367,7 @@ class Tiling:
                 if debug:
                     t4 = perf_counter()
                     print(f&#34;STEP A3: calculate areas: {t4 - t3:.3f}&#34;)
-                overlaps =  overlaps.drop(columns = region_vars)
+                overlaps.drop(columns = region_vars, inplace = True)
                 if debug:
                     t5 = perf_counter()
                     print(f&#34;STEP A4: drop columns prior to join: {t5 - t4:.3f}&#34;)
@@ -384,7 +385,6 @@ class Tiling:
             if debug:
                 t7 = perf_counter()
                 print(f&#34;STEP A6: perform lookup join: {t7 - t6:.3f}&#34;)
-            self.region.drop(columns = [id_var])
 
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
@@ -392,9 +392,8 @@ class Tiling:
             if debug:
                 print(f&#34;STEP B2: overlay tiling with zones: {t7 - t2:.3f}&#34;)
         
-        if debug:
-            t8 = perf_counter()
-            print(f&#34;STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}&#34;)
+        tiled_map.drop(columns = [id_var, &#34;joinUID&#34;], inplace = True)
+        self.region.drop(columns = [id_var], inplace = True)
         
         # if we&#39;ve retained tiles and want &#39;clean&#39; edges, then clip
         # note that this step is slow: geopandas unary_unions the clip layer
@@ -402,7 +401,8 @@ class Tiling:
             tiled_map.sindex
             tiled_map = tiled_map.clip(self.region)
             if debug:
-                print(f&#34;STEP A8: clip map to region: {perf_counter() - t8:.3f}&#34;)
+                print(f&#34;&#34;&#34;STEP A7/B3: clip map to region: 
+                      {perf_counter() - t7:.3f}&#34;&#34;&#34;)
 
         tm = TiledMap()
         tm.tiling = self
@@ -566,14 +566,16 @@ class TiledMap:
     # the below parameters can be set either before calling self.render() 
     # or passed in as parameters to self.render()
     # these are solely TiledMap.render() options
-    legend:bool = True  #: whether or not to show a legend
-    legend_zoom:float = 1.0  #: &lt;1 zooms out from legend to show more context
-    legend_dx:float = 0.  #: horizontal shift of legend relative to the map
-    legend_dy:float = 0.  #: vertical shift of legend relative to the map
-    use_ellipse:bool = False  #: if True clips legend with an ellipse
-    ellipse_magnification:float = 1.0  #: magnification to apply to clip ellipse
-    radial_key:bool = False  #: if True use radial key even for ordinal/ratio data (normally these will be shown by concentric elements)
-    draft_mode:bool = False  #: if True plot only the map coloured by element_id
+    legend:bool = True        # whether or not to show a legend
+    legend_zoom:float = 1.0   # &lt;1 zooms out from legend to show more context
+    legend_dx:float = 0.      # horizontal shift of legend relative to the map
+    legend_dy:float = 0.      # vertical shift of legend relative to the map
+    use_ellipse:bool = False  # if True clips legend with an ellipse
+    ellipse_magnification:float = 1.0  # magnification to apply to clip ellipse
+    radial_key:bool = False   # if True use radial key even for ordinal/ratio 
+                              # data (normally these will be shown by 
+                              # concentric elements)
+    draft_mode:bool = False   # if True plot only the map coloured by element_id
     
     # the parameters below are geopandas.plot options which we intercept to
     # ensure they are applied appropriately when we plot a GDF
@@ -1051,14 +1053,16 @@ class TiledMap:
     # the below parameters can be set either before calling self.render() 
     # or passed in as parameters to self.render()
     # these are solely TiledMap.render() options
-    legend:bool = True  #: whether or not to show a legend
-    legend_zoom:float = 1.0  #: &lt;1 zooms out from legend to show more context
-    legend_dx:float = 0.  #: horizontal shift of legend relative to the map
-    legend_dy:float = 0.  #: vertical shift of legend relative to the map
-    use_ellipse:bool = False  #: if True clips legend with an ellipse
-    ellipse_magnification:float = 1.0  #: magnification to apply to clip ellipse
-    radial_key:bool = False  #: if True use radial key even for ordinal/ratio data (normally these will be shown by concentric elements)
-    draft_mode:bool = False  #: if True plot only the map coloured by element_id
+    legend:bool = True        # whether or not to show a legend
+    legend_zoom:float = 1.0   # &lt;1 zooms out from legend to show more context
+    legend_dx:float = 0.      # horizontal shift of legend relative to the map
+    legend_dy:float = 0.      # vertical shift of legend relative to the map
+    use_ellipse:bool = False  # if True clips legend with an ellipse
+    ellipse_magnification:float = 1.0  # magnification to apply to clip ellipse
+    radial_key:bool = False   # if True use radial key even for ordinal/ratio 
+                              # data (normally these will be shown by 
+                              # concentric elements)
+    draft_mode:bool = False   # if True plot only the map coloured by element_id
     
     # the parameters below are geopandas.plot options which we intercept to
     # ensure they are applied appropriately when we plot a GDF
@@ -1865,7 +1869,7 @@ class Tiling:
     region:gpd.GeoDataFrame = None
     grid:_TileGrid = None
     tiles:gpd.GeoDataFrame = None
-    rotation:float = 0.
+    rotation:float = 0.0
 
     def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, id_var = None,
                  tile_margin:float = 0, elements_sf:float = 1, 
@@ -1903,6 +1907,7 @@ class Tiling:
                 False. 
         &#34;&#34;&#34;
         self.tile_unit = unit
+        self.rotation = self.tile_unit.rotation
         if elements_margin &gt; 0:
             self.tile_unit = self.tile_unit.inset_elements(elements_margin) 
         if elements_sf != 1:
@@ -2017,7 +2022,7 @@ class Tiling:
                 if debug:
                     t4 = perf_counter()
                     print(f&#34;STEP A3: calculate areas: {t4 - t3:.3f}&#34;)
-                overlaps =  overlaps.drop(columns = region_vars)
+                overlaps.drop(columns = region_vars, inplace = True)
                 if debug:
                     t5 = perf_counter()
                     print(f&#34;STEP A4: drop columns prior to join: {t5 - t4:.3f}&#34;)
@@ -2035,7 +2040,6 @@ class Tiling:
             if debug:
                 t7 = perf_counter()
                 print(f&#34;STEP A6: perform lookup join: {t7 - t6:.3f}&#34;)
-            self.region.drop(columns = [id_var])
 
         else:  # here we overlay
             tiled_map = self.region.overlay(tiled_map)
@@ -2043,9 +2047,8 @@ class Tiling:
             if debug:
                 print(f&#34;STEP B2: overlay tiling with zones: {t7 - t2:.3f}&#34;)
         
-        if debug:
-            t8 = perf_counter()
-            print(f&#34;STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}&#34;)
+        tiled_map.drop(columns = [id_var, &#34;joinUID&#34;], inplace = True)
+        self.region.drop(columns = [id_var], inplace = True)
         
         # if we&#39;ve retained tiles and want &#39;clean&#39; edges, then clip
         # note that this step is slow: geopandas unary_unions the clip layer
@@ -2053,7 +2056,8 @@ class Tiling:
             tiled_map.sindex
             tiled_map = tiled_map.clip(self.region)
             if debug:
-                print(f&#34;STEP A8: clip map to region: {perf_counter() - t8:.3f}&#34;)
+                print(f&#34;&#34;&#34;STEP A7/B3: clip map to region: 
+                      {perf_counter() - t7:.3f}&#34;&#34;&#34;)
 
         tm = TiledMap()
         tm.tiling = self
@@ -2329,7 +2333,7 @@ to False.</dd>
             if debug:
                 t4 = perf_counter()
                 print(f&#34;STEP A3: calculate areas: {t4 - t3:.3f}&#34;)
-            overlaps =  overlaps.drop(columns = region_vars)
+            overlaps.drop(columns = region_vars, inplace = True)
             if debug:
                 t5 = perf_counter()
                 print(f&#34;STEP A4: drop columns prior to join: {t5 - t4:.3f}&#34;)
@@ -2347,7 +2351,6 @@ to False.</dd>
         if debug:
             t7 = perf_counter()
             print(f&#34;STEP A6: perform lookup join: {t7 - t6:.3f}&#34;)
-        self.region.drop(columns = [id_var])
 
     else:  # here we overlay
         tiled_map = self.region.overlay(tiled_map)
@@ -2355,9 +2358,8 @@ to False.</dd>
         if debug:
             print(f&#34;STEP B2: overlay tiling with zones: {t7 - t2:.3f}&#34;)
     
-    if debug:
-        t8 = perf_counter()
-        print(f&#34;STEP A7/B3: dissolve tiles within zones: {t8 - t7:.3f}&#34;)
+    tiled_map.drop(columns = [id_var, &#34;joinUID&#34;], inplace = True)
+    self.region.drop(columns = [id_var], inplace = True)
     
     # if we&#39;ve retained tiles and want &#39;clean&#39; edges, then clip
     # note that this step is slow: geopandas unary_unions the clip layer
@@ -2365,7 +2367,8 @@ to False.</dd>
         tiled_map.sindex
         tiled_map = tiled_map.clip(self.region)
         if debug:
-            print(f&#34;STEP A8: clip map to region: {perf_counter() - t8:.3f}&#34;)
+            print(f&#34;&#34;&#34;STEP A7/B3: clip map to region: 
+                  {perf_counter() - t7:.3f}&#34;&#34;&#34;)
 
     tm = TiledMap()
     tm.tiling = self

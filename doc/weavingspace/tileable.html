@@ -111,6 +111,7 @@ class Tileable:
     regularised_tile:gpd.GeoDataFrame = None
     crs:int = 3857
     fudge_factor:float = 1e-3
+    rotation:float = 0.0
     debug:bool = False
     
     # Tileable constructor called by subclasses - should not be used directly
@@ -194,10 +195,10 @@ class Tileable:
         &#34;&#34;&#34;
         self.regularised_tile = copy.deepcopy(self.tile)
         self.regularised_tile.geometry = tiling_utils.safe_union(
-            self.elements.geometry)
+            self.elements.geometry, self.spacing * 1e-6)
         # This simplification seems very crude but fixes all kinds of issues...
         self.regularised_tile.geometry[0] = \
-            self.regularised_tile.geometry[0].simplify(self.spacing / 100)
+            self.regularised_tile.geometry[0].simplify(self.spacing * 1e-6)
         return
         
     
@@ -545,6 +546,7 @@ class Tileable:
         result.regularised_tile.geometry = \
             self.regularised_tile.geometry.rotate(angle, origin = (0, 0))
         result.vectors = result.get_vectors()
+        result.rotation = result.rotation + angle
         return result
     
     
@@ -703,6 +705,7 @@ class Tileable:
     regularised_tile:gpd.GeoDataFrame = None
     crs:int = 3857
     fudge_factor:float = 1e-3
+    rotation:float = 0.0
     debug:bool = False
     
     # Tileable constructor called by subclasses - should not be used directly
@@ -786,10 +789,10 @@ class Tileable:
         &#34;&#34;&#34;
         self.regularised_tile = copy.deepcopy(self.tile)
         self.regularised_tile.geometry = tiling_utils.safe_union(
-            self.elements.geometry)
+            self.elements.geometry, self.spacing * 1e-6)
         # This simplification seems very crude but fixes all kinds of issues...
         self.regularised_tile.geometry[0] = \
-            self.regularised_tile.geometry[0].simplify(self.spacing / 100)
+            self.regularised_tile.geometry[0].simplify(self.spacing * 1e-6)
         return
         
     
@@ -1137,6 +1140,7 @@ class Tileable:
         result.regularised_tile.geometry = \
             self.regularised_tile.geometry.rotate(angle, origin = (0, 0))
         result.vectors = result.get_vectors()
+        result.rotation = result.rotation + angle
         return result
     
     
@@ -1184,6 +1188,10 @@ class Tileable:
 <div class="desc"></div>
 </dd>
 <dt id="weavingspace.tileable.Tileable.regularised_tile"><code class="name">var <span class="ident">regularised_tile</span> : geopandas.geodataframe.GeoDataFrame</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="weavingspace.tileable.Tileable.rotation"><code class="name">var <span class="ident">rotation</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1564,7 +1572,7 @@ tiling of map regions.</p>
 </details>
 </dd>
 <dt id="weavingspace.tileable.Tileable.plot"><code class="name flex">
-<span>def <span class="ident">plot</span></span>(<span>self, ax=None, show_tile: bool = True, show_reg_tile: bool = True, show_ids: str = 'element_id', show_vectors: bool = False, r: int = 0, tile_edgecolor: str = 'k', reg_tile_edgcolor: str = 'r', r_alpha: float = 0.3, cmap: list[str] = None, figsize: tuple[float] = (8, 8), **kwargs) -> <function axes at 0x7f27209345e0></span>
+<span>def <span class="ident">plot</span></span>(<span>self, ax=None, show_tile: bool = True, show_reg_tile: bool = True, show_ids: str = 'element_id', show_vectors: bool = False, r: int = 0, tile_edgecolor: str = 'k', reg_tile_edgcolor: str = 'r', r_alpha: float = 0.3, cmap: list[str] = None, figsize: tuple[float] = (8, 8), **kwargs) -> <function axes at 0x7f24f3aec790></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Plots a representation of the Tileable on the supplied axis. **kwargs
@@ -1747,10 +1755,10 @@ attribute accordingly.</p></div>
     &#34;&#34;&#34;
     self.regularised_tile = copy.deepcopy(self.tile)
     self.regularised_tile.geometry = tiling_utils.safe_union(
-        self.elements.geometry)
+        self.elements.geometry, self.spacing * 1e-6)
     # This simplification seems very crude but fixes all kinds of issues...
     self.regularised_tile.geometry[0] = \
-        self.regularised_tile.geometry[0].simplify(self.spacing / 100)
+        self.regularised_tile.geometry[0].simplify(self.spacing * 1e-6)
     return</code></pre>
 </details>
 </dd>
@@ -1806,6 +1814,7 @@ attribute accordingly.</p></div>
     result.regularised_tile.geometry = \
         self.regularised_tile.geometry.rotate(angle, origin = (0, 0))
     result.vectors = result.get_vectors()
+    result.rotation = result.rotation + angle
     return result</code></pre>
 </details>
 </dd>
@@ -1936,6 +1945,7 @@ attribute accordingly.</p></div>
 <li><code><a title="weavingspace.tileable.Tileable.plot" href="#weavingspace.tileable.Tileable.plot">plot</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.regularise_elements" href="#weavingspace.tileable.Tileable.regularise_elements">regularise_elements</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.regularised_tile" href="#weavingspace.tileable.Tileable.regularised_tile">regularised_tile</a></code></li>
+<li><code><a title="weavingspace.tileable.Tileable.rotation" href="#weavingspace.tileable.Tileable.rotation">rotation</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.setup_regularised_tile_from_elements" href="#weavingspace.tileable.Tileable.setup_regularised_tile_from_elements">setup_regularised_tile_from_elements</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.setup_vectors" href="#weavingspace.tileable.Tileable.setup_vectors">setup_vectors</a></code></li>
 <li><code><a title="weavingspace.tileable.Tileable.spacing" href="#weavingspace.tileable.Tileable.spacing">spacing</a></code></li>
