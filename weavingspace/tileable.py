@@ -104,7 +104,10 @@ class Tileable:
         """
         Returns symmetry translation vectors as floating point pairs. 
         
-        Derived from the size and shape of the tile attribute. These are not the minimal translation vectors, but the 'face to face' vectors of the tile, such that a hexagonal tile will have 3 vectors, not the minimal parallelogram pair. Also supplies the inverse vectors.
+        Derived from the size and shape of the tile attribute. These are not
+        the minimal translation vectors, but the 'face to face' vectors of the
+        tile, such that a hexagonal tile will have 3 vectors, not the minimal
+        parallelogram pair. Also supplies the inverse vectors.
         
         Optionally returns the vectors in a dictionary indexed by their 
         coordinates, e.g.
