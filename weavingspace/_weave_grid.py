@@ -111,10 +111,10 @@ class WeaveGrid:
         x-axis symmetric about the y-axis. Radii to corners are either
         
         n_axes=2:   n_axes=3:
-          \  /          |
+          \  /          |   
            \/           |   
-           /\          / \
-          /  \        /   \
+           /\          / \  
+          /  \        /   \ 
         
         face to face distance of cell from base vertically to the opposite face 
         or corner is (square) L = 2 Rcos(45), or (triangle) L = R + Rcos(60) where R is the radius of the circumcircle.
@@ -175,15 +175,15 @@ class WeaveGrid:
         Returns 'slices' across grid cell (i.e. horizontally) centred vertically
         relative to the cell, ie
         
-                 /\
-                /  \
+                 /\         
+                /  \        
         +------------------+
         |     /      \     |
         +------------------+
         |   /          \   |
         +------------------+
-          /              \
-         /________________\
+          /              \  
+         /________________\ 
         
         Horizontal extent is L, total width of the strips is W * self.spacing,
         they are 'sliced' horizontally in n_slices slices of equal width.

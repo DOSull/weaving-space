@@ -104,6 +104,8 @@ class _TileGrid():
             tuple[gpd.GeoSeries, geom.Point]: the extent of the grid and its 
                 centre.
         """
+        
+        # TODO: the minimum_rotate_rectangle seems to throw an error?
         mrr = self.to_tile[0].minimum_rotated_rectangle
         mrr_centre = geom.Point(mrr.centroid.coords[0])
         mrr_corner = geom.Point(mrr.exterior.coords[0])
@@ -225,16 +227,22 @@ class Tiling:
             if isinstance(self.tile_unit, TileUnit):
                 self.tile_unit = self.tile_unit.scale_elements(elements_sf)
             else:
-                print(f"""Applying scaling to elements of a WeaveUnit does not make sense. Ignoring elements_sf setting of {elements_sf}.""")
+                print(f"""Applying scaling to elements of a WeaveUnit does 
+                      not make sense. Ignoring elements_sf setting of 
+                      {elements_sf}.""")
         if tile_margin > 0:
             if isinstance(self.tile_unit, TileUnit):
                 self.tile_unit = self.tile_unit.inset_tile(tile_margin)
             else:
-                print(f"""Applying a tile margin to elements of a WeaveUnit does not make sense. Ignoring tile_margin setting of {tile_margin}.""")        
+                print(f"""Applying a tile margin to elements of a WeaveUnit 
+                      does not make sense. Ignoring tile_margin setting of 
+                      {tile_margin}.""")        
         self.region = region
         self.region.sindex
         if id_var != None:
-            print("""id_var is no longer required and will be deprecated soon. A temporary unique index attribute is added and removed when generating the tiled map.""")
+            print("""id_var is no longer required and will be deprecated soon. 
+                  A temporary unique index attribute is added and removed 
+                  when generating the tiled map.""")
         if as_icons:
             self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
         else:
@@ -263,9 +271,9 @@ class Tiling:
         just a 'hook' for now to be checked later.
         
         The exact order in which operations are performed affects performance. 
-        For example, the final clipping to self.region when ragged_edges = False
-        is _much_ slower if it is carried out before the dissolving of tile 
-        elements into the region zones. So... again... modify CAREFULLY!
+        For example, the final clipping to self.region when ragged_edges = 
+        False is _much_ slower if it is carried out before the dissolving of 
+        tile elements into the region zones. So... again... modify CAREFULLY!
         
         Args:
             rotation (float, optional): An optional rotation to apply. Defaults 
@@ -324,7 +332,8 @@ class Tiling:
                 # determine areas of overlapping tile elements and drop the data
                 # we join the data back later, so dropping makes that easier
                 # overlaying in region.overlay(tiles) seems to be faster??
-                # TODO: also... this part is performance-critical, think about # fixes -- possibly including the above centroid-based approx
+                # TODO: also... this part is performance-critical, think about 
+                # fixes -- possibly including the above centroid-based approx
                 overlaps = self.region.overlay(tiled_map, make_valid = False)
                 if debug:
                     t3 = perf_counter()
@@ -519,8 +528,10 @@ class TiledMap:
         
             tm.colourmaps = dict(zip(tm.variables.values(), ["Reds", "Blues"]))
         
-        See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) for simple usage. TODO: This 
-        more complicated example shows how categorical maps can be created.
+        See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb) 
+        for simple usage. 
+        TODO: This more complicated example shows how categorical maps can be 
+        created.
     """
     # these will be set at instantion by Tiling.get_tiled_map()
     tiling:Tiling = None  #: the Tiling with the required tiles
@@ -836,7 +847,8 @@ class TiledMap:
         data assigned to the slice so a map of them can stand as a legend.
         
         'Dissection' is handled differently by `WeaveUnit` and `TileUnit` 
-        objects and delegated to either `WeaveUnit._get_legend_key_shapes()` or `TileUnit._get_legend_key_shapes()`.
+        objects and delegated to either `WeaveUnit._get_legend_key_shapes()` 
+        or `TileUnit._get_legend_key_shapes()`.
 
         Args:
             elements (gpd.GeoDataFrame): the legend elements.
