@@ -20,7 +20,7 @@ An overview of the concepts assembled from the proof-of-concept _R_ code is on [
 Slides from a more recent talk explaining the work, extended to tiled maps (of which woven maps are a special case) is available [here](https://dosull.github.io/weaving-space/Palmerston-North-Nov-2022/slides/).
 
 ## Other explanatory stuff
-Any of the notebooks in the main file list above may be of interest. Some background material and thinking about tiling is in [this notebook](notes-on-tiling-april-2022.ipynb).
+Any of the notebooks in the main file list above may be of interest. Some background material and thinking about tiling is in [this notebook](notes-on-tiling-april-2022.md).
 
 Some earlier abortive work in python based on generating geometries directly is in the `old-python-stuff` folder.
 
