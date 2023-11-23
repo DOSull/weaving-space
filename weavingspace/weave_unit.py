@@ -333,7 +333,7 @@ class WeaveUnit(Tileable):
                                counts:Iterable = [1] * 25, angle:float = 0,
                                radial:bool = False) -> list[geom.Polygon]:
         """Returns a list of polygons obtained by slicing the supplied polygon
-        across its length inton n slices. Orientation of the polygon is 
+        across its length into n slices. Orientation of the polygon is 
         indicated by the angle.
         
         The returned list of polygons can be used to form a colour ramp in a 

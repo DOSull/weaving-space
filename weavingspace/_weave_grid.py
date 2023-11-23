@@ -133,12 +133,12 @@ class WeaveGrid:
             R = self.spacing / (2 * np.cos(np.pi / n_sides))
         else:
             R = self.spacing / (1 + np.cos(np.pi / n_sides))
-        angles = self.__get_angles(n_sides)
+        angles = self._get_angles(n_sides)
         corners = [(R * np.cos(a), R * np.sin(a)) for a in angles]
         return self._gridify(geom.Polygon(corners), precision = 6)
 
 
-    def __get_angles(self, n: int = 4) -> list[float]:
+    def _get_angles(self, n: int = 4) -> list[float]:
         """Returns angles to corners of n sides polygon, assuming one side is horizontal parallel to x-axis.
 
         To determine angles start at 6 o'clock (3pi/2) and add (pi/n), then

@@ -74,7 +74,7 @@ def get_pattern(tie_up:np.ndarray, treadling:np.ndarray, threading:np.ndarray,
 
 
 # Note that as currently written this function requires the warp and weft
-# matrices to be the same size, which get_weave_pattern_matrix will ensure, b
+# matrices to be the same size, which get_weave_pattern_matrix will ensure,
 # but which may not be the case if called from elsewhere
 def _encode_biaxial_weave(pattern:np.ndarray, warp:np.ndarray, 
                          weft:np.ndarray) -> np.ndarray:
