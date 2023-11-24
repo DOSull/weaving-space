@@ -503,7 +503,7 @@ class Tileable:
         )
     if show_reg_tile:
       self.regularised_tile.plot(
-        ax=ax, ec=reg_tile_edgcolor, fc="#00000000", lw=2, **kwargs
+        ax=ax, ec=reg_tile_edgcolor, fc="#00000000", lw=1, **kwargs
       )
     return ax
 
