@@ -135,7 +135,7 @@ Given that only two translational symmetries are required to define a tiling tha
 
 Some examples are shown below.
 
-### The 3<sup>2</sup>4.3.4 tiling and Cairo tiling (its dual)
+### The 3<sup>2</sup>.4.3.4 tiling and Cairo tiling (its dual)
 The repeating unit of both these tilings is square. It probably makes more sense to generate a prototile consisting of complete subtiles as shown, rather than to cut the subtiles at the square unit boundaries. Note how the areas where the subtiles exceed the base unit on one side match the missing areas on the opposite side.
 
 ![](sketches/33434-and-cairo.png)(see also [33434 tiles](example-tiles-33434.ipynb) and [Cairo tiles](example-tiles-cairo.ipynb))
