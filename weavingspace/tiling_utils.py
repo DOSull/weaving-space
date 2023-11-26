@@ -212,7 +212,7 @@ def _get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
   return gpd.GeoSeries([geom.Point(p) for p in interior_pts])
 
 
-def gridify(gs:gpd.GeoSeries, precision:int = 8) -> gpd.GeoSeries:
+def gridify(gs:gpd.GeoSeries, precision:int = 6) -> gpd.GeoSeries:
   """Returns the supplied GeoSeries rounded to the specified precision.
 
   Works by round-tripping through WKT, which seems like the easiest
