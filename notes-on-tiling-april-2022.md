@@ -7,21 +7,20 @@ The first thing to say is that tiling is an impossibly vast terrain, unless we r
 
 Among the properties they are quick to emphasise is that every tile shape should be a topological disc (i.e. topologically equivalent to a circle, without holes, and not disjoint with itself). This is *not* a property we necessarily care about, but it is convenient to go along with GS87 and worry about that possibility later. [I suspect our interest in tiles with holes will be because we consider local tiles at several locations to be part of the 'same' tile so there will be some tilings we make that mathematically break this restriction.]
 
-GS87 is pretty full-on. Kaplan (2009) provides a more tractable introduction, emphasizing the isohedral tilings (I'll get to that). 
+GS87 is pretty full-on. Kaplan (2009) provides a more tractable introduction, emphasizing the isohedral tilings (I'll get to that).
 
 More recent work that is relevant is on computational tiling theory, which although it starts in the 1980s does not appear in the otherwise encyclopedic GS87, and which really only comes into its own over two decades later (see Huson 1993, Delgado-Friedrichs 2003, Zeller, Delgado-Friedrichs and Huson 2021). This work really has moved things along: to see just how far, take a look at the *Tegula* program: https://software-ab.informatik.uni-tuebingen.de/download/tegula/welcome.html (also on github: https://github.com/husonlab/tegula).
 
 
 ## Properties of tilings
 ### Some definitions
-A mathematical *tiling* turns out to be a GIS coverage! Thus: 
+A mathematical *tiling* turns out to be a GIS coverage! Thus:
 
 > \"A *plane tiling* is a countable family of closed sets $\mathcal{T}=\{T_1,T_2,\ldots\}$ which covers the plane without gaps or overlaps. More explicitly, the union of the sets $T_1,T_2,\ldots$ (which are known as the *tiles* of $\mathcal{T}$) is to be the whole plane, and the interiors of the sets $T_i$ are to be pairwise disjoint" (GS87 p16)
 
 GS87 are careful to distinguish *vertices* and *edges* of a tiling $\mathcal{T}$ from the *corners* and *sides* of the tiles $T_i$ that form the tiling. Tilings in which every edge of the tiling is also a side of a tile are referred to as *edge-to-edge* which becomes an important constraint in some situations. The tiling below left is not edge-to-edge, but is topologically equivalent to the regular tiling by hexagons. Note that a lot of the 'tilings' we produce by 'weaving' break this restriction!
 
 ![](sketches/parquet-hex.png)
-
 
 At each tiling vertex, the number of tiling edges that meet is the *valence* of the vertex. GS87 are interested to explore tiling properties contingent on their vertex valences. By definition two tiles meet at each tiling edge, and the number of tiles that meet at each vertex is also given by the valence.
 
@@ -36,10 +35,10 @@ A $k$-hedral tiling is formed from $k$ distinct shapes of tile (including under 
 
 In general, it seems like we might want tilings that are $k$-hedral where $k>1$, to allow tiles to be distinguished from one another. Likely what we want is more subtle than that. After all, the arrows in the above tiling are readily distinguished from one another and could be symbolised separately with little danger of confusion.
 
-"In any case this brings us to..."
+In any case this brings us to...
 
 ### Symmetry
-Both tiles and tilings may have symmetries, but they are defined slightly differently. 
+Both tiles and tilings may have symmetries, but they are defined slightly differently.
 
 ### The symmetry groups of a tile
 A symmetry of a tile $T_i$ is any transformation $S$ of the Euclidean plane that preserves the shape and size of the tile. Technically such transformations are referred to as *isometries*.  Five isometries are possible:
@@ -64,7 +63,7 @@ The symmetry group of a tiling $G(\mathcal{T})$ is the set of symmetries under w
 **NOTE**: need to get a better handle on what is meant by the *induced symmetries* of a tiling.
 
 ### Isohedral tilings and transitivity groups
-The symmetries of a tiling will map various tiles on to other tiles. The number of sets of tiles related to one another in this way gives rise to the concept of *transitivity groups* of tiles. These are the distinct sets of tiles that are mapped onto one another by the symmetries of the tiling. An *isohedral* tiling is one with only one transitivity group. A nice way to think of it is that the tiles in an isohedral tiling are locally indistinguishable from one another: the tiling looks the same from the perspective of any tile. An isohedral tiling is necessarily monohedral. 
+The symmetries of a tiling will map various tiles on to other tiles. The number of sets of tiles related to one another in this way gives rise to the concept of *transitivity groups* of tiles. These are the distinct sets of tiles that are mapped onto one another by the symmetries of the tiling. An *isohedral* tiling is one with only one transitivity group. A nice way to think of it is that the tiles in an isohedral tiling are locally indistinguishable from one another: the tiling looks the same from the perspective of any tile. An isohedral tiling is necessarily monohedral.
 
 The concept extends naturally to $k$-isohedrality. It is important to realise that a tiling may be monohedral or $m$-hedral with $m=1$ and $k$-isohedral with $m\neq k$ and in fact that $m\leq k$. The simple example noted in GS87 and elsewhere (see also Kaplan 2009, p36) is shown below.
 
@@ -88,10 +87,10 @@ It's not at all clear what the import of any of the above might be for choosing 
 
 Because directionality or orientation is not a property of tilings *per se* given that tiles are considered identical subject to rotation, but is *probably* an important consideration from a cartographic symbolisation perspective, it is hard to say anything definitive. Many monohedral, isohedral tilings exist that allow for directionally distinguishable tiles given that we will impose a tiling at some chosen orientation.
 
-"The notion of periodicity in tilings, i.e., that they should have at least two linearly independent (not orthogonal) translational symmetry vectors is important. There are tilings that have no such symmetry (spiral tilings, for example) which probably hold no interest for our purposes. With respect to the implementation of the woven patterns and the current application of some elements of that code base to tiling, periodicity is central, because 'rolling out' a weave unit or tile unit across a map is entirely based on generating a grid of translation vectors (whether the grid is rectangular or hexagonal or 'rhombical'). It's hard to imagine this not being a feature of any implementation."
+The notion of periodicity in tilings, i.e., that they should have at least two linearly independent (not orthogonal) translational symmetry vectors is important. There are tilings that have no such symmetry (spiral tilings, for example) which probably hold no interest for our purposes. With respect to the implementation of the woven patterns and the current application of some elements of that code base to tiling, periodicity is central, because 'rolling out' a weave unit or tile unit across a map is entirely based on generating a grid of translation vectors (whether the grid is rectangular or hexagonal or 'rhombical'). It's hard to imagine this not being a feature of any implementation.
 
 ## The Archimedean tilings
-The Archimedian tilings are the 11 possible tilings by regular polygons. Since the angles at the corners of a regular polygon with $n$ sides are $\pi(n-2)/n$ and must sum to $2\pi$ where they meet at a tiling vertex, we can see that the vertex species in these tilings must satisfy 
+The Archimedian tilings are the 11 possible tilings by regular polygons. Since the angles at the corners of a regular polygon with $n$ sides are $\pi(n-2)/n$ and must sum to $2\pi$ where they meet at a tiling vertex, we can see that the vertex species in these tilings must satisfy
 
 $$\sum_{i=1}^k\frac{n_i-2}{n_i}=2$$
 
@@ -99,7 +98,7 @@ where $k$ non-distinct polygons meet at each vertex. It can be shown that only 1
 
 ![](../sketches/archimedean-tilings.png)(from Kaplan 2009, p31)
 
-"Three of these are the regular tilings whose *flags*&mdash;or vertex-edge-tile triples&mdash;are transitive under its symmetries. The remaining 8 are semi-regular. All 11 are isogonal but not isohedral (since they are not all monohedral). Which of these are most suitable for mapping is open to conjecture. The three regular tilings (discussed below) likely required a bit more work. The others, with more than one polygon may be more immediately applicable. Even so, the two containing dodecagons, given how much larger these are than the other polygons, may have only limited use."
+Three of these are the regular tilings whose *flags*&mdash;or vertex-edge-tile triples&mdash;are transitive under its symmetries. The remaining 8 are semi-regular. All 11 are isogonal but not isohedral (since they are not all monohedral). Which of these are most suitable for mapping is open to conjecture. The three regular tilings (discussed below) likely required a bit more work. The others, with more than one polygon may be more immediately applicable. Even so, the two containing dodecagons, given how much larger these are than the other polygons, may have only limited use.
 
 ## The three regular tilings and their possibilities
 It seems limiting to focus too closely on the simplest of tilings&mdash;squares, hexagons and triangles&mdash;but even here there's plenty to think about. Assuming that our end goal is locally readable maps where it is possible to distinguish among several symbolisations of attribute values at each location, we have to somehow 'dissect' the polygons in the regular tilings into distinguishable 'subtiles'.
@@ -120,7 +119,7 @@ Carrying this thought further, we can consider various potential dissections of 
 
 But a lot more options than this present themselves: after all a hexagon can be subdivided into triangles also, from which polyiamonds of various shapes and sizes can be assembled. See [Polyiamond hexagon tiling](http://recmath.org/PolyCur/mhexagons/index.html). Squares can be similarly dissected by polyominoes, although in general it seems harder to do this with identical polyominoes (which might not be a problem for us!)
 
-"Anyway... the TL;DR; is that some suggested set of dissection tilings could be assembled in this way, and supported as defaults in code."
+Anyway... the TL;DR; is that some suggested set of dissection tilings could be assembled in this way, and supported as defaults in code.
 
 ## Dual tilings
 It would be good to be able to make duals of tilings [**UPDATE** now we can, more or less... at least up to labelling]. The duals of the Archimedean tilings, the Laves tilings provide examples, many of which look interesting as possible map tilings. Note that 3 of these are the regular tilings by triangles, squares and hexagons, and that one $[3\cdot6\cdot3\cdot6]$ is the cube weave which we can already generate. All are isohedral *because* their dual tilings are isogonal.
@@ -129,7 +128,7 @@ It would be good to be able to make duals of tilings [**UPDATE** now we can, mor
 
 The Laves tilings are also important as the basis for the 81 distinct isohedral tilings identified by GS87. I have no idea why these are the basis, although the fact they are all monohedral is obviously both a prerequisite and also (at least initially) surprising. However, since these are the dual tilings of tilings whose key property is that they have only one species of vertex, this is not *actually* suprising!
 
-"Many of the Laves tilings show up in the dissection of the regular tilings, as various colourings."
+Many of the Laves tilings show up in the dissection of the regular tilings, as various colourings.
 
 ## The regular tilings as the basis of any other tiling
 Given that only two translational symmetries are required to define a tiling that covers the plane, it follows that all periodic tilings can be generated based on parallelogram shaped tiles, or equivalently on an affine-transformed square tiling. In some cases it is likely more intuitive or convenient to use a hexagonal unit (although any hexagonal tiling can also be generated based on a rhomboidal grid).
@@ -137,7 +136,7 @@ Given that only two translational symmetries are required to define a tiling tha
 Some examples are shown below.
 
 ### The 3<sup>2</sup>4.3.4 tiling and Cairo tiling (its dual)
-The repeating unit of both these tilings is square. It probably makes more sense to generate a prototile consisting of complete subtiles as shown, rather than to cut the subtiles at the square unit boundaries. Note how the areas where the subtiles exceed the base unit on one side match the missing areas on the opposite side. 
+The repeating unit of both these tilings is square. It probably makes more sense to generate a prototile consisting of complete subtiles as shown, rather than to cut the subtiles at the square unit boundaries. Note how the areas where the subtiles exceed the base unit on one side match the missing areas on the opposite side.
 
 ![](sketches/33434-and-cairo.png)(see also [33434 tiles](example-tiles-33434.ipynb) and [Cairo tiles](example-tiles-cairo.ipynb))
 
