@@ -202,7 +202,8 @@ def setup_hex_dissection(unit:TileUnit) -> None:
       slices = [geom.Polygon([p[i], p[j], (0, 0)])
                 for i, j in zip(ids[:-1], ids[1:])]
     else:
-      base = [1/23, 1/6 - 1/23]
+      x = (np.sin(np.pi/6) - np.sin(np.pi/12)) / 6
+      base = [x, 1/6 - x]
       steps = base
       for i in range(1, 6):
         steps = steps + [x + i/6 for x in base]
