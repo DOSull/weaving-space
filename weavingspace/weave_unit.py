@@ -59,6 +59,7 @@ class WeaveUnit(Tileable):
 
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
+    self.elements.geometry = tiling_utils.gridify(self.elements.geometry)
     self.weave_type = self.weave_type.lower()
 
 

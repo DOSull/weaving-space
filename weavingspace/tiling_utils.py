@@ -25,6 +25,8 @@ import shapely.ops
 # this causes a circular import error and is only needed for typing
 # from weavingspace.tile_unit import TileUnit
 
+PRECISION = 8
+RESOLUTION = 1e-8
 
 def _parse_strand_label(s:str) -> list[str]:
   """Breaks a strand label specifiction in to a list of labels
@@ -212,7 +214,7 @@ def _get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
   return gpd.GeoSeries([geom.Point(p) for p in interior_pts])
 
 
-def gridify(gs:gpd.GeoSeries, precision:int = 6) -> gpd.GeoSeries:
+def gridify(gs:gpd.GeoSeries, precision:int = PRECISION) -> gpd.GeoSeries:
   """Returns the supplied GeoSeries rounded to the specified precision.
 
   Works by round-tripping through WKT, which seems like the easiest
@@ -229,6 +231,9 @@ def gridify(gs:gpd.GeoSeries, precision:int = 6) -> gpd.GeoSeries:
   return gpd.GeoSeries(
     list(gs.apply(
       wkt.dumps, rounding_precision = precision).apply(wkt.loads)))
+  # return gpd.GeoSeries(list(
+  #   gs.apply(shapely.set_precision, grid_size = RESOLUTION)
+  # ))
 
 
 def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
