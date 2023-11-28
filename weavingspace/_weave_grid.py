@@ -178,15 +178,15 @@ class WeaveGrid:
     Returns 'slices' across grid cell (i.e. horizontally) centred vertically
     relative to the cell, ie
 
-             /\         .
-            /  \        .
+             /\
+            /  \
     +------------------+
     |     /      \     |
     +------------------+
     |   /          \   |
     +------------------+
-      /              \  .
-     /________________\ .
+      /              \
+     /________________\
 
     Horizontal extent is L, total width of the strips is W * self.spacing,
     they are 'sliced' horizontally in n_slices slices of equal width.
