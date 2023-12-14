@@ -26,14 +26,13 @@ class WeaveGrid:
       axes either (0, -90) or (0, 120, 240).
     grid_cell (geom.Polygon): the base triangle or square of the grid.
     n_axes (int): the number of axes in the weave, 2 or 3.
-      Defaults to 2.
     spacing (float): spacing of the strands. Defaults to 10_000.
   """
   basis: np.ndarray
   orientations: tuple[float]
   grid_cell: geom.Polygon = None
   n_axes: int = None
-  spacing: float = 10000
+  spacing: float = 1000
 
   def __init__(self, n_axes, orientations, spacing = 10000):
     """Initialises _WeaveGrid.
@@ -97,7 +96,7 @@ class WeaveGrid:
       polygon = self.grid_cell
       xy = self.get_coordinates(coords)
       polygon = affine.translate(polygon, xy[0], xy[1])
-    if self.n_axes == 2 or sum(coords) %2 == 0:
+    if self.n_axes == 2 or sum(coords) % 2 == 0:
       return polygon
     else:
       return affine.rotate(polygon, 180, origin = polygon.centroid)
@@ -206,11 +205,11 @@ class WeaveGrid:
     slice_w = strand_w / n_slices
     odd_numbers = [x for x in range(1, 2 * n_slices, 2)]
     slice_offsets = [(slice_w * o / 2) -
-             (strand_w / 2) for o in odd_numbers]
+                     (strand_w / 2) for o in odd_numbers]
     base_slice = geom.Polygon([(-L/2, -slice_w/2), ( L/2, -slice_w/2),
-                   ( L/2,  slice_w/2), (-L/2,  slice_w/2)])
+                               ( L/2,  slice_w/2), (-L/2,  slice_w/2)])
     return [affine.translate(base_slice, 0, offset)
-        for offset in slice_offsets]
+            for offset in slice_offsets]
 
 
   def _get_cell_strands(
@@ -316,11 +315,7 @@ class WeaveGrid:
     h = np.round((ymax - ymin) / self.spacing) * self.spacing
     if self.n_axes == 2:
       return geom.Polygon([(-w/2, -h/2), ( w/2, -h/2),
-                 ( w/2,  h/2), (-w/2,  h/2)])
+                           ( w/2,  h/2), (-w/2,  h/2)])
     else:
       return geom.Polygon([( w/4, -h/2), ( w/2,    0), ( w/4,  h/2),
-                 (-w/4,  h/2), (-w/2,    0), (-w/4, -h/2)])
-
-
-
-
+                           (-w/4,  h/2), (-w/2,    0), (-w/4, -h/2)])
