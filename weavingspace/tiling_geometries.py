@@ -33,6 +33,7 @@ import geopandas as gpd
 import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
+import shapely.ops
 
 from weavingspace.tileable import TileShape
 from weavingspace.tile_unit import TileUnit

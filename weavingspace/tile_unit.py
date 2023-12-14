@@ -97,6 +97,7 @@ class TileUnit(Tileable):
 
   def __init__(self, **kwargs) -> None:
     super().__init__(**kwargs)
+    # this next line makes all TileUnit geometries shapely 2.x precision-aware
     self.elements.geometry = tiling_utils.gridify(self.elements.geometry)
     if not self.tiling_type is None:
       self.tiling_type = self.tiling_type.lower()
@@ -132,7 +133,7 @@ class TileUnit(Tileable):
 
   def _modify_elements(self) -> None:
     """It is not trivial to tile a triangle, so this function augments
-    augments the elements of a triangular tile to a diamond by 180 degree
+    the elements of a triangular tile to a diamond by 180 degree
     rotation. Operation is 'in place'.
     """
     elements = self.elements.geometry
@@ -141,11 +142,12 @@ class TileUnit(Tileable):
     new_ids = list(string.ascii_letters[:(len(ids) * 2)])
     elements = elements.translate(0, -elements.total_bounds[1])
     twins = [affine.rotate(element, a, origin = (0, 0))
-         for element in elements
-         for a in range(0, 360, 180)]
+             for element in elements
+             for a in range(0, 360, 180)]
     self.elements = gpd.GeoDataFrame(
       data = {"element_id": new_ids},
-      geometry = gpd.GeoSeries(twins), crs = self.elements.crs)
+      geometry = tiling_utils.gridify(gpd.GeoSeries(twins)),
+      crs = self.elements.crs)
     return None
 
 
@@ -159,7 +161,8 @@ class TileUnit(Tileable):
     tile = affine.translate(tile, 0, -tile.bounds[1])
     pts = [p for p in tile.exterior.coords]
     pts[-1] = (pts[1][0], -pts[1][1])
-    self.tile.geometry = gpd.GeoSeries([geom.Polygon(pts)], crs = self.crs)
+    self.tile.geometry = tiling_utils.gridify(
+      gpd.GeoSeries([geom.Polygon(pts)], crs = self.crs))
     self.tile_shape = TileShape.DIAMOND
     return None
 
@@ -227,7 +230,7 @@ class TileUnit(Tileable):
         -d, resolution = 1, join_style = 2)[0]
     # the clean_geometry seems needed to stop proliferation of vertices
     new_elements = [tiling_utils.clean_polygon(inset_tile.intersection(e))
-            for e in self.elements.geometry]
+                    for e in self.elements.geometry]
     result = copy.deepcopy(self)
     result.elements.geometry = gpd.GeoSeries(new_elements)
     return result
@@ -243,8 +246,8 @@ class TileUnit(Tileable):
       TileUnit: the scaled TileUnit.
     """
     result = copy.deepcopy(self)
-    result.elements.geometry = self.elements.geometry.scale(
-      sf, sf, origin = (0, 0))
+    result.elements.geometry = tiling_utils.gridify(
+      self.elements.geometry.scale(sf, sf, origin = (0, 0)))
     return result
 
 

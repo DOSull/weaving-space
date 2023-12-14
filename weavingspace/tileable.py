@@ -532,13 +532,12 @@ class Tileable:
       Tileable: the transformed Tileable.
     """
     result = copy.deepcopy(self)
-    result.elements.geometry = self.elements.geometry.scale(
-      xscale, yscale, origin=(0, 0)
-    )
-    result.tile.geometry = self.tile.geometry.scale(xscale, yscale, origin=(0, 0))
-    result.regularised_tile.geometry = self.regularised_tile.geometry.scale(
-      xscale, yscale, origin=(0, 0)
-    )
+    result.elements.geometry = tiling_utils.gridify(
+      self.elements.geometry.scale(xscale, yscale, origin=(0, 0)))
+    result.tile.geometry = tiling_utils.gridify(
+      self.tile.geometry.scale(xscale, yscale, origin=(0, 0)))
+    result.regularised_tile.geometry = tiling_utils.gridify(
+      self.regularised_tile.geometry.scale(xscale, yscale, origin=(0, 0)))
     result.vectors = result.get_vectors()
     return result
 
@@ -553,11 +552,12 @@ class Tileable:
       Tileable: the transformed Tileable.
     """
     result = copy.deepcopy(self)
-    result.elements.geometry = self.elements.geometry.rotate(angle, origin=(0, 0))
-    result.tile.geometry = self.tile.geometry.rotate(angle, origin=(0, 0))
-    result.regularised_tile.geometry = self.regularised_tile.geometry.rotate(
-      angle, origin=(0, 0)
-    )
+    result.elements.geometry = tiling_utils.gridify(
+      self.elements.geometry.rotate(angle, origin=(0, 0)))
+    result.tile.geometry = tiling_utils.gridify(
+      self.tile.geometry.rotate(angle, origin=(0, 0)))
+    result.regularised_tile.geometry = tiling_utils.gridify(
+      self.regularised_tile.geometry.rotate(angle, origin=(0, 0)))
     result.vectors = result.get_vectors()
     result.rotation = result.rotation + angle
     return result
@@ -574,10 +574,11 @@ class Tileable:
       Tileable: the transformed Tileable.
     """
     result = copy.deepcopy(self)
-    result.elements.geometry = self.elements.geometry.skew(xa, ya, origin=(0, 0))
-    result.tile.geometry = self.tile.geometry.skew(xa, ya, origin=(0, 0))
-    result.regularised_tile.geometry = self.regularised_tile.geometry.skew(
-      xa, ya, origin=(0, 0)
-    )
+    result.elements.geometry = tiling_utils.gridify(
+      self.elements.geometry.skew(xa, ya, origin=(0, 0)))
+    result.tile.geometry = tiling_utils.gridify(
+      self.tile.geometry.skew(xa, ya, origin=(0, 0)))
+    result.regularised_tile.geometry = tiling_utils.gridify(
+      self.regularised_tile.geometry.skew(xa, ya, origin=(0, 0)))
     result.vectors = result.get_vectors()
     return result

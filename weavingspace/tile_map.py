@@ -87,10 +87,9 @@ class _TileGrid():
 
   def _get_area_to_tile(self, to_tile) -> geom.Polygon:
     bb = to_tile.total_bounds
-    poly = shapely.set_precision(
+    poly = tiling_utils.gridify(
       geom.Polygon(((bb[0], bb[1]), (bb[2], bb[1]),
-                    (bb[2], bb[3]), (bb[0], bb[3]))),
-      grid_size = tiling_utils.RESOLUTION)
+                    (bb[2], bb[3]), (bb[0], bb[3]))))
     return gpd.GeoSeries([poly])
 
 
@@ -109,9 +108,8 @@ class _TileGrid():
     mrr_centre = geom.Point(mrr.centroid.coords[0])
     mrr_corner = geom.Point(mrr.exterior.coords[0])
     radius = mrr_centre.distance(mrr_corner)
-    ext = shapely.set_precision(
-      affine.affine_transform(mrr_centre.buffer(radius), self.transform),
-      grid_size = tiling_utils.RESOLUTION)
+    ext = tiling_utils.gridify(
+      affine.affine_transform(mrr_centre.buffer(radius), self.transform))
     return gpd.GeoSeries([ext]), (mrr_centre.x, mrr_centre.y)
 
 
@@ -152,9 +150,7 @@ class _TileGrid():
     b = _b - (h - _h) / 2
     mesh = np.array(np.meshgrid(np.arange(w) + l,
                   np.arange(h) + b)).reshape((2, w * h)).T
-    pts = [
-      shapely.set_precision(geom.Point(p[0], p[1]),
-                            grid_size = tiling_utils.RESOLUTION) for p in mesh]
+    pts = [tiling_utils.gridify(geom.Point(p[0], p[1])) for p in mesh]
     return gpd.GeoSeries([p for p in pts if p.within(self.extent[0])]) \
       .affine_transform(self.inverse_transform)
 
@@ -379,8 +375,7 @@ class Tiling:
       tiled_map.sindex
       tiled_map = tiled_map.clip(self.region)
       if debug:
-        print(f"""STEP A7/B3: clip map to region:
-            {perf_counter() - t7:.3f}""")
+        print(f"""STEP A7/B3: clip map to region: {perf_counter() - t7:.3f}""")
 
     tm = TiledMap()
     tm.tiling = self
@@ -790,8 +785,7 @@ class TiledMap:
 
     if self.use_ellipse:
       ellipse = tiling_utils.get_bounding_ellipse(
-        legend_elements.geometry,
-        mag = self.ellipse_magnification)
+        legend_elements.geometry, mag = self.ellipse_magnification)
       bb = ellipse.total_bounds
       c = ellipse.unary_union.centroid
     else:
@@ -825,20 +819,17 @@ class TiledMap:
     # for reasons escaping all reason... invalid polygons sometimes show up
     # here I think because of the rotation /shrug... in any case, this
     # sledgehammer should fix it
-
     # context_tiles = gpd.GeoSeries([g.simplify(1e-6)
-    #                  for g in context_tiles.geometry],
+    #                                for g in context_tiles.geometry],
     #                 crs = self.tiling.tile_unit.crs)
 
     if self.use_ellipse:
       context_tiles.clip(ellipse, keep_geom_type = False).plot(
-          ax = ax, fc = "#9F9F9F3F", lw = 0.0)
+        ax = ax, fc = "#9F9F9F3F", lw = 0.0)
       tiling_utils.get_boundaries(context_tiles.geometry).clip(
-        ellipse, keep_geom_type = True).plot(
-          ax = ax, ec = "#5F5F5F", lw = 1)
+        ellipse, keep_geom_type = True).plot(ax = ax, ec = "#5F5F5F", lw = 1)
     else:
-      context_tiles.plot(ax = ax, fc = "#9F9F9F3F",
-                 ec = "#5F5F5F", lw = 0.0)
+      context_tiles.plot(ax = ax, fc = "#9F9F9F3F", ec = "#5F5F5F", lw = 0.0)
       tiling_utils.get_boundaries(context_tiles.geometry).plot(
         ax = ax, ec = "#5F5F5F", lw = 1)
 

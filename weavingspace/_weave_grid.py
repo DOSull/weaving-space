@@ -100,9 +100,10 @@ class WeaveGrid:
       xy = self.get_coordinates(coords)
       polygon = affine.translate(polygon, xy[0], xy[1])
     if self.n_axes == 2 or sum(coords) %2 == 0:
-      return polygon
+      return tiling_utils.gridify(polygon)
     else:
-      return affine.rotate(polygon, 180, origin = polygon.centroid)
+      return tiling_utils.gridify(
+        affine.rotate(polygon, 180, origin = polygon.centroid))
 
 
   def _make_grid_cell(self) -> geom.Polygon:
@@ -137,8 +138,7 @@ class WeaveGrid:
       R = self.spacing / (1 + np.cos(np.pi / n_sides))
     angles = self._get_angles(n_sides)
     corners = [(R * np.cos(a), R * np.sin(a)) for a in angles]
-    return shapely.set_precision(geom.Polygon(corners),
-                                 grid_size = tiling_utils.RESOLUTION)
+    return tiling_utils.gridify(geom.Polygon(corners))
 
 
   def _get_angles(self, n: int = 4) -> list[float]:
@@ -153,9 +153,8 @@ class WeaveGrid:
     Returns:
       list[float]: angles in radians.
     """
-    return [(3 * np.pi / 2) +
-        (np.pi / n) +
-        (i / n * 2 * np.pi) for i in range(n)]
+    return [
+      (3 * np.pi / 2) + (np.pi / n) + (i / n * 2 * np.pi) for i in range(n)]
 
 
   # def _gridify(self, shape: geom.Polygon, precision = 3) -> geom.Polygon:
@@ -208,14 +207,11 @@ class WeaveGrid:
     strand_w = self.spacing * W
     slice_w = strand_w / n_slices
     odd_numbers = [x for x in range(1, 2 * n_slices, 2)]
-    slice_offsets = [(slice_w * o / 2) -
-             (strand_w / 2) for o in odd_numbers]
-    base_slice = shapely.set_precision(
-      geom.Polygon([(-L/2, -slice_w/2), ( L/2, -slice_w/2),
-                   ( L/2,  slice_w/2), (-L/2,  slice_w/2)]),
-      grid_size = tiling_utils.RESOLUTION)
-    return [affine.translate(base_slice, 0, offset)
-        for offset in slice_offsets]
+    slice_offsets = [(slice_w * o / 2) - (strand_w / 2) for o in odd_numbers]
+    base_slice = geom.Polygon([(-L/2, -slice_w/2), ( L/2, -slice_w/2),
+                               ( L/2,  slice_w/2), (-L/2,  slice_w/2)])
+    return [tiling_utils.gridify(affine.translate(base_slice, 0, offset))
+            for offset in slice_offsets]
 
 
   def _get_cell_strands(
@@ -245,18 +241,18 @@ class WeaveGrid:
     big_l = (sf * self.spacing      ## rectangular case is simple
          if self.n_axes == 2    ## triangular less so!
          else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2)
-    strands = shapely.set_precision(
+    strands = tiling_utils.gridify(
       geom.MultiPolygon(self._get_grid_cell_slices(
-        L = big_l, W = width, n_slices = n_slices)),
-      grid_size = tiling_utils.RESOLUTION)
+        L = big_l, W = width, n_slices = n_slices)))
     # we need centre of cell bounding box to shift strands to
     # vertical center of triangular cells. In rectangular case
     # this will be (0, 0).
     cell_offset = cell.envelope.centroid.coords[0]
     strands = affine.translate(strands, cell_offset[0], cell_offset[1])
-    strands = geom.MultiPolygon(
-      [expanded_cell.intersection(s) for s in strands.geoms])
-    strands = affine.rotate(strands, orientation, origin = cell.centroid)
+    strands = geom.MultiPolygon([expanded_cell.intersection(s)
+                                 for s in strands.geoms])
+    strands = tiling_utils.gridify(
+      affine.rotate(strands, orientation, origin = cell.centroid))
     return [s for s in strands.geoms]
 
 
@@ -320,14 +316,12 @@ class WeaveGrid:
       w = np.round((xmax - xmin) / h_spacing) * h_spacing
     h = np.round((ymax - ymin) / self.spacing) * self.spacing
     if self.n_axes == 2:
-      return shapely.set_precision(
-        geom.Polygon([(-w/2, -h/2), ( w/2, -h/2), ( w/2,  h/2), (-w/2,  h/2)]),
-        grid_size = tiling_utils.RESOLUTION)
+      return tiling_utils.gridify(
+        geom.Polygon([(-w/2, -h/2), ( w/2, -h/2), ( w/2,  h/2), (-w/2,  h/2)]))
     else:
-      return shapely.set_precision(
+      return tiling_utils.gridify(
         geom.Polygon([( w/4, -h/2), ( w/2,    0), ( w/4,  h/2),
-                      (-w/4,  h/2), (-w/2,    0), (-w/4, -h/2)]),
-        tiling_utils.RESOLUTION)
+                      (-w/4,  h/2), (-w/2,    0), (-w/4, -h/2)]))
 
 
 

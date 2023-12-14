@@ -74,14 +74,12 @@ def get_strand_ids(strands_spec: str) -> tuple[list[str]]:
     tuple[str]: tuple of lists of labels for each set of strands.
   """
   strand_ids = [_parse_strand_label(s) for s in strands_spec.split("|")]
-  strand_ids = (strand_ids
-          if len(strand_ids) == 3
-          else strand_ids + [[""]])
+  strand_ids = strand_ids if len(strand_ids) == 3 else strand_ids + [[""]]
   return tuple(strand_ids)
 
 
 def centre_offset(shape: geom.Polygon,
-          target:tuple[float] = (0, 0)) -> tuple[float]:
+                  target:tuple[float] = (0, 0)) -> tuple[float]:
   """Returns vector required to move centroid of polygon to target.
 
   Args:
@@ -111,8 +109,8 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
   a_diff = 360 / n
   angles = [a0 + a * a_diff for a in range(n)]
   corners = [(R * np.cos(np.radians(a)),
-        R * np.sin(np.radians(a))) for a in angles]
-  return geom.Polygon(corners)
+              R * np.sin(np.radians(a))) for a in angles]
+  return gridify(geom.Polygon(corners))
 
 
 def is_convex(poly:geom.Polygon) -> bool:
@@ -145,52 +143,59 @@ def incentre(poly:geom.Polygon) -> geom.Point:
   Returns:
     geom.Point: the incentre of the polygon.
   """
-  poly = ensure_ccw(poly)
-  corners = [geom.Point(p[0], p[1])
-         for p in list(poly.exterior.coords)]
+  poly = ensure_cw(poly)
+  corners = [geom.Point(p[0], p[1]) for p in poly.exterior.coords]
   c = poly.centroid
   # if corners are equidistant from the centroid, then return that
   d0 = corners[0].distance(c)
-  if all([isclose(pt.distance(c), d0) for pt in corners[0:-1]]):
+  if all([isclose(pt.distance(c), d0) for pt in corners[1:-1]]):
     return c
   else:  # find the incentre
     r = get_apothem(poly)
     # NOTE: for some reason a simple negative buffer here does not work
-    e1 = geom.LineString(corners[:2]).parallel_offset(r, side = "left")
-    e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = "left")
+    e1 = geom.LineString(corners[:2]).parallel_offset(r, side = "right")
+    e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = "right")
     return e1.intersection(e2)  # TODO: add exception if no intersection
-
-    # b1 = get_angle_bisector(poly, 0)
-    # b2 = get_angle_bisector(poly, 1)
-    # return b1.intersection(b2)
 
 
 def get_apothem(poly:geom.Polygon) -> float:
   return 2 * poly.area / geom.LineString(poly.exterior.coords).length
 
 
-def ensure_ccw(poly:geom.Polygon) -> geom.Polygon:
-  if not geom.LinearRing(poly.exterior.coords).is_ccw:
-    return geom.Polygon(list(reversed(poly.exterior.coords))[:-1])
+def ensure_cw(poly:geom.Polygon) -> geom.Polygon:
+  """Returns the polygon with its outer boundary vertices in clockwise order.
+
+  It is important to note that shapely.set_precision() imposes clockwise order
+  on polygons, and since it is used widely throughout theses modules, it makes
+  sense to impose this order.
+
+    Args:
+    poly (geom.Polygon): the polygon.
+
+  Returns:
+    geom.Polygon: the polygon in clockwise order.
+  """
+  if geom.LinearRing(poly.exterior.coords).is_ccw:
+    return poly.reverse()
   else:
     return poly
 
 
-def get_angle_bisector(poly:geom.Polygon, v = 0) -> geom.LineString:
-  pts = [geom.Point(p) for p in poly.exterior.coords][:-1]
-  n = len(pts)
-  p0 = pts[v % n]
-  p1 = pts[(v + 1) % n]
-  p2 = pts[(v - 1) % n]
-  d01 = p0.distance(p1)
-  d02 = p0.distance(p2)
-  if d01 < d02:
-    p2 = geom.LineString([p0, p2]).interpolate(d01)
-  else:
-    p1 = geom.LineString([p0, p1]).interpolate(d02)
-  m = geom.Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
-  # we have to scale this to much larger in case of an angle near 180
-  return affine.scale(geom.LineString([p0, m]), 100, 100, origin = p0)
+# def get_angle_bisector(poly:geom.Polygon, v = 0) -> geom.LineString:
+#   pts = [geom.Point(p) for p in poly.exterior.coords][:-1]
+#   n = len(pts)
+#   p0 = pts[v % n]
+#   p1 = pts[(v + 1) % n]
+#   p2 = pts[(v - 1) % n]
+#   d01 = p0.distance(p1)
+#   d02 = p0.distance(p2)
+#   if d01 < d02:
+#     p2 = geom.LineString([p0, p2]).interpolate(d01)
+#   else:
+#     p1 = geom.LineString([p0, p1]).interpolate(d02)
+#   m = geom.Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
+#   # we have to scale this to much larger in case of an angle near 180
+#   return affine.scale(geom.LineString([p0, m]), 100, 100, origin = p0)
 
 
 def _get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
@@ -211,15 +216,12 @@ def _get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
       if uu.contains(
         geom.Point(pt).buffer(1e-3, resolution = 1, join_style = 2)):
         interior_pts.add(pt)
-  return gpd.GeoSeries([geom.Point(p) for p in interior_pts])
+  return gridify(gpd.GeoSeries([geom.Point(p) for p in interior_pts]))
 
 
-def gridify(gs:gpd.GeoSeries, precision:int = PRECISION) -> gpd.GeoSeries:
+def gridify(gs:Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]
+            ) -> Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]:
   """Returns the supplied GeoSeries rounded to the specified precision.
-
-  Works by round-tripping through WKT, which seems like the easiest
-  way to do this given the variety of ways in which coordinates are
-  stored depending on the geometry.
 
   Args:
     gs (gpd.GeoSeries): geometries to gridify.
@@ -228,12 +230,19 @@ def gridify(gs:gpd.GeoSeries, precision:int = PRECISION) -> gpd.GeoSeries:
   Returns:
     gpd.GeoSeries: the rounded geometries.
   """
-  return gpd.GeoSeries(
-    list(gs.apply(
-      wkt.dumps, rounding_precision = precision).apply(wkt.loads)))
-  # return gpd.GeoSeries(list(
-  #   gs.apply(shapely.set_precision, grid_size = RESOLUTION)
-  # ))
+  # return gpd.GeoSeries(
+  #   list(gs.apply(
+  #     wkt.dumps, rounding_precision = precision).apply(wkt.loads)))
+  if isinstance(gs, (geom.Polygon, geom.Point, geom.MultiPoint,
+                     geom.MultiPolygon, geom.LineString)) :
+    return shapely.set_precision(gs, grid_size = RESOLUTION)
+  if isinstance(gs, gpd.GeoSeries):
+    return gpd.GeoSeries(
+      [shapely.set_precision(g, grid_size = RESOLUTION) for g in list(gs)],
+      crs = gs.crs)
+  if isinstance(gs, gpd.GeoDataFrame):
+    gs.geometry = gridify(gs.geometry)
+    return gs
 
 
 def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
@@ -279,7 +288,7 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
   for pt in interior_pts:
     cycles.append(
       set([poly_id for poly_id, p in enumerate(local_patch.geometry)
-         if pt.distance(p) < t.fudge_factor]))
+           if pt.distance(p) < t.fudge_factor]))
   # convert the polygon ID sequences to (centroid.x, centroid.y, ID) tuples
   dual_faces = []
   for cycle in cycles:
@@ -290,7 +299,7 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
       pts.append(incentre(poly))
     # sort them into CCW order so they are well formed
     sorted_coords = sort_ccw([(pt.x, pt.y, id)
-                  for pt, id in zip(pts, ids)])
+                              for pt, id in zip(pts, ids)])
     dual_faces.append(
       (geom.Polygon([(pt_id[0], pt_id[1]) for pt_id in sorted_coords]),
        "".join([pt_id[2] for pt_id in sorted_coords])))
@@ -302,7 +311,7 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
                     t.fudge_factor).contains(f.centroid)]
   gdf = gpd.GeoDataFrame(
     data = {"element_id": [f[1] for f in dual_faces]}, crs = t.crs,
-    geometry = gpd.GeoSeries([f[0] for f in dual_faces]))
+    geometry = gridify(gpd.GeoSeries([f[0] for f in dual_faces])))
   # ensure no duplicates
   gdf = gdf.dissolve(by = "element_id", as_index = False).explode(
     index_parts = False, ignore_index = True)
@@ -466,8 +475,8 @@ def get_bounding_ellipse(
   c = geom.Point(l + w / 2, b + h / 2)
   r = min(w, h) * np.sqrt(2)
   circle = [c.buffer(r)]
-  return gpd.GeoSeries(circle, crs = shapes.crs).scale(
-    w / r * mag / np.sqrt(2), h / r * mag / np.sqrt(2), origin = c)
+  return gridify(gpd.GeoSeries(circle, crs = shapes.crs).scale(
+    w / r * mag / np.sqrt(2), h / r * mag / np.sqrt(2), origin = c))
 
 
 def get_boundaries(shapes:gpd.GeoSeries) -> gpd.GeoSeries:
@@ -483,6 +492,7 @@ def get_boundaries(shapes:gpd.GeoSeries) -> gpd.GeoSeries:
   Returns:
     gpd.GeoSeries: LineStrings from the supplied Polygons.
   """
+  shapes = shapes.explode(ignore_index = True)
   bdys = [geom.LineString(p.exterior.coords) for p in shapes]
   return gpd.GeoSeries(bdys, crs = shapes.crs)
 
@@ -524,7 +534,7 @@ def get_polygon_sector(shape:geom.Polygon, start:float = 0.0,
     arc = shapely.ops.substring(geom.LineString(shape.exterior.coords),
                   start, end, normalized = True)
     sector = geom.Polygon([shape.centroid] + list(arc.coords))
-  return clean_polygon(sector)
+  return gridify(sector)
 
 
 def clean_polygon(p:Union[geom.Polygon, gpd.GeoSeries],
@@ -586,4 +596,4 @@ def safe_union(gs:gpd.GeoSeries, res:float = 1e-3,
   if as_polygon:
     return union
   else:
-    return gpd.GeoSeries([union], crs = gs.crs)
+    return gridify(gpd.GeoSeries([union], crs = gs.crs))

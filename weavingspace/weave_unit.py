@@ -161,7 +161,8 @@ class WeaveUnit(Tileable):
 
 
   def _setup_triaxial_weave_unit(self) -> None:
-    """Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary based on parameters already supplied to constructor.
+    """Returns weave elements GeoDataFrame and tile GeoDataFrame in a
+    dictionary based on parameters already supplied to constructor.
     """
     strands_1, strands_2, strands_3 = \
       tiling_utils.get_strand_ids(self.strands)
@@ -173,13 +174,14 @@ class WeaveUnit(Tileable):
       loom, strand_labels = [strands_1, strands_2, strands_3])
 
 
-  # builds the geometric elements associated with a given weave supplied as
-  # 'loom' containing the coordinates in an appropriate grid (Cartesian or
-  # triangular) and the orderings of the strands at each coordinate location
   def _make_shapes_from_coded_weave_matrix(
     self, loom:Loom, strand_labels:list[list[str]] = [["a"], ["b"], ["c"]]
     ) -> None:
     """Returns weave elements and tile GeoDataFrames in a dictionary
+
+    Builds the geometric elements associated with a given weave supplied as
+    'loom' containing the coordinates in an appropriate grid (Cartesian or
+    triangular) and the orderings of the strands at each coordinate location
 
     Args:
       loom (Loom): matrix or stack of matrices representing the weave
@@ -219,10 +221,9 @@ class WeaveUnit(Tileable):
     tile = grid.get_tile_from_cells(approx_tile)
     atc = approx_tile.centroid
     shift = (-atc.x, -atc.y)
-    self.elements = self._get_weave_elements_gdf(
-      weave_polys, strand_ids, shift)
-    self.tile = gpd.GeoDataFrame(
-      geometry = gpd.GeoSeries([tile]), crs = self.crs)
+    self.elements = self._get_weave_elements_gdf(weave_polys, strand_ids, shift)
+    self.tile = gpd.GeoDataFrame(geometry = gpd.GeoSeries([tile]),
+                                 crs = self.crs)
     return None
 
 
@@ -250,7 +251,8 @@ class WeaveUnit(Tileable):
     # weave.geometry = tiling_utils.clean_polygon(weave.geometry)
     weave = weave.dissolve(by = "element_id", as_index = False)
     weave = weave.explode(index_parts = False, ignore_index = True)
-    weave.geometry = tiling_utils.clean_polygon(weave.geometry)
+    # weave.geometry = tiling_utils.gridify(weave.geometry)
+    # weave.geometry = tiling_utils.clean_polygon(weave.geometry)
     return weave.set_crs(self.crs)
 
 
