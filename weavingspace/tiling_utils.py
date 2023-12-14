@@ -298,7 +298,7 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
       poly = local_patch.geometry[poly_id]
       pts.append(incentre(poly))
     # sort them into CCW order so they are well formed
-    sorted_coords = sort_ccw([(pt.x, pt.y, id)
+    sorted_coords = sort_cw([(pt.x, pt.y, id)
                               for pt, id in zip(pts, ids)])
     dual_faces.append(
       (geom.Polygon([(pt_id[0], pt_id[1]) for pt_id in sorted_coords]),
@@ -339,8 +339,8 @@ def relabel(data:Iterable) -> list:
   return [new_data[d] for d in data]
 
 
-def sort_ccw(pts_ids:list[tuple[float, float, str]]):
-  """Sorts supplied tuple of x, y, ID into counterclockwise order.
+def sort_cw(pts_ids:list[tuple[float, float, str]]):
+  """Sorts supplied tuple of x, y, ID into clockwise order.
 
   Args:
     pts_ids (list[tuple[float, float, str]]): A tuple of a pair of
@@ -348,7 +348,7 @@ def sort_ccw(pts_ids:list[tuple[float, float, str]]):
 
   Returns:
     list: a list in the same format as supplied sorted into
-      counter-clockwise order of the point locations.
+      clockwise order of the point locations.
   """
   x = [p[0] for p in pts_ids]
   y = [p[1] for p in pts_ids]
@@ -357,7 +357,7 @@ def sort_ccw(pts_ids:list[tuple[float, float, str]]):
   dy = [_ - cy for _ in y]
   angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
   d = dict(zip(angles, pts_ids))
-  return [pt_id for angle, pt_id in sorted(d.items())]
+  return [pt_id for angle, pt_id in reversed(sorted(d.items()))]
 
 
 def write_map_to_layers(gdf:gpd.GeoDataFrame, fname:str = "output.gpkg",
