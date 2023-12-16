@@ -72,17 +72,18 @@ class _TileGrid():
   _at_centroids:bool = False
 
   def __init__(self, tile:TileUnit, to_tile:gpd.GeoSeries,
-         at_centroids:bool = False):
+               at_centroids:bool = False):
     self.tile = tile
     self.to_tile = self._get_area_to_tile(to_tile)
-    self.inverse_transform, self.transform = self.get_transforms()
+    self.inverse_transform, self.transform = self._get_transforms()
     self.extent, self.centre = self._get_extent()
     self._at_centroids = at_centroids
     if self._at_centroids:
       self.points = to_tile.centroid
     else:
-      self.points = self.get_grid()
+      self.points = self._get_grid()
     self.points.crs = self.tile.crs
+    self.points = tiling_utils.gridify(self.points)
 
 
   def _get_area_to_tile(self, to_tile) -> geom.Polygon:
@@ -113,7 +114,7 @@ class _TileGrid():
     return gpd.GeoSeries([ext]), (mrr_centre.x, mrr_centre.y)
 
 
-  def get_transforms(self) -> tuple[float]:
+  def _get_transforms(self) -> tuple[float]:
     """Returns the forward and inverse transforms from map space to
     grid generation space.
 
@@ -134,7 +135,7 @@ class _TileGrid():
         self._np_to_shapely_transform(inv_tfm))
 
 
-  def get_grid(self) -> gpd.GeoSeries:
+  def _get_grid(self) -> gpd.GeoSeries:
     """Generates the grid transformed into map space
 
     Obtain dimensions of the transformed region, then set down a uniform
@@ -429,11 +430,11 @@ class Tiling:
 
 
   def make_tiling(self) -> gpd.GeoDataFrame:
-    """Tiles the region with a weave unit tile, returning a GeoDataFrame
+    """Tiles the region with a tile unit, returning a GeoDataFrame
 
     Returns:
       geopandas.GeoDataFrame: a GeoDataFrame of the region tiled with the
-        weave unit.
+        tile unit.
     """
     # we assume the geometry column is called geometry so make it so...
     if self.region.geometry.name != "geometry":
@@ -449,12 +450,11 @@ class Tiling:
               self.tile_unit.elements.shape[0])
     tiles_gs = gpd.GeoSeries(tiles)
     # assemble and return as a GeoDataFrame
-    tiles_gdf = gpd.GeoDataFrame(data = {"element_id": ids,
-                       "tile_id": tile_ids},
-                   geometry = tiles_gs,
-                   crs = self.tile_unit.crs)
+    tiles_gdf = gpd.GeoDataFrame(
+      data = {"element_id": ids, "tile_id": tile_ids},
+      geometry = tiles_gs, crs = self.tile_unit.crs)
     # unclear if we need the below or not...
-    return tiles_gdf
+    return tiling_utils.gridify(tiles_gdf)
 
 
   def rotated(self, rotation:float = None) -> gpd.GeoDataFrame:
@@ -476,8 +476,8 @@ class Tiling:
       data = {"element_id": self.tiles.element_id,
           "tile_id": self.tiles.tile_id},
       crs = self.tiles.crs,
-      geometry = self.tiles.geometry.rotate(rotation,
-                          origin = self.grid.centre))
+      geometry = tiling_utils.gridify(
+        self.tiles.geometry.rotate(rotation, origin = self.grid.centre)))
 
 
 @dataclass
@@ -541,16 +541,16 @@ class TiledMap:
   # the below parameters can be set either before calling self.render()
   # or passed in as parameters to self.render()
   # these are solely TiledMap.render() options
-  legend:bool = True        # whether or not to show a legend
-  legend_zoom:float = 1.0   # <1 zooms out from legend to show more context
-  legend_dx:float = 0.      # horizontal shift of legend relative to the map
-  legend_dy:float = 0.      # vertical shift of legend relative to the map
-  use_ellipse:bool = False  # if True clips legend with an ellipse
+  legend:bool = True          # whether or not to show a legend
+  legend_zoom:float = 1.0     # <1 zooms out from legend to show more context
+  legend_dx:float = 0.        # horizontal shift of legend relative to the map
+  legend_dy:float = 0.        # vertical shift of legend relative to the map
+  use_ellipse:bool = False    # if True clips legend with an ellipse
   ellipse_magnification:float = 1.0  # magnification to apply to clip ellipse
-  radial_key:bool = False   # if True use radial key even for ordinal/ratio
-                # data (normally these will be shown by
-                # concentric elements)
-  draft_mode:bool = False   # if True plot only the map coloured by element_id
+  radial_key:bool = False     # if True use radial key even for ordinal/ratio
+                              # data (normally these will be shown by concentric
+                              # elements)
+  draft_mode:bool = False     # if True plot only the map coloured by element_id
 
   # the parameters below are geopandas.plot options which we intercept to
   # ensure they are applied appropriately when we plot a GDF
@@ -826,11 +826,11 @@ class TiledMap:
     if self.use_ellipse:
       context_tiles.clip(ellipse, keep_geom_type = False).plot(
         ax = ax, fc = "#9F9F9F3F", lw = 0.0)
-      tiling_utils.get_boundaries(context_tiles.geometry).clip(
+      tiling_utils.get_tiling_boundaries(context_tiles.geometry).clip(
         ellipse, keep_geom_type = True).plot(ax = ax, ec = "#5F5F5F", lw = 1)
     else:
       context_tiles.plot(ax = ax, fc = "#9F9F9F3F", ec = "#5F5F5F", lw = 0.0)
-      tiling_utils.get_boundaries(context_tiles.geometry).plot(
+      tiling_utils.get_tiling_boundaries(context_tiles.geometry).plot(
         ax = ax, ec = "#5F5F5F", lw = 1)
 
 

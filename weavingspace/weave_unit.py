@@ -204,8 +204,8 @@ class WeaveUnit(Tileable):
         continue  # Inconsistency in layer order
       n_slices = [len(id) for id in ids]
       next_polys = grid.get_visible_cell_strands(
-      width = self.aspect, coords = coords,
-      strand_order = strand_order, n_slices = n_slices)
+        width = self.aspect, coords = coords,
+        strand_order = strand_order, n_slices = n_slices)
       weave_polys.extend(next_polys)
       next_labels = [list(ids[i]) for i in strand_order]  # list of lists
       next_labels = list(itertools.chain(*next_labels))  # flatten

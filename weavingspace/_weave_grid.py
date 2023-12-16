@@ -239,8 +239,8 @@ class WeaveGrid:
     sf = 2 - width if self.n_axes == 2 else (5 - 3 * width) / 2
     expanded_cell = affine.scale(cell, sf, sf, origin = cell.centroid)
     big_l = (sf * self.spacing      ## rectangular case is simple
-         if self.n_axes == 2    ## triangular less so!
-         else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2)
+             if self.n_axes == 2    ## triangular less so!
+             else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2)
     strands = tiling_utils.gridify(
       geom.MultiPolygon(self._get_grid_cell_slices(
         L = big_l, W = width, n_slices = n_slices)))
@@ -290,7 +290,7 @@ class WeaveGrid:
       else:
         all_polys.extend([p.difference(mask) for p in next_polys])
         mask = mask.union(shapely.ops.unary_union(next_polys))
-    return all_polys
+    return [tiling_utils.clean_polygon(p) for p in all_polys]
 
 
   def get_tile_from_cells(self, approx_tile:geom.Polygon) -> geom.Polygon:

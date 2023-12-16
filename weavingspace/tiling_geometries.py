@@ -209,7 +209,7 @@ def setup_hex_dissection(unit:TileUnit) -> None:
       for i in range(1, 6):
         steps = steps + [x + i/6 for x in base]
       steps = [steps[-1] - 1] + steps
-      print(f"{steps}")
+      # print(f"{steps}")
       # steps = np.linspace(0, 1, unit.n + 1) - (1 / 24)
       slices = [tiling_utils.get_polygon_sector(hex, p1, p2)
                 for p1, p2 in zip(steps[:-1], steps[1:])]

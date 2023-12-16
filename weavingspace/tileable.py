@@ -25,6 +25,8 @@ import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
+import topojson
+
 import weavingspace.tiling_utils as tiling_utils
 
 
@@ -160,11 +162,11 @@ class Tileable:
     """Sets the regularised tile to a union of the elements."""
     self.regularised_tile = copy.deepcopy(self.tile)
     self.regularised_tile.geometry = tiling_utils.safe_union(
-      self.elements.geometry, self.spacing * 1e-6
-    )
+      self.elements.geometry)
     # This simplification seems very crude but fixes all kinds of issues...
     self.regularised_tile.geometry[0] = \
-      self.regularised_tile.geometry[0].simplify(self.spacing * 1e-6)
+      self.regularised_tile.geometry[0].simplify(
+        self.spacing * tiling_utils.RESOLUTION)
     return
 
 
