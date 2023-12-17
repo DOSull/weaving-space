@@ -235,7 +235,7 @@ def setup_laves(unit:TileUnit) -> None:
   if unit.code == "3.3.3.3.3.3":
     # this is the regular hexagons
     _setup_base_tile(unit, TileShape.HEXAGON)
-    _setup_none_tile()
+    _setup_none_tile(unit)
     return
   if unit.code == "3.3.3.3.6":
     # this one needs its own code
@@ -263,10 +263,10 @@ def setup_laves(unit:TileUnit) -> None:
     # again this one needs its own
     _setup_laves_31212(unit)
     return
-  elif unit.code == "4.4.4":
+  elif unit.code == "4.4.4.4":
     # square grid
     _setup_base_tile(unit, TileShape.RECTANGLE)
-    _setup_none_tile()
+    _setup_none_tile(unit)
     return
   elif unit.code == "4.6.12":
     # hex 12-dissection
@@ -282,12 +282,12 @@ def setup_laves(unit:TileUnit) -> None:
   elif unit.code == "6.6.6":
     # triangles
     _setup_base_tile(unit, TileShape.TRIANGLE)
-    _setup_none_tile()
+    _setup_none_tile(unit)
   else:
     print(f"[{unit.code}] is not a valid Laves code.")
 
   unit.tiling_type = None
-  unit.setup_none_tile()
+  _setup_none_tile(unit)
   return
 
 
@@ -379,6 +379,7 @@ def setup_archimedean(unit:TileUnit) -> None:
   if unit.code == "3.3.3.3.3.3":
     _setup_base_tile(unit, TileShape.TRIANGLE)
     _setup_none_tile(unit)
+    return
   if unit.code == "3.3.3.3.6":
     setup_laves(unit)
     unit.elements = tiling_utils.get_dual_tile_unit(unit)
@@ -412,7 +413,7 @@ def setup_archimedean(unit:TileUnit) -> None:
     unit.elements = tiling_utils.get_dual_tile_unit(unit)
     unit.setup_regularised_tile_from_elements()
     return
-  elif unit.code == "4.4.4":
+  elif unit.code == "4.4.4.4":
     _setup_base_tile(unit, TileShape.RECTANGLE)
     _setup_none_tile(unit)
     return

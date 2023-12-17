@@ -25,7 +25,7 @@ import shapely.ops
 # this causes a circular import error and is only needed for typing
 # from weavingspace.tile_unit import TileUnit
 
-PRECISION = 5
+PRECISION = 6
 RESOLUTION = 1e-6
 
 def _parse_strand_label(s:str) -> list[str]:
@@ -124,6 +124,12 @@ def get_corners(poly:geom.Polygon,
     return corners
   else:
     return corners[:-1]
+
+
+def get_edges(poly:geom.Polygon) -> list[geom.LineString]:
+  corners = get_corners(poly)
+  return [geom.LineString([p1, p2])
+          for p1, p2 in zip(corners[:-1], corners[1:])]
 
 
 def get_edge_lengths(poly:geom.Polygon) -> list[float]:
@@ -405,6 +411,14 @@ def sort_cw(pts_ids:list[tuple[float, float, str]]):
   angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
   d = dict(zip(angles, pts_ids))
   return [pt_id for angle, pt_id in reversed(sorted(d.items()))]
+
+
+def order_pts_cw_relative_to_centre(pts:list[geom.Point], c:geom.Point):
+  dx = [p.x - c.x for p in pts]
+  dy = [p.y - c.y for p in pts]
+  angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
+  d = dict(zip(angles, range(len(pts))))
+  return [i for angle, i in reversed(sorted(d.items()))]
 
 
 def write_map_to_layers(gdf:gpd.GeoDataFrame, fname:str = "output.gpkg",
