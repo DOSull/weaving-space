@@ -119,7 +119,7 @@ def is_convex(poly:geom.Polygon) -> bool:
 
 def get_corners(poly:geom.Polygon,
                 repeat_first:bool = True) -> list[geom.Point]:
-  corners = [geom.Point(pt) for pt in poly.exterior.coords]
+  corners = [gridify(geom.Point(pt)) for pt in poly.exterior.coords]
   if repeat_first:
     return corners
   else:
@@ -128,7 +128,7 @@ def get_corners(poly:geom.Polygon,
 
 def get_edges(poly:geom.Polygon) -> list[geom.LineString]:
   corners = get_corners(poly)
-  return [geom.LineString([p1, p2])
+  return [gridify(geom.LineString([p1, p2]))
           for p1, p2 in zip(corners[:-1], corners[1:])]
 
 

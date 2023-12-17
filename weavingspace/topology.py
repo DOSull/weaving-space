@@ -3,12 +3,14 @@
 
 from dataclasses import dataclass
 from collections import defaultdict
+from typing import Union
 
 import geopandas as gpd
 import shapely.geometry as geom
 import numpy as np
 
 from weavingspace.tileable import Tileable
+from weavingspace.tileable import TileShape
 import weavingspace.tiling_utils as tiling_utils
 
 @dataclass
@@ -31,7 +33,8 @@ class Topology:
 
   def __init__(self, unit:Tileable):
     self.unit = unit
-    self._patch = self.unit.get_local_patch(r = 2, include_0 = True)
+    radius = 1 if unit.tile_shape == TileShape.HEXAGON else 2
+    self._patch = self.unit.get_local_patch(r = radius, include_0 = True)
     self.polygons = tuple(self._patch.geometry)
     self.centres = tuple([tiling_utils.incentre(p) for p in self.polygons])
     self._set_vertices()
@@ -43,10 +46,26 @@ class Topology:
     vertices = []
     for p in self.polygons:
       corners = tiling_utils.get_corners(p, repeat_first = False)
+      # vertices = vertices.union(corners)
       for c in corners:
-        if not c in vertices:
+        if not any ([c.distance(v) <= 2 * tiling_utils.RESOLUTION 
+                     for v in vertices]):
+        # if not c in vertices:
           vertices.append(c)
     self.vertices = tuple(vertices)
+
+
+  def _get_closest_vertex(self, v:Union[int, geom.Point], 
+                          return_id:bool = True) -> Union[int, geom.Point]:
+    distances = sorted([(v.distance(vertex), i) 
+                        for i, vertex in enumerate(self.vertices)])
+    if return_id:
+      return distances[0][1]
+      # return [d <= 2 * tiling_utils.RESOLUTION for d in distances].index(True)
+    else:
+      return self.vertices[distances[0][1]]
+      # return self.vertices[
+        # [d <= 2 * tiling_utils.RESOLUTION for d in distances].index(True)]
 
 
   def _set_edges_and_polygons(self) -> None:
@@ -62,7 +81,9 @@ class Topology:
       p_edge_ids = []
       p_vertex_ids = []
       for e in p_edges:
-        e_vertex_ids = [(self.vertices.index(geom.Point(v))) for v in e.coords]
+        ends = [geom.Point(p) for p in e.coords]
+        e_vertex_ids = [self._get_closest_vertex(v) for v in ends] 
+        # e_vertex_ids = [(self.vertices.index(geom.Point(v))) for v in e.coords]
         inserts = [idx for idx, v in zip(near_vertex_ids, near_vertices)
                    if idx not in e_vertex_ids and
                    e.distance(v) <= tiling_utils.RESOLUTION]

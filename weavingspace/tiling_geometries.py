@@ -61,9 +61,9 @@ def _setup_base_tile(unit:TileUnit, shape:TileShape) -> None:
   """
   unit.tile_shape = shape
   if unit.tile_shape == TileShape.DIAMOND:
-    tile = geom.Polygon([
+    tile = tiling_utils.gridify(geom.Polygon([
       (unit.spacing / 2, 0), (0, unit.spacing * np.sqrt(3) / 2),
-      (-unit.spacing / 2, 0), (0, -unit.spacing * np.sqrt(3) / 2)])
+      (-unit.spacing / 2, 0), (0, -unit.spacing * np.sqrt(3) / 2)]))
   else:
     tile = tiling_utils.get_regular_polygon(
       unit.spacing, n = (4
@@ -311,8 +311,9 @@ def _setup_laves_33336(unit:TileUnit) -> None:
   # now replace first and last points by (0, 0)
   # (note shapely doesn't require closure of the polygon)
   petal = geom.Polygon([(0, 0)] + hex_p[1:5])
-  petals = [affine.rotate(petal, a + offset_a, origin = (0, 0))
-          for a in range(30, 360, 60)]
+  petals = [
+    tiling_utils.gridify(affine.rotate(petal, a + offset_a, origin = (0, 0)))
+    for a in range(30, 360, 60)]
   unit.elements = gpd.GeoDataFrame(
     data = {"element_id": list("abcdef")},
     crs = unit.crs,
