@@ -137,10 +137,10 @@ def setup_hex_dissection(unit:TileUnit) -> None:
     unit (TileUnit):  the TileUnit to setup.
   """
   _setup_base_tile(unit, TileShape.HEXAGON)
-  hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
+  hexagon = tiling_utils.get_regular_polygon(unit.spacing, 6)
   # note that shapely coords includes the first point at beginning
   # and end - very convenient!
-  v = list(hex.exterior.coords)
+  v = list(hexagon.exterior.coords)
   # midpoints
   m = [((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
           for p1, p2 in zip(v[:-1], v[1:])]
@@ -211,7 +211,7 @@ def setup_hex_dissection(unit:TileUnit) -> None:
       steps = [steps[-1] - 1] + steps
       # print(f"{steps}")
       # steps = np.linspace(0, 1, unit.n + 1) - (1 / 24)
-      slices = [tiling_utils.get_polygon_sector(hex, p1, p2)
+      slices = [tiling_utils.get_polygon_sector(hexagon, p1, p2)
                 for p1, p2 in zip(steps[:-1], steps[1:])]
 
   unit.elements = gpd.GeoDataFrame(
@@ -304,10 +304,10 @@ def _setup_laves_33336(unit:TileUnit) -> None:
   offset_a = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
   sf = 1 / np.sqrt(7)
   tile = tiling_utils.get_regular_polygon(unit.spacing, 6)
-  hex = affine.scale(tile, sf, sf)
+  hexagon = affine.scale(tile, sf, sf)
   # translate it up by its own height
-  hex = affine.translate(hex, 0, hex.bounds[3] - hex.bounds[1])
-  hex_p = [p for p in hex.exterior.coords]
+  hexagon = affine.translate(hexagon, 0, hexagon.bounds[3] - hexagon.bounds[1])
+  hex_p = [p for p in hexagon.exterior.coords]
   # now replace first and last points by (0, 0)
   # (note shapely doesn't require closure of the polygon)
   petal = geom.Polygon([(0, 0)] + hex_p[1:5])
@@ -347,8 +347,8 @@ def _setup_laves_31212(unit:TileUnit) -> None:
     unit (TileUnit):  the TileUnit to setup.
   """
   _setup_base_tile(unit, TileShape.HEXAGON)
-  hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
-  pts = [p for p in hex.exterior.coords]
+  hexagon = tiling_utils.get_regular_polygon(unit.spacing, 6)
+  pts = [p for p in hexagon.exterior.coords]
   tri1 = geom.Polygon([pts[0], pts[2], [0, 0]])
   tri2 = geom.Polygon([pts[0], pts[1], pts[2]])
   tris1 = [affine.rotate(tri1, a, origin = (0, 0))
@@ -452,8 +452,8 @@ def _setup_archimedean_3464(unit:TileUnit) -> None:
   """
   _setup_base_tile(unit, TileShape.HEXAGON)
   sf = np.sqrt(3) / (1 + np.sqrt(3))
-  hex = tiling_utils.get_regular_polygon(unit.spacing * sf, 6)
-  corners = [p for p in hex.exterior.coords]
+  hexagon = tiling_utils.get_regular_polygon(unit.spacing * sf, 6)
+  corners = [p for p in hexagon.exterior.coords]
   p1 = corners[1]
   p2 = corners[0]
   #   HEX   p1
@@ -473,7 +473,7 @@ def _setup_archimedean_3464(unit:TileUnit) -> None:
   unit.elements = gpd.GeoDataFrame(
     data = {"element_id": list("abcdef")},
     crs = unit.crs,
-    geometry = gpd.GeoSeries([hex, square1, square2, square3, tri1, tri2]))
+    geometry = gpd.GeoSeries([hexagon, square1, square2, square3, tri1, tri2]))
   unit.setup_regularised_tile_from_elements()
 
 
@@ -483,39 +483,39 @@ def setup_hex_colouring(unit:TileUnit) -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  hex = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 6)
+  hexagon = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 6)
   if unit.n == 3:
     # Point up hex at '*' displaced to 3 positions:
     #      2
     #      *
     #    3   1
     _setup_base_tile(unit, TileShape.HEXAGON)
-    hex = affine.rotate(hex, 30, origin = (0, 0))
+    hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
     # Copy and translate to alternate corners
-    corners = [p for i, p in enumerate(hex.exterior.coords)
+    corners = [p for i, p in enumerate(hexagon.exterior.coords)
            if i in (0, 2, 4)]
-    hexes = [affine.translate(hex, p[0], p[1]) for p in corners]
+    hexes = [affine.translate(hexagon, p[0], p[1]) for p in corners]
   elif unit.n == 4:
     # Point up hex at '*' displaced to 4 positions:
     #      2
     #     3*1
     #      4
     _setup_base_tile(unit, TileShape.DIAMOND)
-    hex = affine.rotate(hex, 30, origin = (0, 0))
-    hex1 = affine.translate(hex, unit.spacing / 4, 0)
-    hex2 = affine.translate(hex, 0, unit.spacing * np.sqrt(3) / 4)
-    hex3 = affine.translate(hex, -unit.spacing / 4, 0)
-    hex4 = affine.translate(hex, 0, -unit.spacing * np.sqrt(3) / 4)
+    hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
+    hex1 = affine.translate(hexagon, unit.spacing / 4, 0)
+    hex2 = affine.translate(hexagon, 0, unit.spacing * np.sqrt(3) / 4)
+    hex3 = affine.translate(hexagon, -unit.spacing / 4, 0)
+    hex4 = affine.translate(hexagon, 0, -unit.spacing * np.sqrt(3) / 4)
     hexes = [hex1, hex2, hex3, hex4]
   elif unit.n == 7:  # the 'H3' tile
     # Make a hexagon and displace in the direction of its
     # own 6 corners, scaled as needed
     _setup_base_tile(unit, TileShape.HEXAGON)
     rotation = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
-    corners = [p for p in hex.exterior.coords][:-1]
-    hex = affine.rotate(hex, 30)
-    hexes = [hex] + [affine.translate(
-      hex, x * np.sqrt(3), y * np.sqrt(3)) for x, y in corners]
+    corners = [p for p in hexagon.exterior.coords][:-1]
+    hexagon = affine.rotate(hexagon, 30)
+    hexes = [hexagon] + [affine.translate(
+      hexagon, x * np.sqrt(3), y * np.sqrt(3)) for x, y in corners]
     hexes = [affine.rotate(h, rotation, origin = (0, 0))
              for h in hexes]
   else:
