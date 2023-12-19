@@ -114,11 +114,34 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
 
 
 def is_convex(poly:geom.Polygon) -> bool:
+  """Tests for polygon convexity. There are better ways to do this, like
+  e.g. using something like the get_interior_angles() function, but simply
+  checking if the polygon area is close to that of its convex hull works too!
+
+  Args:
+    poly (geom.Polygon): polygon to check
+
+  Returns:
+    bool: True if the polygon is convex, False otherwise.
+  """
   return isclose(poly.area, poly.convex_hull.area, rel_tol = RESOLUTION)
 
 
 def get_corners(poly:geom.Polygon,
                 repeat_first:bool = True) -> list[geom.Point]:
+  """Returns a list of geom.Points around the boundary of polygon, optionally
+  repeating the first. Does no simplification (e.g. if a line segment has a 
+  vertex along its length, it is still returned). Points have precision set to 
+  the package default tiling_utils.RESOLUTION.
+
+  Args:
+    poly (geom.Polygon): polygon whose vertices are required.
+    repeat_first (bool, optional): if True the first vertex is repeated in the 
+    returned list, if False it is omitted. Defaults to True.
+
+  Returns:
+      list[geom.Point]: list of geom.Point vertices of the polygon.
+  """
   corners = [gridify(geom.Point(pt)) for pt in poly.exterior.coords]
   if repeat_first:
     return corners
@@ -127,26 +150,64 @@ def get_corners(poly:geom.Polygon,
 
 
 def get_edges(poly:geom.Polygon) -> list[geom.LineString]:
+  """Returns polygon edges as a list of geom.LineStrings, with resolution set
+  to the package default tiling_utils.RESOLUTION. No simplification for 
+  successive colinear edges is carried out.
+
+  Args:
+    poly (geom.Polygon): polygon whose edges are required.
+
+  Returns:
+    list[geom.LineString]: list of geom.LineString edges of the polygon.
+  """
   corners = get_corners(poly)
   return [gridify(geom.LineString([p1, p2]))
           for p1, p2 in zip(corners[:-1], corners[1:])]
 
 
 def get_edge_lengths(poly:geom.Polygon) -> list[float]:
+  """Returns list of lengths of polygon edges. No simplification for vertices
+  along edges is carried out.
+
+  Args:
+    poly (geom.Polygon): polygon whose edge lengths are required.
+
+  Returns:
+    list[float]: list of edge lengths.
+  """
   corners = get_corners(poly)
   return [p1.distance(p2) for p1, p2 in zip(corners[:-1], corners[1:])]
 
 
 def get_edge_bearings(p:geom.Polygon) -> tuple[tuple[float]]:
-  edges = get_edges(p)
+  """Returns a list of angles (in degrees) between the edges of a polygon and
+  the positive x-axis, when proceeding from the first point in each edge to its
+  end point. This will usually be CW around the polygon.
+
+  Args:
+    p (geom.Polygon): polygon whose edge bearings are required.
+
+  Returns:
+    tuple[tuple[float]]: tuple of bearings of each edge.
+  """
   return tuple([np.degrees(np.arctan2(
     e.coords[1][1] - e.coords[0][1], e.coords[1][0] - e.coords[0][0])) 
-    for e in edges])
+    for e in get_edges(p)])
 
 
 def get_interior_angles(poly:geom.Polygon) -> list[float]:
-  corners = get_corners(poly, repeat_first = False)
-  wrapped_corners = corners[-1:] + corners + corners[:1]
+  """Returns angles (in degrees) between successive edges of a polygon. No 
+  polygon simplification is carried out so some angles may be 180 (i.e. a 
+  vertex along an edge). 
+
+  Args:
+    poly (geom.Polygon): polygon whose angles are required.
+
+  Returns:
+    list[float]: list of angles.
+  """
+  corners = get_corners(poly)
+  wrapped_corners = corners[-1:] + corners
   triples = zip(wrapped_corners[:-2],
                 wrapped_corners[1:-1],
                 wrapped_corners[2:])
@@ -154,11 +215,47 @@ def get_interior_angles(poly:geom.Polygon) -> list[float]:
 
 
 def get_inner_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
+  """Returns the angle (in degrees) between line p1-p2 and p2-p3, i.e., the 
+  angle A below
+  
+      p2 ------ p3
+       \ A 
+        \  
+         \ 
+          p1
+      
+  Args:
+    p1 (geom.Point): first point.
+    p2 (geom.Point): second 'corner' point.
+    p3 (geom.Point): third point.
+
+  Returns:
+      float: angle in degrees.
+  """
   return np.degrees(np.arctan2(p3.y - p2.y, p3.x - p2.x) -
                     np.arctan2(p1.y - p2.y, p1.x - p2.x)) % 360
 
 
 def get_outer_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
+  """Returns outer angle (in degrees) between lines p1-p2 and p2-p3, i.e., the 
+  angle A below
+  
+    \ 
+     \  A
+      p2 ------ p3
+       \  
+        \  
+         \ 
+          p1
+      
+  Args:
+    p1 (geom.Point): first point.
+    p2 (geom.Point): second 'corner' point.
+    p3 (geom.Point): third point.
+
+  Returns:
+    float: angle in degrees.
+  """
   return 180 - get_inner_angle(p1, p2, p3)
 
 
