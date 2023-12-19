@@ -206,8 +206,8 @@ def get_interior_angles(poly:geom.Polygon) -> list[float]:
   Returns:
     list[float]: list of angles.
   """
-  corners = get_corners(poly)
-  wrapped_corners = corners[-1:] + corners
+  corners = get_corners(poly, repeat_first = False)
+  wrapped_corners = corners[-1:] + corners + corners[:1]
   triples = zip(wrapped_corners[:-2],
                 wrapped_corners[1:-1],
                 wrapped_corners[2:])
@@ -215,15 +215,14 @@ def get_interior_angles(poly:geom.Polygon) -> list[float]:
 
 
 def get_inner_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
-  """Returns the angle (in degrees) between line p1-p2 and p2-p3, i.e., the 
+  r"""Returns the angle (in degrees) between line p1-p2 and p2-p3, i.e., the 
   angle A below
   
-      p2 ------ p3
-       \ A 
-        \  
-         \ 
-          p1
-      
+            p2
+           / \ 
+          / A \ 
+        p1     p3
+  
   Args:
     p1 (geom.Point): first point.
     p2 (geom.Point): second 'corner' point.
@@ -237,17 +236,16 @@ def get_inner_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
 
 
 def get_outer_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
-  """Returns outer angle (in degrees) between lines p1-p2 and p2-p3, i.e., the 
+  r"""Returns outer angle (in degrees) between lines p1-p2 and p2-p3, i.e., the 
   angle A below
+                
+              /
+             /
+            p2 A
+           / \ 
+          /   \ 
+        p1     p3
   
-    \ 
-     \  A
-      p2 ------ p3
-       \  
-        \  
-         \ 
-          p1
-      
   Args:
     p1 (geom.Point): first point.
     p2 (geom.Point): second 'corner' point.
