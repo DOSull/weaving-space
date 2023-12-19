@@ -137,6 +137,13 @@ def get_edge_lengths(poly:geom.Polygon) -> list[float]:
   return [p1.distance(p2) for p1, p2 in zip(corners[:-1], corners[1:])]
 
 
+def get_edge_bearings(p:geom.Polygon) -> tuple[tuple[float]]:
+  edges = get_edges(p)
+  return tuple([np.degrees(np.arctan2(
+    e.coords[1][1] - e.coords[0][1], e.coords[1][0] - e.coords[0][0])) 
+    for e in edges])
+
+
 def get_interior_angles(poly:geom.Polygon) -> list[float]:
   corners = get_corners(poly, repeat_first = False)
   wrapped_corners = corners[-1:] + corners + corners[:1]
