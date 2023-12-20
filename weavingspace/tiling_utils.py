@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Utility functions for use by various classes in the `weavingspace`
-package. Most are geometric convenience functions for commonly applied
-operations.
-"""
-
+# don't understand it but this allows import of TileUnit for type hinting only
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+  from weavingspace import TileUnit
 from typing import Iterable, Union
+
 import re
 import string
 
@@ -22,8 +23,11 @@ import shapely.affinity as affine
 import shapely.wkt as wkt
 import shapely.ops
 
-# this causes a circular import error and is only needed for typing
-# from weavingspace.tile_unit import TileUnit
+
+"""Utility functions for use by various classes in the `weavingspace`
+package. Most are geometric convenience functions for commonly applied
+operations.
+"""
 
 PRECISION = 6
 RESOLUTION = 1e-6
@@ -400,7 +404,7 @@ def gridify(gs:Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]
     return gs
 
 
-def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
+def get_dual_tile_unit(t: TileUnit) -> gpd.GeoDataFrame:
   """Converts supplied TileUnit to a candidate GeoDataFrame of its dual
   TileUnit.
 
@@ -434,7 +438,7 @@ def get_dual_tile_unit(t) -> gpd.GeoDataFrame:
       a TileUnit of the dual tiling.
   """
   # get a local patch of this Tiling
-  local_patch = t.get_local_patch(r = 3, include_0 = True)
+  local_patch = t.get_local_patch(r = 2, include_0 = True)
   # Find the interior points of these tiles - these will be guaranteed
   # to have a sequence of surrounding tiles incident on them
   interior_pts = _get_interior_vertices(local_patch)
@@ -495,7 +499,8 @@ def relabel(data:Iterable) -> list:
 
 
 def sort_cw(pts_ids:list[tuple[float, float, str]]):
-  """Sorts supplied tuple of x, y, ID into clockwise order.
+  """Sorts supplied tuple of x, y, ID into clockwise order relative to their
+  mean centre.
 
   Args:
     pts_ids (list[tuple[float, float, str]]): A tuple of a pair of

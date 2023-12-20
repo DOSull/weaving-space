@@ -164,6 +164,8 @@ class Tileable:
     self.regularised_tile.geometry = tiling_utils.safe_union(
       self.elements.geometry)
     # This simplification seems very crude but fixes all kinds of issues...
+    # particularly with the triaxial weave units... where intersection 
+    # operations are prone to creating spurious vertices, etc.
     self.regularised_tile.geometry[0] = \
       self.regularised_tile.geometry[0].simplify(
         self.spacing * tiling_utils.RESOLUTION)

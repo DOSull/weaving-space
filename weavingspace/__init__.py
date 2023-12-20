@@ -5,6 +5,7 @@
 See [this notebook](https://github.com/DOSull/weaving-space/blob/main/using-the-library.ipynb) for some preliminary usage notes.
 """
 
+from .tiling_utils import *
 from ._loom import *
 from ._weave_grid import *
 from .tileable import *
@@ -13,4 +14,5 @@ from .tile_unit import *
 from .weave_matrices import *
 from .weave_unit import *
 from .tile_map import *
-from .tiling_utils import *
+from .topology import *
+from .symmetry import *
