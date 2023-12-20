@@ -228,9 +228,7 @@ class TileUnit(Tileable):
     """
     inset_tile = self.regularised_tile.geometry.buffer(
         -d, resolution = 1, join_style = 2)[0]
-    # the clean_geometry seems needed to stop proliferation of vertices
-    new_elements = [tiling_utils.clean_polygon(inset_tile.intersection(e))
-                    for e in self.elements.geometry]
+    new_elements = [inset_tile.intersection(e) for e in self.elements.geometry]
     result = copy.deepcopy(self)
     result.elements.geometry = gpd.GeoSeries(new_elements)
     return result
