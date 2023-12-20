@@ -117,100 +117,100 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
   return gridify(geom.Polygon(corners))
 
 
-def is_convex(poly:geom.Polygon) -> bool:
-  """Tests for polygon convexity. There are better ways to do this, like
+def is_convex(shape:geom.Polygon) -> bool:
+  """Tests for shape convexity. There are better ways to do this, like
   e.g. using something like the get_interior_angles() function, but simply
-  checking if the polygon area is close to that of its convex hull works too!
+  checking if the area is close to that of its convex hull works too!
 
   Args:
-    poly (geom.Polygon): polygon to check
+    shape (geom.Polygon): polygon to check
 
   Returns:
     bool: True if the polygon is convex, False otherwise.
   """
-  return isclose(poly.area, poly.convex_hull.area, rel_tol = RESOLUTION)
+  return isclose(shape.area, shape.convex_hull.area, rel_tol = RESOLUTION)
 
 
-def get_corners(poly:geom.Polygon,
+def get_corners(shape:geom.Polygon,
                 repeat_first:bool = True) -> list[geom.Point]:
-  """Returns a list of geom.Points around the boundary of polygon, optionally
+  """Returns a list of geom.Points around the boundary of a polygon, optionally
   repeating the first. Does no simplification (e.g. if a line segment has a 
-  vertex along its length, it is still returned). Points have precision set to 
+  'corner' along its length, it is NOT removed). Points have precision set to 
   the package default tiling_utils.RESOLUTION.
 
   Args:
-    poly (geom.Polygon): polygon whose vertices are required.
+    shape (geom.Polygon): polygon whose vertices are required.
     repeat_first (bool, optional): if True the first vertex is repeated in the 
     returned list, if False it is omitted. Defaults to True.
 
   Returns:
       list[geom.Point]: list of geom.Point vertices of the polygon.
   """
-  corners = [gridify(geom.Point(pt)) for pt in poly.exterior.coords]
+  corners = [gridify(geom.Point(pt)) for pt in shape.exterior.coords]
   if repeat_first:
     return corners
   else:
     return corners[:-1]
 
 
-def get_edges(poly:geom.Polygon) -> list[geom.LineString]:
-  """Returns polygon edges as a list of geom.LineStrings, with resolution set
+def get_sides(shape:geom.Polygon) -> list[geom.LineString]:
+  """Returns polygon sides as a list of geom.LineStrings, with resolution set
   to the package default tiling_utils.RESOLUTION. No simplification for 
-  successive colinear edges is carried out.
+  successive colinear sides is carried out.
 
   Args:
-    poly (geom.Polygon): polygon whose edges are required.
+    shape (geom.Polygon): polygon whose edges are required.
 
   Returns:
-    list[geom.LineString]: list of geom.LineString edges of the polygon.
+    list[geom.LineString]: list of geom.LineString sides of the polygon.
   """
-  corners = get_corners(poly)
+  corners = get_corners(shape)
   return [gridify(geom.LineString([p1, p2]))
           for p1, p2 in zip(corners[:-1], corners[1:])]
 
 
-def get_edge_lengths(poly:geom.Polygon) -> list[float]:
-  """Returns list of lengths of polygon edges. No simplification for vertices
-  along edges is carried out.
+def get_side_lengths(shape:geom.Polygon) -> list[float]:
+  """Returns list of lengths of polygon sides. No simplification for corners
+  along sides is carried out.
 
   Args:
-    poly (geom.Polygon): polygon whose edge lengths are required.
+    shape (geom.Polygon): polygon whose edge lengths are required.
 
   Returns:
-    list[float]: list of edge lengths.
+    list[float]: list of side lengths.
   """
-  corners = get_corners(poly)
+  corners = get_corners(shape)
   return [p1.distance(p2) for p1, p2 in zip(corners[:-1], corners[1:])]
 
 
-def get_edge_bearings(p:geom.Polygon) -> tuple[tuple[float]]:
-  """Returns a list of angles (in degrees) between the edges of a polygon and
-  the positive x-axis, when proceeding from the first point in each edge to its
-  end point. This will usually be CW around the polygon.
+def get_side_bearings(shape:geom.Polygon) -> tuple[tuple[float]]:
+  """Returns a list of angles (in degrees) between the sides of a polygon and
+  the positive x-axis, when proceeding from the first point in each side to its
+  end point. This should usually be CW around the polygon.
 
   Args:
-    p (geom.Polygon): polygon whose edge bearings are required.
+    shape (geom.Polygon): polygon whose side bearings are required.
 
   Returns:
     tuple[tuple[float]]: tuple of bearings of each edge.
   """
   return tuple([np.degrees(np.arctan2(
     e.coords[1][1] - e.coords[0][1], e.coords[1][0] - e.coords[0][0])) 
-    for e in get_edges(p)])
+    for e in get_sides(shape)])
 
 
-def get_interior_angles(poly:geom.Polygon) -> list[float]:
+def get_interior_angles(shape:geom.Polygon) -> list[float]:
   """Returns angles (in degrees) between successive edges of a polygon. No 
   polygon simplification is carried out so some angles may be 180 (i.e. a 
-  vertex along an edge). 
+  'corner' along a side, such that successive sides are colinear). 
 
   Args:
-    poly (geom.Polygon): polygon whose angles are required.
+    shape (geom.Polygon): polygon whose angles are required.
 
   Returns:
     list[float]: list of angles.
   """
-  corners = get_corners(poly, repeat_first = False)
+  corners = get_corners(shape, repeat_first = False)
   wrapped_corners = corners[-1:] + corners + corners[:1]
   triples = zip(wrapped_corners[:-2],
                 wrapped_corners[1:-1],
@@ -261,11 +261,14 @@ def get_outer_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
   return 180 - get_inner_angle(p1, p2, p3)
 
 
-def is_tangential(poly:geom.Polygon) -> bool:
+def is_tangential(shape:geom.Polygon) -> bool:
   """Determines if the supplied polygon is tangential i.e., it can have
-  circle inscribed tangential to all its edges.
+  circle inscribed tangential to all its sides. 
+  
+  Note that this will fail for polygons with successive colinear sides,
+  meaning that polygons should be fully simplified...
   """
-  edge_lengths = get_edge_lengths(poly)
+  edge_lengths = get_side_lengths(shape)
   n = len(edge_lengths)
   if n % 2 == 0:
     odds = [edge_lengths[i] for i in range(n) if i % 2 == 1]
@@ -280,9 +283,9 @@ def is_tangential(poly:geom.Polygon) -> bool:
     return not (any(ones) or any(zeros) or any(negatives))
 
 
-def incentre(poly:geom.Polygon) -> geom.Point:
+def incentre(shape:geom.Polygon) -> geom.Point:
   """A different polygon centre, which produces better results for some
-  of the dual tilings where polygons are not regular... see
+  dual tilings where tiles are not regular polygons... see
   https://en.wikipedia.org/wiki/Incenter
 
   This method relies on the polygon being tangential, i.e. there is an
@@ -296,32 +299,28 @@ def incentre(poly:geom.Polygon) -> geom.Point:
   sides of the polygon and find their intersection to determine the centre of
   the circle, givng the incentre of the polygon.
 
-  It is possible that intersecting two angle bisectors of the polygon would
-  also work, but it is unclear if this is an equivalent construction (more
-  reading required...)
-
     Args:
-    poly (geom.Polygon): the polygon.
+    shape (geom.Polygon): the polygon.
 
   Returns:
     geom.Point: the incentre of the polygon.
   """
-  poly = ensure_cw(poly)
-  corners = get_corners(poly)
-  if is_tangential(poly):  # find the incentre
-    r = get_apothem_length(poly)
+  shape = ensure_cw(shape)
+  corners = get_corners(shape)
+  if is_tangential(shape):  # find the incentre
+    r = get_apothem_length(shape)
     e1 = geom.LineString(corners[:2]).parallel_offset(r, side = "right")
     e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = "right")
     return e1.intersection(e2)  # TODO: add exception if no intersection
   else:
-    return poly.centroid
+    return shape.centroid
 
 
-def get_apothem_length(poly:geom.Polygon) -> float:
-  return 2 * poly.area / geom.LineString(poly.exterior.coords).length
+def get_apothem_length(shape:geom.Polygon) -> float:
+  return 2 * shape.area / geom.LineString(shape.exterior.coords).length
 
 
-def ensure_cw(poly:geom.Polygon) -> geom.Polygon:
+def ensure_cw(shape:geom.Polygon) -> geom.Polygon:
   """Returns the polygon with its outer boundary vertices in clockwise order.
 
   It is important to note that shapely.set_precision() imposes clockwise order
@@ -329,19 +328,30 @@ def ensure_cw(poly:geom.Polygon) -> geom.Polygon:
   sense to impose this order.
 
     Args:
-    poly (geom.Polygon): the polygon.
+    shape (geom.Polygon): the polygon.
 
   Returns:
     geom.Polygon: the polygon in clockwise order.
   """
-  if geom.LinearRing(poly.exterior.coords).is_ccw:
-    return poly.reverse()
+  if geom.LinearRing(shape.exterior.coords).is_ccw:
+    return shape.reverse()
   else:
-    return poly
+    return shape
 
 
-def get_angle_bisector(poly:geom.Polygon, v = 0) -> geom.LineString:
-  pts = [geom.Point(p) for p in poly.exterior.coords][:-1]
+def get_angle_bisector(shape:geom.Polygon, v = 0) -> geom.LineString:
+  """Returns a line which is the angle bisector of the specified corner of the
+  supplied polygon.
+
+  Args:
+      shape (geom.Polygon): the polygon
+      v (int, optional): index of the corner whose bisector is required. 
+      Defaults to 0.
+
+  Returns:
+      geom.LineString: line which bisects the specified corner.
+  """
+  pts = get_corners(shape, repeat_first = False)
   n = len(pts)
   p0 = pts[v % n]
   p1 = pts[(v + 1) % n]
@@ -357,29 +367,30 @@ def get_angle_bisector(poly:geom.Polygon, v = 0) -> geom.LineString:
   return affine.scale(geom.LineString([p0, m]), 100, 100, origin = p0)
 
 
-def _get_interior_vertices(polys:gpd.GeoDataFrame) -> gpd.GeoSeries:
+def _get_interior_vertices(tiles:gpd.GeoDataFrame) -> gpd.GeoSeries:
   """Returns points not on the outer boundary of the supplied set
-  of polygons.
+  of tiles.
 
   Args:
-    polys (gpd.GeoDataFrame): a set of polygons.
+    shapes (gpd.GeoDataFrame): a set of polygons.
 
   Returns:
     gpd.GeoSeries: interior vertices of the set of polygons.
   """
-  polygons = gridify(polys.geometry)
-  uu = safe_union(polygons, as_polygon = True)
+  tiles = gridify(tiles.geometry)
+  uu = safe_union(tiles, as_polygon = True)
   interior_pts = set()
-  for poly in polygons:
-    for pt in poly.exterior.coords:
-      if uu.contains(
-        geom.Point(pt).buffer(1e-3, resolution = 1, join_style = 2)):
-        interior_pts.add(pt)
+  for tile in tiles:
+    for corner in tile.exterior.coords:
+      if uu.contains(geom.Point(corner).buffer(1e-3, 
+                                               resolution = 1, join_style = 2)):
+        interior_pts.add(corner)
   return gridify(gpd.GeoSeries([geom.Point(p) for p in interior_pts]))
 
 
-def gridify(gs:Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]
-            ) -> Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]:
+def gridify(
+      gs:Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]
+    ) -> Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]:
   """Returns the supplied GeoSeries rounded to the specified precision.
 
   Args:
@@ -404,7 +415,7 @@ def gridify(gs:Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]
     return gs
 
 
-def get_dual_tile_unit(t: TileUnit) -> gpd.GeoDataFrame:
+def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
   """Converts supplied TileUnit to a candidate GeoDataFrame of its dual
   TileUnit.
 
@@ -431,14 +442,14 @@ def get_dual_tile_unit(t: TileUnit) -> gpd.GeoDataFrame:
   confident the returned dual is valid.
 
   Args:
-    t (TileUnit): the tiling for which the dual is required.
+    unit (TileUnit): the tiling for which the dual is required.
 
   Returns:
     gpd.GeoDataFrame: GeoDataFrame that could be the elements attribute for
       a TileUnit of the dual tiling.
   """
   # get a local patch of this Tiling
-  local_patch = t.get_local_patch(r = 2, include_0 = True)
+  local_patch = unit.get_local_patch(r = 2, include_0 = True)
   # Find the interior points of these tiles - these will be guaranteed
   # to have a sequence of surrounding tiles incident on them
   interior_pts = _get_interior_vertices(local_patch)
@@ -447,7 +458,7 @@ def get_dual_tile_unit(t: TileUnit) -> gpd.GeoDataFrame:
   for pt in interior_pts:
     cycles.append(
       set([poly_id for poly_id, p in enumerate(local_patch.geometry)
-           if pt.distance(p) < t.fudge_factor]))
+           if pt.distance(p) < unit.fudge_factor]))
   # convert the polygon ID sequences to (centroid.x, centroid.y, ID) tuples
   dual_faces = []
   for cycle in cycles:
@@ -465,11 +476,11 @@ def get_dual_tile_unit(t: TileUnit) -> gpd.GeoDataFrame:
   # ensure the resulting face centroids are inside the original tile
   # displaced a little to avoid uncertainties at corners/edges
   dual_faces = [(f, id) for f, id in dual_faces
-          if affine.translate(t.tile.geometry[0],
-                    t.fudge_factor,
-                    t.fudge_factor).contains(f.centroid)]
+          if affine.translate(unit.tile.geometry[0],
+                    unit.fudge_factor,
+                    unit.fudge_factor).contains(f.centroid)]
   gdf = gpd.GeoDataFrame(
-    data = {"element_id": [f[1] for f in dual_faces]}, crs = t.crs,
+    data = {"element_id": [f[1] for f in dual_faces]}, crs = unit.crs,
     geometry = gridify(gpd.GeoSeries([f[0] for f in dual_faces])))
   # ensure no duplicates
   gdf = gdf.dissolve(by = "element_id", as_index = False).explode(
@@ -520,16 +531,26 @@ def sort_cw(pts_ids:list[tuple[float, float, str]]):
   return [pt_id for angle, pt_id in reversed(sorted(d.items()))]
 
 
-def order_pts_cw_relative_to_centre(pts:list[geom.Point], c:geom.Point):
-  dx = [p.x - c.x for p in pts]
-  dy = [p.y - c.y for p in pts]
+def order_pts_cw_relative_to_centre(pts:list[geom.Point], centre:geom.Point):
+  """Returns the supplied list of points reordered clockwise relative to 
+  the supplied centre.
+
+  Args:
+      pts (list[geom.Point]): list of points to order.
+      centre (geom.Point): centre relative to which CW order is determined.
+
+  Returns:
+      _type_: list of reordered points.
+  """
+  dx = [p.x - centre.x for p in pts]
+  dy = [p.y - centre.y for p in pts]
   angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
   d = dict(zip(angles, range(len(pts))))
   return [i for angle, i in reversed(sorted(d.items()))]
 
 
 def write_map_to_layers(gdf:gpd.GeoDataFrame, fname:str = "output.gpkg",
-            element_var:str = "element_id") -> None:
+                        element_var:str = "element_id") -> None:
   """Writes supplied GeoDataFrame to a GPKG file with layers based on
   the element_var attribute.
 
@@ -621,8 +642,8 @@ def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
       extent[0], extent[1])
 
 
-def get_bounding_ellipse(
-    shapes:gpd.GeoSeries, mag:float = 1.0) -> gpd.GeoSeries:
+def get_bounding_ellipse(shapes:gpd.GeoSeries, 
+                         mag:float = 1.0) -> gpd.GeoSeries:
   """Returns an ellipse containing the supplied shapes.
 
   The method used is to calculate the size of square that would contain
@@ -647,7 +668,7 @@ def get_bounding_ellipse(
     w / r * mag / np.sqrt(2), h / r * mag / np.sqrt(2), origin = c))
 
 
-def get_tiling_boundaries(shapes:gpd.GeoSeries) -> gpd.GeoSeries:
+def get_tiling_edges(tiles:gpd.GeoSeries) -> gpd.GeoSeries:
   """Returns linestring GeoSeries from supplied polygon GeoSeries.
 
   This is used to allow display of edges of tiles in legend when they are
@@ -660,13 +681,13 @@ def get_tiling_boundaries(shapes:gpd.GeoSeries) -> gpd.GeoSeries:
   Returns:
     gpd.GeoSeries: LineStrings from the supplied Polygons.
   """
-  shapes = shapes.explode(ignore_index = True)
-  bdys = [geom.LineString(p.exterior.coords) for p in shapes]
-  return gpd.GeoSeries(bdys, crs = shapes.crs)
+  tiles = tiles.explode(ignore_index = True)
+  edges = [geom.LineString(p.exterior.coords) for p in tiles]
+  return gpd.GeoSeries(edges, crs = tiles.crs)
 
 
-def get_polygon_sector(shape:geom.Polygon, start:float = 0.0,
-         end:float = 1.0) -> geom.Polygon:
+def get_polygon_sector(polygon:geom.Polygon, start:float = 0.0,
+                       end:float = 1.0) -> geom.Polygon:
   """Returns a sector of the provided Polygon.
 
   The returned sector is a section of the polygon boundary between the
@@ -691,22 +712,22 @@ def get_polygon_sector(shape:geom.Polygon, start:float = 0.0,
   if start * end < 0:
     # either side of 0/1 so assume required sector includes 0
     e1, e2 = min(start, end), max(start, end)
-    arc1 = shapely.ops.substring(geom.LineString(shape.exterior.coords),
-                   np.mod(e1, 1), 1, normalized = True)
-    arc2 = shapely.ops.substring(geom.LineString(shape.exterior.coords),
-                   0, e2, normalized = True)
-    sector = geom.Polygon([shape.centroid] +
-                list(arc1.coords) +
-                list(arc2.coords)[1:])
+    arc1 = shapely.ops.substring(geom.LineString(polygon.exterior.coords),
+                                 np.mod(e1, 1), 1, normalized = True)
+    arc2 = shapely.ops.substring(geom.LineString(polygon.exterior.coords),
+                                 0, e2, normalized = True)
+    sector = geom.Polygon([polygon.centroid] +
+               list(arc1.coords) +
+               list(arc2.coords)[1:])
   else:
-    arc = shapely.ops.substring(geom.LineString(shape.exterior.coords),
-                  start, end, normalized = True)
-    sector = geom.Polygon([shape.centroid] + list(arc.coords))
+    arc = shapely.ops.substring(geom.LineString(polygon.exterior.coords),
+                                start, end, normalized = True)
+    sector = geom.Polygon([polygon.centroid] + list(arc.coords))
   return gridify(sector)
 
 
 def clean_polygon(
-    p:Union[geom.Polygon, geom.MultiPolygon, gpd.GeoSeries],
+    polygon:Union[geom.Polygon, geom.MultiPolygon, gpd.GeoSeries],
     shrink_then_grow:bool = True) -> Union[geom.Polygon, gpd.GeoSeries]:
   """Convenience function to 'clean' a shapely polyon or GeoSeries by applying
   a negative buffer then the same positive buffer.
@@ -731,11 +752,13 @@ def clean_polygon(
     Union[geom.Polygon, gpd.GeoSeries]: the cleaned Polygon or GeoSeries.
   """
   if shrink_then_grow:
-    return p.buffer(-RESOLUTION * 10, resolution = 1, join_style = 2).buffer(
-        RESOLUTION * 10, resolution = 1, join_style = 2)
+    return polygon.buffer(
+      -RESOLUTION * 10, resolution = 1, join_style = 2).buffer(
+      RESOLUTION * 10, resolution = 1, join_style = 2)
   else:
-    return p.buffer(RESOLUTION * 10, resolution = 1, join_style = 2).buffer(
-        -RESOLUTION * 10, resolution = 1, join_style = 2)
+    return polygon.buffer(
+      RESOLUTION * 10, resolution = 1, join_style = 2).buffer(
+      -RESOLUTION * 10, resolution = 1, join_style = 2)
 
 
 def safe_union(gs:gpd.GeoSeries,
@@ -760,8 +783,7 @@ def safe_union(gs:gpd.GeoSeries,
       polygons.
   """
   union = gs.buffer(RESOLUTION * 10, resolution = 1, join_style = 2) \
-        .unary_union \
-        .buffer(-RESOLUTION * 10, resolution = 1, join_style = 2)
+    .unary_union.buffer(-RESOLUTION * 10, resolution = 1, join_style = 2)
   if as_polygon:
     return gridify(union)
   else:

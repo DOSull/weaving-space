@@ -826,11 +826,11 @@ class TiledMap:
     if self.use_ellipse:
       context_tiles.clip(ellipse, keep_geom_type = False).plot(
         ax = ax, fc = "#9F9F9F3F", lw = 0.0)
-      tiling_utils.get_tiling_boundaries(context_tiles.geometry).clip(
+      tiling_utils.get_tiling_edges(context_tiles.geometry).clip(
         ellipse, keep_geom_type = True).plot(ax = ax, ec = "#5F5F5F", lw = 1)
     else:
       context_tiles.plot(ax = ax, fc = "#9F9F9F3F", ec = "#5F5F5F", lw = 0.0)
-      tiling_utils.get_tiling_boundaries(context_tiles.geometry).plot(
+      tiling_utils.get_tiling_edges(context_tiles.geometry).plot(
         ax = ax, ec = "#5F5F5F", lw = 1)
 
 

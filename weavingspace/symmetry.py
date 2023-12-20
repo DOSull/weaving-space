@@ -145,7 +145,7 @@ class Symmetries():
         are actual lines of reflection symmetry they will be returned in the 'reflections' entry). 
     """
     # get edge lengths and angles
-    lengths = tiling_utils.get_edge_lengths(p)
+    lengths = tiling_utils.get_side_lengths(p)
     raw_angles = tiling_utils.get_interior_angles(p)
     # the forward (i.e. not-mirrored) polygon pairs edge lengths and the angle
     # between an edge and its successor going CW around the polygon, hence this
@@ -177,7 +177,7 @@ class Symmetries():
     rotations = [i * 360 / n for i in rotation_matches]
     # calculate all possible reflection axes - ordering of these is important
     # for correct picking - don't mess with this code!
-    bearings = tiling_utils.get_edge_bearings(p)
+    bearings = tiling_utils.get_side_bearings(p)
     reflection_axes = []
     for i in range(n):
       reflection_axes.append(bearings[i] - raw_angles[i] / 2)  # angle bisector

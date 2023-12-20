@@ -98,7 +98,7 @@ class Topology:
       near_ids = [i for i, v in enumerate(self.vertices)
                   if p.distance(v) <= tiling_utils.RESOLUTION]
       near_vs = [self.vertices[i] for i in near_ids]
-      p_edges = tiling_utils.get_edges(p)
+      p_edges = tiling_utils.get_sides(p)
       p_edge_ids, p_vertex_ids = [], []
       for e in p_edges:
         ends = [geom.Point(p) for p in e.coords]
