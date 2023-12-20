@@ -8,11 +8,9 @@ import numpy as np
 
 import shapely.affinity as affine
 import shapely.geometry as geom
-import shapely.wkt as wkt
 import shapely.ops
 
 from weavingspace import tiling_utils
-
 
 @dataclass
 class WeaveGrid:

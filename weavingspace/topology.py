@@ -20,43 +20,43 @@ class Topology:
   """Class to represent topology of a Tileable.
   """
 
-  unit: TileUnit = None
+  tile_unit: TileUnit = None
   _patch: gpd.GeoDataFrame = None
   vertices: tuple[geom.Point] = None
   vertex_neighbours: tuple[int] = None
-  vertex_polygons: tuple[int] = None
+  vertex_tiles: tuple[int] = None
   edges: tuple[tuple[int]] = None
-  lefts: dict[int, int] = None
-  rights: dict[int, int] = None
-  polygons: tuple[geom.Polygon] = None
-  polygon_edges: tuple[tuple[int]] = None
-  polygon_vertices: tuple[tuple[int]] = None
+  edge_lefts: dict[int, int] = None
+  edge_rights: dict[int, int] = None
+  tiles: tuple[geom.Polygon] = None
+  tile_edges: tuple[tuple[int]] = None
+  tile_vertices: tuple[tuple[int]] = None
   centres: tuple[geom.Point] = None
 
   def __init__(self, unit: TileUnit):
-    self.unit = unit
+    self.tile_unit = unit
     rad = 1 if unit.tile_shape == TileShape.HEXAGON else 2
-    self._patch = self.unit.get_local_patch(r = rad, include_0 = True)
-    self.polygons = tuple(self._patch.geometry)
-    self.centres = tuple([tiling_utils.incentre(p) for p in self.polygons])
-    self._set_vertices()
-    self._set_edges_and_polygons()
-    self._set_vertex_neighbours_and_polygons()
+    self._patch = self.tile_unit.get_local_patch(r = rad, include_0 = True)
+    self.tiles = tuple(self._patch.geometry)
+    self.centres = tuple([tiling_utils.incentre(p) for p in self.tiles])
+    self._setup_vertices()
+    self._setup_edges_and_tiles()
+    self._setup_vertex_neighbours_and_polygons()
 
 
-  def _set_vertices(self) -> None:
+  def _setup_vertices(self) -> None:
     """Sets up the list of vertices to include only unique vertices, i.e. 
     vertices shared between polygons are stored only once.
     """
-    vertices = []
-    for p in self.polygons:
+    self.vertices = []
+    for p in self.tiles:
       corners = tiling_utils.get_corners(p, repeat_first = False)
       for c in corners:
         # only add to vertices if not close to an existing vertex
         if not any ([c.distance(v) <= 2 * tiling_utils.RESOLUTION 
-                     for v in vertices]):
-          vertices.append(c)
-    self.vertices = tuple(vertices)
+                     for v in self.vertices]):
+          self.vertices.append(c)
+    self.vertices = tuple(self.vertices)
 
 
   def _get_closest_vertex(self, v:Union[int, geom.Point], 
@@ -82,15 +82,16 @@ class Topology:
       return self.vertices[dists_to_vertices[0][1]]
 
 
-  def _set_edges_and_polygons(self) -> None:
+  def _setup_edges_and_tiles(self) -> None:
     """Sets up the edge and polygon collection.
     """
     # empty collections as lists and dictionaries so we can build them
-    edges = []              # tiling edges as vertex indices 
-    lefts, rights = {}, {}  # left and right neighboring tiles of each edge
-    poly_edges = []         # polygons as sequences of edge indices
-                            # edges traversed backwards encoded as -idx - 1
-    poly_vertices = []      # polygons as sequences of vertex indices
+    self.edges = []          # tiling edges as vertex indices 
+    self.edge_lefts = {}     # left and right neighboring tiles of each edge  
+    self.edge_rights = {}
+    self.tile_edges = []     # polygons as sequences of edge indices
+                             # edges traversed backwards encoded as -idx - 1
+    self.tile_vertices = []  # polygons as sequences of vertex indices
     for p in self._patch.geometry:
       # get all the vertices close to this polygon - most will be its corners
       # but some will be corners of neighbouring tiles that lie on its edges
@@ -117,33 +118,33 @@ class Topology:
         for segment in edge_segments:
           # add first vertex of segment to current polygon vertex list
           p_vertex_ids.append(segment[0])
-          if segment in edges:
+          if segment in self.edges:
             # already in edge list so only add to current polygon edge list
-            p_edge_ids.append(edges.index(segment))
+            p_edge_ids.append(self.edges.index(segment))
             # rights[edges.index(segment)] = len(poly_edges)
-          elif tuple(reversed(segment)) in edges:
+          elif tuple(reversed(segment)) in self.edges:
             # reverse direction is in edge list so add it appropriately coded 
             # to current polygon edge list and record left neighbour
             rev_segment = tuple(reversed(segment))
             # use topojson convention to indicate reversal of direction
-            p_edge_ids.append(-edges.index(rev_segment) - 1)
-            lefts[edges.index(rev_segment)] = len(poly_edges)
+            p_edge_ids.append(-self.edges.index(rev_segment) - 1)
+            self.edge_lefts[
+              self.edges.index(rev_segment)] = len(self.tile_edges)
           else: 
             # new edge so add everywhere!
-            edges.append(segment)
-            p_edge_ids.append(edges.index(segment))
-            rights[edges.index(segment)] = len(poly_edges)
+            self.edges.append(segment)
+            p_edge_ids.append(self.edges.index(segment))
+            self.edge_rights[self.edges.index(segment)] = len(self.tile_edges)
       # convert to tuples and add to the polygon lists
-      poly_edges.append(tuple(p_edge_ids))
-      poly_vertices.append(tuple(p_vertex_ids))
-    self.edges = tuple(edges)
-    self.polygon_edges = tuple(poly_edges)
-    self.polygon_vertices = tuple(poly_vertices)
-    self.lefts = lefts
-    self.rights = rights
+      self.tile_edges.append(tuple(p_edge_ids))
+      self.tile_vertices.append(tuple(p_vertex_ids))
+    # convert lists to tuples
+    self.edges = tuple(self.edges)
+    self.tile_edges = tuple(self.tile_edges)
+    self.tile_vertices = tuple(self.tile_vertices)
 
 
-  def _set_vertex_neighbours_and_polygons(self) -> None:
+  def _setup_vertex_neighbours_and_polygons(self) -> None:
     vertex_neighbours = defaultdict(list)
     for i, e in enumerate(self.edges):
       vertex_neighbours[self.vertices[e[0]]].append(self.vertices[e[1]])
@@ -160,12 +161,12 @@ class Topology:
       polys = []
       for j in neighbours:
         if (i, j) in self.edges:
-          polys.append(self.rights[self.edges.index((i, j))])
+          polys.append(self.edge_rights[self.edges.index((i, j))])
         elif (j, i) in self.edges:
-          if self.edges.index((j, i)) in self.lefts:
-            polys.append(self.lefts[self.edges.index((j, i))])
+          if self.edges.index((j, i)) in self.edge_lefts:
+            polys.append(self.edge_lefts[self.edges.index((j, i))])
       incident_polygons.append(polys)
-    self.vertex_polygons = tuple(incident_polygons)
+    self.vertex_tiles = tuple(incident_polygons)
 
 
   def get_dual_tiles(self) -> gpd.GeoDataFrame:
@@ -177,21 +178,19 @@ class Topology:
     Returns:
         gpd.GeoDataFrame: _description_
     """
-    dual_vertices = [i for i, vps in enumerate(self.vertex_polygons) 
+    dual_vertices = [i for i, vps in enumerate(self.vertex_tiles) 
                     if len(vps) > 2]
     dual_faces = gpd.GeoSeries(
       [geom.Polygon([self.centres[i] for i in p])
-      for p in [self.vertex_polygons[i] for i in dual_vertices]])
+      for p in [self.vertex_tiles[i] for i in dual_vertices]])
     
     # TODO: label and select the faces to include so that they are tileable...
     return gpd.GeoSeries(dual_faces)
 
 
-  def plot(self, show_original_tiles: bool = True, 
-                 show_tile_centres: bool = True,
-                 show_all_vertices: bool = False,
-                 show_all_edges: bool = False,
-                 show_dual_polygons: bool = False):
+  def plot(self, show_original_tiles: bool = True,  
+           show_tile_centres: bool = True, show_all_vertices: bool = False,
+           show_all_edges: bool = False, show_dual_polygons: bool = False):
     """Plots the topology.
 
     Args:
@@ -203,7 +202,7 @@ class Topology:
     ax = fig.add_axes(111)
     
     if show_original_tiles:
-      gpd.GeoSeries(self.polygons).plot(ax = ax, fc = "#80808000", 
+      gpd.GeoSeries(self.tiles).plot(ax = ax, fc = "#80808000", 
                                         ec = "k", lw = 0.35)
 
     if show_tile_centres:
@@ -212,7 +211,7 @@ class Topology:
                     color = "b", ha = "center", va = "center")
     
     tiling_vertex_ids = [i for i, v in enumerate(self.vertices)
-                         if len(self.vertex_polygons) > 2]
+                         if len(self.vertex_tiles) > 2]
     tiling_vertices = [self.vertices[i] for i in tiling_vertex_ids]
     if show_all_vertices:
       gpd.GeoSeries(self.vertices).plot(ax = ax, color = "r", markersize = 5)
@@ -228,10 +227,12 @@ class Topology:
     edges = gpd.GeoSeries([affine.scale(
       geom.LineString(
         [self.vertices[self.edges[i][0]], 
-         self.vertices[self.edges[i][1]]]).parallel_offset(35, side = "right"), 0.9, 0.9) for i in range(len(self.edges))]) 
+         self.vertices[self.edges[i][1]]]).parallel_offset(
+           35, side = "right"), 0.9, 0.9) for i in range(len(self.edges))]) 
     edges = gpd.GeoDataFrame({"id": range(len(self.edges))}, geometry = edges)
     if not show_all_edges:
-      lr = set(self.lefts.keys()).intersection(set(self.rights.keys()))
+      lr = set(self.edge_lefts.keys()).intersection(
+        set(self.edge_rights.keys()))
       edges = edges.iloc[sorted(list(lr))]
     edges.plot(ax = ax, color = "g", lw = 0.75, ls = "dashed")
     for i, e in zip(edges.id, edges.geometry):
