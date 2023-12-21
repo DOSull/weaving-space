@@ -427,14 +427,14 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
   Section 4.2 of Grunbaum B, Shephard G C, 1987 _Tilings and Patterns_ (W. H.
   Freeman and Company, New York)
 
-  NOTE: In general, this method will work only if all supplied elements are
+  NOTE: In general, this method will work only if all supplied tiles are
   regular polygons. A known exception is if the only non-regular polygons are
   triangles.
 
   NOTE: 'clean' polygons are required. If supplied polygons have messy
   vertices with multiple points where there is only one proper point, bad
   things are likely to happen! Consider using `clean_polygon()` on the
-  element geometries.
+  tile geometries.
 
   Because of the above limitations, we only return a GeoDataFrame
   for inspection. However some `weavingspace.tile_unit.TileUnit` setup
@@ -445,7 +445,7 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
     unit (TileUnit): the tiling for which the dual is required.
 
   Returns:
-    gpd.GeoDataFrame: GeoDataFrame that could be the elements attribute for
+    gpd.GeoDataFrame: GeoDataFrame that could be the tiles attribute for
       a TileUnit of the dual tiling.
   """
   # get a local patch of this Tiling
@@ -464,7 +464,7 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
   for cycle in cycles:
     ids, pts = [], []
     for poly_id in cycle:
-      ids.append(local_patch.element_id[poly_id])
+      ids.append(local_patch.tile_id[poly_id])
       poly = local_patch.geometry[poly_id]
       pts.append(incentre(poly))
     # sort them into CW order so they are well formed
@@ -476,17 +476,17 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
   # ensure the resulting face centroids are inside the original tile
   # displaced a little to avoid uncertainties at corners/edges
   dual_faces = [(f, id) for f, id in dual_faces
-          if affine.translate(unit.tile.geometry[0],
+          if affine.translate(unit.prototile.geometry[0],
                     unit.fudge_factor,
                     unit.fudge_factor).contains(f.centroid)]
   gdf = gpd.GeoDataFrame(
-    data = {"element_id": [f[1] for f in dual_faces]}, crs = unit.crs,
+    data = {"tile_id": [f[1] for f in dual_faces]}, crs = unit.crs,
     geometry = gridify(gpd.GeoSeries([f[0] for f in dual_faces])))
   # ensure no duplicates
-  gdf = gdf.dissolve(by = "element_id", as_index = False).explode(
+  gdf = gdf.dissolve(by = "tile_id", as_index = False).explode(
     index_parts = False, ignore_index = True)
 
-  gdf.element_id = relabel(gdf.element_id)
+  gdf.tile_id = relabel(gdf.tile_id)
   return gdf
 
 
@@ -550,18 +550,18 @@ def order_pts_cw_relative_to_centre(pts:list[geom.Point], centre:geom.Point):
 
 
 def write_map_to_layers(gdf:gpd.GeoDataFrame, fname:str = "output.gpkg",
-                        element_var:str = "element_id") -> None:
+                        tile_var:str = "tile_id") -> None:
   """Writes supplied GeoDataFrame to a GPKG file with layers based on
-  the element_var attribute.
+  the tile_var attribute.
 
   Args:
     gdf (gpd.GeoDataFrame): the GeoDataFrame.
     fname (str, optional): filename to write.
-    element_var (str, optional): the attribute to use to separate
-      output file into layers. Defaults to "element_id".
+    tile_var (str, optional): the attribute to use to separate
+      output file into layers. Defaults to "tile_id".
   """
-  grouped = gdf.groupby(element_var, as_index = False)
-  for e in pd.Series.unique(gdf[element_var]):
+  grouped = gdf.groupby(tile_var, as_index = False)
+  for e in pd.Series.unique(gdf[tile_var]):
     grouped.get_group(e).to_file(fname, layer = e, driver = "GPKG")
 
 

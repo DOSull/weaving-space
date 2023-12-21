@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Functions to generate the matrices summarising elements of tileable 
-repeating elements that when repeated across a map area give the appearance of 
-a  biaxial woven surface composed of criss-crossing rectangular elements. 
+"""Functions to generate the matrices summarising tiles of tileable repeating 
+geometries that when repeated across a map area give the appearance of a  
+woven surface composed of criss-crossing strand. 
 
 Implementation is based on ideas discussed in variously
  
 + Glassner, A. 2002. Digital weaving. 1. IEEE Computer Graphics and Applications 22 (6):108–118.
-+ ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 23 (2):80–83.
-+ ———. 2003b. Digital weaving. 2. IEEE Computer Graphics and Applications 23 (1):77–90.
++ ———. 2003a. Digital weaving. 3. IEEE Computer Graphics and Applications 23 (2):80-83.
++ ———. 2003b. Digital weaving. 2. IEEE Computer Graphics and Applications 23 (1):77-90.
  
 and (unpublished)
 

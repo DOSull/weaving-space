@@ -42,7 +42,7 @@ class WeaveUnit(Tileable):
     Defaults to 1.
   n (Union[int,tuple[int]]): number of over-under strands in biaxial
     weaves. Only one item is required in a plain weave. Twill and
-    basket patterns expect an even number of elements in the tuple.
+    basket patterns expect an even number of entries in the tuple.
     Defaults to (2, 2).
   strands (str, optional): specification of the strand labels
     along each axis. Defaults to "a|b|c".
@@ -59,11 +59,11 @@ class WeaveUnit(Tileable):
 
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
-    self.elements.geometry = tiling_utils.gridify(self.elements.geometry)
+    self.tiles.geometry = tiling_utils.gridify(self.tiles.geometry)
     self.weave_type = self.weave_type.lower()
 
 
-  def _setup_tile_and_elements(self) -> None:
+  def _setup_tiles(self) -> None:
     """Returns dictionary with weave unit and tile GeoDataFrames based on
     parameters already supplied to the constructor.
     """
@@ -71,10 +71,10 @@ class WeaveUnit(Tileable):
 
     if self.weave_type in ("hex", "cube"):
       self._setup_triaxial_weave_unit()
-      self.tile_shape = TileShape.HEXAGON
+      self.base_shape = TileShape.HEXAGON
     else:
       self._setup_biaxial_weave_unit()
-      self.tile_shape = TileShape.RECTANGLE
+      self.base_shape = TileShape.RECTANGLE
     return
 
 
@@ -91,7 +91,7 @@ class WeaveUnit(Tileable):
 
 
   def _setup_biaxial_weave_unit(self) -> None:
-    """Returns weave elements GeoDataFrame and tile GeoDataFrame in a dictionary based on paramters already supplied to constructor.
+    """Returns weave tiles GeoDataFrame and tile GeoDataFrame in a dictionary based on paramters already supplied to constructor.
     """
     warp_threads, weft_threads, _ = \
       tiling_utils.get_strand_ids(self.strands)
@@ -161,7 +161,7 @@ class WeaveUnit(Tileable):
 
 
   def _setup_triaxial_weave_unit(self) -> None:
-    """Returns weave elements GeoDataFrame and tile GeoDataFrame in a
+    """Returns weave tiles GeoDataFrame and tile GeoDataFrame in a
     dictionary based on parameters already supplied to constructor.
     """
     strands_1, strands_2, strands_3 = \
@@ -177,9 +177,9 @@ class WeaveUnit(Tileable):
   def _make_shapes_from_coded_weave_matrix(
     self, loom:Loom, strand_labels:list[list[str]] = [["a"], ["b"], ["c"]]
     ) -> None:
-    """Returns weave elements and tile GeoDataFrames in a dictionary
+    """Returns weave tiles and prototile GeoDataFrames in a dictionary
 
-    Builds the geometric elements associated with a given weave supplied as
+    Builds the geometries associated with a given weave supplied as
     'loom' containing the coordinates in an appropriate grid (Cartesian or
     triangular) and the orderings of the strands at each coordinate location
 
@@ -221,22 +221,22 @@ class WeaveUnit(Tileable):
     tile = grid.get_tile_from_cells(approx_tile)
     atc = approx_tile.centroid
     shift = (-atc.x, -atc.y)
-    self.elements = self._get_weave_elements_gdf(weave_polys, strand_ids, shift)
-    self.tile = gpd.GeoDataFrame(geometry = gpd.GeoSeries([tile]),
+    self.tiles = self._get_weave_tiles_gdf(weave_polys, strand_ids, shift)
+    self.prototile = gpd.GeoDataFrame(geometry = gpd.GeoSeries([tile]),
                                  crs = self.crs)
     return None
 
 
-  def _get_weave_elements_gdf(self, polys:list[geom.Polygon],
-                              strand_ids:list[str], offset:tuple[float]
-                              ) -> gpd.GeoDataFrame:
-    """Makes a GeoDataFrame from weave element polygons, labels, tile, etc.
+  def _get_weave_tiles_gdf(
+      self, polys:list[geom.Polygon], strand_ids:list[str], 
+      offset:tuple[float]) -> gpd.GeoDataFrame:
+    """Makes a GeoDataFrame from weave tile polygons, labels, etc.
 
     Args:
-      polys (list[Polygon | MultiPolygon]): list of weave element
+      polys (list[Polygon | MultiPolygon]): list of weave tile
         polygons.
       strand_ids (list[str]): list of strand labels.
-      offset (tuple[float]): offset to centre the weave elements on the
+      offset (tuple[float]): offset to centre the weave tiles on the
         tile.
 
     Returns:
@@ -244,12 +244,12 @@ class WeaveUnit(Tileable):
         margin applied.
     """
     weave = gpd.GeoDataFrame(
-      data = {"element_id": strand_ids},
+      data = {"tile_id": strand_ids},
       geometry = gpd.GeoSeries([affine.translate(p, offset[0], offset[1])
                                 for p in polys]))
-    weave = weave[weave.element_id != "-"]
+    weave = weave[weave.tile_id != "-"]
     # weave.geometry = tiling_utils.clean_polygon(weave.geometry)
-    weave = weave.dissolve(by = "element_id", as_index = False)
+    weave = weave.dissolve(by = "tile_id", as_index = False)
     weave = weave.explode(index_parts = False, ignore_index = True)
     # weave.geometry = tiling_utils.gridify(weave.geometry)
     # weave.geometry = tiling_utils.clean_polygon(weave.geometry)
@@ -257,15 +257,15 @@ class WeaveUnit(Tileable):
 
 
   def _get_axis_from_label(self, label:str = "a", strands:str = None):
-    """Determines the axis of an element_id from the strands spec string.
+    """Determines the axis of a tile_id from the strands spec string.
 
     Args:
-      label (str, optional): the element_id. Defaults to "a".
+      label (str, optional): the tile_id. Defaults to "a".
       strands (str, optional): the strand spec. Defaults to the WeaveUnit
       strands attribute.
 
     Returns:
-      _type_: the axis in which the supplied element_is found.
+      _type_: the axis in which the supplied tile is found.
     """
     if strands == None:
       strands = self.strands
@@ -273,58 +273,58 @@ class WeaveUnit(Tileable):
     return strands[:index].count("|")
 
 
-  def _get_legend_elements(self) -> gpd.GeoDataFrame:
-    """Returns elements suitable for use in a legend representation.
+  def _get_legend_tiles(self) -> gpd.GeoDataFrame:
+    """Returns tiles suitable for use in a legend representation.
 
-    One element for each element_id value will be chosen, close to the
-    centre of the tile extent, and not among the smallest elements present
+    One tile for each tile_id value will be chosen, close to the
+    centre of the prototile extent, and not among the smallest tiles present
     (for example not a short length of strand mostly hidden by other
-    elements)
+    strands)
 
     Returns:
-      gpd.GeoDataFrame: the chosen elements.
+      gpd.GeoDataFrame: the chosen tiles.
     """
     angles = ((0, 240, 120)
               if self.weave_type in ("hex", "cube")
               else (90, 0))
-    element_ids = pd.Series.unique(self.elements.element_id)
-    groups = self.elements.groupby("element_id")
-    elements, rotations = [], []
-    for id in element_ids:
+    tile_ids = pd.Series.unique(self.tiles.tile_id)
+    groups = self.tiles.groupby("tile_id")
+    tiles, rotations = [], []
+    for id in tile_ids:
       candidates = groups.get_group(id)
       axis = self._get_axis_from_label(id, self.strands)
-      elements.append(self._get_most_central_large_element(
-      candidates, elements))
+      tiles.append(self._get_most_central_large_tile(
+      candidates, tiles))
       rotations.append(-angles[axis] + self.rotation)
     return gpd.GeoDataFrame(
-      data = {"element_id": element_ids, "rotation": rotations},
+      data = {"tile_id": tile_ids, "rotation": rotations},
       crs = self.crs,
-      geometry = gpd.GeoSeries(elements))
+      geometry = gpd.GeoSeries(tiles))
 
 
-  def _get_most_central_large_element(self, elements:gpd.GeoDataFrame,
-          other_elements:list[geom.Polygon]) -> geom.Polygon:
-    """Gets a large element close to the centre of the WeaveUnit.
+  def _get_most_central_large_tile(self, tiles:gpd.GeoDataFrame,
+          other_tiles:list[geom.Polygon]) -> geom.Polygon:
+    """Gets a large tile close to the centre of the WeaveUnit.
 
     Args:
-      elements (gpd.GeoDataFrame): the set of elements to choose from.
+      tiles (gpd.GeoDataFrame): the set of tiles to choose from.
 
     Returns:
-      geom.Polygon: the chosen, large central element.
+      geom.Polygon: the chosen, large central tile.
     """
-    areas = [g.area for g in elements.geometry]
+    areas = [g.area for g in tiles.geometry]
     min_area, max_area = min(areas), max(areas)
     if min_area / max_area > 0.5:
-      geoms = list(elements.geometry)
+      geoms = list(tiles.geometry)
     else:
       mean_log_a = np.mean(np.log(areas))
-      geoms = [g for g, a in zip(elements.geometry, areas)
+      geoms = [g for g, a in zip(tiles.geometry, areas)
               if np.log(a) > mean_log_a]
-    if len(other_elements) == 0 or self.weave_type in ("cube", "hex"):
+    if len(other_tiles) == 0 or self.weave_type in ("cube", "hex"):
       d = [g.centroid.distance(geom.Point(0, 0)) for g in geoms]
     else:
-      c = geom.MultiPolygon(other_elements).centroid
-      d = [geom.MultiPolygon([g] + other_elements).centroid.distance(c)
+      c = geom.MultiPolygon(other_tiles).centroid
+      d = [geom.MultiPolygon([g] + other_tiles).centroid.distance(c)
           for g in geoms]
     return geoms[d.index(min(d))]
 

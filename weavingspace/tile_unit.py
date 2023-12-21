@@ -48,12 +48,12 @@ Examples:
     tile_unit = TileUnit(tile_shape = TileShape.HEXAGON)
     tile_unit = TileUnit(tile_shape = TileShape.TRIANGLE)
 
-  The first two of these have only one element_id value, and so cannot be
-  used for multivariate mapping. The triangle case has two element_id
+  The first two of these have only one tile_id value, and so cannot be
+  used for multivariate mapping. The triangle case has two tile_id
   values so may be useful in its base form.
 
   To create custom tilings start from one of the base tiles above, and
-  explicitly set the `weavingspace.tileable.Tileable.elements` variable
+  explicitly set the `weavingspace.tileable.Tileable.tiles` variable
   by geometric construction of suitable shapely.geometry.Polygons. TODO: A detailed example of this usage can be found here ....
 """
 
@@ -76,7 +76,7 @@ import weavingspace.tiling_geometries as tiling_geometries
 
 @dataclass
 class TileUnit(Tileable):
-  """Class to represent the tileable elements of a 'conventional' tiling.
+  """Class to represent the tiles of a 'conventional' tiling.
 
   Args:
     tiling_type (str): tiling type as detailed above.
@@ -98,19 +98,19 @@ class TileUnit(Tileable):
   def __init__(self, **kwargs) -> None:
     super().__init__(**kwargs)
     # this next line makes all TileUnit geometries shapely 2.x precision-aware
-    self.elements.geometry = tiling_utils.gridify(self.elements.geometry)
+    self.tiles.geometry = tiling_utils.gridify(self.tiles.geometry)
     if not self.tiling_type is None:
       self.tiling_type = self.tiling_type.lower()
-    if self.tile_shape == TileShape.TRIANGLE:
+    if self.base_shape == TileShape.TRIANGLE:
       self._modify_tile()
-      self._modify_elements()
+      self._modify_tiles()
       self.setup_vectors()
-      self.setup_regularised_tile_from_elements()
-    if self.regularised_tile is None:
-      self.setup_regularised_tile_from_elements()
+      self.setup_regularised_prototile_from_tiles()
+    if self.regularised_prototile is None:
+      self.setup_regularised_prototile_from_tiles()
 
 
-  def _setup_tile_and_elements(self) -> None:
+  def _setup_tiles(self) -> None:
     """Delegates setup of the unit to various functions depending
     on self.tiling_type.
     """
@@ -131,23 +131,23 @@ class TileUnit(Tileable):
     return
 
 
-  def _modify_elements(self) -> None:
+  def _modify_tiles(self) -> None:
     """It is not trivial to tile a triangle, so this function augments
-    the elements of a triangular tile to a diamond by 180 degree
+    the tiles of a triangular tile to a diamond by 180 degree
     rotation. Operation is 'in place'.
     """
-    elements = self.elements.geometry
-    ids = list(self.elements.element_id)
+    tiles = self.tiles.geometry
+    ids = list(self.tiles.tile_id)
 
     new_ids = list(string.ascii_letters[:(len(ids) * 2)])
-    elements = elements.translate(0, -elements.total_bounds[1])
-    twins = [affine.rotate(element, a, origin = (0, 0))
-             for element in elements
+    tiles = tiles.translate(0, -tiles.total_bounds[1])
+    twins = [affine.rotate(tile, a, origin = (0, 0))
+             for tile in tiles
              for a in range(0, 360, 180)]
-    self.elements = gpd.GeoDataFrame(
-      data = {"element_id": new_ids},
+    self.tiles = gpd.GeoDataFrame(
+      data = {"tile_id": new_ids},
       geometry = tiling_utils.gridify(gpd.GeoSeries(twins)),
-      crs = self.elements.crs)
+      crs = self.tiles.crs)
     return None
 
 
@@ -156,14 +156,14 @@ class TileUnit(Tileable):
     changes the tile to a diamond by manually altering the tile in place
     to be a diamond shape.
     """
-    tile = self.tile.geometry[0]
+    tile = self.prototile.geometry[0]
     # translate to sit on x-axis
     tile = affine.translate(tile, 0, -tile.bounds[1])
     pts = [p for p in tile.exterior.coords]
     pts[-1] = (pts[1][0], -pts[1][1])
-    self.tile.geometry = tiling_utils.gridify(
+    self.prototile.geometry = tiling_utils.gridify(
       gpd.GeoSeries([geom.Polygon(pts)], crs = self.crs))
-    self.tile_shape = TileShape.DIAMOND
+    self.base_shape = TileShape.DIAMOND
     return None
 
 
@@ -216,7 +216,7 @@ class TileUnit(Tileable):
 
   # Note that geopandas clip is not order preserving hence we do this
   # one polygon at a time...
-  def inset_tile(self, d:float = 0) -> "TileUnit":
+  def inset_prototile(self, d:float = 0) -> "TileUnit":
     """Returns a new TileUnit clipped by `self.regularised_tile` after
     a negative buffer d has been applied.
 
@@ -226,16 +226,16 @@ class TileUnit(Tileable):
     Returns:
       TileUnit: the new TileUnit with inset applied.
     """
-    inset_tile = self.regularised_tile.geometry.buffer(
+    inset_tile = self.regularised_prototile.geometry.buffer(
         -d, resolution = 1, join_style = 2)[0]
-    new_elements = [inset_tile.intersection(e) for e in self.elements.geometry]
+    new_tiles = [inset_tile.intersection(e) for e in self.tiles.geometry]
     result = copy.deepcopy(self)
-    result.elements.geometry = gpd.GeoSeries(new_elements)
+    result.tiles.geometry = gpd.GeoSeries(new_tiles)
     return result
 
 
-  def scale_elements(self, sf:float = 1) -> "TileUnit":
-    """Scales the elements by the specified factor, centred on (0, 0).
+  def scale_tiles(self, sf:float = 1) -> "TileUnit":
+    """Scales the tiles by the specified factor, centred on (0, 0).
 
     Args:
       sf (float, optional): scale factor to apply. Defaults to 1.
@@ -244,8 +244,8 @@ class TileUnit(Tileable):
       TileUnit: the scaled TileUnit.
     """
     result = copy.deepcopy(self)
-    result.elements.geometry = tiling_utils.gridify(
-      self.elements.geometry.scale(sf, sf, origin = (0, 0)))
+    result.tiles.geometry = tiling_utils.gridify(
+      self.tiles.geometry.scale(sf, sf, origin = (0, 0)))
     return result
 
 

@@ -184,64 +184,62 @@ class Tiling:
   rotation:float = 0.0
 
   def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, id_var = None,
-         tile_margin:float = 0, elements_sf:float = 1,
-         elements_margin:float = 0, as_icons:bool = False) -> None:
+         prototile_margin:float = 0, tiles_sf:float = 1,
+         tiles_margin:float = 0, as_icons:bool = False) -> None:
     """Class to persist a tiling by filling an area relative to
     a region sufficient to apply the tiling at any rotation.
 
     The Tiling constructor allows a number of adjustments to the supplied
     `weavingspace.tileable.Tileable` object:
 
-    + `tile_margin` values greater than 0 will introduce spacing of
-    the specified distance between elements on the boundary of each tile
-    by applying the `TileUnit.inset_tile()` method. Note that this
+    + `prototile_margin` values greater than 0 will introduce spacing of
+    the specified distance between tiles on the boundary of each tile
+    by applying the `TileUnit.inset_prototile()` method. Note that this
     operation does not make sense for `WeaveUnit` objects,
-    and may not preserve the equality of tile element areas.
-    + `elements_sf` values less than one scale down tile elements by
-    applying the `TileUnit.scale_elements()` method. Does not make sense
-    for `WeaveUnit` objects.
-    + `elements_margin` values greater than one apply a negative buffer of
-    the specified distance to every element in the tile by applying the
-    `Tileable.inset_elements()` method. This option is applicable to both
+    and may not preserve the equality of tile areas.
+    + `tiles_sf` values less than one scale down tiles by applying the 
+    `TileUnit.scale_tiles()` method. Does not make sense for `WeaveUnit` 
+    objects.
+    + `tiles_margin` values greater than one apply a negative buffer of
+    the specified distance to every tile in the tiling by applying the
+    `Tileable.inset_tiles()` method. This option is applicable to both
     `WeaveUnit` and `TileUnit` objects.
 
     Args:
       unit (Tileable): the tile_unit to use.
       region (gpd.GeoDataFrame): the region to be tiled.
-      tile_margin (float, optional): values greater than one apply an
+      prototile_margin (float, optional): values greater than 0 apply an
         inset margin to the tile unit. Defaults to 0.
-      elements_sf (float, optional): scales the tile unit elements.
-        Defaults to 1.
-      elements_margin (float, optional): applies a negative buffer to
-        the tile unit elements. Defaults to 0.
-      as_icons (bool, optional): if True tiles will only be placed at
+      tiles_sf (float, optional): scales the tiles. Defaults to 1.
+      tiles_margin (float, optional): applies a negative buffer to
+        the tiles. Defaults to 0.
+      as_icons (bool, optional): if True prototiles will only be placed at
         the region's zone centroids, one per zone. Defaults to
         False.
     """
     self.tile_unit = unit
     self.rotation = self.tile_unit.rotation
-    if elements_margin > 0:
-      self.tile_unit = self.tile_unit.inset_elements(elements_margin)
-    if elements_sf != 1:
+    if tiles_margin > 0:
+      self.tile_unit = self.tile_unit.inset_tiles(tiles_margin)
+    if tiles_sf != 1:
       if isinstance(self.tile_unit, TileUnit):
-        self.tile_unit = self.tile_unit.scale_elements(elements_sf)
+        self.tile_unit = self.tile_unit.scale_tiles(tiles_sf)
       else:
-        print(f"""Applying scaling to elements of a WeaveUnit does
-            not make sense. Ignoring elements_sf setting of
-            {elements_sf}.""")
-    if tile_margin > 0:
+        print(f"""Applying scaling to tiles of a WeaveUnit does not make sense. 
+              Ignoring tiles_sf setting of {tiles_sf}.""")
+    if prototile_margin > 0:
       if isinstance(self.tile_unit, TileUnit):
-        self.tile_unit = self.tile_unit.inset_tile(tile_margin)
+        self.tile_unit = self.tile_unit.inset_prototile(prototile_margin)
       else:
-        print(f"""Applying a tile margin to elements of a WeaveUnit
-            does not make sense. Ignoring tile_margin setting of
-            {tile_margin}.""")
+        print(f"""Applying a prototile margin to a WeaveUnit does 
+              not make sense. Ignoring prototile_margin setting of
+              {prototile_margin}.""")
     self.region = region
     self.region.sindex
     if id_var != None:
       print("""id_var is no longer required and will be deprecated soon.
-          A temporary unique index attribute is added and removed
-          when generating the tiled map.""")
+            A temporary unique index attribute is added and removed when 
+            generating the tiled map.""")
     if as_icons:
       self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
     else:
@@ -252,7 +250,6 @@ class Tiling:
 
   def get_tiled_map(self, rotation:float = 0.,
             prioritise_tiles:bool = True,
-            tiles_or_elements:str = "elements",
             ragged_edges:bool = True,
             use_centroid_lookup_approximation = False,
             debug = False) -> "TiledMap":
@@ -262,32 +259,27 @@ class Tiling:
     right, so modify with CAUTION!
 
     The `proritise_tiles = True` option means that the tiling will not
-    break up the elements in `TileUnit`s at the boundaries between areas
-    in the mapped region, but will instead ensure that tile elements remain
+    break up the tiles in `TileUnit`s at the boundaries between areas
+    in the mapped region, but will instead ensure that tiles remain
     complete, picking up their data from the region zone which they overlap
-    the most. The `tiles_or_elements` flag (experimental!) potentially
-    allows prioritisation at the level of tile unit, not element. Possibly
-    just a 'hook' for now to be checked later.
-
+    the most.
+    
     The exact order in which operations are performed affects performance.
     For example, the final clipping to self.region when ragged_edges =
     False is _much_ slower if it is carried out before the dissolving of
-    tile elements into the region zones. So... again... modify CAREFULLY!
+    tiles into the region zones. So... again... modify CAREFULLY!
 
     Args:
       rotation (float, optional): An optional rotation to apply. Defaults
         to 0.
       prioritise_tiles (bool, optional): if True tiles will not be
         broken at boundaries in the region dataset. Defaults to True.
-      tiles_or_elements (str, optional): if "tiles" then the tile
-        prioritisation applies to tiles; if "elements" then it applies
-        to tile unit elements. Defaults to "elements".
       ragged_edges (bool, optional): if True tiles at the edge of the
         region will not be cut by the region extent - ignored if
         prioritise_tiles is False when edges will always be clipped to
         the region extent. Defaults to True.
       use_centroid_lookup_approximation (bool, optional): if True use
-        element centroids for lookup of region data - ignored if
+        tile centroids for lookup of region data - ignored if
         prioritise_tiles is False when it is irrelevant. Defaults to
         False.
       debug (bool, optional): if True prints timing messages. Defaults
@@ -313,13 +305,9 @@ class Tiling:
 
     if prioritise_tiles:  # maintain tile continuity across zone boundaries
       # select only tiles inside a spacing buffer of the region
-      # make column with unique ID for every element in the tiling
-      if tiles_or_elements == "tiles":
-        # the join ID is based on the tile
-        tiled_map["joinUID"] = self.tiles.tile_id
-      else:
-        # the join ID is unique per element
-        tiled_map["joinUID"] = list(range(tiled_map.shape[0]))
+      # make column with unique ID for every tile in the tiling
+      # the join ID is unique per tile
+      tiled_map["joinUID"] = list(range(tiled_map.shape[0]))
 
       if use_centroid_lookup_approximation:
         t5 = perf_counter()
@@ -328,11 +316,11 @@ class Tiling:
         lookup = tile_pts.sjoin(
           self.region, how = "inner")[["joinUID", id_var]]
       else:
-        # determine areas of overlapping tile elements and drop the data
-        # we join the data back later, so dropping makes that easier
-        # overlaying in region.overlay(tiles) seems to be faster??
-        # TODO: also... this part is performance-critical, think about
-        # fixes -- possibly including the above centroid-based approx
+        # determine areas of overlapping tiles and drop the data we join the 
+        # data back later, so dropping makes that easier overlaying in region.
+        # overlay(tiles) seems to be faster??
+        # TODO: also... this part is performance-critical, think about fixes -- 
+        # possibly including the above centroid-based approx
         overlaps = self.region.overlay(tiled_map, make_valid = False)
         if debug:
           t3 = perf_counter()
@@ -345,7 +333,7 @@ class Tiling:
         if debug:
           t5 = perf_counter()
           print(f"STEP A4: drop columns prior to join: {t5 - t4:.3f}")
-        # make a lookup by largest area element to region id
+        # make a lookup by largest area tile to region id
         lookup = overlaps \
           .iloc[overlaps.groupby("joinUID")["area"] \
           .agg(pd.Series.idxmax)][["joinUID", id_var]]
@@ -442,16 +430,16 @@ class Tiling:
 
     # chain list of lists of GeoSeries geometries to list of geometries
     tiles = itertools.chain(*[
-      self.tile_unit.elements.geometry.translate(p.x, p.y)
+      self.tile_unit.tiles.geometry.translate(p.x, p.y)
       for p in self.grid.points])
-    # replicate the element ids
-    ids = list(self.tile_unit.elements.element_id) * len(self.grid.points)
+    # replicate the tile ids
+    ids = list(self.tile_unit.tiles.tile_id) * len(self.grid.points)
     tile_ids = sorted(list(range(len(self.grid.points))) *
-              self.tile_unit.elements.shape[0])
+              self.tile_unit.tiles.shape[0])
     tiles_gs = gpd.GeoSeries(tiles)
     # assemble and return as a GeoDataFrame
     tiles_gdf = gpd.GeoDataFrame(
-      data = {"element_id": ids, "tile_id": tile_ids},
+      data = {"tile_id": ids, "prototile_id": tile_ids},
       geometry = tiles_gs, crs = self.tile_unit.crs)
     # unclear if we need the below or not...
     return tiling_utils.gridify(tiles_gdf)
@@ -473,8 +461,8 @@ class Tiling:
     if self.rotation == 0:
       return self.tiles
     return gpd.GeoDataFrame(
-      data = {"element_id": self.tiles.element_id,
-          "tile_id": self.tiles.tile_id},
+      data = {"tile_id": self.tiles.tile_id,
+          "prototile_id": self.tiles.tile_id},
       crs = self.tiles.crs,
       geometry = tiling_utils.gridify(
         self.tiles.geometry.rotate(rotation, origin = self.grid.centre)))
@@ -515,7 +503,7 @@ class TiledMap:
     settings.
 
     `variables` is a dictionary mapping `weavingspace.tileable.Tileable`
-    element_ids (usually "a", "b", etc.) to variable names in the data. For
+    tile_ids (usually "a", "b", etc.) to variable names in the data. For
     example,
 
       tm.variables = dict(zip(["a", "b"], ["population", "income"]))
@@ -531,33 +519,33 @@ class TiledMap:
     created.
   """
   # these will be set at instantion by Tiling.get_tiled_map()
-  tiling:Tiling = None  #: the Tiling with the required tiles
-  map:gpd.GeoDataFrame = None  #: the GeoDataFrame on which this map is based
+  tiling:Tiling = None           # the Tiling with the required tiles
+  map:gpd.GeoDataFrame = None    # the GeoDataFrame on which this map is based
 
   # variables and colourmaps should be set before calling self.render()
-  variables:dict[str,str] = None  #: lookup from element_id to variable names
-  colourmaps:dict[str,Union[str,dict]] = None  #: lookup from variables to cmaps
+  variables:dict[str,str] = None # lookup from tile_id to variable names
+  colourmaps:dict[str,Union[str,dict]] = None   # lookup from variables to cmaps
 
   # the below parameters can be set either before calling self.render()
   # or passed in as parameters to self.render()
   # these are solely TiledMap.render() options
-  legend:bool = True          # whether or not to show a legend
-  legend_zoom:float = 1.0     # <1 zooms out from legend to show more context
-  legend_dx:float = 0.        # horizontal shift of legend relative to the map
-  legend_dy:float = 0.        # vertical shift of legend relative to the map
-  use_ellipse:bool = False    # if True clips legend with an ellipse
+  legend:bool = True             # whether or not to show a legend
+  legend_zoom:float = 1.0        # <1 zooms out from legend to show more context
+  legend_dx:float = 0.           # x shift of legend relative to the map
+  legend_dy:float = 0.           # y shift of legend relative to the map
+  use_ellipse:bool = False       # if True clips legend with an ellipse
   ellipse_magnification:float = 1.0  # magnification to apply to clip ellipse
-  radial_key:bool = False     # if True use radial key even for ordinal/ratio
-                              # data (normally these will be shown by concentric
-                              # elements)
-  draft_mode:bool = False     # if True plot only the map coloured by element_id
+  radial_key:bool = False        # if True use radial key even for ordinal/ratio
+                                 # data (normally these will be shown by 
+                                 # concentric tile geometries)
+  draft_mode:bool = False        # if True plot the map coloured by tile_id
 
   # the parameters below are geopandas.plot options which we intercept to
   # ensure they are applied appropriately when we plot a GDF
-  scheme:str = "equalinterval"  #: geopandas scheme to apply
-  k:int = 100  #: geopandas number of classes to apply
-  figsize:tuple[float] = (20, 15)  #: maptlotlib figsize
-  dpi:float = 72  #: dots per inch for bitmap formats
+  scheme:str = "equalinterval"      # geopandas scheme to apply
+  k:int = 100                       # geopandas number of classes to apply
+  figsize:tuple[float] = (20, 15)   # maptlotlib figsize
+  dpi:float = 72                    # dpi for bitmap formats
 
 
   def render(self, **kwargs) -> Figure:
@@ -567,7 +555,7 @@ class TiledMap:
     `Tiling.get_tiled_map()`.
 
     Args:
-      variables (dict[str,str]): Mapping from element_id values to
+      variables (dict[str,str]): Mapping from tile_id values to
         variable names. Defaults to None.
       colourmaps (dict[str,Union[str,dict]]): Mapping from variable
         names to colour map, either a colour palette as used by
@@ -587,8 +575,7 @@ class TiledMap:
       radial_key (bool): If True legend key for TileUnit maps will be
         based on radially dissecting the tiles. Defaults to False.
       draft_mode (bool): If True a map of the tiled map coloured by
-        tile element_ids (and with no legend) is returned. Defaults
-        to False.
+        tile_ids (and with no legend) is returned. Defaults to False.
       scheme (str): passed to geopandas.plot for numeric data. Defaults to
         "equalinterval".
       k (int): passed to geopandas.plot for numeric data. Defaults to 100.
@@ -616,7 +603,7 @@ class TiledMap:
     if self.draft_mode:
       fig = pyplot.figure(figsize = self.figsize)
       ax = fig.add_subplot(111)
-      self.map.plot(ax = ax, column = "element_id", cmap = "tab20",
+      self.map.plot(ax = ax, column = "tile_id", cmap = "tab20",
               **kwargs)
       return fig
 
@@ -626,15 +613,14 @@ class TiledMap:
         tiling_utils.get_width_height_left_bottom(self.map.geometry)
       tile_w, tile_h, *_ = \
         tiling_utils.get_width_height_left_bottom(
-          self.tiling.tile_unit._get_legend_elements().rotate(
+          self.tiling.tile_unit._get_legend_tiles().rotate(
             self.tiling.rotation, origin = (0, 0)))
       sf_w, sf_h = reg_w / tile_w / 3, reg_h / tile_h / 3
       gskw = {"height_ratios": [sf_h * tile_h, reg_h - sf_h * tile_h],
-          "width_ratios": [reg_w, sf_w * tile_w]}
+              "width_ratios": [reg_w, sf_w * tile_w]}
 
       fig, axes = pyplot.subplot_mosaic(
-        [["map", "legend"],
-         ["map", "."]],
+        [["map", "legend"], ["map", "."]],
         gridspec_kw = gskw, figsize = self.figsize,
         layout = "constrained", **kwargs)
     else:
@@ -647,17 +633,16 @@ class TiledMap:
       default_columns = \
         self.map.select_dtypes(
           include = ("float64", "int64")).columns
-      self.variables = dict(zip(
-        self.map.element_id.unique(),
-        list(default_columns)))
+      self.variables = dict(zip(self.map.tile_id.unique(),
+                                list(default_columns)))
       print(f"""No variables specified, picked the first
-          {len(self.variables)} numeric ones available.""")
+            {len(self.variables)} numeric ones available.""")
     elif isinstance(self.variables, (list, tuple)):
       self.variables = dict(zip(
-        self.tiling.tile_unit.elements.element_id.unique(),
+        self.tiling.tile_unit.tiles.tile_id.unique(),
         self.variables))
       print(f"""Only a list of variables specified, assigning to
-          available element_ids.""")
+            available tile_ids.""")
 
     if self.colourmaps is None:
       self.colourmaps = {}
@@ -702,9 +687,9 @@ class TiledMap:
 
 
   def _plot_subsetted_gdf(self, ax:pyplot.Axes,
-               gdf:gpd.GeoDataFrame, **kwargs) -> None:
+                          gdf:gpd.GeoDataFrame, **kwargs) -> None:
     """Plots a gpd.GeoDataFrame multiple times based on a subsetting
-    attribute (assumed to be "element_id").
+    attribute (assumed to be "tile_id").
 
     NOTE: used to plot both the main map _and_ the legend.
 
@@ -715,7 +700,7 @@ class TiledMap:
     Raises:
       Exception: if self.colourmaps cannot be parsed exception is raised.
     """
-    groups = gdf.groupby("element_id")
+    groups = gdf.groupby("tile_id")
     for id, var in self.variables.items():
       subset = groups.get_group(id)
       # Handle custom color assignments via 'cmaps' parameter.
@@ -743,8 +728,7 @@ class TiledMap:
           cmap = self.colourmaps[var]  # specified colors for this var
         else:
           raise Exception(f"""Color map for '{var}' is not a known
-                  type, but is {str(type(self.colourmaps[var])
-                  )}""")
+                          type, but is {str(type(self.colourmaps[var]))}""")
 
         subset.plot(ax = ax, column = var, cmap = cmap,
               scheme = self.scheme, k = self.k, **kwargs)
@@ -772,25 +756,25 @@ class TiledMap:
     # to set a background colour)
     ax.set_axis_off()
 
-    legend_elements = self.tiling.tile_unit._get_legend_elements()
+    legend_tiles = self.tiling.tile_unit._get_legend_tiles()
     # this is a bit hacky, but we will apply the rotation to text
     # annotation so for TileUnits which don't need it, reverse that now
     if isinstance(self.tiling.tile_unit, TileUnit):
-      legend_elements.rotation = -self.tiling.rotation
+      legend_tiles.rotation = -self.tiling.rotation
 
-    legend_key = self._get_legend_key_gdf(legend_elements)
+    legend_key = self._get_legend_key_gdf(legend_tiles)
 
-    legend_elements.geometry = legend_elements.geometry.rotate(
+    legend_tiles.geometry = legend_tiles.geometry.rotate(
       self.tiling.rotation, origin = (0, 0))
 
     if self.use_ellipse:
       ellipse = tiling_utils.get_bounding_ellipse(
-        legend_elements.geometry, mag = self.ellipse_magnification)
+        legend_tiles.geometry, mag = self.ellipse_magnification)
       bb = ellipse.total_bounds
       c = ellipse.unary_union.centroid
     else:
-      bb = legend_elements.geometry.total_bounds
-      c = legend_elements.geometry.unary_union.centroid
+      bb = legend_tiles.geometry.total_bounds
+      c = legend_tiles.geometry.unary_union.centroid
 
     # apply legend zoom - NOTE that this must be applied even
     # if self.legend_zoom is not == 1...
@@ -799,12 +783,12 @@ class TiledMap:
     ax.set_ylim(c.y + (bb[1] - c.y) / self.legend_zoom,
           c.y + (bb[3] - c.y) / self.legend_zoom)
 
-    # plot the legend key elements (which include the data)
+    # plot the legend key tiles (which include the data)
     self._plot_subsetted_gdf(ax, legend_key, lw = 0, **kwargs)
 
     for id, tile, rotn in zip(self.variables.keys(),
-                  legend_elements.geometry,
-                  legend_elements.rotation):
+                              legend_tiles.geometry,
+                              legend_tiles.rotation):
       c = tile.centroid
       ax.annotate(self.variables[id], xy = (c.x, c.y),
           ha = "center", va = "center", rotation_mode = "anchor",
@@ -813,7 +797,7 @@ class TiledMap:
           bbox = {"lw": 0, "fc": "#ffffff40"})
 
     # now plot background; we include the central tiles, since in
-    # the weave case these may not match the legend elements
+    # the weave case these may not match the legend tiles
     context_tiles = self.tiling.tile_unit.get_local_patch(r = 2,
       include_0 = True).geometry.rotate(self.tiling.rotation, origin = (0, 0))
     # for reasons escaping all reason... invalid polygons sometimes show up
@@ -834,32 +818,31 @@ class TiledMap:
         ax = ax, ec = "#5F5F5F", lw = 1)
 
 
-  def _get_legend_key_gdf(
-      self, elements:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Returns a GeoDataFrame of tile elements dissected and with
-    data assigned to the slice so a map of them can stand as a legend.
+  def _get_legend_key_gdf(self, tiles:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Returns a GeoDataFrame of tiles dissected and with data assigned 
+    to the slice so a map of them can stand as a legend.
 
     'Dissection' is handled differently by `WeaveUnit` and `TileUnit`
     objects and delegated to either `WeaveUnit._get_legend_key_shapes()`
     or `TileUnit._get_legend_key_shapes()`.
 
     Args:
-      elements (gpd.GeoDataFrame): the legend elements.
+      tiles (gpd.GeoDataFrame): the legend tiles.
 
     Returns:
-      gpd.GeoDataFrame:  with element_id, variables and rotation
-        attributes, and geometries of Tileable elements sliced into a
+      gpd.GeoDataFrame:  with tile_id, variables and rotation
+        attributes, and geometries of Tileable tiles sliced into a
         colour ramp or set of nested tiles.
     """
     key_tiles = []   # set of tiles to form a colour key (e.g. a ramp)
-    ids = []         # element_ids applied to the keys
-    unique_ids = []  # list of each element_id used in order
+    ids = []         # tile_ids applied to the keys
+    unique_ids = []  # list of each tile_id used in order
     vals = []        # the data assigned to the key tiles
     rots = []        # rotation of each key tile
-    subsets = self.map.groupby("element_id")
+    subsets = self.map.groupby("tile_id")
     for (id, var), geom, rot in zip(self.variables.items(),
-                 elements.geometry,
-                 elements.rotation):
+                 tiles.geometry,
+                 tiles.rotation):
       subset = subsets.get_group(id)
       d = subset[var]
       radial = False
@@ -899,7 +882,7 @@ class TiledMap:
       key_data[self.variables[id]] = vals
 
     key_gdf = gpd.GeoDataFrame(
-      data = key_data | {"element_id": ids, "rotation": rots},
+      data = key_data | {"tile_id": ids, "rotation": rots},
       crs = self.map.crs,
       geometry = gpd.GeoSeries(key_tiles))
     key_gdf.geometry = key_gdf.rotate(self.tiling.rotation, origin = (0, 0))

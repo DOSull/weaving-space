@@ -35,7 +35,7 @@ class Topology:
 
   def __init__(self, unit: TileUnit):
     self.tile_unit = unit
-    rad = 1 if unit.tile_shape == TileShape.HEXAGON else 2
+    rad = 1 if unit.base_shape == TileShape.HEXAGON else 2
     self._patch = self.tile_unit.get_local_patch(r = rad, include_0 = True)
     self.tiles = tuple(self._patch.geometry)
     self.centres = tuple([tiling_utils.incentre(p) for p in self.tiles])
