@@ -512,10 +512,10 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
        "".join([pt_id[2] for pt_id in sorted_coords])))
   # ensure the resulting face centroids are inside the original tile
   # displaced a little to avoid uncertainties at corners/edges
+  # TODO: Check  the logic of this - it seems like dumb luck that it works...
   dual_faces = [(f, id) for f, id in dual_faces
           if affine.translate(unit.prototile.geometry[0],
-                    unit.fudge_factor,
-                    unit.fudge_factor).contains(f.centroid)]
+                    unit.fudge_factor, unit.fudge_factor).contains(f.centroid)]
   gdf = gpd.GeoDataFrame(
     data = {"tile_id": [f[1] for f in dual_faces]}, crs = unit.crs,
     geometry = gridify(gpd.GeoSeries([f[0] for f in dual_faces])))

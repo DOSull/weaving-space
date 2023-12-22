@@ -191,12 +191,16 @@ class Topology:
     Returns:
         gpd.GeoDataFrame: _description_
     """
-    dual_vertices = [i for i, vps in enumerate(self.vertex_tiles) 
-                    if len(vps) > 2]
-    dual_faces = gpd.GeoSeries(
-      [geom.Polygon([self.tile_centres[i] for i in p])
-      for p in [self.vertex_tiles[i] for i in dual_vertices]])
-    
+    dual_vertices = [(i, self.vertices[i]) 
+                     for i, vps in enumerate(self.vertex_tiles) 
+                     if len(vps) > 2]
+    dual_faces = [geom.Polygon([self.tile_centres[i] for i in p])
+      for p in [self.vertex_tiles[i] for i, v in dual_vertices]]
+    dual_faces = [
+      f for f in dual_faces if affine.translate(
+        self.tile_unit.prototile.geometry[0], 1e-3, 1e-3).intersects(
+          f.centroid)]
+        
     # TODO: label and select the faces to include so that they are tileable...
     return gpd.GeoSeries(dual_faces)
   
@@ -253,7 +257,7 @@ class Topology:
                   ha = "center", va = "center")
       
     if show_dual_polygons:
-      self.get_dual_tiles().buffer(-15).plot(ax = ax, fc = "dodgerblue", 
+      self.get_dual_tiles().buffer(-10).plot(ax = ax, fc = "dodgerblue", 
                                              alpha = 0.2)
 
     pyplot.axis("off")
