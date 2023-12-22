@@ -12,7 +12,6 @@ import re
 import string
 
 from math import fsum
-from math import isclose
 
 import numpy as np
 
@@ -128,7 +127,7 @@ def is_convex(shape:geom.Polygon) -> bool:
   Returns:
     bool: True if the polygon is convex, False otherwise.
   """
-  return isclose(shape.area, shape.convex_hull.area, rel_tol = RESOLUTION)
+  return np.isclose(shape.area, shape.convex_hull.area, rtol = RESOLUTION)
 
 
 def get_corners(shape:geom.Polygon,
@@ -218,6 +217,16 @@ def get_interior_angles(shape:geom.Polygon) -> list[float]:
   return [get_inner_angle(p1, p2, p3) for p1, p2, p3 in triples]
 
 
+def get_clean_polygon(shape:geom.Polygon) -> geom.Polygon:
+  """Returns polygon with any successive corners that are 'in line' along a side removed."""
+  corners = get_corners(shape, repeat_first = False)
+  angles = get_interior_angles(shape)
+  corners = [c for c, a in zip(corners, angles) 
+             if not np.isclose(a, 180, atol = 10 * RESOLUTION)]
+  return gridify(geom.Polygon(corners))
+
+
+
 def get_inner_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
   r"""Returns the angle (in degrees) between line p1-p2 and p2-p3, i.e., the 
   angle A below
@@ -261,6 +270,14 @@ def get_outer_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
   return 180 - get_inner_angle(p1, p2, p3)
 
 
+def is_regular_polygon(shape:geom.Polygon) -> bool:
+  side_lengths = get_side_lengths(shape)
+  angles = get_interior_angles(shape)
+  return all(np.isclose(side_lengths, side_lengths[0])) \
+     and all(np.isclose(angles, angles[0]))
+             
+  
+
 def is_tangential(shape:geom.Polygon) -> bool:
   """Determines if the supplied polygon is tangential i.e., it can have
   circle inscribed tangential to all its sides. 
@@ -268,19 +285,33 @@ def is_tangential(shape:geom.Polygon) -> bool:
   Note that this will fail for polygons with successive colinear sides,
   meaning that polygons should be fully simplified...
   """
-  edge_lengths = get_side_lengths(shape)
-  n = len(edge_lengths)
-  if n % 2 == 0:
-    odds = [edge_lengths[i] for i in range(n) if i % 2 == 1]
-    evens = [edge_lengths[i] for i in range(n) if i % 2 == 0]
-    return isclose(sum(odds), sum(evens), rel_tol = RESOLUTION)
-  else:
+  if is_regular_polygon(shape):
+    return True
+  side_lengths = get_side_lengths(shape)
+  n = len(side_lengths)
+  if n % 2 == 1:
+    # odd number of sides there is a nice solvable system  of equations
+    # see https://math.stackexchange.com/questions/4065370/tangential-polygons-conditions-on-edge-lengths
     mat = np.identity(n) + np.roll(np.identity(n), 1, axis = 1)
-    fractions = np.linalg.inv(mat) @ edge_lengths / edge_lengths
-    ones = [isclose(f, 1, rel_tol = RESOLUTION) for f in fractions]
-    zeros = [isclose(f, 1, rel_tol = RESOLUTION) for f in fractions]
+    fractions = np.linalg.inv(mat) @ side_lengths / side_lengths
+    ones = [np.isclose(f, 1, rtol = RESOLUTION) for f in fractions]
+    zeros = [np.isclose(f, 1, rtol = RESOLUTION) for f in fractions]
     negatives = [f <= 0 for f in fractions]
     return not (any(ones) or any(zeros) or any(negatives))
+  elif n == 4:
+    # quadrilaterals have this solution
+    odds = [side_lengths[i] for i in range(n) if i % 2 == 1]
+    evens = [side_lengths[i] for i in range(n) if i % 2 == 0]
+    return np.isclose(sum(odds), sum(evens), rtol = RESOLUTION)
+  else:
+    # other even numbers of sides... hard to avoid brute force
+    bisectors = [get_angle_bisector(shape, i) for i in range(n)]
+    intersects = [b1.intersection(b2) for b1, b2 in
+                  zip(bisectors, bisectors[1:] + bisectors[:1])
+                  if b1.intersects(b2)]
+    distances = [i1.distance(i2) for i1, i2 in
+                 zip(intersects, intersects[1:] + intersects[:1])]
+    return all([d <= 2 * RESOLUTION for d in distances])
 
 
 def incentre(shape:geom.Polygon) -> geom.Point:
@@ -305,15 +336,17 @@ def incentre(shape:geom.Polygon) -> geom.Point:
   Returns:
     geom.Point: the incentre of the polygon.
   """
-  shape = ensure_cw(shape)
-  corners = get_corners(shape)
-  if is_tangential(shape):  # find the incentre
-    r = get_apothem_length(shape)
-    e1 = geom.LineString(corners[:2]).parallel_offset(r, side = "right")
-    e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = "right")
-    return e1.intersection(e2)  # TODO: add exception if no intersection
-  else:
+  if is_regular_polygon(shape):
     return shape.centroid
+  shape = ensure_cw(shape)
+  if is_convex(shape):
+    if is_tangential(shape):  # find the incentre
+      corners = get_corners(shape, repeat_first = False)
+      r = get_apothem_length(shape)
+      e1 = geom.LineString(corners[:2]).parallel_offset(r, side = "right")
+      e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = "right")
+      return e1.intersection(e2)  # TODO: add exception if no intersection
+  return shape.centroid
 
 
 def get_apothem_length(shape:geom.Polygon) -> float:
@@ -364,7 +397,11 @@ def get_angle_bisector(shape:geom.Polygon, v = 0) -> geom.LineString:
     p1 = geom.LineString([p0, p1]).interpolate(d02)
   m = geom.Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
   # we have to scale this to much larger in case of an angle near 180
-  return affine.scale(geom.LineString([p0, m]), 100, 100, origin = p0)
+  return affine.scale(geom.LineString([p0, m]), 10, 10, origin = p0)
+
+
+def get_side_bisector(shape:geom.Polygon, i:int = 0) -> geom.LineString:
+  return affine.scale(affine.rotate(get_sides(shape)[i], 90), 100, 100)
 
 
 def _get_interior_vertices(tiles:gpd.GeoDataFrame) -> gpd.GeoSeries:
@@ -531,9 +568,9 @@ def sort_cw(pts_ids:list[tuple[float, float, str]]):
   return [pt_id for angle, pt_id in reversed(sorted(d.items()))]
 
 
-def order_pts_cw_relative_to_centre(pts:list[geom.Point], centre:geom.Point):
-  """Returns the supplied list of points reordered clockwise relative to 
-  the supplied centre.
+def order_of_pts_cw_around_centre(pts:list[geom.Point], centre:geom.Point):
+  """Returns the order of the supplied points clockwise relative to supplied 
+  centre point, i.e. a list of the indices in clockwise order.
 
   Args:
       pts (list[geom.Point]): list of points to order.

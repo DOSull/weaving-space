@@ -223,7 +223,7 @@ class WeaveUnit(Tileable):
     shift = (-atc.x, -atc.y)
     self.tiles = self._get_weave_tiles_gdf(weave_polys, strand_ids, shift)
     self.prototile = gpd.GeoDataFrame(geometry = gpd.GeoSeries([tile]),
-                                 crs = self.crs)
+                                      crs = self.crs)
     return None
 
 

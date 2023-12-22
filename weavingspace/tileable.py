@@ -91,6 +91,8 @@ class Tileable:
       )
     self._setup_tiles()
     self.setup_vectors()
+    self.tiles.geometry = gpd.GeoSeries(
+      [tiling_utils.get_clean_polygon(t) for t in self.tiles.geometry])
     if self.regularised_prototile is None:
       self.regularise_tiles()
     return

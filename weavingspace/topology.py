@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from collections import defaultdict
 from typing import Union
 
+import numpy as np
 import geopandas as gpd
 import shapely.geometry as geom
 import shapely.affinity as affine
@@ -22,23 +23,32 @@ class Topology:
 
   tile_unit: TileUnit = None
   _patch: gpd.GeoDataFrame = None
+
   vertices: tuple[geom.Point] = None
   vertex_neighbours: tuple[int] = None
   vertex_tiles: tuple[int] = None
+
   edges: tuple[tuple[int]] = None
   edge_lefts: dict[int, int] = None
   edge_rights: dict[int, int] = None
+
   tiles: tuple[geom.Polygon] = None
+  tile_centres: tuple[geom.Point] = None
   tile_edges: tuple[tuple[int]] = None
   tile_vertices: tuple[tuple[int]] = None
-  centres: tuple[geom.Point] = None
+
+  # TODO: think about how to add these in a coherent fashion!
+  # corners: tuple[int] = None
+  # sides: tuple[tuple[int]] = None
+  # tile_corners: tuple[tuple[int]] = None
+  # tile_sides: tuple[tuple[int]] = None
 
   def __init__(self, unit: TileUnit):
     self.tile_unit = unit
     rad = 1 if unit.base_shape == TileShape.HEXAGON else 2
     self._patch = self.tile_unit.get_local_patch(r = rad, include_0 = True)
     self.tiles = tuple(self._patch.geometry)
-    self.centres = tuple([tiling_utils.incentre(p) for p in self.tiles])
+    self.tile_centres = tuple([tiling_utils.incentre(p) for p in self.tiles])
     self._setup_vertices()
     self._setup_edges_and_tiles()
     self._setup_vertex_neighbours_and_polygons()
@@ -56,7 +66,6 @@ class Topology:
         if not any ([c.distance(v) <= 2 * tiling_utils.RESOLUTION 
                      for v in self.vertices]):
           self.vertices.append(c)
-    self.vertices = tuple(self.vertices)
 
 
   def _get_closest_vertex(self, v:Union[int, geom.Point], 
@@ -138,10 +147,6 @@ class Topology:
       # convert to tuples and add to the polygon lists
       self.tile_edges.append(tuple(p_edge_ids))
       self.tile_vertices.append(tuple(p_vertex_ids))
-    # convert lists to tuples
-    self.edges = tuple(self.edges)
-    self.tile_edges = tuple(self.tile_edges)
-    self.tile_vertices = tuple(self.tile_vertices)
 
 
   def _setup_vertex_neighbours_and_polygons(self) -> None:
@@ -151,7 +156,7 @@ class Topology:
       vertex_neighbours[self.vertices[e[1]]].append(self.vertices[e[0]])
     ordered_neighbours = defaultdict(list)
     for p0, neighbours in vertex_neighbours.items():
-      order = tiling_utils.order_pts_cw_relative_to_centre(neighbours, p0)
+      order = tiling_utils.order_of_pts_cw_around_centre(neighbours, p0)
       ordered_neighbours[self.vertices.index(p0)] = \
         [self.vertices.index(neighbours[i]) for i in order]
     self.vertex_neighbours = tuple(tuple([ordered_neighbours[i] 
@@ -169,6 +174,14 @@ class Topology:
     self.vertex_tiles = tuple(incident_polygons)
 
 
+  def get_tile_polygon(self, i) -> geom.Polygon:
+    """Returns shapely geometry of tile with any tiling vertices that are
+    'in line' along a tile side removed."""
+    polygon = geom.Polygon([self.vertices[i] for i in self.tile_vertices[i]])
+    return tiling_utils.gridify(
+      tiling_utils.get_clean_polygon(polygon))
+
+
   def get_dual_tiles(self) -> gpd.GeoDataFrame:
     """Alternative approach to creating the dual tiie unit for a tile unit.
 
@@ -181,13 +194,13 @@ class Topology:
     dual_vertices = [i for i, vps in enumerate(self.vertex_tiles) 
                     if len(vps) > 2]
     dual_faces = gpd.GeoSeries(
-      [geom.Polygon([self.centres[i] for i in p])
+      [geom.Polygon([self.tile_centres[i] for i in p])
       for p in [self.vertex_tiles[i] for i in dual_vertices]])
     
     # TODO: label and select the faces to include so that they are tileable...
     return gpd.GeoSeries(dual_faces)
-
-
+  
+  
   def plot(self, show_original_tiles: bool = True,  
            show_tile_centres: bool = True, show_all_vertices: bool = False,
            show_all_edges: bool = False, show_dual_polygons: bool = False):
@@ -202,26 +215,26 @@ class Topology:
     ax = fig.add_axes(111)
     
     if show_original_tiles:
-      gpd.GeoSeries(self.tiles).plot(ax = ax, fc = "#80808000", 
-                                        ec = "k", lw = 0.35)
+      gpd.GeoSeries(self.tiles).plot(ax = ax, fc = "#80808000",
+                                     ec = "k", lw = 0.35)
 
     if show_tile_centres:
-      for i, c in enumerate(self.centres):
-        ax.annotate(text = i, xy = (c.x, c.y), fontsize = 10, 
+      for i, c in enumerate(self.tile_centres):
+        ax.annotate(text = i, xy = (c.x, c.y), fontsize = 9, 
                     color = "b", ha = "center", va = "center")
     
     tiling_vertex_ids = [i for i, v in enumerate(self.vertices)
-                         if len(self.vertex_tiles) > 2]
+                         if len(self.vertex_tiles[i]) > 2]
     tiling_vertices = [self.vertices[i] for i in tiling_vertex_ids]
     if show_all_vertices:
       gpd.GeoSeries(self.vertices).plot(ax = ax, color = "r", markersize = 5)
       for i, v in enumerate(self.vertices):
-        ax.annotate(text = i, xy = (v.x, v.y), fontsize = 8, color = "r",
+        ax.annotate(text = i, xy = (v.x, v.y), fontsize = 7, color = "r",
                     ha = "right", va = "bottom")
     else:
       gpd.GeoSeries(tiling_vertices).plot(ax = ax, color = "r", markersize = 5)
       for i, v in zip(tiling_vertex_ids, tiling_vertices):
-        ax.annotate(text = i, xy = (v.x, v.y), fontsize = 8, color = "r",
+        ax.annotate(text = i, xy = (v.x, v.y), fontsize = 7, color = "r",
                     ha = "right", va = "bottom")
         
     edges = gpd.GeoSeries([affine.scale(
@@ -236,7 +249,7 @@ class Topology:
       edges = edges.iloc[sorted(list(lr))]
     edges.plot(ax = ax, color = "g", lw = 0.75, ls = "dashed")
     for i, e in zip(edges.id, edges.geometry):
-      ax.annotate(text = i, xy = (e.centroid.x, e.centroid.y), fontsize = 8,
+      ax.annotate(text = i, xy = (e.centroid.x, e.centroid.y), fontsize = 7,
                   ha = "center", va = "center")
       
     if show_dual_polygons:
