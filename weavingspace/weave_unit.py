@@ -59,7 +59,6 @@ class WeaveUnit(Tileable):
 
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
-    self.tiles.geometry = tiling_utils.gridify(self.tiles.geometry)
     self.weave_type = self.weave_type.lower()
 
 
@@ -85,13 +84,18 @@ class WeaveUnit(Tileable):
       logging.info("Setting aspect to 0 is probably not a great plan.")
 
     if self.aspect < 0 or self.aspect > 1:
-      logging.warning("""Values of aspect outside the range 0 to 1 won't produce tiles that will look like weaves, but they might be pretty anyway! Values less than -1 seem particularly promising, especially with opacity set less than 1.""")
+      logging.warning(
+        """Values of aspect outside the range 0 to 1 won't produce tiles 
+        that will look like weaves, but they might be pretty anyway! Values
+        less than -1 seem particularly promising, especially with opacity 
+        set less than 1.""")
 
     return None
 
 
   def _setup_biaxial_weave_unit(self) -> None:
-    """Returns weave tiles GeoDataFrame and tile GeoDataFrame in a dictionary based on paramters already supplied to constructor.
+    """Returns weave tiles GeoDataFrame and tile GeoDataFrame in a 
+    dictionary based on paramters already supplied to constructor.
     """
     warp_threads, weft_threads, _ = \
       tiling_utils.get_strand_ids(self.strands)
@@ -116,9 +120,12 @@ class WeaveUnit(Tileable):
 
     Allowed weave_types: "cube" or "hex".
 
-    "hex" is not flexible and will fail with any strand label lists that are not length 3 and include more than one non-blank "-" item. You can generate the "hex" weave with the default settings in any case!
+    "hex" is not flexible and will fail with any strand label lists that are 
+    not length 3 or include more than one non-blank "-" item. You can 
+    generate the "hex" weave with the default settings in any case!
 
-    Strand lists should be length 3 or length 1. "cube" tolerates more options than "hex" for the items in the strand lists.
+    Strand lists should be length 3 or length 1. "cube" tolerates more 
+    than "hex" for the items in the strand lists.
 
     Defaults will produce 'mad weave'.
 
@@ -191,10 +198,12 @@ class WeaveUnit(Tileable):
     """
     grid = WeaveGrid(loom.n_axes, loom.orientations, self.spacing)
     # expand the list of strand labels if needed in each direction
-    labels = []
-    for dim, thread in zip(loom.dimensions, strand_labels):
-      labels.append(thread * int(np.ceil(dim // len(thread))))
-    weave_polys, cells, strand_ids = [], [], []
+    # labels = []
+    labels = [thread * int(np.ceil(dim // len(thread)))
+              for dim, thread in zip(loom.dimensions, strand_labels)]
+    weave_polys = [] 
+    cells = []
+    strand_ids = []
     for coords, strand_order in zip(loom.indices, loom.orderings):
       ids = [thread[coord] for coord, thread in zip(coords, labels)]
       cells.append(grid.get_grid_cell_at(coords))
@@ -217,10 +226,10 @@ class WeaveUnit(Tileable):
     strand_ids = [id for id, b in zip(strand_ids, real_polys) if b]
     # note that the approx_tile is important for the
     # biaxial case, which is not necessarily centred on (0, 0)
-    approx_tile = shapely.ops.unary_union(cells)
-    tile = grid.get_tile_from_cells(approx_tile)
+    approx_tile = shapely.unary_union(cells)
     atc = approx_tile.centroid
     shift = (-atc.x, -atc.y)
+    tile = grid.get_tile_from_cells(approx_tile)
     self.tiles = self._get_weave_tiles_gdf(weave_polys, strand_ids, shift)
     self.prototile = gpd.GeoDataFrame(geometry = gpd.GeoSeries([tile]),
                                       crs = self.crs)
@@ -248,11 +257,10 @@ class WeaveUnit(Tileable):
       geometry = gpd.GeoSeries([affine.translate(p, offset[0], offset[1])
                                 for p in polys]))
     weave = weave[weave.tile_id != "-"]
-    # weave.geometry = tiling_utils.clean_polygon(weave.geometry)
+    
     weave = weave.dissolve(by = "tile_id", as_index = False)
-    weave = weave.explode(index_parts = False, ignore_index = True)
-    # weave.geometry = tiling_utils.gridify(weave.geometry)
-    # weave.geometry = tiling_utils.clean_polygon(weave.geometry)
+    weave = weave.explode(ignore_index = True)
+
     return weave.set_crs(self.crs)
 
 

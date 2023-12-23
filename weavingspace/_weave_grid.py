@@ -11,7 +11,7 @@ import shapely.geometry as geom
 import shapely.ops
 import shapely.wkt as wkt
 
-from weavingspace import tiling_utils
+import weavingspace.tiling_utils as tiling_utils
 
 @dataclass
 class WeaveGrid:
@@ -20,6 +20,13 @@ class WeaveGrid:
   Can generate both triangular and square grid 'cells' as visual
   representation of overlaps of two or three strands at a site.
 
+  NOTE: there is no 'gridification' or 'cleaning' in the geometry of this
+  code - we leave that to steps further down the pipeline, preferring to
+  perform this low level geometry with maximum precision. The only limited
+  break with this is in get_visible_cell_strands, where strands in higher
+  layers are buffered by a small amount to avoid closely aligned polygon
+  edges producing slivers etc.
+  
   Atrributes:
     basis (np.ndarray): matrix to calculate x,y coordinates of a
       site from its (integer) grid coordinates,
@@ -97,10 +104,9 @@ class WeaveGrid:
       xy = self.get_coordinates(coords)
       polygon = affine.translate(polygon, xy[0], xy[1])
     if self.n_axes == 2 or sum(coords) %2 == 0:
-      return self._gridify(polygon)
+      return polygon
     else:
-      return self._gridify(
-        affine.rotate(polygon, 180, origin = polygon.centroid))
+      return affine.rotate(polygon, 180, origin = polygon.centroid)
 
 
   def _make_grid_cell(self) -> geom.Polygon:
@@ -135,14 +141,15 @@ class WeaveGrid:
       R = self.spacing / (1 + np.cos(np.pi / n_sides))
     angles = self._get_angles(n_sides)
     corners = [(R * np.cos(a), R * np.sin(a)) for a in angles]
-    return self._gridify(geom.Polygon(corners))
+    return geom.Polygon(corners)
 
 
   def _get_angles(self, n: int = 4) -> list[float]:
     """Returns angles to corners of n sides polygon, assuming one side is horizontal parallel to x-axis.
 
     To determine angles start at 6 o'clock (3pi/2) and add (pi/n), then
-    add n - 1 more 2pi/n steps.
+    subtract a series of n - 1 2pi/n steps. Note we subtract due to the CW
+    polygon winding order convention
 
     Args:
       n (int, optional): Number of sides. Defaults to 4.
@@ -150,30 +157,10 @@ class WeaveGrid:
     Returns:
       list[float]: angles in radians.
     """
-    return [(3 * np.pi/2) + (np.pi/n) + (i/n * 2 * np.pi) for i in range(n)]
+    return [(3 * np.pi/2) + (np.pi/n) - (i/n * 2 * np.pi) for i in range(n)]
 
 
-  def _gridify(self, shape: geom.Polygon, precision = 6) -> geom.Polygon:
-    """Returns polygon with coordinates at specified precision.
-    
-    IMPORTANT (and not understood...!!!). This local method seems to work better
-    on the kinds of gridification required for the weave grid polygons to work... I have no idea why. It may relate to the reordering of coordinates
-    that shapely.set_precision engages in... or... it might not. It clearly has
-    something to do with floating point issues. I JUST DON'T KNOW...
-    
-    TODO: Figure this the hell out at some point!
-
-    Args:
-      shape (geom.Polygon): polygon to gridify.
-      precision (int): digits of precision. Defaults to 6.
-
-    Returns:
-      geom.Polygon: gridified polygon.
-    """
-    return wkt.loads(wkt.dumps(shape, rounding_precision = precision))
-
-
-  def _get_grid_cell_slices(self, L:float = 0.0, W:float = 1,
+  def _get_grid_cell_slices(self, L:float, W:float = 1,
                 n_slices:int = 1) -> list[geom.Polygon]:
     r"""Gets list of rectangular polygons represneting 'slices' across cell.
 
@@ -235,18 +222,18 @@ class WeaveGrid:
         strands into. Defaults to 1.
 
     Returns:
-      list[Union[geom.Polygon,geom.MultiPolygon]]: polygons representing the strands.
+      list[Union[geom.Polygon,geom.MultiPolygon]]: polygons representing the 
+        strands.
     """
     cell = self.get_grid_cell_at(coords)
     # when aspect is <1 strands extend outside cell by some scale factor
     sf = 2 - width if self.n_axes == 2 else (5 - 3 * width) / 2
     expanded_cell = affine.scale(cell, sf, sf, origin = cell.centroid)
-    big_l = (sf * self.spacing      ## rectangular case is simple
-              if self.n_axes == 2    ## triangular less so!
-              else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2)
+    big_l = (sf * self.spacing       ## rectangular case is simple
+             if self.n_axes == 2     ## triangular less so!
+             else sf * self.spacing * 2 / np.sqrt(3) * (3 - width) / 2)
     strands = geom.MultiPolygon(
-        self._get_grid_cell_slices(
-            L = big_l, W = width, n_slices = n_slices))
+      self._get_grid_cell_slices(L = big_l, W = width, n_slices = n_slices))
     # we need centre of cell bounding box to shift strands to 
     # vertical center of triangular cells. In rectangular case
     # this will be (0, 0).
@@ -255,8 +242,7 @@ class WeaveGrid:
     strands = geom.MultiPolygon(
         [expanded_cell.intersection(s) for s in strands.geoms])
     strands = affine.rotate(strands, orientation, origin = cell.centroid)
-    # return [s for s in strands.geoms]
-    return [self._gridify(s) for s in strands.geoms]
+    return [s for s in strands.geoms]
 
 
   def get_visible_cell_strands(
@@ -289,10 +275,14 @@ class WeaveGrid:
                                             n_slices[order])
         if all_polys == []:
             all_polys.extend(next_polys)
-            mask = shapely.ops.unary_union(next_polys)
+            mask = shapely.unary_union(next_polys)
         else:
-            all_polys.extend([p.difference(mask) for p in next_polys])
-            mask = mask.union(shapely.ops.unary_union(next_polys))
+            # buffering the mask cleans up many issues with closely
+            # aligned polygon edges in overlayed layers
+            all_polys.extend([p.difference(
+              mask.buffer(tiling_utils.RESOLUTION, cap_style = 3)) 
+              for p in next_polys])
+            mask = mask.union(shapely.unary_union(next_polys))
     return all_polys
 
 
@@ -319,9 +309,34 @@ class WeaveGrid:
       w = np.round((xmax - xmin) / h_spacing) * h_spacing
     h = np.round((ymax - ymin) / self.spacing) * self.spacing
     if self.n_axes == 2:
-      return geom.Polygon([(-w/2, -h/2), (-w/2,  h/2), 
-                           ( w/2,  h/2), ( w/2, -h/2)])
+      return geom.Polygon([(-w/2, -h/2), (-w/2, h/2),
+                           (w/2, h/2), (w/2, -h/2)])
     else:
-      return geom.Polygon([( w/4, -h/2), (-w/4, -h/2), (-w/2, 0),
-                           (-w/4,  h/2), ( w/4,  h/2), ( w/2, 0)])
-      
+      return geom.Polygon([(w/4, -h/2), (-w/4, -h/2), (-w/2, 0),
+                           (-w/4, h/2), ( w/4, h/2), (w/2, 0)])
+
+
+  # THIS IS HERE FOR SAFE KEEPING... at various times the shapely.set_precision
+  # function causes havoc in this class, and the below has proven more stable
+  # Note that the more aggressive precision setting here might be relevant also
+  # def _gridify(self, shape: geom.Polygon, precision = 4) -> geom.Polygon:
+  #   """Returns polygon with coordinates at specified precision.
+    
+  #   IMPORTANT (and not understood...!!!). This local method seems to work 
+  #   better on the kinds of gridification required for the weave grid polygons 
+  #   to work... I have no idea why. It may relate to the reordering of 
+  #   coordinates that shapely.set_precision engages in... or... it might not. 
+  #   It clearly has something to do with floating point issues. I JUST DON'T 
+  #   KNOW...
+    
+  #   TODO: Figure this the hell out at some point!
+
+  #   Args:
+  #     shape (geom.Polygon): polygon to gridify.
+  #     precision (int): digits of precision. Defaults to 4.
+
+  #   Returns:
+  #     geom.Polygon: gridified polygon.
+  #   """
+  #   return wkt.loads(wkt.dumps(shape, rounding_precision = precision))
+  

@@ -62,9 +62,6 @@ class Tileable:
     crs (int): the coordinate reference system of the tile. Most often
       an EPSG code, but any valid geopandas CRS specification is
       valid. Defaults to 3857 (i.e. Web Mercator).
-    fudge_factor (float): a distance in units of self.crs to be used in
-      geometry clean ups (for example this buffer distance is applied
-      before unioning polygons.) Defaults to `1e-3`.
     debug (bool, optional): if True prints debug messages. Defaults to
       False.
   """
@@ -76,7 +73,6 @@ class Tileable:
   vectors: list[tuple[float]] = None
   regularised_prototile: gpd.GeoDataFrame = None
   crs: int = 3857
-  fudge_factor: float = 1e-3
   rotation: float = 0.0
   debug: bool = False
 
@@ -164,9 +160,9 @@ class Tileable:
     # This simplification seems very crude but fixes all kinds of issues...
     # particularly with the triaxial weave units... where intersection 
     # operations are prone to creating spurious vertices, etc.
-    self.regularised_prototile.geometry[0] = \
-      self.regularised_prototile.geometry[0].simplify(
-        self.spacing * tiling_utils.RESOLUTION)
+    # self.regularised_prototile.geometry[0] = \
+    #   self.regularised_prototile.geometry[0].simplify(
+    #     self.spacing * tiling_utils.RESOLUTION)
     return
 
 
@@ -189,8 +185,8 @@ class Tileable:
     if len(fragments) == 1:
       return [f for f in fragments if not f.is_empty]
     fragments = [f for f in fragments if not f.is_empty]
-    tile = self.prototile.geometry[0]
-    reg_tile = copy.deepcopy(self.regularised_prototile.geometry[0])
+    prototile = self.prototile.geometry[0]
+    reg_prototile = copy.deepcopy(self.regularised_prototile.geometry[0])
     changes_made = True
     while changes_made:
       changes_made = False
@@ -204,56 +200,52 @@ class Tileable:
         matches = set()
         for i, f1 in enumerate(fragments):
           for j, f2, in enumerate(t_frags):
-            if i != j and tiling_utils.touch_along_an_edge(f1, f2):
+            if i < j and tiling_utils.touch_along_an_edge(f1, f2):
               matches.add((i, j))
-        # determine which of these when unioned has the
-        # larger area in common with the base tile
+        # determine which of these when unioned has the larger area in common # with the prototile
         frags_to_remove = set()
         for i, j in matches:
           f1, f2 = fragments[i], t_frags[j]
-          u1 = f1.buffer(self.fudge_factor, resolution = 1, join_style = 2) | \
-            f2.buffer(self.fudge_factor, resolution = 1, join_style = 2)
+          u1 = f1.buffer(tiling_utils.RESOLUTION, cap_style = 3).union(
+            f2.buffer(tiling_utils.RESOLUTION, cap_style = 3))
           u2 = affine.translate(u1, -v[0], -v[1])
-          if tile.intersection(u1).area > tile.intersection(u2).area:
-            u1 = u1.buffer(-self.fudge_factor, resolution = 1, join_style = 2)
-            u2 = u2.buffer(-self.fudge_factor, resolution = 1, join_style = 2)
+          if prototile.intersection(u1).area > prototile.intersection(u2).area:
+            u1 = u1.buffer(-tiling_utils.RESOLUTION, cap_style = 3)
+            u2 = u2.buffer(-tiling_utils.RESOLUTION, cap_style = 3)
             next_frags.append(u1)
-            reg_tile = (reg_tile | u1) - u2
+            reg_prototile = reg_prototile.union(u1).difference(u2)
           else:
-            u1 = u1.buffer(-self.fudge_factor, resolution = 1, join_style = 2)
-            u2 = u2.buffer(-self.fudge_factor, resolution = 1, join_style = 2)
+            u1 = u1.buffer(-tiling_utils.RESOLUTION, cap_style = 3)
+            u2 = u2.buffer(-tiling_utils.RESOLUTION, cap_style = 3)
             next_frags.append(u2)
-            reg_tile = (reg_tile | u2) - u1
+            reg_prototile = reg_prototile.union(u2).difference(u1)
           changes_made = True
           frags_to_remove.add(i)
           frags_to_remove.add(j)
         fragments = [f for i, f in enumerate(fragments)
-                 if not (i in frags_to_remove)]
-        fragments = next_frags + fragments
-    self.regularised_prototile.geometry[0] = reg_tile
+                     if not (i in frags_to_remove)] + next_frags
+    self.regularised_prototile.geometry[0] = reg_prototile
     return [f for f in fragments if not f.is_empty] # don't return any duds
 
 
   def reattach_tiles(self) -> None:
     """Move tiles that are outside the regularised prototile main polygon
-    back inside it adjusting regularised tile if needed.
+    back inside it adjusting regularised prototile if needed.
     """
-    reg_tile = self.regularised_prototile.geometry[0]
-    new_reg_tile = copy.deepcopy(reg_tile)
+    reg_prototile = self.regularised_prototile.geometry[0]
+    new_reg_prototile = copy.deepcopy(reg_prototile)
     new_tiles = list(self.tiles.geometry)
     for i, p in enumerate(self.tiles.geometry):
-      if np.isclose(reg_tile.intersection(p).area, p.area):
+      if np.isclose(reg_prototile.intersection(p).area, p.area):
         new_tiles[i] = p
         continue
       for v in self.vectors:
         t_p = affine.translate(p, v[0], v[1])
-        if reg_tile.intersects(t_p):
-          new_reg_tile = tiling_utils.safe_union(
-            gpd.GeoSeries([new_reg_tile, t_p]), as_polygon = True)
+        if reg_prototile.intersects(t_p):
+          new_reg_prototile = new_reg_prototile.union(t_p)
           new_tiles[i] = t_p
-          break
     self.tiles.geometry = gpd.GeoSeries(new_tiles)
-    self.regularised_prototile.geometry[0] = new_reg_tile
+    self.regularised_prototile.geometry[0] = new_reg_prototile
     return None
 
 
@@ -283,15 +275,15 @@ class Tileable:
       crs = self.crs,
       geometry = gpd.GeoSeries(tiles))
 
-    self.regularised_prototile.geometry = self.regularised_prototile.geometry.explode(
-      index_parts=False, ignore_index=True)
-    if self.regularised_prototile.geometry.shape[0] > 1:
+    self.regularised_prototile = \
+      self.regularised_prototile.explode(ignore_index = True)
+    if self.regularised_prototile.shape[0] > 1:
       self.regularised_prototile.geometry = tiling_utils.get_largest_polygon(
         self.regularised_prototile.geometry)
 
     self.reattach_tiles()
-    self.regularised_prototile.geometry[0] = \
-      self.regularised_prototile.geometry[0].simplify(self.spacing / 100)
+    self.regularised_prototile.geometry = tiling_utils.repair_polygon(
+      self.regularised_prototile.geometry)
     return None
 
 
@@ -373,7 +365,7 @@ class Tileable:
     )
     self.tiles = patch.clip(self.prototile)
     # repair any weirdness...
-    self.tiles.geometry = tiling_utils.clean_polygon(self.tiles.geometry)
+    self.tiles.geometry = tiling_utils.repair_polygon(self.tiles.geometry)
     self.tiles = self.tiles[self.tiles.geometry.area > 0]
     self.regularised_prototile = copy.deepcopy(self.prototile)
     return None
@@ -397,7 +389,7 @@ class Tileable:
     """
     inset_tiles, inset_ids = [], []
     for p, id in zip(self.tiles.geometry, self.tiles.tile_id):
-      b = p.buffer(-inset, resolution=1, join_style=2)
+      b = p.buffer(-inset, cap_style = 3)
       if not b.area <= 0:
         inset_tiles.append(b)
         inset_ids.append(id)
@@ -453,7 +445,8 @@ class Tileable:
       figsize (tuple[float], optional): size of the figure.
         Defaults to `(8, 8)`.
     """
-    w = self.prototile.geometry[0].bounds[2] - self.prototile.geometry[0].bounds[0]
+    w = self.prototile.geometry[0].bounds[2] - \
+      self.prototile.geometry[0].bounds[0]
     n_cols = len(set(self.tiles.tile_id))
     if cmap is None:
       cm = "Dark2" if n_cols <= 8 else "Paired"
@@ -461,12 +454,10 @@ class Tileable:
       cm = cmap
     if ax is None:
       ax = self.tiles.plot(
-        column="tile_id", cmap=cm, figsize=figsize, **kwargs
-      )
+        column="tile_id", cmap=cm, figsize=figsize, **kwargs)
     else:
       self.tiles.plot(
-        ax=ax, column="tile_id", cmap=cm, figsize=figsize, **kwargs
-      )
+        ax=ax, column="tile_id", cmap=cm, figsize=figsize, **kwargs)
     if show_ids != None and show_ids != "":
       do_label = True
       if show_ids == "tile_id" or show_ids == True:
@@ -477,35 +468,22 @@ class Tileable:
         do_label = False
       if do_label:
         for id, tile in zip(labels, self.tiles.geometry):
-          ax.annotate(
-            id,
-            (tile.centroid.x, tile.centroid.y),
-            ha="center",
-            va="center",
-            bbox={"lw": 0, "fc": "#ffffff40"},
-          )
+          ax.annotate(id, (tile.centroid.x, tile.centroid.y),
+            ha = "center", va = "center", bbox = {"lw": 0, "fc": "#ffffff40"})
     if r > 0:
       self.get_local_patch(r=r).plot(
-        ax=ax, column="tile_id", alpha=r_alpha, cmap=cm, **kwargs
-      )
+        ax = ax, column = "tile_id", alpha = r_alpha, cmap = cm, **kwargs)
     if show_prototile:
-      self.prototile.plot(ax=ax, ec=prototile_edgecolour, lw=0.5, fc="#00000000", **kwargs)
+      self.prototile.plot(ax = ax, ec = prototile_edgecolour, lw = 0.5, 
+                          fc = "#00000000", **kwargs)
     if show_vectors:  # note that arrows in mpl are dimensioned in plotspace
       for v in self.vectors[: len(self.vectors) // 2]:
-        ax.arrow(
-          0,
-          0,
-          v[0],
-          v[1],
-          color="k",
-          width=w * 0.002,
-          head_width=w * 0.05,
-          length_includes_head=True,
-        )
+        ax.arrow(0, 0, v[0], v[1], color = "k", width = w * 0.002,
+          head_width = w * 0.05, length_includes_head = True)
     if show_reg_prototile:
       self.regularised_prototile.plot(
-        ax=ax, ec=reg_prototile_edgcolour, fc="#00000000", lw=1, **kwargs
-      )
+        ax = ax, ec = reg_prototile_edgcolour, fc = "#00000000", 
+        lw = 1.5, zorder = 10, **kwargs)
     return ax
 
 

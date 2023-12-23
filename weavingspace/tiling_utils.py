@@ -223,6 +223,10 @@ def get_clean_polygon(shape:geom.Polygon) -> geom.Polygon:
   angles = get_interior_angles(shape)
   corners = [c for c, a in zip(corners, angles) 
              if not np.isclose(a, 180, atol = 10 * RESOLUTION)]
+  distances = [c1.distance(c2) for c1, c2 
+               in zip(corners[:-1], corners[1:])]
+  corners = [c for c, d in zip(corners, distances)
+             if not np.isclose(d, 0, atol = RESOLUTION)]
   return gridify(geom.Polygon(corners))
 
 
@@ -419,8 +423,7 @@ def _get_interior_vertices(tiles:gpd.GeoDataFrame) -> gpd.GeoSeries:
   interior_pts = set()
   for tile in tiles:
     for corner in tile.exterior.coords:
-      if uu.contains(geom.Point(corner).buffer(1e-3, 
-                                               resolution = 1, join_style = 2)):
+      if uu.contains(geom.Point(corner).buffer(1e-3, cap_style = 3)):
         interior_pts.add(corner)
   return gridify(gpd.GeoSeries([geom.Point(p) for p in interior_pts]))
 
@@ -495,7 +498,7 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
   for pt in interior_pts:
     cycles.append(
       set([poly_id for poly_id, p in enumerate(local_patch.geometry)
-           if pt.distance(p) < unit.fudge_factor]))
+           if pt.distance(p) < RESOLUTION * 2]))
   # convert the polygon ID sequences to (centroid.x, centroid.y, ID) tuples
   dual_faces = []
   for cycle in cycles:
@@ -514,8 +517,9 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
   # displaced a little to avoid uncertainties at corners/edges
   # TODO: Check  the logic of this - it seems like dumb luck that it works...
   dual_faces = [(f, id) for f, id in dual_faces
-          if affine.translate(unit.prototile.geometry[0],
-                    unit.fudge_factor, unit.fudge_factor).contains(f.centroid)]
+                if affine.translate(
+                  unit.prototile.geometry[0], RESOLUTION * 10, 
+                  RESOLUTION * 10).contains(f.centroid)]
   gdf = gpd.GeoDataFrame(
     data = {"tile_id": [f[1] for f in dual_faces]}, crs = unit.crs,
     geometry = gridify(gpd.GeoSeries([f[0] for f in dual_faces])))
@@ -642,9 +646,11 @@ def get_largest_polygon(polygons:gpd.GeoSeries) -> gpd.GeoSeries:
   Returns:
     gpd.GeoSeries: the largest polygon.
   """
-  areas = list(polygons.area)
+  actual_polygons = [p for p in polygons.geometry
+                     if isinstance(p, (geom.Polygon, geom.MultiPolygon))]
+  areas = [p.area for p in actual_polygons]
   max_area = max(areas)
-  return gpd.GeoSeries([polygons[areas.index(max_area)]])
+  return gpd.GeoSeries([actual_polygons[areas.index(max_area)]])
 
 
 def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -> bool:
@@ -661,8 +667,8 @@ def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -> bool:
   Returns:
     bool: True if they neighbour along an edge
   """
-  return p1.buffer(1e-3, resolution = 1, join_style = 2).intersection(
-    p2.buffer(1e-3, resolution = 1, join_style = 2)).area > 1e-5
+  return p1.buffer(1e-3, cap_style = 3).intersection(
+    p2.buffer(1e-3, cap_style = 3)).area > 1e-5
 
 
 def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
@@ -763,17 +769,17 @@ def get_polygon_sector(polygon:geom.Polygon, start:float = 0.0,
   return gridify(sector)
 
 
-def clean_polygon(
+def repair_polygon(
     polygon:Union[geom.Polygon, geom.MultiPolygon, gpd.GeoSeries],
     shrink_then_grow:bool = True) -> Union[geom.Polygon, gpd.GeoSeries]:
-  """Convenience function to 'clean' a shapely polyon or GeoSeries by applying
+  """Convenience function to 'repair' a shapely polyon or GeoSeries by applying
   a negative buffer then the same positive buffer.
 
   Optionally the buffer may be applied in the opposite order (i.e. grow then
-  shrink). This operation will convert a MultiPolygon that has some 'stray'
+  shrink). This operation may also convert a MultiPolygon that has some 'stray'
   parts to a Polygon.
 
-  This is a procedure often unofficially recommended (on stackexchange etc.)
+  This is method is often unofficially recommended (on stackexchange etc.)
   even in the shapely docs, to resolve topology issues and extraneous
   additional vertices appearing when spatial operations are repeatedly
   applied.
@@ -790,12 +796,12 @@ def clean_polygon(
   """
   if shrink_then_grow:
     return polygon.buffer(
-      -RESOLUTION * 10, resolution = 1, join_style = 2).buffer(
-      RESOLUTION * 10, resolution = 1, join_style = 2)
+      -RESOLUTION * 10, cap_style = 3).buffer(
+      RESOLUTION * 10, cap_style = 3)
   else:
     return polygon.buffer(
-      RESOLUTION * 10, resolution = 1, join_style = 2).buffer(
-      -RESOLUTION * 10, resolution = 1, join_style = 2)
+      RESOLUTION * 10, cap_style = 3).buffer(
+      -RESOLUTION * 10, cap_style = 3)
 
 
 def safe_union(gs:gpd.GeoSeries,
@@ -819,8 +825,8 @@ def safe_union(gs:gpd.GeoSeries,
     Union[gpd.GeoSeries, geom.Polygon]: the resulting union of supplied
       polygons.
   """
-  union = gs.buffer(RESOLUTION * 10, resolution = 1, join_style = 2) \
-    .unary_union.buffer(-RESOLUTION * 10, resolution = 1, join_style = 2)
+  union = gs.buffer(RESOLUTION * 10, cap_style = 3) \
+    .unary_union.buffer(-RESOLUTION * 10, cap_style = 3)
   if as_polygon:
     return gridify(union)
   else:
