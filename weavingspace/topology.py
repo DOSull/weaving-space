@@ -23,7 +23,6 @@ class Topology:
 
   tile_unit: TileUnit = None
   _patch: gpd.GeoDataFrame = None
-  _spacing: float = None
 
   points: list[geom.Point] = None
   points_on_boundary: list[int] = None
@@ -48,10 +47,8 @@ class Topology:
     Args:
         unit (TileUnit): the weavingspace.TileUnit whose topology we want.
     """
-    self.tile_unit = unit
-    rad = 1 if unit.base_shape == TileShape.HEXAGON else 2
-    self._patch = self.tile_unit.get_local_patch(r = rad, include_0 = True)
-    self._spacing = unit.spacing
+    self.tile_unit = unit # keep this for reference
+    self._patch = self.tile_unit.get_local_patch(include_0 = True)
     # save the original geometries so we have them on hand, but make sure
     # they are clean first!
     self.tiles = [tiling_utils.get_clean_polygon(g) 
@@ -125,7 +122,7 @@ class Topology:
     
   def _assign_vertices(self) -> None:
     self.vertices = [
-      i for i, p in enumerate(self.points)
+      i for i in range(len(self.points))
       if (i not in self.points_on_boundary and len(self.point_tiles[i]) > 2)
       or (i in self.points_on_boundary and len(self.point_neighbours[i]) > 2)]
     
@@ -249,8 +246,9 @@ class Topology:
       if len(points) > 2:
         dual_faces.append(
           geom.Polygon([self.tile_centres[i] for i in points]))
-    dual_faces = [f for f in dual_faces 
-                  if f.centroid.within(self.tile_unit.prototile.geometry[0])]
+    dual_faces = [
+      f for f in dual_faces
+      if affine.translate(f.centroid, tiling_utils.RESOLUTION, tiling_utils.RESOLUTION).within(self.tile_unit.prototile.geometry[0])]
     # TODO: label and select the faces to include so that they are tileable
     return gpd.GeoSeries(dual_faces)
 
@@ -287,7 +285,8 @@ class Topology:
         marker = "o", markersize = 100)
     
     if show_edges:
-      edges = self.get_edge_geoms(self._spacing / 40 if offset_edges else 0)
+      edges = self.get_edge_geoms(
+        self.tile_unit.spacing / 40 if offset_edges else 0)
       edges.plot(ax = ax, color = "forestgreen", ls = "dashed", lw = 1)
       if show_edge_ids or show_edge_corners:
         labels = self.get_edge_labels(show_edge_ids, show_edge_corners)
@@ -297,7 +296,7 @@ class Topology:
     
     if show_dual_tiles:
       self.get_dual_tile_geoms().buffer(
-        -self._spacing / 200, cap_style = 3).plot(
+        -self.tile_unit.spacing / 200, cap_style = 3).plot(
           ax = ax, fc = "red", alpha = 0.15)
     
     pyplot.axis("off")

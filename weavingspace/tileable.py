@@ -294,14 +294,14 @@ class Tileable:
     The geodataframe takes the same form as the `Tileable.tile` attribute.
 
     Args:
-      r (int, optional): the number of translation vector steps required.
-        Defaults to `1`.
+      r (int, optional): the number of 'layers' out from the unit to
+        which the translate copies will extendt. Defaults to `1`.
       include_0 (bool, optional): If True includes the Tileable itself at
         (0, 0). Defaults to `False`.
 
     Returns:
       gpd.GeoDataFrame: A GeoDataframe of the tiles extended by a number 
-        of translation vectors.
+        of 'layers'.
     """
     # a dictionary of all the vectors we need, starting with (0, 0)
     vecs = (
@@ -309,13 +309,14 @@ class Tileable:
       if self.base_shape in (TileShape.HEXAGON,)
       else {(0, 0): (0, 0)}
     )
+    steps = r if self.base_shape in (TileShape.HEXAGON,) else r * 2
     # a dictionary of the last 'layer' of added vectors
     last_vecs = copy.deepcopy(vecs)
     # get the translation vectors in a dictionary indexed by coordinates
     # we keep track of the sum of vectors using the (integer) coordinates
     # to avoid duplication of moves due to floating point inaccuracies
     vectors = self.get_vectors(as_dict=True)
-    for i in range(r):
+    for i in range(steps):
       new_vecs = {}
       for k1, v1 in last_vecs.items():
         for k2, v2 in vectors.items():
@@ -324,7 +325,7 @@ class Tileable:
           # ... and the vector components to make a new value
           new_val = (v1[0] + v2[0], v1[1] + v2[1])
           # if we haven't reached here before store it
-          if not new_val in vecs:
+          if not new_key in vecs:
             new_vecs[new_key] = new_val
       # extend the vectors and set the last layer to the set just added
       vecs = vecs | new_vecs
@@ -332,11 +333,13 @@ class Tileable:
     if not include_0:  # throw away the identity vector
       vecs.pop((0, 0, 0) if self.base_shape in (TileShape.HEXAGON,) else (0, 0))
     ids, tiles = [], []
+    extent = self.prototile.geometry.scale(2 * r + tiling_utils.RESOLUTION, 
+                                           2 * r + tiling_utils.RESOLUTION)[0]
     for v in vecs.values():
-      ids.extend(self.tiles.tile_id)
-      tiles.extend(
-        self.tiles.geometry.apply(affine.translate, xoff=v[0], yoff=v[1])
-      )
+      if geom.Point(v[0], v[1]).within(extent):
+        ids.extend(self.tiles.tile_id)
+        tiles.extend(
+          self.tiles.geometry.apply(affine.translate, xoff = v[0], yoff = v[1]))
     return gpd.GeoDataFrame(
       data = {"tile_id": ids}, crs=self.crs,
       geometry = tiling_utils.gridify(gpd.GeoSeries(tiles))
