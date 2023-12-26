@@ -218,15 +218,15 @@ def get_interior_angles(shape:geom.Polygon) -> list[float]:
 
 
 def get_clean_polygon(shape:geom.Polygon) -> geom.Polygon:
-  """Returns polygon with any successive corners that are 'in line' along a side removed."""
+  """Returns polygon with any successive corners that are 'in line' along a side or very close to one another removed."""
   corners = get_corners(shape, repeat_first = False)
-  angles = get_interior_angles(shape)
-  corners = [c for c, a in zip(corners, angles) 
-             if not np.isclose(a, 180, atol = 10 * RESOLUTION)]
   distances = [c1.distance(c2) for c1, c2 
-               in zip(corners[:-1], corners[1:])]
-  corners = [c for c, d in zip(corners, distances)
-             if not np.isclose(d, 0, atol = RESOLUTION)]
+               in zip(corners, corners[-1:] + corners)]
+  angles = get_interior_angles(shape)
+  to_remove = [np.isclose(d, 180, atol = RESOLUTION) or 
+               np.isclose(a, 180, atol = RESOLUTION)
+               for d, a in zip(distances, angles)]
+  corners = [c for c, r in zip(corners, to_remove) if not r]
   return gridify(geom.Polygon(corners))
 
 

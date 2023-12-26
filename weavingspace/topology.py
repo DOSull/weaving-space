@@ -23,53 +23,158 @@ class Topology:
 
   tile_unit: TileUnit = None
   _patch: gpd.GeoDataFrame = None
+  _spacing: float = None
 
-  vertices: tuple[geom.Point] = None
-  vertex_neighbours: tuple[int] = None
-  vertex_tiles: tuple[int] = None
+  points: list[geom.Point] = None
+  points_on_boundary: list[int] = None
+  point_tiles: dict[list[int]] = None
+  point_neighbours: dict[int, tuple[int]] = None
 
-  edges: tuple[tuple[int]] = None
+  vertices: list[int] = None
+
+  edges: list[tuple[int]] = None
   edge_lefts: dict[int, int] = None
   edge_rights: dict[int, int] = None
 
-  tiles: tuple[geom.Polygon] = None
-  tile_centres: tuple[geom.Point] = None
-  tile_edges: tuple[tuple[int]] = None
-  tile_vertices: tuple[tuple[int]] = None
-
-  # TODO: think about how to add these in a coherent fashion!
-  # corners: tuple[int] = None
-  # sides: tuple[tuple[int]] = None
-  # tile_corners: tuple[tuple[int]] = None
-  # tile_sides: tuple[tuple[int]] = None
+  tiles: list[geom.Polygon] = None
+  tile_centres: list[geom.Point] = None
+  tile_corners: tuple[tuple[int]] = None
+  tile_points: list[tuple[int]] = None
 
   def __init__(self, unit: TileUnit):
+    """Builds topology for a supplied TileUnit. WeaveUnits will also work
+    but results may be a bit strange, especially if aspect < 1.
+
+    Args:
+        unit (TileUnit): the weavingspace.TileUnit whose topology we want.
+    """
     self.tile_unit = unit
     rad = 1 if unit.base_shape == TileShape.HEXAGON else 2
     self._patch = self.tile_unit.get_local_patch(r = rad, include_0 = True)
-    self.tiles = tuple(self._patch.geometry)
-    self.tile_centres = tuple([tiling_utils.incentre(p) for p in self.tiles])
-    self._setup_vertices()
-    self._setup_edges_and_tiles()
-    self._setup_vertex_neighbours_and_polygons()
+    self._spacing = unit.spacing
+    # save the original geometries so we have them on hand, but make sure
+    # they are clean first!
+    self.tiles = [tiling_utils.get_clean_polygon(g) 
+                  for g in self._patch.geometry]
+    self.tile_centres = [tiling_utils.incentre(t) for t in self.tiles]
+    self._setup_unique_points_and_rebuild_tiles()
+    self._setup_boundary_points()
+    self._setup_point_and_tile_relations()
+    self._assign_vertices()
+    self._reorder_vertex_incident_tiles()
+    self._setup_edges()
 
 
-  def _setup_vertices(self) -> None:
-    """Sets up the list of vertices to include only unique vertices, i.e. 
-    vertices shared between polygons are stored only once.
+  def _setup_unique_points_and_rebuild_tiles(self) -> None:
+    """Sets up the list of unique point locations in the tiling.
     """
-    self.vertices = []
-    for p in self.tiles:
-      corners = tiling_utils.get_corners(p, repeat_first = False)
-      for c in corners:
-        # only add to vertices if not close to an existing vertex
-        if not any ([c.distance(v) <= 2 * tiling_utils.RESOLUTION 
-                     for v in self.vertices]):
-          self.vertices.append(c)
+    self.points = []
+    self.tile_corners = []
+    for i, tile in enumerate(self.tiles):
+      tile_corners = []
+      corners = tiling_utils.get_corners(tile, repeat_first = False)
+      for corner in corners:
+        # only add if not close to an existing point
+        if not any ([corner.distance(point) <= 2 * tiling_utils.RESOLUTION 
+                     for point in self.points]):
+          self.points.append(corner)
+          tile_corners.append(len(self.points) - 1)
+        else:
+          tile_corners.append(self._get_closest_point(corner, return_id = True))
+      # replace the tile with this version
+      self.tiles[i] = geom.Polygon([self.points[i] for i in tile_corners])
+      self.tile_corners.append(tile_corners)
+        
+        
+  def _setup_boundary_points(self) -> list[int]:
+    """Sets up the points_on_boundary list. 
+    """
+    boundary = [
+      geom.Point(xy)
+      for xy in gpd.GeoSeries(self.tiles).unary_union.exterior.coords][:-1]
+    self.points_on_boundary = [
+      i for i, pt in enumerate(self.points)
+      if any([pt.distance(b) <= 2 * tiling_utils.RESOLUTION for b in boundary])]
 
 
-  def _get_closest_vertex(self, v:Union[int, geom.Point], 
-                          return_id:bool = True) -> Union[int, geom.Point]:
+  def _setup_point_and_tile_relations(self) -> None:
+    self.point_tiles = defaultdict(set)
+    self.point_neighbours = defaultdict(set)
+    self.tile_points = []
+    for tile_id, tile in enumerate(self.tiles):
+      tile_vertices = []
+      corners = self.tile_corners[tile_id]
+      new_points_on_boundary = [
+        (i, pt) for i, pt in enumerate(self.points)
+        if pt.distance(tile) <= 2 * tiling_utils.RESOLUTION 
+        and i not in corners]
+      for c1, c2 in zip(corners, corners[1:] + corners[:1]):
+        ls = geom.LineString([self.points[c1], self.points[c2]])
+        inserts = [(i, pt) for i, pt in new_points_on_boundary
+                   if pt.distance(ls) <= 2 * tiling_utils.RESOLUTION]
+        x_along = sorted([(ls.line_locate_point(pt), i) for i, pt in inserts])
+        to_insert = [i for d, i in x_along]
+        all_points = [c1] + to_insert + [c2]
+        tile_vertices.extend(all_points[:-1])
+        for x1, x2 in zip(all_points[:-1], all_points[1:]):
+          self.point_tiles[x1].add(tile_id)
+          self.point_neighbours[x1].add(x2)
+          self.point_neighbours[x2].add(x1)
+      self.tile_points.append(tile_vertices)
+      
+    
+  def _assign_vertices(self) -> None:
+    self.vertices = [
+      i for i, p in enumerate(self.points)
+      if (i not in self.points_on_boundary and len(self.point_tiles[i]) > 2)
+      or (i in self.points_on_boundary and len(self.point_neighbours[i]) > 2)]
+    
+    
+  def _reorder_vertex_incident_tiles(self) -> None:
+    cw_ordered_v_incident_tiles = {}
+    for v, incidents in self.point_tiles.items():
+      p0 = self.points[v]
+      incident_tiles = list(incidents)
+      cw_order = tiling_utils.order_of_pts_cw_around_centre(
+        [self.tile_centres[t] for t in incident_tiles], p0)
+      cw_ordered_v_incident_tiles[v] = [incident_tiles[i] for i in cw_order]
+    self.point_tiles = cw_ordered_v_incident_tiles
+
+
+  def _setup_edges(self) -> None:
+    self.edges = []
+    self.edge_lefts = {}
+    self.edge_rights = {}
+    self.tile_edges = []
+    n_edges = 0
+    for tile_id, all_tile_points in enumerate(self.tile_points):
+      vertices = [v for v in all_tile_points if v in self.vertices]
+      tile_edges = []
+      if len(vertices) > 1:
+        for v1, v2 in zip(vertices, vertices[1:] + vertices[:1]):
+          if not (v1 in self.points_on_boundary and v2 in self.points_on_boundary):
+            idx1 = all_tile_points.index(v1)
+            idx2 = all_tile_points.index(v2)
+            if idx1 < idx2:
+              corners = all_tile_points[idx1:(idx2 + 1)]
+            else:
+              corners = all_tile_points[idx1:] + all_tile_points[:(idx2 + 1)]
+            if not corners in self.edges:
+              r_corners = list(reversed(corners))
+              if r_corners in self.edges:
+                id = self.edges.index(r_corners)
+                self.edge_lefts[id] = tile_id
+                tile_edges.append(-id - 1)
+              else:
+                self.edges.append(corners)
+                self.edge_rights[n_edges] = tile_id
+                tile_edges.append(n_edges)
+                n_edges = n_edges + 1
+      self.tile_edges.append(tile_edges)
+
+
+  def _get_closest_point(self, point:Union[int, geom.Point], 
+                         return_id:bool = True) -> Union[int, geom.Point]:
     """Finds the closest vertex to that supplied from the Topology's vertex 
     list.
 
@@ -83,106 +188,53 @@ class Topology:
       Union[int, geom.Point]: the closest vertex in self.vertices as an index
         or Point geometry.
     """
-    dists_to_vertices = sorted([(v.distance(vertex), i) 
-                                for i, vertex in enumerate(self.vertices)])
+    this_pt = self.points[point] if isinstance(point, int) else point
+    distances_to_points = sorted([(this_pt.distance(other_pt), i) 
+                                  for i, other_pt in enumerate(self.points)])
     if return_id:
-      return dists_to_vertices[0][1]
+      return distances_to_points[0][1]
     else:
-      return self.vertices[dists_to_vertices[0][1]]
+      return self.points[distances_to_points[0][1]]
 
 
-  def _setup_edges_and_tiles(self) -> None:
-    """Sets up the edge and polygon collection.
-    """
-    # empty collections as lists and dictionaries so we can build them
-    self.edges = []          # tiling edges as vertex indices 
-    self.edge_lefts = {}     # left and right neighboring tiles of each edge  
-    self.edge_rights = {}
-    self.tile_edges = []     # polygons as sequences of edge indices
-                             # edges traversed backwards encoded as -idx - 1
-    self.tile_vertices = []  # polygons as sequences of vertex indices
-    for p in self._patch.geometry:
-      # get all the vertices close to this polygon - most will be its corners
-      # but some will be corners of neighbouring tiles that lie on its edges
-      # convenient to have the ids and the points in separate lists
-      near_ids = [i for i, v in enumerate(self.vertices)
-                  if p.distance(v) <= tiling_utils.RESOLUTION]
-      near_vs = [self.vertices[i] for i in near_ids]
-      p_edges = tiling_utils.get_sides(p)
-      p_edge_ids, p_vertex_ids = [], []
-      for e in p_edges:
-        ends = [geom.Point(p) for p in e.coords]
-        edge_v_ids = [self._get_closest_vertex(v) for v in ends] 
-        # now find any potential induced vertices to insert along the edge
-        inserts = [idx for idx, v in zip(near_ids, near_vs)
-                   if idx not in edge_v_ids and
-                   e.distance(v) <= tiling_utils.RESOLUTION]
-        # might (rarely) be more than one so sort them by distance along edge
-        dist_along = [e.line_locate_point(self.vertices[idx], normalized = True)
-                      for idx in inserts]
-        inserts = [inserts[dist_along.index(p)] for p in sorted(dist_along)]
-        # and insert them
-        v_seq = edge_v_ids[:1] + inserts + edge_v_ids[-1:]
-        edge_segments = [(x, y) for x, y in zip(v_seq[:-1], v_seq[1:])]
-        for segment in edge_segments:
-          # add first vertex of segment to current polygon vertex list
-          p_vertex_ids.append(segment[0])
-          if segment in self.edges:
-            # already in edge list so only add to current polygon edge list
-            p_edge_ids.append(self.edges.index(segment))
-            # rights[edges.index(segment)] = len(poly_edges)
-          elif tuple(reversed(segment)) in self.edges:
-            # reverse direction is in edge list so add it appropriately coded 
-            # to current polygon edge list and record left neighbour
-            rev_segment = tuple(reversed(segment))
-            # use topojson convention to indicate reversal of direction
-            p_edge_ids.append(-self.edges.index(rev_segment) - 1)
-            self.edge_lefts[
-              self.edges.index(rev_segment)] = len(self.tile_edges)
-          else: 
-            # new edge so add everywhere!
-            self.edges.append(segment)
-            p_edge_ids.append(self.edges.index(segment))
-            self.edge_rights[self.edges.index(segment)] = len(self.tile_edges)
-      # convert to tuples and add to the polygon lists
-      self.tile_edges.append(tuple(p_edge_ids))
-      self.tile_vertices.append(tuple(p_vertex_ids))
+  def get_tile_geoms(self) -> gpd.GeoSeries:
+    return gpd.GeoSeries(self.tiles)
 
 
-  def _setup_vertex_neighbours_and_polygons(self) -> None:
-    vertex_neighbours = defaultdict(list)
-    for i, e in enumerate(self.edges):
-      vertex_neighbours[self.vertices[e[0]]].append(self.vertices[e[1]])
-      vertex_neighbours[self.vertices[e[1]]].append(self.vertices[e[0]])
-    ordered_neighbours = defaultdict(list)
-    for p0, neighbours in vertex_neighbours.items():
-      order = tiling_utils.order_of_pts_cw_around_centre(neighbours, p0)
-      ordered_neighbours[self.vertices.index(p0)] = \
-        [self.vertices.index(neighbours[i]) for i in order]
-    self.vertex_neighbours = tuple(tuple([ordered_neighbours[i] 
-                                   for i in range(len(self.vertices))]))
-    incident_polygons = []
-    for i, neighbours in enumerate(self.vertex_neighbours):
-      polys = []
-      for j in neighbours:
-        if (i, j) in self.edges:
-          polys.append(self.edge_rights[self.edges.index((i, j))])
-        elif (j, i) in self.edges:
-          if self.edges.index((j, i)) in self.edge_lefts:
-            polys.append(self.edge_lefts[self.edges.index((j, i))])
-      incident_polygons.append(polys)
-    self.vertex_tiles = tuple(incident_polygons)
+  def get_tile_centre_geoms(self) -> gpd.GeoSeries:
+    return gpd.GeoSeries(self.tile_centres)
+  
+  
+  def get_point_geoms(self) -> gpd.GeoSeries:
+    return gpd.GeoSeries(self.points)
 
 
-  def get_tile_polygon(self, i) -> geom.Polygon:
-    """Returns shapely geometry of tile with any tiling vertices that are
-    'in line' along a tile side removed."""
-    polygon = geom.Polygon([self.vertices[i] for i in self.tile_vertices[i]])
-    return tiling_utils.gridify(
-      tiling_utils.get_clean_polygon(polygon))
+  def get_vertex_geoms(self) -> gpd.GeoSeries:
+    return gpd.GeoSeries([self.points[i] for i in self.vertices])
+  
+  
+  def get_edge_geoms(self, offset:float = 0.0) -> gpd.GeoSeries:
+    geoms = gpd.GeoSeries([
+      geom.LineString([self.points[vs[0]], 
+                       self.points[vs[-1]]]).parallel_offset(offset) 
+      for vs in self.edges])
+    return geoms
+    
+  
+  def get_edge_labels(self, 
+                       include_ids:bool, 
+                       include_corners:bool) -> list[str]:
+    labels = []
+    for i, corners in enumerate(self.edges):
+      parts = []
+      if include_ids: parts.append(f"{i}") 
+      if include_corners:
+        parts.append(u"\u00b7".join([str(c) for c in corners]))
+      labels.append(":".join(parts))
+    return labels
 
 
-  def get_dual_tiles(self) -> gpd.GeoDataFrame:
+  def get_dual_tile_geoms(self) -> gpd.GeoSeries:
     """Alternative approach to creating the dual tiie unit for a tile unit.
 
     Args:
@@ -191,74 +243,62 @@ class Topology:
     Returns:
         gpd.GeoDataFrame: _description_
     """
-    dual_vertices = [(i, self.vertices[i]) 
-                     for i, vps in enumerate(self.vertex_tiles) 
-                     if len(vps) > 2]
-    dual_faces = [geom.Polygon([self.tile_centres[i] for i in p])
-      for p in [self.vertex_tiles[i] for i, v in dual_vertices]]
-    dual_faces = [
-      f for f in dual_faces if affine.translate(
-        self.tile_unit.prototile.geometry[0], 1e-3, 1e-3).intersects(
-          f.centroid)]
-        
-    # TODO: label and select the faces to include so that they are tileable...
+    dual_faces = []
+    for v in self.vertices:
+      points = self.point_tiles[v]
+      if len(points) > 2:
+        dual_faces.append(
+          geom.Polygon([self.tile_centres[i] for i in points]))
+    dual_faces = [f for f in dual_faces 
+                  if f.centroid.within(self.tile_unit.prototile.geometry[0])]
+    # TODO: label and select the faces to include so that they are tileable
     return gpd.GeoSeries(dual_faces)
-  
-  
-  def plot(self, show_original_tiles: bool = True,  
-           show_tile_centres: bool = True, show_all_vertices: bool = False,
-           show_all_edges: bool = False, show_dual_polygons: bool = False):
-    """Plots the topology.
 
-    Args:
-        show_original_tiles (bool, optional): _description_. Defaults to True.
-        show_tile_centres (bool, optional): _description_. Defaults to True.
-        show_all_vertices (bool, optional): _description_. Defaults to False.
-    """
+
+  def plot(self, show_original_tiles: bool = True,  
+           show_tile_centres: bool = True, 
+           show_vertices: bool = False,
+           show_edges: bool = True,
+           offset_edges: bool = True,
+           show_edge_ids: bool = False,
+           show_edge_corners: bool = False,
+           show_dual_tiles: bool = False) -> pyplot.Axes:
+  
     fig = pyplot.figure(figsize = (10, 10))
     ax = fig.add_axes(111)
-    
+
     if show_original_tiles:
-      gpd.GeoSeries(self.tiles).plot(ax = ax, fc = "#80808000",
-                                     ec = "k", lw = 0.35)
+      self.get_tile_geoms().plot(
+        ax = ax, fc = "dodgerblue", ec = "#333399", alpha = 0.25, lw = 0.5)
 
     if show_tile_centres:
-      for i, c in enumerate(self.tile_centres):
-        ax.annotate(text = i, xy = (c.x, c.y), fontsize = 9, 
-                    color = "b", ha = "center", va = "center")
+      for i, pt in enumerate(self.get_tile_centre_geoms()):
+        ax.annotate(i, xy = (pt.x, pt.y), color = "b", fontsize = 9,
+                    ha = "center", va = "center")
     
-    tiling_vertex_ids = [i for i, v in enumerate(self.vertices)
-                         if len(self.vertex_tiles[i]) > 2]
-    tiling_vertices = [self.vertices[i] for i in tiling_vertex_ids]
-    if show_all_vertices:
-      gpd.GeoSeries(self.vertices).plot(ax = ax, color = "r", markersize = 5)
-      for i, v in enumerate(self.vertices):
-        ax.annotate(text = i, xy = (v.x, v.y), fontsize = 7, color = "r",
-                    ha = "right", va = "bottom")
-    else:
-      gpd.GeoSeries(tiling_vertices).plot(ax = ax, color = "r", markersize = 5)
-      for i, v in zip(tiling_vertex_ids, tiling_vertices):
-        ax.annotate(text = i, xy = (v.x, v.y), fontsize = 7, color = "r",
-                    ha = "right", va = "bottom")
-        
-    edges = gpd.GeoSeries([affine.scale(
-      geom.LineString(
-        [self.vertices[self.edges[i][0]], 
-         self.vertices[self.edges[i][1]]]).parallel_offset(
-           35, side = "right"), 0.9, 0.9) for i in range(len(self.edges))]) 
-    edges = gpd.GeoDataFrame({"id": range(len(self.edges))}, geometry = edges)
-    if not show_all_edges:
-      lr = set(self.edge_lefts.keys()).intersection(
-        set(self.edge_rights.keys()))
-      edges = edges.iloc[sorted(list(lr))]
-    edges.plot(ax = ax, color = "g", lw = 0.75, ls = "dashed")
-    for i, e in zip(edges.id, edges.geometry):
-      ax.annotate(text = i, xy = (e.centroid.x, e.centroid.y), fontsize = 7,
-                  ha = "center", va = "center")
-      
-    if show_dual_polygons:
-      self.get_dual_tiles().buffer(-10).plot(ax = ax, fc = "dodgerblue", 
-                                             alpha = 0.2)
-
+    self.get_point_geoms().plot(ax = ax, color = "r", markersize = 5)
+    for i, pt in enumerate(self.get_point_geoms()):
+      ax.annotate(i, xy = (pt.x, pt.y), color = "r", fontsize = 7,
+                  ha = "left", va = "bottom")
+    
+    if show_vertices:
+      self.get_vertex_geoms().plot(
+        ax = ax, ec = "red", lw = 0.5, fc = "#00000000",
+        marker = "o", markersize = 100)
+    
+    if show_edges:
+      edges = self.get_edge_geoms(self._spacing / 40 if offset_edges else 0)
+      edges.plot(ax = ax, color = "forestgreen", ls = "dashed", lw = 1)
+      if show_edge_ids or show_edge_corners:
+        labels = self.get_edge_labels(show_edge_ids, show_edge_corners)
+        for label, ls in zip(labels, edges): 
+          ax.annotate(label, xy = (ls.centroid.x, ls.centroid.y),
+                      color = "k", ha = "center", va = "top", fontsize = 6)
+    
+    if show_dual_tiles:
+      self.get_dual_tile_geoms().buffer(
+        -self._spacing / 200, cap_style = 3).plot(
+          ax = ax, fc = "red", alpha = 0.15)
+    
     pyplot.axis("off")
     return ax

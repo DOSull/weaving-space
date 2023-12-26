@@ -479,11 +479,11 @@ class Tileable:
     if show_vectors:  # note that arrows in mpl are dimensioned in plotspace
       for v in self.vectors[: len(self.vectors) // 2]:
         ax.arrow(0, 0, v[0], v[1], color = "k", width = w * 0.002,
-          head_width = w * 0.05, length_includes_head = True)
+          head_width = w * 0.05, length_includes_head = True, zorder = 3)
     if show_reg_prototile:
       self.regularised_prototile.plot(
         ax = ax, ec = reg_prototile_edgcolour, fc = "#00000000", 
-        lw = 1.5, zorder = 10, **kwargs)
+        lw = 1.5, zorder = 2, **kwargs)
     return ax
 
 
