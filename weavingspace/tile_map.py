@@ -129,7 +129,7 @@ class _TileGrid():
     """
     v = self.tile.get_vectors()
     vector_array = np.array([[v[0][0], v[1][0]],
-                 [v[0][1], v[1][1]]])
+                             [v[0][1], v[1][1]]])
     inv_tfm = np.linalg.inv(vector_array)
     return (self._np_to_shapely_transform(vector_array),
         self._np_to_shapely_transform(inv_tfm))
