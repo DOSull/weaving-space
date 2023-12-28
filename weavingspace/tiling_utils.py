@@ -488,7 +488,7 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
       a TileUnit of the dual tiling.
   """
   # get a local patch of this Tiling
-  local_patch = unit.get_local_patch(r = 2, include_0 = True)
+  local_patch = unit.get_local_patch(r = 1, include_0 = True)
   # Find the interior points of these tiles - these will be guaranteed
   # to have a sequence of surrounding tiles incident on them
   interior_pts = _get_interior_vertices(local_patch)
