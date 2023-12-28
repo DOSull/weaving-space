@@ -303,10 +303,9 @@ def is_tangential(shape:geom.Polygon) -> bool:
     negatives = [f <= 0 for f in fractions]
     return not (any(ones) or any(zeros) or any(negatives))
   elif n == 4:
-    # quadrilaterals have this solution
-    odds = [side_lengths[i] for i in range(n) if i % 2 == 1]
-    evens = [side_lengths[i] for i in range(n) if i % 2 == 0]
-    return np.isclose(sum(odds), sum(evens), rtol = RESOLUTION)
+    # for quadrilaterals odd and even side lengths are equal
+    return np.isclose(sum(side_lengths[0::2]), 
+                      sum(side_lengths[1::2]), rtol = RESOLUTION)
   else:
     # other even numbers of sides... hard to avoid brute force
     bisectors = [get_angle_bisector(shape, i) for i in range(n)]

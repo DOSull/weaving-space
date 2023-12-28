@@ -2,12 +2,17 @@
 # coding: utf-8
 
 from typing import Iterable
+from typing import Union
 from dataclasses import dataclass
+import string
 import numpy as np
+import matplotlib.pyplot as pyplot
 
 import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.ops
+import geopandas as gpd
+
 import weavingspace.tiling_utils as tiling_utils
 
 
@@ -29,28 +34,418 @@ class Symmetries():
 
   polygon:geom.Polygon = None
   n:int = None
-  rotations:tuple[float] = None
-  reflection_axes:tuple[float] = None
   p_code:list[tuple[float]] = None
   p_code_r:list[tuple[float]] = None
   rotation_shifts:list[int] = None
   reflection_shifts:list[int] = None
   
+
   def __init__(self, polygon:geom.Polygon):
     self.polygon = polygon
     self.n = shapely.count_coordinates(self.polygon) - 1
     self.p_code = self._get_polygon_code(self.polygon)
     self.p_code_r = self._get_polygon_code(self.polygon, mirrored = True)
-    syms = self.get_symmetries()
-    self.rotation_shifts = syms["rotation-shifts"]
-    self.rotations = syms["rotations"]
-    self.reflection_shifts = syms["reflection-shifts"]
-    self.reflection_axes = syms["reflections"]
+    symmetries = self._find_symmetries()
+    self.rotation_shifts = symmetries["rotation-shifts"]
+    self.reflection_shifts = symmetries["reflection-shifts"]
+    
+
+  def _get_polygon_code(self, p:geom.Polygon, 
+                        mirrored = False) -> list[tuple[float]]:
+    r"""Returns a list of length-angle pairs to uniquely encode a polygon
+    shape (up to scale). The alignment of lengths and angles is important
+    and symmetry detection is sensitively dependent on it...
+
+    The forward (i.e. unmirrored) polygon pairs are of edge lengths and the 
+    angle between each edge and its successor going CW around the polygon. 
+    
+           A[i] ----L[i]---- A (i+1)
+          /                   \
+         /                     \
+                             
+    i.e. edge i is between angles i and i + 1, and angle i is between edge
+    i-1 and i. The unmirrored encoding pairs length[i] with angle[i+1].
+    
+    The mirrored encoding pairs matched indexes of lengths and angles in the
+    original polygon. This means the angle is still the one between and edge 
+    and its successor but proceeding CCW around the polygon.
+    
+    See in particular for clarification.
+    
+    Eades P. 1988. Symmetry Finding Algorithms. In Machine Intelligence and 
+    Pattern Recognition, ed. GT Toussaint, 6:41-51. Computational Morphology. 
+    North-Holland. doi: 10.1016/B978-0-444-70467-2.50009-6.
+    
+    Args:
+      p (geom.Polygon): the polygon to encode
+        mirrored (bool, optional): if true encoding will be in CCC order. 
+        Defaults to False.
+
+    Returns:
+      list[tuple[float]]: _description_
+    """
+    # get edge lengths and angles
+    lengths = tiling_utils.get_side_lengths(p)
+    raw_angles = tiling_utils.get_interior_angles(p)
+    if mirrored:
+      lengths_r = list(reversed(lengths))
+      angles_r = list(reversed(raw_angles))
+      return list(zip(lengths_r, angles_r))
+    else:
+
+      angles = raw_angles[1:] + raw_angles[:1]
+      return list(zip(lengths, angles))
+
+
+  def _find_symmetries(
+      self, other:geom.Polygon = None) -> tuple[list[int], list[int]]:
+    """Finds rotation and reflection symmetries of the supplied polygon.
+    Based on
+    
+      Eades P. 1988. Symmetry Finding Algorithms. In Machine Intelligence and 
+      Pattern Recognition, ed. GT Toussaint, 6:41-51. Computational Morphology. 
+      North-Holland. doi: 10.1016/B978-0-444-70467-2.50009-6.
+    
+    and also
+    
+      Wolter JD, TC Woo, and RA Volz. 1985. Optimal algorithms for symmetry 
+      detection in two and three dimensions. The Visual Computer 1(1): 37-48. 
+      doi: 10.1007/BF01901268.
+    
+    Details in these papers are not unambiguous. This implementation was
+    developed based on them, but with a lot of trial and error to get the index
+    offsets and (especially) retrieval of the reflection axes angles to work.
+
+    Args:
+      other (geom.Polygon, optional): finds transforms between this polygon and 
+      another that may be supplied. Defaults to None, when the comparison 
+      polygon will that for which this Symmetries object has been initialised.
+
+    Returns:
+      dict[str, list[float]]: _description_
+    """
+    # compose extended sequence of length-angle pairs for cyclic matching
+    S = self.p_code + self.p_code[:-1]
+    # get code for the 'other' polygon, if it exists...
+    if not other is None:
+      p_code = self._get_polygon_code(other)
+      p_code_r = self._get_polygon_code(other, mirrored = True)
+    else:
+      p_code = self.p_code
+      p_code_r = self.p_code_r
+    # ==== Rotations ====
+    rotation_shifts = self.find_matches(S, p_code)
+    # ==== Reflections ====
+    reflection_shifts = self.find_matches(S, p_code_r)
+    return {"rotation-shifts": rotation_shifts,
+            "reflection-shifts": reflection_shifts}
+
+
+  def get_rotations(self) -> dict[str, list[float]]:
+    """Gets the rotations associated with this collection of symmetries.
+
+    Returns:
+      dict[str, list[float], list[float]]: Two item dictionary with 'angles' and
+        'transforms' entries, each a list of floats.
+    """
+    c = self.polygon.centroid
+    rot_angles = [np.round(i * 360 / self.n, 6) for i in self.rotation_shifts] 
+    rotations = [np.round(self._get_rotation_transform(a, (c.x, c.y)), 6) 
+                 for a in rot_angles]
+    return {"angles": rot_angles, "transforms": rotations}
+    
+
+  def get_reflections(self) -> dict[str, list[float]]:
+    """Gets the reflections associated with this collection of symmetries.
+
+    Returns:
+      dict[str, list[float], list[float]]: Two item dictionary with 'angles' and
+        'transforms' entries, each a list of floats.
+    """
+    # calculate all possible reflection axes - ordering of these is important
+    # for correct picking - don't mess with this code!
+    c = self.polygon.centroid
+    bearings = tiling_utils.get_side_bearings(self.polygon)
+    reflection_axes = []
+    interior_angles = tiling_utils.get_interior_angles(self.polygon)
+    for i in range(self.n):
+      # angle bisectors
+      reflection_axes.append(bearings[i] - interior_angles[i] / 2)
+      # edge_perpendicular bisectors
+      reflection_axes.append(bearings[i] - 90)  # normal to the edge
+    # pick out those where matches occurred
+    ref_angles = [np.round(reflection_axes[i], 6) 
+                  for i in self.reflection_shifts]
+    reflections = [np.round(self._get_reflection_transform(a, (c.x, c.y)), 6)
+                   for a in ref_angles]
+    return {"angles": ref_angles, "transforms": reflections}
+
+
+  def get_matching_transforms(self, polygon:geom.Polygon = None):
+    if polygon is None:
+      polygon = self.polygon
+    if self.n == shapely.count_coordinates(polygon) - 1:
+      c0 = self.polygon.centroid
+      c2 = polygon.centroid
+      translation = (c0.x - c2.x, c0.y - c2.y)
+      comparison_poly = affine.translate(
+        polygon, translation[0], translation[1])
+      p0_0 = tiling_utils.get_corners(self.polygon)[0]
+      # this next move because affine transforms can sometimes reorder corners
+      corners = tiling_utils.get_corners(comparison_poly, repeat_first = False)
+      p2_0 = corners[0]
+      rotation = (tiling_utils.get_inner_angle(p2_0, c0, p0_0))
+      comparison_poly = geom.Polygon([
+        affine.rotate(c, rotation, c0) for c in corners])
+      syms = self._find_symmetries(other = comparison_poly)
+      rotations = self.get_rotations()
+      syms["rotation-angles"] = rotations["angles"]
+      syms["rotation-transforms"] = rotations["transforms"]
+      reflections = self.get_reflections()
+      syms["reflection-angles"] = reflections["angles"]
+      syms["reflection-transforms"] = reflections["transforms"]
+      syms["pre-translation"] = \
+        self._get_translation_transform(translation[0], translation[1])
+      syms["pre-rotation"] = \
+        self._get_rotation_transform(rotation, (c0.x, c0.y))
+      return syms
+    else:
+      print(f"Polygons have different numbers of sides!")
+      return None
+
+
+  def _get_translation_transform(self, dx:float, dy:float) -> list[float]:
+    """Returns the shapely affine transform tuple for a translation.
+
+    Args:
+        dx (float): translation distance in x direction.
+        dy (float): translation distance in y direction.
+
+    Returns:
+      list[float]: a six item list of floats, per the shapely.affinity.
+      affine_transform method, see 
+        https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations
+    """
+    return [1, 0, 0, 1, dx, dy]
+  
+
+  def _get_rotation_transform(self, angle:float, 
+                              centre:tuple[float] = None) -> list[float]:
+    """Returns the shapely affine transform tuple for a rotation, optionally
+    about a supplied centre point.
+
+    Args:
+        angle (float): the angle of rotation (in degrees).
+        centre (tuple[float], optional): An option centre location. Defaults to 
+        None, which will in turn be converted to (0, 0).
+
+    Returns:
+      list[float]: a six item list of floats, per the shapely.affinity.
+        affine_transform method, see 
+          https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations
+    """
+    if centre is None or np.allclose((0, 0), centre, 
+                                     atol = tiling_utils.RESOLUTION):
+      a = np.radians(angle)
+      return [np.cos(a), -np.sin(a), np.sin(a), np.cos(a), 0, 0]
+    t1 = self._get_translation_transform(-centre[0], -centre[1])
+    r = self._get_rotation_transform(angle)
+    t2 = self._get_translation_transform(centre[0], centre[1])
+    return self._combine_transforms([t1, r, t2])
+  
+  
+  def _get_reflection_transform(
+      self, angle:float, centre:tuple[float] = None) -> list[float]:
+    """Returns a shapely affine transform tuple that will reflect a shape
+    in a line at the specified angle, optionally through a specified centre
+    point.
+
+    Args:
+      angle (float): angle to the x-axis of the line of reflection.
+      centre (tuple[float], optional): point through which the line of 
+        reflection passes. Defaults to None, which
+        will in turn be converted to (0, 0).
+
+    Returns:
+      list[float]: a six item list of floats, per the shapely.affinity.
+        affine_transform method, see 
+          https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations
+    """
+    if centre is None or np.allclose((0, 0), centre, 
+                                     atol = tiling_utils.RESOLUTION):
+      A = 2 * np.radians(angle)
+      return (np.cos(A), np.sin(A), np.sin(A), -np.cos(A), 0, 0)
+    r = self._get_reflection_transform(angle)
+    t1 = self._get_translation_transform(-centre[0], -centre[1])
+    t2 = self._get_translation_transform(centre[0], centre[1])
+    return self._combine_transforms([t1, r, t2])
+
+
+  def _combine_transforms(self, transforms:list[list[float]]) -> list[float]:
+    """Returns a shapely affine transform list that combines the listed
+    sequence of transforms applied in order.
+
+    Args:
+      transforms (list[list[float]]): sequence of transforms to combine.
+
+    Returns:
+      list[float]: a transform tuple combining the supplied transforms applied
+        in order, see 
+          https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations
+    """
+    result = np.identity(3)
+    for t in transforms:
+      result = self._as_numpy_matrix(t) @ result
+    return self._as_shapely_transform(result)
+
+
+  def _reverse_transform(self, transform:list[float]) -> list[float]:
+    """Returns the inverse shapely affine transform of the supplied transform.
+
+    Args:
+      transform (list[float]): the transform for which the inverse is desired.
+
+    Returns:
+      list[float]: shapely affine transform tuple that will invert the supplied
+        transform.
+    """
+    return self._as_shapely_transform(
+      np.linalg.inv(self._as_numpy_matrix(transform)))
+
+
+  def _as_shapely_transform(self, arr:np.array) -> list[float]:
+    """Returns the shapely affine transform list equivalent to the supplied
+    numpy matrix of a conventional augmented affine transform matrix.
+
+    Args:
+      arr (np.array): augmented affine transform matrix of the desired 
+        transform.
+
+    Returns:
+      list[float]: desired shapely affine transform list of floats.
+    """
+    return [arr[0][0], arr[0][1], arr[1][0], arr[1][1], arr[0][2], arr[1][2]]
+  
+  
+  def _as_numpy_matrix(self, transform:list[float]) -> np.array:
+    """Converts the supplied shapely affine transform list to an augmented
+    affine transform matrix in numpy array form. This makes combining transforms
+    much easier.
+
+    Args:
+      transform (list[float]): the transform in shapely format.
+
+    Returns:
+        np.array: the transform in numpy matrix format.
+    """
+    return np.array([[transform[0], transform[1], transform[4]],
+                     [transform[2], transform[3], transform[5]],
+                     [           0,            0,            1]])
+
+
+  def get_corner_labellings(self) -> dict[str, list[str]]:
+    """Returns all the reorderings of vertex labels corresponding to each
+    symmetry.
+
+    Returns:
+      dict[str, list[str]]: A dictionary with two entries. "rotations" is
+        a list of labels under the rotation symmetries, "reflections" those
+        under the reflection symmetries.
+    """
+    labels = list(string.ascii_letters.upper())[:self.n]
+    cycle = labels * 2
+    relabellings_under_rotation = [
+      "".join(cycle[i:self.n + i]) for i in self.rotation_shifts]
+    relabellings_under_reflection = [
+      "".join(cycle[self.n + i:i:-1]) for i in self.reflection_shifts]
+    return {"rotations": relabellings_under_rotation,
+            "reflections": relabellings_under_reflection}
+
+
+  def get_unique_labels(self, 
+                        use_symmetries:Union[int, list[int]] = 0) -> list[str]:
+    labellings = self.get_corner_labellings()
+    labellings = labellings["rotations"] + labellings["reflections"]
+    labellings = ["".join(sorted(x)) for x in zip(*labellings)]
+    n_new_labels = len(set(labellings))
+    letters = list(string.ascii_letters.upper())[-n_new_labels:]
+    mapping = dict()
+    i = 0
+    for label in labellings:
+      if not label in mapping:
+        mapping[label] = letters[i]
+        i = i + 1
+    return [mapping[x] for x in labellings]
+
+
+  def plot(self, which:str = "both", all_in_one = False):
+    
+    if all_in_one:
+      print("all_in_one option not yet implemented!")
+    
+    if which == "both":
+      n_subplots = len(self.rotation_shifts) + len(self.reflection_shifts)
+    elif which[:3] == "rot":
+      n_subplots = len(self.rotation_shifts)
+    elif which[:3] == "ref":
+      n_subplots = len(self.reflection_shifts)
+    else:
+      print(f"Please specify symmetries to plot using the which parameter!")
+      return
+    
+    nr = int(np.floor(np.sqrt(n_subplots)))
+    nc = int(np.ceil(n_subplots / nr))
+    nplots = 0
+    mrr = shapely.oriented_envelope(self.polygon)
+    w, h = sorted(tiling_utils.get_side_lengths(mrr)[:2])
+
+    fig = pyplot.figure(figsize = (10, 10))
+    labels = self.get_corner_labellings()
+    c = self.polygon.centroid
+
+    if which == "both" or which[:3] == "rot":
+      rot_angles = self.get_rotations()["angles"]
+      lbls = labels["rotations"]
+      for (i, rot_angle) in enumerate(rot_angles):
+        nplots = nplots + 1
+        ax = fig.add_subplot(nr, nc, nplots)
+        gpd.GeoSeries([self.polygon]).plot(ax = ax, fc = "lightgrey", lw = 0)
+        for lbl, pt in zip(list(lbls[i]), self.polygon.exterior.coords):
+          ax.annotate(lbl, xy = pt, ha = "center", va = "center", fontsize = 14)
+        if i > 0:
+          rot_angle = np.radians(rot_angle) 
+          arc = geom.LineString(
+            [[w/6 * np.cos(a), w/6 * np.sin(a)]
+             for a in np.linspace(0, rot_angle, 50)])
+          angle = geom.LineString(
+            [(w/3, 0), (0, 0), 
+             (w/4 * np.cos(rot_angle), w/4 * np.sin(rot_angle))])
+          ls = [affine.translate(l, c.x, c.y) for l in [arc, angle]]
+          gpd.GeoSeries(ls).plot(ax = ax, ec = "b", lw = 0.35)
+        self.get_corner_labellings()
+        pyplot.axis("off")
+        
+    if which == "both" or which[:3] == "ref":
+      ref_angles = self.get_reflections()["angles"]
+      lbls = labels["reflections"]
+      for ref_angle in ref_angles:
+        nplots = nplots + 1
+        ax = fig.add_subplot(nr, nc, nplots)
+        gpd.GeoSeries([self.polygon]).plot(ax = ax, fc = "lightgrey", lw = 0)
+        for lbl, pt in zip(list(lbls[i]), self.polygon.exterior.coords):
+          ax.annotate(lbl, xy = pt, ha = "center", va = "center", fontsize = 14)
+        ls = geom.LineString([(-h/2 * 1.1, 0), (h/2 * 1.1, 0)])
+        ls = affine.rotate(ls, ref_angle)
+        ls = affine.translate(ls, c.x, c.y)
+        gpd.GeoSeries([ls]).plot(ax = ax, ec = "r", ls = "dashed", lw = 0.5)
+        pyplot.axis("off")
+
+    return ax
 
 
   def find_matches(self, seq:Iterable[tuple[float]], 
                   pat:Iterable[tuple[float]],
-                  equals = _equal_tuples, debug:bool = False) -> list[int]:
+                  equals = _equal_tuples) -> list[int]:
     """ Implements Knuth-Morris-Pratt string pattern matching algorithm. See:
     https://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm which provides
     detailed pseudo-code on which this code is directly based. This
@@ -68,10 +463,6 @@ class Symmetries():
     Returns:
         Iterable[int]: _description_
     """
-    if debug:
-      print(f"""
-        Searching for: {[_round_tuple(t) for t in pat]} in
-        {[_round_tuple(t) for t in seq]}""")
     j, k, = 0, 0
     finds = []
     table = self.get_table(pat, equals)
@@ -106,7 +497,6 @@ class Symmetries():
     pos = 1
     cnd = 0
     T = {0: -1}
-    
     while pos < len(pattern):
       if np.allclose(pattern[pos], pattern[cnd]):
         T[pos] = T[cnd]
@@ -116,199 +506,7 @@ class Symmetries():
           cnd = T[cnd]
       pos = pos + 1
       cnd = cnd + 1
-    
     T[pos] = cnd
     return tuple(T.values())
 
-
-  def _get_polygon_code(self, p:geom.Polygon, 
-                        mirrored = False) -> list[tuple[float]]:
-    r"""Returns a list of length-angle pairs to uniquely encode a polygon
-    shape (up to scale). The alignment of lengths and angles is important
-    and symmetry detection is sensitively dependent on it...
-
-    The forward (i.e. unmirrored) polygon pairs are of edge lengths and the 
-    angle between each edge and its successor going CW around the polygon. 
-    
-           A[i] ----L[i]---- A (i+1)
-          /                   \
-         /                     \
-                             
-    i.e. edge i is between angles i and i + 1, and angle i is between edge
-    i-1 and i. The unmirrored encoding pairs length[i] with angle[i+1].
-    
-    The mirrored encoding pairs matched indexes of lengths and angles in the
-    original polygon. This means the angle is still the one between and edge 
-    and its successor but proceeding CCW around the polygon.
-    
-    See in particular for clarification.
-    
-    Eades P. 1988. Symmetry Finding Algorithms. In Machine Intelligence and 
-    Pattern Recognition, ed. GT Toussaint, 6:41–51. Computational Morphology. 
-    North-Holland. doi: 10.1016/B978-0-444-70467-2.50009-6.
-    
-    Args:
-      p (geom.Polygon): the polygon to encode
-        mirrored (bool, optional): if true encoding will be in CCC order. 
-        Defaults to False.
-
-    Returns:
-      list[tuple[float]]: _description_
-    """
-    # get edge lengths and angles
-    lengths = tiling_utils.get_side_lengths(p)
-    raw_angles = tiling_utils.get_interior_angles(p)
-    if mirrored:
-      lengths_r = list(reversed(lengths))
-      angles_r = list(reversed(raw_angles))
-      return list(zip(lengths_r, angles_r))
-    else:
-
-      angles = raw_angles[1:] + raw_angles[:1]
-      return list(zip(lengths, angles))
-
-
-  def get_symmetries(self, other:geom.Polygon = None) -> dict[str, list[float]]:
-    """Detects rotation and reflection symmetries of the supplied polygon.
-    Based on
-    
-      Eades P. 1988. Symmetry Finding Algorithms. In Machine Intelligence and 
-      Pattern Recognition, ed. GT Toussaint, 6:41–51. Computational Morphology. 
-      North-Holland. doi: 10.1016/B978-0-444-70467-2.50009-6.
-    
-    and also
-    
-      Wolter JD, TC Woo, and RA Volz. 1985. Optimal algorithms for symmetry 
-      detection in two and three dimensions. The Visual Computer 1(1): 37–48. 
-      doi: 10.1007/BF01901268.
-    
-    Details in these papers are not unambiguous. This implementation was
-    developed based on them, but with a lot of trial and error to get the index
-    offsets and (especially) retrieval of the reflection axes angles to work.
-    This implementation appears to work and is cleaner than either of those 
-    descriptions!
-
-    Args:
-      p (geom.Polygon): The polygon for which symmetries are required.
-
-    Returns:
-      dict[str, list[float]]: Dictionary with entries:
-        'rotations', a list of the angles of rotational symmetry. This will 
-          always contain at least [0] the 'identity' symmetry. 
-        'reflections', a list of the angles to the x-axis of lines of reflection
-          symmetry. This list may be empty if no such lines exist.
-    """
-    # compose extended sequence of length-angle pairs for cyclic matching
-    S = self.p_code + self.p_code[:-1]
-    c = self.polygon.centroid
-    # get code for the 'other' polygon, if it exists...
-    if not other is None:
-      p_code = self._get_polygon_code(other)
-      p_code_r = self._get_polygon_code(other, mirrored = True)
-    else:
-      p_code = self.p_code
-      p_code_r = self.p_code_r
-    # ==== Rotations ====
-    rotation_matches = self.find_matches(S, p_code)
-    # ==== Reflections ====
-    reflection_matches = self.find_matches(S, p_code_r)
-    # calculate rotations
-    rot_angles = [i * 360 / self.n for i in rotation_matches] 
-    rotations = [self._get_rotation_transform(a, (c.x, c.y)) 
-                 for a in rot_angles]
-    # calculate all possible reflection axes - ordering of these is important
-    # for correct picking - don't mess with this code!
-    bearings = tiling_utils.get_side_bearings(self.polygon)
-    reflection_axes = []
-    interior_angles = tiling_utils.get_interior_angles(self.polygon)
-    for i in range(self.n):
-      # angle bisectors
-      reflection_axes.append(bearings[i] - interior_angles[i] / 2)
-      # edge_perpendicular bisectors
-      reflection_axes.append(bearings[i] - 90)  # normal to the edge
-    # pick out those where matches occurred
-    ref_angles = [reflection_axes[i] for i in reflection_matches]
-    reflections = [self._get_reflection_transform(a, (c.x, c.y))
-                   for a in ref_angles]
-    return {
-      "rotation-shifts": rotation_matches,
-      "rotations": rot_angles,
-      "rotation-transforms": rotations,
-      "reflection-shifts": reflection_matches,
-      "reflections": ref_angles,
-      "reflection-transforms": reflections}
-
-
-  def get_matching_transforms(self, polygon:geom.Polygon):
-    if self.n == shapely.count_coordinates(polygon) - 1:
-      c0 = self.polygon.centroid
-      c2 = polygon.centroid
-      translation = (c0.x - c2.x, c0.y - c2.y)
-      comparison_poly = affine.translate(polygon, translation[0], translation[1])
-      p0_0 = tiling_utils.get_corners(self.polygon)[0]
-      # this next move because affine transforms can sometimes reorder corners
-      corners = tiling_utils.get_corners(comparison_poly, repeat_first = False)
-      p2_0 = corners[0]
-      rotation = (tiling_utils.get_inner_angle(p2_0, c0, p0_0))
-      comparison_poly = geom.Polygon([
-        affine.rotate(c, rotation, c0) for c in corners])
-      syms = self.get_symmetries(other =  comparison_poly)
-      syms["pre-translation"] = \
-        self._get_translation_transform(translation[0], translation[1])
-      syms["pre-rotation"] = \
-        self._get_rotation_transform(rotation, (c0.x, c0.y))
-      return syms
-    else:
-      print(f"Polygons have different numbers of sides!")
-      return None
-
-
-  def _get_translation_transform(self, dx:float, dy:float):
-    return [1, 0, 0, 1, dx, dy]
-  
-
-  def _get_rotation_transform(self, angle:float, 
-                              centre:tuple[float] = None):
-    if centre is None or np.allclose((0, 0), centre, 
-                                     atol = tiling_utils.RESOLUTION):
-      a = np.radians(angle)
-      return [np.cos(a), -np.sin(a), np.sin(a), np.cos(a), 0, 0]
-    t1 = self._get_translation_transform(-centre[0], -centre[1])
-    r = self._get_rotation_transform(angle)
-    t2 = self._get_translation_transform(centre[0], centre[1])
-    return self._combine_transforms([t1, r, t2])
-  
-  
-  def _get_reflection_transform(self, angle:float,
-                                centre:tuple[float] = None):
-    if centre is None or np.allclose((0, 0), centre, 
-                                     atol = tiling_utils.RESOLUTION):
-      A = 2 * np.radians(angle)
-      return (np.cos(A), np.sin(A), np.sin(A), -np.cos(A), 0, 0)
-    r = self._get_reflection_transform(angle)
-    t1 = self._get_translation_transform(-centre[0], -centre[1])
-    t2 = self._get_translation_transform(centre[0], centre[1])
-    return self._combine_transforms([t1, r, t2])
-
-
-  def _combine_transforms(self, transforms:list[list[float]]) -> list[float]:
-    result = np.identity(3)
-    for t in transforms:
-      result = self._as_numpy_matrix(t) @ result
-    return self._as_shapely_transform(result)
-
-
-  def _reverse_transform(self, transform:list[float]) -> list[float]:
-    return self._as_shapely_transform(
-      np.linalg.inv(self._as_numpy_matrix(transform)))
-
-
-  def _as_shapely_transform(self, arr:np.array) -> list[float]:
-    return [arr[0][0], arr[0][1], arr[1][0], arr[1][1], arr[0][2], arr[1][2]]
-  
-  
-  def _as_numpy_matrix(self, tr:list[float]) -> np.array:
-    return np.array([[tr[0], tr[1], tr[4]],
-                     [tr[2], tr[3], tr[5]],
-                     [    0,     0,     1]])
 
