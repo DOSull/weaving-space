@@ -10,8 +10,7 @@ from typing import Iterable, Union
 
 import re
 import string
-
-from math import fsum
+import copy
 
 import numpy as np
 
@@ -19,7 +18,7 @@ import geopandas as gpd
 import pandas as pd
 import shapely.geometry as geom
 import shapely.affinity as affine
-import shapely.wkt as wkt
+# import shapely.wkt as wkt
 import shapely.ops
 
 
@@ -114,6 +113,12 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
   corners = [(R * np.cos(np.radians(a)),
               R * np.sin(np.radians(a))) for a in angles]
   return gridify(geom.Polygon(corners))
+
+
+def rotate_preserving_order(polygon:geom.Polygon, angle:float,
+                            centre:geom.Point) -> geom.Polygon:
+  corners = get_corners(polygon, repeat_first = False)
+  return geom.Polygon([affine.rotate(c, angle, centre) for c in corners])
 
 
 def is_convex(shape:geom.Polygon) -> bool:

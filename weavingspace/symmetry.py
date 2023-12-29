@@ -23,7 +23,7 @@ def _equal_tuples(t1:Iterable[float], t2:Iterable[float]) -> bool:
   """
   return np.allclose(t1, t2, atol = tiling_utils.RESOLUTION * 10)
 
-def _round_tuple(t:Iterable[float], digits:int = 1) -> Iterable[float]:
+def _round_tuple(t:Iterable[float], digits:int = 3) -> Iterable[float]:
   """Convenience function to round all members of an interable. Used for 
   display purposes."""
   return tuple([np.round(x, digits) for x in t])
@@ -92,13 +92,12 @@ class Symmetries():
       angles_r = list(reversed(raw_angles))
       return list(zip(lengths_r, angles_r))
     else:
-
       angles = raw_angles[1:] + raw_angles[:1]
       return list(zip(lengths, angles))
 
 
   def _find_symmetries(
-      self, other:geom.Polygon = None) -> tuple[list[int], list[int]]:
+      self, other_polygon:geom.Polygon = None) -> tuple[list[int], list[int]]:
     """Finds rotation and reflection symmetries of the supplied polygon.
     Based on
     
@@ -127,9 +126,9 @@ class Symmetries():
     # compose extended sequence of length-angle pairs for cyclic matching
     S = self.p_code + self.p_code[:-1]
     # get code for the 'other' polygon, if it exists...
-    if not other is None:
-      p_code = self._get_polygon_code(other)
-      p_code_r = self._get_polygon_code(other, mirrored = True)
+    if not other_polygon is None:
+      p_code = self._get_polygon_code(other_polygon)
+      p_code_r = self._get_polygon_code(other_polygon, mirrored = True)
     else:
       p_code = self.p_code
       p_code_r = self.p_code_r
@@ -141,27 +140,31 @@ class Symmetries():
             "reflection-shifts": reflection_shifts}
 
 
-  def get_rotations(self) -> dict[str, list[float]]:
+  def get_rotations(self, offsets:list[int] = None) -> dict[str, list[float]]:
     """Gets the rotations associated with this collection of symmetries.
 
     Returns:
       dict[str, list[float], list[float]]: Two item dictionary with 'angles' and
         'transforms' entries, each a list of floats.
     """
+    if offsets is None:
+      offsets = self.rotation_shifts
     c = self.polygon.centroid
-    rot_angles = [np.round(i * 360 / self.n, 6) for i in self.rotation_shifts] 
+    rot_angles = [np.round(i * 360 / self.n, 6) for i in offsets] 
     rotations = [np.round(self._get_rotation_transform(a, (c.x, c.y)), 6) 
                  for a in rot_angles]
     return {"angles": rot_angles, "transforms": rotations}
     
 
-  def get_reflections(self) -> dict[str, list[float]]:
+  def get_reflections(self, offsets:list[int] = None) -> dict[str, list[float]]:
     """Gets the reflections associated with this collection of symmetries.
 
     Returns:
       dict[str, list[float], list[float]]: Two item dictionary with 'angles' and
         'transforms' entries, each a list of floats.
     """
+    if offsets is None:
+      offsets = self.reflection_shifts
     # calculate all possible reflection axes - ordering of these is important
     # for correct picking - don't mess with this code!
     c = self.polygon.centroid
@@ -174,44 +177,56 @@ class Symmetries():
       # edge_perpendicular bisectors
       reflection_axes.append(bearings[i] - 90)  # normal to the edge
     # pick out those where matches occurred
-    ref_angles = [np.round(reflection_axes[i], 6) 
-                  for i in self.reflection_shifts]
+    ref_angles = [np.round(reflection_axes[i], 6) for i in offsets]
     reflections = [np.round(self._get_reflection_transform(a, (c.x, c.y)), 6)
                    for a in ref_angles]
     return {"angles": ref_angles, "transforms": reflections}
 
 
-  def get_matching_transforms(self, polygon:geom.Polygon = None):
-    if polygon is None:
-      polygon = self.polygon
-    if self.n == shapely.count_coordinates(polygon) - 1:
+  def get_matching_transforms(self, other:geom.Polygon):
+    if self.n == shapely.count_coordinates(other) - 1:
       c0 = self.polygon.centroid
-      c2 = polygon.centroid
-      translation = (c0.x - c2.x, c0.y - c2.y)
-      comparison_poly = affine.translate(
-        polygon, translation[0], translation[1])
+      c2 = other.centroid
+      trans = (c0.x - c2.x, c0.y - c2.y)
+      other = affine.translate(other, trans[0], trans[1])
+
+      syms = self._find_symmetries(other_polygon = other)
+      rot_shifts = syms["rotation-shifts"]
+      if rot_shifts[0] != 0:
+        print(f"{rot_shifts[0]=}")
+        other = self.shift_polygon_corners(other, -rot_shifts[0])
+        rotation = -self.get_rotations(rot_shifts)["angles"][0]
+        other = tiling_utils.rotate_preserving_order(other, rotation, c0)
+
       p0_0 = tiling_utils.get_corners(self.polygon)[0]
-      # this next move because affine transforms can sometimes reorder corners
-      corners = tiling_utils.get_corners(comparison_poly, repeat_first = False)
-      p2_0 = corners[0]
-      rotation = (tiling_utils.get_inner_angle(p2_0, c0, p0_0))
-      comparison_poly = geom.Polygon([
-        affine.rotate(c, rotation, c0) for c in corners])
-      syms = self._find_symmetries(other = comparison_poly)
-      rotations = self.get_rotations()
-      syms["rotation-angles"] = rotations["angles"]
-      syms["rotation-transforms"] = rotations["transforms"]
-      reflections = self.get_reflections()
-      syms["reflection-angles"] = reflections["angles"]
-      syms["reflection-transforms"] = reflections["transforms"]
+      corners = tiling_utils.get_corners(other, repeat_first = False)
+      rotation = rotation + (tiling_utils.get_inner_angle(corners[0], c0, p0_0))
+
+      syms = self._find_symmetries(other_polygon = other)
+      rot_shifts = syms["rotation-shifts"]
+      rot_details = self.get_rotations(rot_shifts)
+      syms["rotation-angles"] = rot_details["angles"]
+      syms["rotation-transforms"] = rot_details["transforms"]
+      ref_shifts = syms["reflection-shifts"]
+      ref_details = self.get_reflections(ref_shifts)
+      syms["reflection-angles"] = ref_details["angles"]
+      syms["reflection-transforms"] = ref_details["transforms"]
+      syms["pre-trans"] = trans
       syms["pre-translation"] = \
-        self._get_translation_transform(translation[0], translation[1])
+        self._get_translation_transform(trans[0], trans[1])
+      syms["pre-rotn"] = rotation
       syms["pre-rotation"] = \
         self._get_rotation_transform(rotation, (c0.x, c0.y))
       return syms
     else:
       print(f"Polygons have different numbers of sides!")
       return None
+
+
+  def shift_polygon_corners(self, polygon:geom.Polygon, 
+                            offset:int) -> geom.Polygon:
+    corners = tiling_utils.get_corners(polygon, repeat_first = False)
+    return geom.Polygon([c for c in corners[offset:] + corners[:offset]]) 
 
 
   def _get_translation_transform(self, dx:float, dy:float) -> list[float]:
@@ -248,9 +263,11 @@ class Symmetries():
                                      atol = tiling_utils.RESOLUTION):
       a = np.radians(angle)
       return [np.cos(a), -np.sin(a), np.sin(a), np.cos(a), 0, 0]
-    t1 = self._get_translation_transform(-centre[0], -centre[1])
+    
+    dx, dy = centre
+    t1 = self._get_translation_transform(-dx, -dy)
     r = self._get_rotation_transform(angle)
-    t2 = self._get_translation_transform(centre[0], centre[1])
+    t2 = self._get_translation_transform(dx, dy)
     return self._combine_transforms([t1, r, t2])
   
   
@@ -275,9 +292,10 @@ class Symmetries():
                                      atol = tiling_utils.RESOLUTION):
       A = 2 * np.radians(angle)
       return (np.cos(A), np.sin(A), np.sin(A), -np.cos(A), 0, 0)
+    dx, dy = centre
+    t1 = self._get_translation_transform(-dx, -dy)
     r = self._get_reflection_transform(angle)
-    t1 = self._get_translation_transform(-centre[0], -centre[1])
-    t2 = self._get_translation_transform(centre[0], centre[1])
+    t2 = self._get_translation_transform(dx, dy)
     return self._combine_transforms([t1, r, t2])
 
 
