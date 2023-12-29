@@ -183,48 +183,89 @@ class Symmetries():
     return {"angles": ref_angles, "transforms": reflections}
 
 
-  def get_matching_transforms(self, other:geom.Polygon):
-    if self.n == shapely.count_coordinates(other) - 1:
-      c0 = self.polygon.centroid
-      c2 = other.centroid
-      trans = (c0.x - c2.x, c0.y - c2.y)
-      other = affine.translate(other, trans[0], trans[1])
+  def get_matching_transforms(self, 
+                              other:geom.Polygon) -> dict[str, list[float]]:
+    """Finds the transforms that will map another polygon onto this one.
+    Reuses the _find_symmetries() method, but supplying the other polygon
+    as that method's optional argument. Before determining the match the
+    points on the perimeter of the other polygon are reordered so that the
+    index positions match those of the reference polygon.
 
-      syms = self._find_symmetries(other_polygon = other)
-      rot_shifts = syms["rotation-shifts"]
+    Args:
+        other (geom.Polygon): the polygon to match.
+
+    Returns:
+      dict[str,Union[str,list[float]]]: A dictionary with the following entries:
+      'rotation-shifts': vertex offsets to form matches by rotation
+      'reflection-shifts': vertex offsets to form matches by reflection
+      'rotation-angles': list of rotation angles of matches (in degrees)
+      'reflection-angles': list of angles of reflection axes (in degrees)
+      'rotation-transforms': list of shapely affine transform tuples of    
+        rotation matches
+      'reflection-transforms': list of shapely affine transform tuples of
+        reflection matches
+      'pre-translation': translation to align other with this polygon as tuple
+        of floats
+      'pre-rotation': rotation to align other with this polygon (in degrees)
+      'pre-transform': shapely affine transform tuple that brings other into
+        alignment with this polygon such that the matching transforms work 
+    """
+    if self.n == shapely.count_coordinates(other) - 1:
+      # shift them to the same centroid
+      c0 = self.polygon.centroid
+      trans = (c0.x - other.centroid.x, c0.y - other.centroid.y)
+      other = affine.translate(other, trans[0], trans[1])
+      # now see if they align at all
+      symms = self._find_symmetries(other_polygon = other)
+      rot_shifts = symms["rotation-shifts"]
+      if len(rot_shifts) == 0:
+        print(f"Polygons do not match at all!")
+        return None
+      # now align the corners so indexes of their corners match
       if rot_shifts[0] != 0:
-        print(f"{rot_shifts[0]=}")
-        other = self.shift_polygon_corners(other, -rot_shifts[0])
+        other = self._shift_polygon_corners(other, -rot_shifts[0])
         rotation = -self.get_rotations(rot_shifts)["angles"][0]
         other = tiling_utils.rotate_preserving_order(other, rotation, c0)
-
+      # now determine the additional rotation needed to line them up
       p0_0 = tiling_utils.get_corners(self.polygon)[0]
-      corners = tiling_utils.get_corners(other, repeat_first = False)
-      rotation = rotation + (tiling_utils.get_inner_angle(corners[0], c0, p0_0))
-
-      syms = self._find_symmetries(other_polygon = other)
-      rot_shifts = syms["rotation-shifts"]
+      other_corners = tiling_utils.get_corners(other, repeat_first = False)
+      rotation = rotation + \
+        tiling_utils.get_inner_angle(other_corners[0], c0, p0_0)
+      # now find store and report the matching symmetries
+      symms = self._find_symmetries(other_polygon = other)
+      rot_shifts = symms["rotation-shifts"]
       rot_details = self.get_rotations(rot_shifts)
-      syms["rotation-angles"] = rot_details["angles"]
-      syms["rotation-transforms"] = rot_details["transforms"]
-      ref_shifts = syms["reflection-shifts"]
+      symms["rotation-angles"] = rot_details["angles"]
+      symms["rotation-transforms"] = rot_details["transforms"]
+      ref_shifts = symms["reflection-shifts"]
       ref_details = self.get_reflections(ref_shifts)
-      syms["reflection-angles"] = ref_details["angles"]
-      syms["reflection-transforms"] = ref_details["transforms"]
-      syms["pre-trans"] = trans
-      syms["pre-translation"] = \
-        self._get_translation_transform(trans[0], trans[1])
-      syms["pre-rotn"] = rotation
-      syms["pre-rotation"] = \
-        self._get_rotation_transform(rotation, (c0.x, c0.y))
-      return syms
+      symms["reflection-angles"] = ref_details["angles"]
+      symms["reflection-transforms"] = ref_details["transforms"]
+      symms["pre-translation"] = trans
+      symms["pre-rotation"] = rotation
+      symms["pre-transform"] = self._combine_transforms(
+        [self._get_translation_transform(trans[0], trans[1]),
+         self._get_rotation_transform(rotation, (c0.x, c0.y))])
+      return symms
     else:
       print(f"Polygons have different numbers of sides!")
       return None
 
 
-  def shift_polygon_corners(self, polygon:geom.Polygon, 
-                            offset:int) -> geom.Polygon:
+  def _shift_polygon_corners(self, polygon:geom.Polygon, 
+                             offset:int) -> geom.Polygon:
+    """Returns this polygon but with its first corner offset from its
+    original position in the coordinate sequence. The returned polygon will
+    be identical but stored differently internally.
+
+    Args:
+      polygon (geom.Polygon): the polygon to reorder.
+      offset (int): the number of corner positions by which to shift the
+        sequence.
+
+    Returns:
+        geom.Polygon: the reordered polygon.
+    """
     corners = tiling_utils.get_corners(polygon, repeat_first = False)
     return geom.Polygon([c for c in corners[offset:] + corners[:offset]]) 
 
@@ -422,38 +463,36 @@ class Symmetries():
     c = self.polygon.centroid
 
     if which == "both" or which[:3] == "rot":
-      rot_angles = self.get_rotations()["angles"]
-      lbls = labels["rotations"]
-      for (i, rot_angle) in enumerate(rot_angles):
+      rotations = self.get_rotations()["angles"]
+      for (i, rotn), label in zip(enumerate(rotations), labels["rotations"]):
         nplots = nplots + 1
         ax = fig.add_subplot(nr, nc, nplots)
         gpd.GeoSeries([self.polygon]).plot(ax = ax, fc = "lightgrey", lw = 0)
-        for lbl, pt in zip(list(lbls[i]), self.polygon.exterior.coords):
+        for lbl, pt in zip(list(label), self.polygon.exterior.coords):
           ax.annotate(lbl, xy = pt, ha = "center", va = "center", fontsize = 14)
         if i > 0:
-          rot_angle = np.radians(rot_angle) 
+          rotn = np.radians(rotn) 
           arc = geom.LineString(
             [[w/6 * np.cos(a), w/6 * np.sin(a)]
-             for a in np.linspace(0, rot_angle, 50)])
+             for a in np.linspace(0, rotn, 50)])
           angle = geom.LineString(
             [(w/3, 0), (0, 0), 
-             (w/4 * np.cos(rot_angle), w/4 * np.sin(rot_angle))])
+             (w/4 * np.cos(rotn), w/4 * np.sin(rotn))])
           ls = [affine.translate(l, c.x, c.y) for l in [arc, angle]]
           gpd.GeoSeries(ls).plot(ax = ax, ec = "b", lw = 0.35)
         self.get_corner_labellings()
         pyplot.axis("off")
         
     if which == "both" or which[:3] == "ref":
-      ref_angles = self.get_reflections()["angles"]
-      lbls = labels["reflections"]
-      for ref_angle in ref_angles:
+      reflections = self.get_reflections()["angles"]
+      for refn, label in zip(reflections, labels["reflections"]):
         nplots = nplots + 1
         ax = fig.add_subplot(nr, nc, nplots)
         gpd.GeoSeries([self.polygon]).plot(ax = ax, fc = "lightgrey", lw = 0)
-        for lbl, pt in zip(list(lbls[i]), self.polygon.exterior.coords):
+        for lbl, pt in zip(list(label), self.polygon.exterior.coords):
           ax.annotate(lbl, xy = pt, ha = "center", va = "center", fontsize = 14)
         ls = geom.LineString([(-h/2 * 1.1, 0), (h/2 * 1.1, 0)])
-        ls = affine.rotate(ls, ref_angle)
+        ls = affine.rotate(ls, refn)
         ls = affine.translate(ls, c.x, c.y)
         gpd.GeoSeries([ls]).plot(ax = ax, ec = "r", ls = "dashed", lw = 0.5)
         pyplot.axis("off")
@@ -462,8 +501,8 @@ class Symmetries():
 
 
   def find_matches(self, seq:Iterable[tuple[float]], 
-                  pat:Iterable[tuple[float]],
-                  equals = _equal_tuples) -> list[int]:
+                   pat:Iterable[tuple[float]],
+                   equals = _equal_tuples) -> list[int]:
     """ Implements Knuth-Morris-Pratt string pattern matching algorithm. See:
     https://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm which provides
     detailed pseudo-code on which this code is directly based. This
