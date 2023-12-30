@@ -70,7 +70,7 @@ class WeaveGrid:
       angles = [np.pi / 6 * x for x in range(3, 12, 4)]  # [90, 210, 330]
       dx = [self.spacing * 2 / 3 * np.cos(a) for a in angles]
       dy = [self.spacing * 2 / 3 * np.sin(a) for a in angles]
-    return np.array(dx + dy).reshape(2, self.n_axes)
+    return np.array(dx + dy).reshape((2, self.n_axes))
 
 
   def get_coordinates(self, coords: tuple) -> np.ndarray:
@@ -84,6 +84,7 @@ class WeaveGrid:
       np.ndarray: float coordinate pair of grid cell centroid.
     """
     return self.basis @ coords
+
 
   def get_grid_cell_at(self, coords: tuple[int] = None) -> geom.Polygon:
     """Returns grid cell polygon centred on coords.
@@ -237,8 +238,8 @@ class WeaveGrid:
     # we need centre of cell bounding box to shift strands to 
     # vertical center of triangular cells. In rectangular case
     # this will be (0, 0).
-    cell_offset = cell.envelope.centroid.coords[0]
-    strands = affine.translate(strands, cell_offset[0], cell_offset[1])
+    cell_offset = cell.envelope.centroid
+    strands = affine.translate(strands, cell_offset.x, cell_offset.y)
     strands = geom.MultiPolygon(
         [expanded_cell.intersection(s) for s in strands.geoms])
     strands = affine.rotate(strands, orientation, origin = cell.centroid)

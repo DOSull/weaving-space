@@ -12,6 +12,7 @@ import logging
 import itertools
 from dataclasses import dataclass
 from typing import Iterable, Union
+from collections import defaultdict
 
 import pandas as pd
 import geopandas as gpd
@@ -202,18 +203,18 @@ class WeaveUnit(Tileable):
     labels = [thread * int(np.ceil(dim // len(thread)))
               for dim, thread in zip(loom.dimensions, strand_labels)]
     weave_polys = [] 
+    strand_ids = [] 
     cells = []
-    strand_ids = []
-    for coords, strand_order in zip(loom.indices, loom.orderings):
-      ids = [thread[coord] for coord, thread in zip(coords, labels)]
-      cells.append(grid.get_grid_cell_at(coords))
+    for k, strand_order in zip(loom.indices, loom.orderings):
+      ids = [thread[coord] for coord, thread in zip(k, labels)]
+      cells.append(grid.get_grid_cell_at(k))
       if strand_order is None:
         continue  # No strands present
       if strand_order == "NA":
         continue  # Inconsistency in layer order
       n_slices = [len(id) for id in ids]
       next_polys = grid.get_visible_cell_strands(
-        width = self.aspect, coords = coords,
+        width = self.aspect, coords = k,
         strand_order = strand_order, n_slices = n_slices)
       weave_polys.extend(next_polys)
       next_labels = [list(ids[i]) for i in strand_order]  # list of lists
@@ -258,8 +259,22 @@ class WeaveUnit(Tileable):
                                 for p in polys]))
     weave = weave[weave.tile_id != "-"]
     
-    weave = weave.dissolve(by = "tile_id", as_index = False)
-    weave = weave.explode(ignore_index = True)
+    # some buffering is required if aspect is 1 to safely dissolve and
+    # explode weave unit tiles that meet at corners
+    if self.aspect == 1:
+      # grow for dissolve
+      weave.geometry = weave.geometry.buffer(
+        self.spacing * tiling_utils.RESOLUTION, cap_style = 3)
+      weave = weave.dissolve(by = "tile_id", as_index = False)
+      # shrink by more to explode into separate polygons
+      weave.geometry = weave.geometry.buffer(
+        -2 * self.spacing * tiling_utils.RESOLUTION, cap_style = 3)
+      weave = weave.explode(ignore_index = True)
+      weave.geometry = weave.geometry.buffer(
+        self.spacing * tiling_utils.RESOLUTION, cap_style = 3)
+    else: # aspect < 1 is fine without buffering
+      weave = weave.dissolve(by = "tile_id", as_index = False)
+      weave = weave.explode(ignore_index = True)
 
     return weave.set_crs(self.crs)
 

@@ -504,6 +504,9 @@ class Tileable:
       self.regularised_prototile.plot(
         ax = ax, ec = reg_prototile_edgcolour, fc = "#00000000", 
         lw = 1.5, zorder = 2, **kwargs)
+      ax.annotate("""NOTE regularised prototile (red) indicative\nonly. Prototile and vectors (black) actually do\ntiling. Regularised prototiles for weave units\nare particularly problematic!""", 
+                  xycoords = "axes fraction", xy = (0.01, 0.99), ha = "left", 
+                  va = "top", bbox = {"lw": 0, "fc": "#ffffff40"})
     return ax
 
 
