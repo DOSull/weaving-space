@@ -315,7 +315,7 @@ class Tileable:
     # get the translation vectors in a dictionary indexed by coordinates
     # we keep track of the sum of vectors using the (integer) coordinates
     # to avoid duplication of moves due to floating point inaccuracies
-    vectors = self.get_vectors(as_dict=True)
+    vectors = self.get_vectors(as_dict = True)
     for i in range(steps):
       new_vecs = {}
       for k1, v1 in last_vecs.items():
@@ -333,9 +333,26 @@ class Tileable:
     if not include_0:  # throw away the identity vector
       vecs.pop((0, 0, 0) if self.base_shape in (TileShape.HEXAGON,) else (0, 0))
     ids, tiles = [], []
+    # we need to add the translated prototiles in order of their distance from # tile 0, esp. in the square case, i.e. something like this:
+    #
+    #      5 4 3 4 5
+    #      4 2 1 2 4
+    #      3 1 0 1 3
+    #      4 2 1 2 4
+    #      5 4 3 4 5
+    #
+    # this is important for topology detection, where filtering back to the
+    # local patch of radius 1 is greatly eased if prototiles have been added in 
+    # this order. We use the vector index tuples not the euclidean distances
+    # because this may be more resistant to odd effects for non-convex tiles
     extent = self.prototile.geometry.scale(2 * r + tiling_utils.RESOLUTION, 
                                            2 * r + tiling_utils.RESOLUTION)[0]
-    for v in vecs.values():
+    vector_lengths = {index: np.sqrt(sum([_ ** 2 for _ in index]))
+                      for index in vecs.keys()}
+    ordered_vector_keys = [k for k, v in sorted(vector_lengths.items(), 
+                                                key = lambda item: item[1])]
+    for k in ordered_vector_keys:
+      v = vecs[k]
       if geom.Point(v[0], v[1]).within(extent):
         ids.extend(self.tiles.tile_id)
         tiles.extend(

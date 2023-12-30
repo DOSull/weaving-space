@@ -14,5 +14,5 @@ from .tile_unit import *
 from .weave_matrices import *
 from .weave_unit import *
 from .tile_map import *
-from .topology import *
 from .symmetry import *
+from .topology import *

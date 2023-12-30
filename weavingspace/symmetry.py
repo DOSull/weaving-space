@@ -2,7 +2,6 @@
 # coding: utf-8
 
 from typing import Iterable
-from typing import Union
 from dataclasses import dataclass
 import string
 import numpy as np
@@ -402,7 +401,7 @@ class Symmetries():
                      [           0,            0,            1]])
 
 
-  def get_corner_labellings(self) -> dict[str, list[str]]:
+  def get_corner_labels(self) -> dict[str, list[str]]:
     """Returns all the reorderings of vertex labels corresponding to each
     symmetry.
 
@@ -412,29 +411,33 @@ class Symmetries():
         under the reflection symmetries.
     """
     labels = list(string.ascii_letters.upper())[:self.n]
-    cycle = labels * 2
-    relabellings_under_rotation = [
-      "".join(cycle[i:self.n + i]) for i in self.rotation_shifts]
-    relabellings_under_reflection = [
-      "".join(cycle[self.n + i:i:-1]) for i in self.reflection_shifts]
-    return {"rotations": relabellings_under_rotation,
-            "reflections": relabellings_under_reflection}
+    return self._get_labels_under_symmetries(labels)
 
 
-  def get_unique_labels(self, 
-                        use_symmetries:Union[int, list[int]] = 0) -> list[str]:
-    labellings = self.get_corner_labellings()
+  def get_unique_labels(self, offset:int = 0) -> list[str]:
+    labellings = self.get_corner_labels()
     labellings = labellings["rotations"] + labellings["reflections"]
     labellings = ["".join(sorted(x)) for x in zip(*labellings)]
     n_new_labels = len(set(labellings))
-    letters = list(string.ascii_letters.upper())[-n_new_labels:]
+    letters = list(string.ascii_letters.upper())[offset:offset + n_new_labels]
     mapping = dict()
     i = 0
     for label in labellings:
       if not label in mapping:
         mapping[label] = letters[i]
         i = i + 1
-    return [mapping[x] for x in labellings]
+    return self._get_labels_under_symmetries([mapping[x] for x in labellings])
+  
+  
+  def _get_labels_under_symmetries(
+      self, labels:list[str]) -> dict[str, list[str]]:
+    cycle = labels * 2
+    under_rotation = ["".join(cycle[i:self.n + i]) 
+                      for i in self.rotation_shifts]
+    under_reflection = ["".join(cycle[self.n + i:i:-1]) 
+                        for i in self.reflection_shifts]
+    return {"rotations": under_rotation,
+            "reflections": under_reflection}
 
 
   def plot(self, which:str = "both", all_in_one = False):
@@ -459,7 +462,7 @@ class Symmetries():
     w, h = sorted(tiling_utils.get_side_lengths(mrr)[:2])
 
     fig = pyplot.figure(figsize = (10, 10))
-    labels = self.get_corner_labellings()
+    labels = self.get_unique_labels()
     c = self.polygon.centroid
 
     if which == "both" or which[:3] == "rot":
@@ -480,7 +483,7 @@ class Symmetries():
              (w/4 * np.cos(rotn), w/4 * np.sin(rotn))])
           ls = [affine.translate(l, c.x, c.y) for l in [arc, angle]]
           gpd.GeoSeries(ls).plot(ax = ax, ec = "b", lw = 0.35)
-        self.get_corner_labellings()
+        self.get_corner_labels()
         pyplot.axis("off")
         
     if which == "both" or which[:3] == "ref":
