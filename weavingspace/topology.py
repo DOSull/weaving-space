@@ -30,7 +30,7 @@ class Topology:
   point_neighbours: dict[int, list[int]] = None
   point_labels: dict[int, str] = None
 
-  is_vertex: list[bool] = None
+  is_vertex: dict[int, bool] = None
 
   edges: list[tuple[int]] = None
   edge_lefts: dict[int, int] = None
@@ -127,12 +127,11 @@ class Topology:
       
     
   def _assign_vertices(self) -> None:
-    self.is_vertex = []
+    self.is_vertex = {}
     for i, pt in enumerate(self.points):
-      self.is_vertex.append(
-        (i not in self.points_on_boundary and len(self.point_tiles[i]) > 2)
-        or (i in self.points_on_boundary and len(self.point_neighbours[i]) > 2)
-      )
+      self.is_vertex[i] = \
+        i not in self.points_on_boundary and len(self.point_tiles[i]) > 2 \
+        or i in self.points_on_boundary and len(self.point_neighbours[i]) > 2
     
     
   def _reorder_vertex_incident_tiles(self) -> None:
@@ -205,23 +204,27 @@ class Topology:
     self.tile_corners = self.tile_corners[:r1_n]
     self.tile_points = self.tile_points[:r1_n]
     self.tile_labels = self.tile_labels[:r1_n]
-    self.is_vertex = self.is_vertex[:r1_n]
 
     pts = set()
     for t in self.tile_points:
       pts = pts.union(t)
     self.points = {k: v for k, v in self.points.items() if k in pts}
+    self.is_vertex = {k: v for k, v in self.is_vertex.items() if k in pts}
     self.points_on_boundary = None
     self.point_neighbours = {k: v for k, v in self.point_neighbours.items() 
                              if k in pts}
+    for p, N in self.point_neighbours.items():
+      self.point_neighbours[p] = [p for p in N if p in pts]
     self.point_tiles = {k: v for k, v in self.point_tiles.items() if k in pts}
+    for p, T in self.point_tiles.items():
+      self.point_tiles[p] = [t for t in T if t < r1_n]
     self.point_labels = {k: v for k, v in self.point_labels.items() if k in pts}
 
     self.edges = [e for e in self.edges if all([v in pts for v in e])]
     self.edge_lefts = {k: v for k, v in self.edge_lefts.items() 
-                       if k in self.edges}
+                       if k in self.edges and v < r1_n}
     self.edge_rights = {k: v for k, v in self.edge_rights.items() 
-                        if k in self.edges}
+                        if k in self.edges and v < r1_n}
 
 
   def _get_closest_point(self, point:Union[int, geom.Point], 
@@ -261,7 +264,8 @@ class Topology:
 
 
   def get_vertex_geoms(self) -> gpd.GeoSeries:
-    return gpd.GeoSeries([p for i, p in self.points if self.is_vertex[i]])
+    return gpd.GeoSeries([p for i, p in self.points.items()
+                          if self.is_vertex[i]])
   
   
   def get_edge_geoms(self, offset:float = 0.0) -> gpd.GeoSeries:
@@ -295,15 +299,15 @@ class Topology:
         gpd.GeoDataFrame: _description_
     """
     dual_faces = []
-    for v, is_vertex in enumerate(self.is_vertex):
+    for v, is_vertex in self.is_vertex.items():
       if is_vertex:
         points = self.point_tiles[v]
         if len(points) > 2:
           dual_faces.append(
             geom.Polygon([self.tile_centres[i] for i in points]))
-    dual_faces = [
-      f for f in dual_faces
-      if affine.translate(f.centroid, tiling_utils.RESOLUTION, tiling_utils.RESOLUTION).within(self.tile_unit.prototile.geometry[0])]
+    # dual_faces = [
+    #   f for f in dual_faces
+    #   if affine.translate(f.centroid, tiling_utils.RESOLUTION, tiling_utils.RESOLUTION).within(self.tile_unit.prototile.geometry[0])]
     # TODO: label and select the faces to include so that they are tileable
     return gpd.GeoSeries(dual_faces)
 
@@ -368,7 +372,7 @@ class Topology:
     
     if show_dual_tiles:
       self.get_dual_tile_geoms().buffer(
-        -self.tile_unit.spacing / 200, cap_style = 3).plot(
+        -self.tile_unit.spacing / 200, join_style = 2, cap_style = 3).plot(
           ax = ax, fc = "red", alpha = 0.15)
     
     pyplot.axis("off")

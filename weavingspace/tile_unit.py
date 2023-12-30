@@ -200,7 +200,7 @@ class TileUnit(Tileable):
       # get the negative buffer distance that will 'collapse' the polygon
       radius = tiling_utils.get_collapse_distance(polygon)
       distances = distances * radius / distances[-1]
-      nested_polys = [polygon.buffer(-d, cap_style = 3) 
+      nested_polys = [polygon.buffer(-d, join_style = 2, cap_style = 3) 
                       for d in distances]
       # return converted to annuli (who knows someone might set alpha < 1)
       nested_polys = [g1.difference(g2) for g1, g2 in
@@ -227,7 +227,7 @@ class TileUnit(Tileable):
       TileUnit: the new TileUnit with inset applied.
     """
     inset_tile = \
-      self.regularised_prototile.geometry.buffer(-d, cap_style = 3)[0]
+      self.regularised_prototile.geometry.buffer(-d, join_style = 2, cap_style = 3)[0]
     new_tiles = [inset_tile.intersection(e) for e in self.tiles.geometry]
     result = copy.deepcopy(self)
     result.tiles.geometry = gpd.GeoSeries(new_tiles)

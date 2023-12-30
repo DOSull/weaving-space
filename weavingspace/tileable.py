@@ -206,17 +206,17 @@ class Tileable:
         frags_to_remove = set()
         for i, j in matches:
           f1, f2 = fragments[i], t_frags[j]
-          u1 = f1.buffer(tiling_utils.RESOLUTION, cap_style = 3).union(
-            f2.buffer(tiling_utils.RESOLUTION, cap_style = 3))
+          u1 = f1.buffer(tiling_utils.RESOLUTION, join_style = 2, cap_style = 3).union(
+            f2.buffer(tiling_utils.RESOLUTION, join_style = 2, cap_style = 3))
           u2 = affine.translate(u1, -v[0], -v[1])
           if prototile.intersection(u1).area > prototile.intersection(u2).area:
-            u1 = u1.buffer(-tiling_utils.RESOLUTION, cap_style = 3)
-            u2 = u2.buffer(-tiling_utils.RESOLUTION, cap_style = 3)
+            u1 = u1.buffer(-tiling_utils.RESOLUTION, join_style = 2, cap_style = 3)
+            u2 = u2.buffer(-tiling_utils.RESOLUTION, join_style = 2, cap_style = 3)
             next_frags.append(u1)
             reg_prototile = reg_prototile.union(u1).difference(u2)
           else:
-            u1 = u1.buffer(-tiling_utils.RESOLUTION, cap_style = 3)
-            u2 = u2.buffer(-tiling_utils.RESOLUTION, cap_style = 3)
+            u1 = u1.buffer(-tiling_utils.RESOLUTION, join_style = 2, cap_style = 3)
+            u2 = u2.buffer(-tiling_utils.RESOLUTION, join_style = 2, cap_style = 3)
             next_frags.append(u2)
             reg_prototile = reg_prototile.union(u2).difference(u1)
           changes_made = True
@@ -409,7 +409,7 @@ class Tileable:
     """
     inset_tiles, inset_ids = [], []
     for p, id in zip(self.tiles.geometry, self.tiles.tile_id):
-      b = p.buffer(-inset, cap_style = 3)
+      b = p.buffer(-inset, join_style = 2, cap_style = 3)
       if not b.area <= 0:
         inset_tiles.append(b)
         inset_ids.append(id)

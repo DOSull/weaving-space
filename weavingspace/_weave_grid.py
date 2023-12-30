@@ -281,7 +281,7 @@ class WeaveGrid:
             # buffering the mask cleans up many issues with closely
             # aligned polygon edges in overlayed layers
             all_polys.extend([p.difference(
-              mask.buffer(tiling_utils.RESOLUTION, cap_style = 3)) 
+              mask.buffer(tiling_utils.RESOLUTION, join_style = 2, cap_style = 3)) 
               for p in next_polys])
             mask = mask.union(shapely.unary_union(next_polys))
     return all_polys

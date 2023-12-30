@@ -222,17 +222,21 @@ def get_interior_angles(shape:geom.Polygon) -> list[float]:
   return [get_inner_angle(p1, p2, p3) for p1, p2, p3 in triples]
 
 
-def get_clean_polygon(shape:geom.Polygon) -> geom.Polygon:
+def get_clean_polygon(
+    shape:Union[geom.MultiPolygon,geom.Polygon]) -> geom.Polygon:
   """Returns polygon with any successive corners that are 'in line' along a side or very close to one another removed."""
-  corners = get_corners(shape, repeat_first = False)
-  distances = [c1.distance(c2) for c1, c2 
-               in zip(corners, corners[-1:] + corners)]
-  angles = get_interior_angles(shape)
-  to_remove = [np.isclose(d, 180, atol = RESOLUTION) or 
-               np.isclose(a, 180, atol = RESOLUTION)
-               for d, a in zip(distances, angles)]
-  corners = [c for c, r in zip(corners, to_remove) if not r]
-  return gridify(geom.Polygon(corners))
+  if isinstance(shape, geom.MultiPolygon):
+    return geom.MultiPolygon([get_clean_polygon(p) for p in shape.geoms])
+  else:
+    corners = get_corners(shape, repeat_first = False)
+    distances = [c1.distance(c2) 
+                 for c1, c2 in zip(corners, corners[-1:] + corners)]
+    angles = get_interior_angles(shape)
+    to_remove = [np.isclose(d, 180, atol = RESOLUTION) or
+                 np.isclose(a, 180, atol = RESOLUTION)
+                 for d, a in zip(distances, angles)]
+    corners = [c for c, r in zip(corners, to_remove) if not r]
+    return gridify(geom.Polygon(corners))
 
 
 
@@ -671,8 +675,8 @@ def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -> bool:
   Returns:
     bool: True if they neighbour along an edge
   """
-  return p1.buffer(1e-3, cap_style = 3).intersection(
-    p2.buffer(1e-3, cap_style = 3)).area > 1e-5
+  return p1.buffer(1e-3, join_style = 2, cap_style = 3).intersection(
+    p2.buffer(1e-3, join_style = 2, cap_style = 3)).area > 1e-5
 
 
 def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
@@ -800,12 +804,12 @@ def repair_polygon(
   """
   if shrink_then_grow:
     return polygon.buffer(
-      -RESOLUTION * 10, cap_style = 3).buffer(
-      RESOLUTION * 10, cap_style = 3)
+      -RESOLUTION * 10, join_style = 2, cap_style = 3).buffer(
+      RESOLUTION * 10, join_style = 2, cap_style = 3)
   else:
     return polygon.buffer(
-      RESOLUTION * 10, cap_style = 3).buffer(
-      -RESOLUTION * 10, cap_style = 3)
+      RESOLUTION * 10, join_style = 2, cap_style = 3).buffer(
+      -RESOLUTION * 10, join_style = 2, cap_style = 3)
 
 
 def safe_union(gs:gpd.GeoSeries,
@@ -829,8 +833,8 @@ def safe_union(gs:gpd.GeoSeries,
     Union[gpd.GeoSeries, geom.Polygon]: the resulting union of supplied
       polygons.
   """
-  union = gs.buffer(RESOLUTION * 10, cap_style = 3) \
-    .unary_union.buffer(-RESOLUTION * 10, cap_style = 3)
+  union = gs.buffer(RESOLUTION * 10, join_style = 2, cap_style = 3) \
+    .unary_union.buffer(-RESOLUTION * 10, join_style = 2, cap_style = 3)
   if as_polygon:
     return gridify(union)
   else:
