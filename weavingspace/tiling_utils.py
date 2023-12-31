@@ -31,7 +31,7 @@ PRECISION = 6
 RESOLUTION = 1e-6
 
 def _parse_strand_label(s:str) -> list[str]:
-  """Breaks a strand label specifiction in to a list of labels
+  """Breaks a strand label specification in to a list of labels
 
   Args:
     s (str): see get_strand_ids() for details
@@ -59,10 +59,10 @@ def _parse_strand_label(s:str) -> list[str]:
 
 
 def get_strand_ids(strands_spec: str) -> tuple[list[str]]:
-  """Strands label string to split into strand labels.
+  """Conversts a strands specification string to a list of lists of strand
+  labels.
 
   Args:
-
     strands_spec (str): string format "a|bc|(de)f" | separates strands in
       each direction and () designates combining labels into a single
       strand that will be sliced lengthwise. Example output:
@@ -92,8 +92,8 @@ def centre_offset(shape: geom.Polygon,
   Returns:
     tuple[float]: tuple of x, y movement required.
   """
-  shape_c = shape.centroid.coords[0]
-  return (target[0] - shape_c[0], target[1] - shape_c[1])
+  shape_c = shape.centroid
+  return (target[0] - shape_c.x, target[1] - shape_c.y)
 
 
 def get_regular_polygon(spacing, n:int) -> geom.Polygon:
@@ -117,6 +117,18 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
 
 def rotate_preserving_order(polygon:geom.Polygon, angle:float,
                             centre:geom.Point) -> geom.Polygon:
+  """Returns the supplied polygon rotated with the order of its corner points
+  preserved (not guaranteed by shapely.affinity.rotate).
+
+  Args:
+      polygon (geom.Polygon): polygon to rotate.
+      angle (float): desired angle of rotation (in degrees).
+      centre (geom.Point): the rotation centre (passed on to shapely.affinity.
+        rotate).
+
+  Returns:
+      geom.Polygon: rotated polygon.
+  """
   corners = get_corners(polygon, repeat_first = False)
   return geom.Polygon([affine.rotate(c, angle, centre) for c in corners])
 
@@ -139,16 +151,17 @@ def get_corners(shape:geom.Polygon,
                 repeat_first:bool = True) -> list[geom.Point]:
   """Returns a list of geom.Points around the boundary of a polygon, optionally
   repeating the first. Does no simplification (e.g. if a line segment has a 
-  'corner' along its length, it is NOT removed). Points have precision set to 
-  the package default tiling_utils.RESOLUTION.
+  'corner' along its length, it is NOT removed; see get_clean_polygon for 
+  that). Points have precision set to the package default tiling_utils.
+  RESOLUTION.
 
   Args:
-    shape (geom.Polygon): polygon whose vertices are required.
-    repeat_first (bool, optional): if True the first vertex is repeated in the 
-    returned list, if False it is omitted. Defaults to True.
+    shape (geom.Polygon): polygon whose corners are required.
+    repeat_first (bool, optional): if True the first corner is repeated in the 
+      returned list, if False it is omitted. Defaults to True.
 
   Returns:
-      list[geom.Point]: list of geom.Point vertices of the polygon.
+    list[geom.Point]: list of geom.Point vertices of the polygon.
   """
   corners = [gridify(geom.Point(pt)) for pt in shape.exterior.coords]
   if repeat_first:
@@ -215,16 +228,25 @@ def get_interior_angles(shape:geom.Polygon) -> list[float]:
     list[float]: list of angles.
   """
   corners = get_corners(shape, repeat_first = False)
-  wrapped_corners = corners[-1:] + corners + corners[:1]
-  triples = zip(wrapped_corners[:-2],
-                wrapped_corners[1:-1],
-                wrapped_corners[2:])
+  wrap_corners = corners[-1:] + corners + corners[:1]
+  triples = zip(wrap_corners[:-2], wrap_corners[1:-1], wrap_corners[2:])
   return [get_inner_angle(p1, p2, p3) for p1, p2, p3 in triples]
 
 
 def get_clean_polygon(
     shape:Union[geom.MultiPolygon,geom.Polygon]) -> geom.Polygon:
-  """Returns polygon with any successive corners that are 'in line' along a side or very close to one another removed."""
+  """Returns polygon with any successive corners that are co-linear along a 
+  side or very close to one another removed. 
+  
+  Particularly useful for tidying polygons weave tilings that have been 
+  assembled from multiple 'cells' in the weave grid.
+
+  Args:
+    shape (Union[geom.MultiPolygon,geom.Polygon]): polygon to clean.
+
+  Returns:
+    geom.Polygon: cleaned polygon.
+  """
   if isinstance(shape, geom.MultiPolygon):
     return geom.MultiPolygon([get_clean_polygon(p) for p in shape.geoms])
   else:
@@ -237,7 +259,6 @@ def get_clean_polygon(
                  for d, a in zip(distances, angles)]
     corners = [c for c, r in zip(corners, to_remove) if not r]
     return gridify(geom.Polygon(corners))
-
 
 
 def get_inner_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
@@ -284,12 +305,19 @@ def get_outer_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
 
 
 def is_regular_polygon(shape:geom.Polygon) -> bool:
+  """Tests if supplied polygon is regular (i.e. equal sides and angles).
+
+  Args:
+      shape (geom.Polygon): polygon to test.
+
+  Returns:
+      bool: True if polygon is regular, False if not.
+  """
   side_lengths = get_side_lengths(shape)
   angles = get_interior_angles(shape)
   return all(np.isclose(side_lengths, side_lengths[0])) \
      and all(np.isclose(angles, angles[0]))
-             
-  
+
 
 def is_tangential(shape:geom.Polygon) -> bool:
   """Determines if the supplied polygon is tangential i.e., it can have

@@ -292,9 +292,6 @@ class Topology:
   def get_dual_tile_geoms(self) -> gpd.GeoSeries:
     """Alternative approach to creating the dual tiie unit for a tile unit.
 
-    Args:
-        t (TileUnit): _description_
-
     Returns:
         gpd.GeoDataFrame: _description_
     """
@@ -305,10 +302,7 @@ class Topology:
         if len(points) > 2:
           dual_faces.append(
             geom.Polygon([self.tile_centres[i] for i in points]))
-    # dual_faces = [
-    #   f for f in dual_faces
-    #   if affine.translate(f.centroid, tiling_utils.RESOLUTION, tiling_utils.RESOLUTION).within(self.tile_unit.prototile.geometry[0])]
-    # TODO: label and select the faces to include so that they are tileable
+    # TODO: label and select which faces to include so that they are tileable
     return gpd.GeoSeries(dual_faces)
 
 
