@@ -26,6 +26,7 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 
 import weavingspace.tiling_utils as tiling_utils
+from weavingspace import is_weaveunit
 
 
 class TileShape(Enum):
@@ -244,6 +245,8 @@ class Tileable:
         if reg_prototile.intersects(t_p):
           new_reg_prototile = new_reg_prototile.union(t_p)
           new_tiles[i] = t_p
+          break
+      new_tiles[i] = p
     self.tiles.geometry = gpd.GeoSeries(new_tiles)
     self.regularised_prototile.geometry[0] = new_reg_prototile
     return None
@@ -280,8 +283,10 @@ class Tileable:
     if self.regularised_prototile.shape[0] > 1:
       self.regularised_prototile.geometry = tiling_utils.get_largest_polygon(
         self.regularised_prototile.geometry)
-
-    self.reattach_tiles()
+    
+    if is_weaveunit(self) and self.aspect < 1:
+      self.reattach_tiles()
+    
     self.regularised_prototile.geometry = tiling_utils.repair_polygon(
       self.regularised_prototile.geometry)
     return None
@@ -504,9 +509,9 @@ class Tileable:
       self.regularised_prototile.plot(
         ax = ax, ec = reg_prototile_edgcolour, fc = "#00000000", 
         lw = 1.5, zorder = 2, **kwargs)
-      ax.annotate("""NOTE regularised prototile (red) indicative\nonly. Prototile and vectors (black) actually\ndo tiling. Regularised prototiles for weave\nunits are particularly problematic!""", 
-                  xycoords = "axes fraction", xy = (0.01, 0.99), ha = "left", 
-                  va = "top", bbox = {"lw": 0, "fc": "#ffffff40"})
+      # ax.annotate("""NOTE regularised prototile (red) indicative\nonly. Prototile and vectors (black) actually\ndo tiling. Regularised prototiles for weave\nunits are particularly problematic!""", 
+      #             xycoords = "axes fraction", xy = (0.01, 0.99), ha = "left", 
+      #             va = "top", bbox = {"lw": 0, "fc": "#ffffff40"})
     return ax
 
 
