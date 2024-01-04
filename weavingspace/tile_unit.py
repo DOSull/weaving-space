@@ -131,6 +131,12 @@ class TileUnit(Tileable):
     return
 
 
+  def _setup_regularised_prototile(self) -> None:
+    self.regularise_tiles()
+    self.regularised_prototile.geometry = tiling_utils.repair_polygon(
+      self.regularised_prototile.geometry)
+    
+
   def _modify_tiles(self) -> None:
     """It is not trivial to tile a triangle, so this function augments
     the tiles of a triangular tile to a diamond by 180 degree
@@ -171,7 +177,7 @@ class TileUnit(Tileable):
                  counts:Iterable = [1] * 25, angle:float = 0,
                  radial:bool = False) -> list[geom.Polygon]:
     """Returns a set of shapes that can be used to make a legend key
-    symbol for the supplied polygon. In TileUnit this is a set of 'nested
+    symbol for the supplied polygon. In TileUnit this is a set of 'nested'
     polygons.
 
     Args:

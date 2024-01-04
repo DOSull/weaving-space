@@ -76,7 +76,15 @@ class WeaveUnit(Tileable):
       self._setup_biaxial_weave_unit()
       self.base_shape = TileShape.RECTANGLE
     return
-
+  
+  
+  def _setup_regularised_prototile(self) -> None:
+    self.regularise_tiles()
+    if self.aspect < 1:
+      self.reattach_tiles()
+    self.regularised_prototile.geometry = tiling_utils.repair_polygon(
+      self.regularised_prototile.geometry)
+    
 
   def _parameter_info(self) -> None:
     """Outputs logging message concerning the supplied aspect settings.

@@ -26,7 +26,6 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 
 import weavingspace.tiling_utils as tiling_utils
-from weavingspace import is_weaveunit
 
 
 class TileShape(Enum):
@@ -88,8 +87,7 @@ class Tileable:
       )
     self._setup_tiles()
     self.setup_vectors()
-    if self.regularised_prototile is None:
-      self.regularise_tiles()
+    self._setup_regularised_prototile()
     return
 
 
@@ -283,12 +281,6 @@ class Tileable:
     if self.regularised_prototile.shape[0] > 1:
       self.regularised_prototile.geometry = tiling_utils.get_largest_polygon(
         self.regularised_prototile.geometry)
-    
-    if is_weaveunit(self) and self.aspect < 1:
-      self.reattach_tiles()
-    
-    self.regularised_prototile.geometry = tiling_utils.repair_polygon(
-      self.regularised_prototile.geometry)
     return None
 
 
