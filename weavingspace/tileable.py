@@ -243,8 +243,6 @@ class Tileable:
         if reg_prototile.intersects(t_p):
           new_reg_prototile = new_reg_prototile.union(t_p)
           new_tiles[i] = t_p
-          break
-      new_tiles[i] = p
     self.tiles.geometry = gpd.GeoSeries(new_tiles)
     self.regularised_prototile.geometry[0] = new_reg_prototile
     return None

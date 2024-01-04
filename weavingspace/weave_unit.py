@@ -59,7 +59,7 @@ class WeaveUnit(Tileable):
   _th:np.ndarray = None
 
   def __init__(self, **kwargs):
-    super().__init__(**kwargs)
+    super(WeaveUnit, self).__init__(**kwargs)
     self.weave_type = self.weave_type.lower()
 
 
@@ -226,19 +226,18 @@ class WeaveUnit(Tileable):
         strand_order = strand_order, n_slices = n_slices)
       weave_polys.extend(next_polys)
       next_labels = [list(ids[i]) for i in strand_order]  # list of lists
-      next_labels = list(itertools.chain(*next_labels))  # flatten
+      next_labels = list(itertools.chain(*next_labels))   # flatten
       strand_ids.extend(next_labels)
     # sometimes empty polygons make it to here, so
     # filter those out along with the associated IDs
     real_polys = [not p.is_empty for p in weave_polys]
     weave_polys = [p for p, b in zip(weave_polys, real_polys) if b]
     strand_ids = [id for id, b in zip(strand_ids, real_polys) if b]
-    # note that the approx_tile is important for the
-    # biaxial case, which is not necessarily centred on (0, 0)
-    approx_tile = shapely.unary_union(cells)
-    atc = approx_tile.centroid
-    shift = (-atc.x, -atc.y)
-    tile = grid.get_tile_from_cells(approx_tile)
+    # note that the tile is important for the biaxial case, which may
+    # not be centred on (0, 0)
+    tile = tiling_utils.safe_union(gpd.GeoSeries(cells), as_polygon = True)
+    shift = (-tile.centroid.x, -tile.centroid.y) if loom.n_axes == 2 else (0, 0)
+    tile = grid.get_tile_from_cells(tile)
     self.tiles = self._get_weave_tiles_gdf(weave_polys, strand_ids, shift)
     self.prototile = gpd.GeoDataFrame(geometry = gpd.GeoSeries([tile]),
                                       crs = self.crs)

@@ -96,7 +96,7 @@ class TileUnit(Tileable):
   code:str = "3.3.4.3.4"
 
   def __init__(self, **kwargs) -> None:
-    super().__init__(**kwargs)
+    super(TileUnit, self).__init__(**kwargs)
     # this next line makes all TileUnit geometries shapely 2.x precision-aware
     self.tiles.geometry = tiling_utils.gridify(self.tiles.geometry)
     if not self.tiling_type is None:
