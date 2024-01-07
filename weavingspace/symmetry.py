@@ -221,10 +221,13 @@ class Symmetries():
         print(f"Polygons do not match at all!")
         return None
       # now align the corners so indexes of their corners match
-      if rot_shifts[0] != 0:
-        other = self._shift_polygon_corners(other, -rot_shifts[0])
+      offset = rot_shifts[0]
+      if offset != 0:
+        other = self._shift_polygon_corners(other, -offset)
         rotation = -self.get_rotations(rot_shifts)["angles"][0]
         other = tiling_utils.rotate_preserving_order(other, rotation, c0)
+      else:
+        rotation = 0
       # now determine the additional rotation needed to line them up
       p0_0 = tiling_utils.get_corners(self.polygon)[0]
       other_corners = tiling_utils.get_corners(other, repeat_first = False)
@@ -234,6 +237,7 @@ class Symmetries():
       symms = self._find_symmetries(other_polygon = other)
       rot_shifts = symms["rotation-shifts"]
       rot_details = self.get_rotations(rot_shifts)
+      symms["offset"] = offset
       symms["rotation-angles"] = rot_details["angles"]
       symms["rotation-transforms"] = rot_details["transforms"]
       ref_shifts = symms["reflection-shifts"]

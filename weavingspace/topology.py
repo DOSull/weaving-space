@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from collections import defaultdict
 from typing import Union
 from typing import Iterable
+import string
 
 import geopandas as gpd
 import shapely.geometry as geom
@@ -175,21 +176,81 @@ class Topology:
                 tile_edges.append(n_edges)
                 n_edges = n_edges + 1
       self.tile_edges.append(tile_edges)
+      
+  
+  def get_tile(self, i:int) -> geom.Polygon:
+    edges = self.tile_edges[i]
+    vertices = []
+    for e in edges:
+      if e < 0:
+        vertices.append(self.points[self.edges[-e - 1][-1]])
+      else:
+        vertices.append(self.points[self.edges[e][0]])
+    return geom.Polygon(vertices)
+  
+  
+  def get_tile_vertices(self, i: int) -> list[int]:
+    edges = self.tile_edges[i]
+    vertices = []
+    for e in edges:
+      if e < 0:
+        vertices.append(self.edges[-e - 1][-1])
+      else:
+        vertices.append(self.edges[e][0])
+    return vertices
 
-
-  def _label_vertices(self):
-    self.tile_labels = []
-    for pts in self.tile_points:
-      tile = geom.Polygon(self.points[i] for i in pts)
-      labels = list(Symmetries(tile).get_unique_labels()["rotations"][0])
-      self.tile_labels.append(labels)
-    self.point_labels = {}
-    for i, incident_tiles in self.point_tiles.items():
+      
+  def _label_vertices(self) -> None:
+    """Mostly labels vertices correctly...
+    
+    TODO: Sort out how labelling of tile corners that are not tiling vertices is handled
+    """
+    tile_groups = defaultdict(list)
+    tile_groups[0].append(0)
+    examples = [self.get_tile(0)]
+    offsets = [0]
+    n_groups = 1
+    n = len(self.tile_unit.tiles.geometry)
+    for pt_id in range(1, n):
+      ti = self.get_tile(pt_id)
+      s = Symmetries(ti)
+      transforms = [s.get_matching_transforms(tj) for tj in examples]
+      matches = [not t is None for t in transforms]
+      if any(matches):
+        match = matches.index(True)
+        tile_groups[match].append(pt_id)
+        offsets.append(transforms[match]["offset"])
+      else:
+        examples.append(ti)
+        tile_groups[n_groups].append(pt_id)
+        offsets.append(0)
+        n_groups = n_groups + 1
+    tile_labels = {}
+    first_letter = 0
+    # find distinct tile types
+    for group in tile_groups:
+      lbls = Symmetries(examples[group]).get_unique_labels(
+        offset = first_letter)["rotations"][0]
+      for id in tile_groups[group]:
+        o = offsets[id]
+        labels = lbls[-o:] + lbls[:-o]
+        tile_labels[id] = labels
+      first_letter = first_letter + len(set(lbls))
+    self.tile_labels = [tile_labels[i % n] for i, t in enumerate(self.tiles)]
+    # SOMETHING NEEDS TO HAPPEN HERE SO THAT TILES WITH NON-VERTEX CORNERS
+    # ARE HANDLED CORRECTLY...
+    point_labels = {}
+    for pt_id, incident_tiles in self.point_tiles.items():
       label = ""
-      for t in incident_tiles:
-        label = label + self.tile_labels[t][self.tile_points[t].index(i)]
-      self.point_labels[i] = self._cyclic_sort_first(label)
-
+      for tile_id in incident_tiles:
+        label = label + \
+          self.tile_labels[tile_id][self.tile_points[tile_id].index(pt_id)]
+      point_labels[pt_id] = self._cyclic_sort_first(label)
+    letters = string.ascii_letters.upper()
+    uniques = list(set(point_labels.values()))
+    self.point_labels = {k: letters[uniques.index(v)] 
+                         for k, v in point_labels.items()}
+    
 
   def _cyclic_sort_first(self, lst:Iterable) -> Iterable:
     cycle = lst + lst
@@ -219,6 +280,10 @@ class Topology:
     for p, T in self.point_tiles.items():
       self.point_tiles[p] = [t for t in T if t < r1_n]
     self.point_labels = {k: v for k, v in self.point_labels.items() if k in pts}
+    unique_labels = list(set(self.point_labels.values()))
+    letters = string.ascii_letters.upper()
+    self.point_labels = {k: letters[unique_labels.index(v)] 
+                         for k, v in self.point_labels.items()}
 
     self.edges = [e for e in self.edges if all([v in pts for v in e])]
     self.edge_lefts = {k: v for k, v in self.edge_lefts.items() 
@@ -309,7 +374,7 @@ class Topology:
   def plot(self, show_original_tiles: bool = True,  
            show_tile_centres: bool = True,
            show_tile_vertex_labels: bool = False, 
-           show_vertices: bool = False,
+          #  show_vertices: bool = False,
            show_vertex_ids: bool = False,
            show_vertex_labels: bool = False,
            show_edges: bool = True,
@@ -331,28 +396,29 @@ class Topology:
                     ha = "center", va = "center")
 
     if show_vertex_labels:
-      self.get_point_geoms().plot(ax = ax, color = "r", markersize = 5)
+      # self.get_point_geoms().plot(ax = ax, color = "r", markersize = 5)
       if show_vertex_ids:
         for i, pt in enumerate(self.get_point_geoms()):
-          ax.annotate(i, xy = (pt.x, pt.y), color = "r", fontsize = 7,
-                      ha = "left", va = "bottom")
+          ax.annotate(i, xy = (pt.x, pt.y), color = "r", fontsize = 9,
+                      ha = "center", va = "center")
       else:
         for i, lbl in self.point_labels.items():
           pt = self.points[i]
-          ax.annotate(lbl, xy = (pt.x, pt.y), color = "r", fontsize = 7,
-                      ha = "left", va = "bottom")
-    elif show_tile_vertex_labels:
+          ax.annotate(lbl, xy = (pt.x, pt.y), color = "r", fontsize = 9,
+                      ha = "center", va = "center")
+
+    if show_tile_vertex_labels:
       for t, c, l in zip(self.tile_points, self.tile_centres, self.tile_labels):
         for corner, label in zip(t, l):
           posn = geom.LineString(
             [self.points[corner], c]).line_interpolate_point(0.15, True)
-          ax.annotate(label, xy = (posn.x, posn.y), fontsize = 7, 
+          ax.annotate(label, xy = (posn.x, posn.y), fontsize = 8, 
                       ha = "center", va = "center")
     
-    if show_vertices:
-      self.get_vertex_geoms().plot(
-        ax = ax, ec = "red", lw = 0.5, fc = "#00000000",
-        marker = "o", markersize = 100)
+    # if show_vertices:
+    #   self.get_vertex_geoms().plot(
+    #     ax = ax, ec = "red", lw = 0.5, fc = "#00000000",
+    #     marker = "o", markersize = 100)
     
     if show_edges:
       edges = self.get_edge_geoms(
@@ -362,7 +428,7 @@ class Topology:
         labels = self.get_edge_labels(show_edge_ids, show_edge_corners)
         for label, ls in zip(labels, edges): 
           ax.annotate(label, xy = (ls.centroid.x, ls.centroid.y),
-                      color = "k", ha = "center", va = "top", fontsize = 6)
+                      color = "k", ha = "center", va = "top", fontsize = 7)
     
     if show_dual_tiles:
       self.get_dual_tile_geoms().buffer(

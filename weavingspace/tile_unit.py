@@ -116,6 +116,8 @@ class TileUnit(Tileable):
     """
     if self.tiling_type == "cairo":
       tiling_geometries.setup_cairo(self)
+    elif self.tiling_type == "hex-slice":
+      tiling_geometries.setup_hex_slice(self)
     elif self.tiling_type == "hex-dissection":
       tiling_geometries.setup_hex_dissection(self)
     elif self.tiling_type == "laves":
