@@ -335,9 +335,14 @@ def is_tangential(shape:geom.Polygon) -> bool:
     # see https://math.stackexchange.com/questions/4065370/tangential-polygons-conditions-on-edge-lengths
     mat = np.identity(n) + np.roll(np.identity(n), 1, axis = 1)
     fractions = np.linalg.inv(mat) @ side_lengths / side_lengths
-    ones = [np.isclose(f, 1, rtol = RESOLUTION) for f in fractions]
-    zeros = [np.isclose(f, 1, rtol = RESOLUTION) for f in fractions]
-    negatives = [f <= 0 for f in fractions]
+    if not(np.isclose(np.mean(fractions), 
+                      0.5, rtol= RESOLUTION, atol = RESOLUTION)):
+      return False
+    ones = [np.isclose(f, 1, rtol = RESOLUTION, atol = RESOLUTION) 
+            for f in fractions]
+    zeros = [np.isclose(f, 0, rtol = RESOLUTION, atol = RESOLUTION) 
+             for f in fractions]
+    negatives = [f < 0 for f in fractions]
     return not (any(ones) or any(zeros) or any(negatives))
   elif n == 4:
     # for quadrilaterals odd and even side lengths are equal
