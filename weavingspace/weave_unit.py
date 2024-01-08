@@ -273,15 +273,11 @@ class WeaveUnit(Tileable):
       weave.geometry = weave.geometry.buffer(
         self.spacing * tiling_utils.RESOLUTION, 
         join_style = 2, cap_style = 3)
-      weave.geometry = [tiling_utils.get_clean_polygon(p)
-                        for p in weave.geometry]
       weave = weave.dissolve(by = "tile_id", as_index = False)
       # shrink by more to explode into separate polygons
       weave.geometry = weave.geometry.buffer(
         -2 * self.spacing * tiling_utils.RESOLUTION, 
         join_style = 2, cap_style = 3)
-      weave.geometry = [tiling_utils.get_clean_polygon(p)
-                        for p in weave.geometry]
       weave = weave.explode(ignore_index = True)
       weave.geometry = weave.geometry.buffer(
         self.spacing * tiling_utils.RESOLUTION, 
@@ -290,8 +286,8 @@ class WeaveUnit(Tileable):
       weave = weave.dissolve(by = "tile_id", as_index = False)
       weave = weave.explode(ignore_index = True)
 
-    weave.geometry = [tiling_utils.get_clean_polygon(p)
-                      for p in weave.geometry]
+    weave.geometry = gpd.GeoSeries(
+      [tiling_utils.get_clean_polygon(p) for p in weave.geometry])
     return weave.set_crs(self.crs)
 
 

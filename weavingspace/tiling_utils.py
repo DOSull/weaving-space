@@ -251,12 +251,18 @@ def get_clean_polygon(
     return geom.MultiPolygon([get_clean_polygon(p) for p in shape.geoms])
   else:
     corners = get_corners(shape, repeat_first = False)
-    distances = [c1.distance(c2) 
-                 for c1, c2 in zip(corners, corners[-1:] + corners)]
-    angles = get_interior_angles(shape)
-    to_remove = [np.isclose(d, 180, atol = RESOLUTION) or
-                 np.isclose(a, 180, atol = RESOLUTION)
-                 for d, a in zip(distances, angles)]
+    # first remove any 'near neighbour' corners
+    distances = get_side_lengths(shape)
+    to_remove = [np.isclose(d, 0, rtol = RESOLUTION, atol = 10 * RESOLUTION) 
+                 for d in distances]
+    corners = [c for c, r in zip(corners, to_remove) if not r]
+    # next remove any that are colinear
+    p = geom.Polygon(corners)
+    corners = get_corners(p, repeat_first = False)
+    angles = get_interior_angles(p)
+    to_remove = [np.isclose(a, 0, rtol = RESOLUTION, atol = RESOLUTION) or
+                 np.isclose(a, 180, rtol = RESOLUTION, atol = RESOLUTION)
+                 for a in angles]
     corners = [c for c, r in zip(corners, to_remove) if not r]
     return gridify(geom.Polygon(corners))
 

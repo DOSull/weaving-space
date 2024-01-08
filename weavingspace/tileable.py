@@ -272,7 +272,8 @@ class Tileable:
     self.tiles = gpd.GeoDataFrame(
       data = {"tile_id": tile_ids},
       crs = self.crs,
-      geometry = gpd.GeoSeries(tiles))
+      geometry = gpd.GeoSeries([tiling_utils.get_clean_polygon(t) 
+                                for t in tiles]))
 
     self.regularised_prototile = \
       self.regularised_prototile.explode(ignore_index = True)

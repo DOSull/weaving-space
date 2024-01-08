@@ -452,7 +452,7 @@ class Topology:
     
     if show_dual_tiles:
       self.get_dual_tile_geoms().buffer(
-        -self.tile_unit.spacing / 200, join_style = 2, cap_style = 3).plot(
+        -self.tile_unit.spacing / 100, join_style = 2, cap_style = 3).plot(
           ax = ax, fc = "red", alpha = 0.15)
     
     pyplot.axis("off")
