@@ -402,7 +402,7 @@ class Topology:
 
     if show_original_tiles:
       self.get_tile_geoms().plot(
-        ax = ax, fc = "dodgerblue", ec = "#333399", alpha = 0.25, lw = 0.5)
+        ax = ax, fc = "dodgerblue", ec = "#333366", alpha = 0.2, lw = 0.75)
 
     if show_tile_centres:
       for i, pt in enumerate(self.get_tile_centre_geoms()):
@@ -419,13 +419,14 @@ class Topology:
       # self.get_point_geoms().plot(ax = ax, color = "r", markersize = 5)
       if show_vertex_ids:
         for i, pt in enumerate(self.get_point_geoms()):
-          ax.annotate(i, xy = (pt.x, pt.y), color = "r", fontsize = 9,
+          ax.annotate(i, xy = (pt.x, pt.y), color = "k", fontsize = 9,
                       ha = "center", va = "center")
       else:
         for i, lbl in self.point_labels.items():
           pt = self.points[i]
           ax.annotate(lbl, xy = (pt.x, pt.y), color = "r", fontsize = 9,
-                      ha = "center", va = "center")
+                      ha = "center", va = "center",
+                      bbox = dict(boxstyle="circle", lw=0, fc="#ffffff40"))
 
     if show_tile_vertex_labels:
       for t, c, l in zip(self.tile_points, self.tile_centres, self.tile_labels):
