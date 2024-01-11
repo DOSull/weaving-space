@@ -115,6 +115,24 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
   return gridify(geom.Polygon(corners))
 
 
+def offset_polygon_corners(polygon:geom.Polygon, 
+                          offset:int) -> geom.Polygon:
+  """Returns this polygon but with its first corner offset from its
+  original position in the coordinate sequence. The returned polygon will
+  be identical but stored differently internally.
+
+  Args:
+    polygon (geom.Polygon): the polygon to reorder.
+    offset (int): the number of corner positions by which to shift the
+      sequence.
+
+  Returns:
+      geom.Polygon: the reordered polygon.
+  """
+  corners = get_corners(polygon, repeat_first = False)
+  return geom.Polygon([c for c in corners[offset:] + corners[:offset]]) 
+
+
 def rotate_preserving_order(polygon:geom.Polygon, angle:float,
                             centre:geom.Point) -> geom.Polygon:
   """Returns the supplied polygon rotated with the order of its corner points
@@ -337,6 +355,8 @@ def is_tangential(shape:geom.Polygon) -> bool:
   side_lengths = get_side_lengths(shape)
   n = len(side_lengths)
   if n % 2 == 1:
+    if n == 3: #triangles are easy!
+      return True
     # odd number of sides there is a nice solvable system  of equations
     # see https://math.stackexchange.com/questions/4065370/tangential-polygons-conditions-on-edge-lengths
     mat = np.identity(n) + np.roll(np.identity(n), 1, axis = 1)

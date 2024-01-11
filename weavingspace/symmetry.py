@@ -223,7 +223,7 @@ class Symmetries():
       # now align the corners so indexes of their corners match
       offset = rot_shifts[0]
       if offset != 0:
-        other = self._shift_polygon_corners(other, -offset)
+        other = tiling_utils.offset_polygon_corners(other, -offset)
         rotation = -self.get_rotations(rot_shifts)["angles"][0]
         other = tiling_utils.rotate_preserving_order(other, rotation, c0)
       else:
@@ -253,24 +253,6 @@ class Symmetries():
     else:
       print(f"Polygons have different numbers of sides!")
       return None
-
-
-  def _shift_polygon_corners(self, polygon:geom.Polygon, 
-                             offset:int) -> geom.Polygon:
-    """Returns this polygon but with its first corner offset from its
-    original position in the coordinate sequence. The returned polygon will
-    be identical but stored differently internally.
-
-    Args:
-      polygon (geom.Polygon): the polygon to reorder.
-      offset (int): the number of corner positions by which to shift the
-        sequence.
-
-    Returns:
-        geom.Polygon: the reordered polygon.
-    """
-    corners = tiling_utils.get_corners(polygon, repeat_first = False)
-    return geom.Polygon([c for c in corners[offset:] + corners[:offset]]) 
 
 
   def _get_translation_transform(self, dx:float, dy:float) -> list[float]:
