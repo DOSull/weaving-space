@@ -70,7 +70,7 @@ class Tileable:
   prototile: gpd.GeoDataFrame = None
   spacing: float = 1000.0
   base_shape: TileShape = TileShape.RECTANGLE
-  vectors: list[tuple[float]] = None
+  vectors: dict[tuple[int], tuple[float]] = None
   regularised_prototile: gpd.GeoDataFrame = None
   crs: int = 3857
   rotation: float = 0.0
@@ -92,23 +92,16 @@ class Tileable:
 
 
   def setup_vectors(self) -> None:
-    """Sets up the translation vectors of the tiling."""
-    self.vectors = self.get_vectors()
-    return None
-
-
-  def get_vectors(
-      self, as_dict: bool = False
-    ) -> Union[dict[tuple[int], tuple[float]], list[tuple[float]]]:
-    """
-    Returns symmetry translation vectors as floating point pairs.
+    """Sets up the symmetry translation vectors as floating point pairs
+    indexed by integer tuples with respect to either a rectangular or
+    triangular grid location.
 
     Derived from the size and shape of the tile attribute. These are not
     the minimal translation vectors, but the 'face to face' vectors of the
     tile, such that a hexagonal tile will have 3 vectors, not the minimal
     parallelogram pair. Also supplies the inverse vectors.
 
-    Optionally returns the vectors in a dictionary indexed by their
+    The vectors are stored in a dictionary indexed by their
     coordinates, e.g.
 
       {( 1,  0): ( 100, 0), ( 0,  1): (0,  100),
@@ -116,16 +109,6 @@ class Tileable:
 
     For a tileable of type `TileShape.HEXAGON`, the indexing tuples
     have three components. See https://www.redblobgames.com/grids/hexagons/
-
-    Args:
-      as_dict (bool): If `False` returns the vectors only. If
-        `True` returns a dictionary of the vectors indexed by tuples
-        in the grid coordinate system. Defaults to `False`.
-
-    Returns:
-      Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]:
-        either the vectors as a list of float tuples, or a dictionary
-        of those vectors indexed by integer coordinate tuples.
     """
     t = self.prototile.geometry[0]
     pts = [p for p in t.exterior.coords][:-1]
@@ -145,17 +128,37 @@ class Tileable:
       j = [ 1,  0, -1, -1,  0,  1]
       k = [-1, -1,  0,  1,  1,  0]
       vec_dict = {(i, j, k): v for i, j, k, v in zip(i, j, k, vecs)}
-    else:  # garbage
-      pass
-    return vec_dict if as_dict else list(vec_dict.values())
+    self.vectors = vec_dict
+
+
+  def get_vectors(
+      self, as_dict: bool = False
+    ) -> Union[dict[tuple[int], tuple[float]], list[tuple[float]]]:
+    """
+    Returns symmetry translation vectors as floating point pairs.
+    Optionally returns the vectors in a dictionary indexed by their
+    coordinates, e.g.
+
+      {( 1,  0): ( 100, 0), ( 0,  1): (0,  100),
+       (-1,  0): (-100, 0), ( 0, -1): (0, -100)}
+
+    Returns:
+      Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]:
+        either the vectors as a list of float tuples, or a dictionary
+        of those vectors indexed by integer coordinate tuples.
+    """
+    if as_dict:
+      return self.vectors
+    else:
+      return list(self.vectors.values())
 
 
   # Make up a regularised tile by carefully unioning the tiles
   def setup_regularised_prototile_from_tiles(self) -> None:
     """Sets the regularised tile to a union of the tiles."""
     self.regularised_prototile = copy.deepcopy(self.prototile)
-    self.regularised_prototile.geometry = tiling_utils.safe_union(
-      self.tiles.geometry)
+    self.regularised_prototile.geometry = [tiling_utils.safe_union(
+      self.tiles.geometry, as_polygon = True)]
     # This simplification seems very crude but fixes all kinds of issues...
     # particularly with the triaxial weave units... where intersection 
     # operations are prone to creating spurious vertices, etc.
@@ -189,7 +192,7 @@ class Tileable:
     changes_made = True
     while changes_made:
       changes_made = False
-      for v in self.vectors:
+      for v in self.vectors.values():
         # empty list to collect the new fragments
         # assembled in this iteration
         next_frags = []
@@ -238,7 +241,7 @@ class Tileable:
       if np.isclose(reg_prototile.intersection(p).area, p.area):
         new_tiles[i] = p
         continue
-      for v in self.vectors:
+      for v in self.vectors.values():
         t_p = affine.translate(p, v[0], v[1])
         if reg_prototile.intersects(t_p):
           new_reg_prototile = new_reg_prototile.union(t_p)
@@ -288,10 +291,6 @@ class Tileable:
     """Returns a GeoDataFrame with translated copies of the Tileable.
 
     The geodataframe takes the same form as the `Tileable.tile` attribute.
-    
-    TODO: this function has side-effects - or at any rate it recalculates
-    may override the translation vectors of the tile unit! Need to rethink
-    how the self.vectors are managed...
 
     Args:
       r (int, optional): the number of 'layers' out from the unit to
@@ -345,8 +344,9 @@ class Tileable:
     # local patch of radius 1 is greatly eased if prototiles have been added in 
     # this order. We use the vector index tuples not the euclidean distances
     # because this may be more resistant to odd effects for non-convex tiles
-    extent = self.prototile.geometry.scale(2 * r + tiling_utils.RESOLUTION, 
-                                           2 * r + tiling_utils.RESOLUTION)[0]
+    extent = self.prototile.geometry.scale(
+      2 * r + tiling_utils.RESOLUTION, 2 * r + tiling_utils.RESOLUTION,
+      origin = self.prototile.geometry[0].centroid)[0]
     vector_lengths = {index: np.sqrt(sum([_ ** 2 for _ in index]))
                       for index in vecs.keys()}
     ordered_vector_keys = [k for k, v in sorted(vector_lengths.items(), 
@@ -497,7 +497,8 @@ class Tileable:
       self.prototile.plot(ax = ax, ec = prototile_edgecolour, lw = 0.5, 
                           fc = "#00000000", **kwargs)
     if show_vectors:  # note that arrows in mpl are dimensioned in plotspace
-      for v in self.vectors[: len(self.vectors) // 2]:
+      vecs = self.get_vectors()
+      for v in vecs[: len(vecs) // 2]:
         ax.arrow(0, 0, v[0], v[1], color = "k", width = w * 0.002,
           head_width = w * 0.05, length_includes_head = True, zorder = 3)
     if show_reg_prototile:
@@ -539,7 +540,7 @@ class Tileable:
       self.prototile.geometry.scale(xscale, yscale, origin=(0, 0)))
     result.regularised_prototile.geometry = tiling_utils.gridify(
       self.regularised_prototile.geometry.scale(xscale, yscale, origin=(0, 0)))
-    result.vectors = result.get_vectors()
+    result.setup_vectors()
     return result
 
 
@@ -559,7 +560,7 @@ class Tileable:
       self.prototile.geometry.rotate(angle, origin=(0, 0)))
     result.regularised_prototile.geometry = tiling_utils.gridify(
       self.regularised_prototile.geometry.rotate(angle, origin=(0, 0)))
-    result.vectors = result.get_vectors()
+    result.setup_vectors()
     result.rotation = result.rotation + angle
     return result
 
@@ -581,5 +582,5 @@ class Tileable:
       self.prototile.geometry.skew(xa, ya, origin=(0, 0)))
     result.regularised_prototile.geometry = tiling_utils.gridify(
       self.regularised_prototile.geometry.skew(xa, ya, origin=(0, 0)))
-    result.vectors = result.get_vectors()
+    result.setup_vectors()
     return result

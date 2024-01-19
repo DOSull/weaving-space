@@ -70,11 +70,11 @@ class WeaveUnit(Tileable):
     self._parameter_info()
 
     if self.weave_type in ("hex", "cube"):
-      self._setup_triaxial_weave_unit()
       self.base_shape = TileShape.HEXAGON
+      self._setup_triaxial_weave_unit()
     else:
-      self._setup_biaxial_weave_unit()
       self.base_shape = TileShape.RECTANGLE
+      self._setup_biaxial_weave_unit()
     return
   
   
@@ -239,8 +239,9 @@ class WeaveUnit(Tileable):
     shift = (-tile.centroid.x, -tile.centroid.y) if loom.n_axes == 2 else (0, 0)
     tile = grid.get_tile_from_cells(tile)
     self.tiles = self._get_weave_tiles_gdf(weave_polys, strand_ids, shift)
-    self.prototile = gpd.GeoDataFrame(geometry = gpd.GeoSeries([tile]),
-                                      crs = self.crs)
+    self.prototile = gpd.GeoDataFrame(geometry = gpd.GeoSeries([
+      tiling_utils.get_clean_polygon(tile)]), crs = self.crs)
+    # self.setup_vectors()
     return None
 
 

@@ -72,6 +72,7 @@ def _setup_base_tile(unit:TileUnit, shape:TileShape) -> None:
                 else 3)))
   unit.prototile = gpd.GeoDataFrame(
     geometry = gpd.GeoSeries([tile]), crs = unit.crs)
+  unit.setup_vectors()
   return
 
 
