@@ -18,7 +18,7 @@ Examples:
   2, 3, 4, 6, or 12 'pie slices'. The number of slices is set by
   specifying an additional argument `n`. Slices are cut either starting
   at the corners of  the hexagon or from the midpoints of hexagon edges,
-  by specifying an additional argument `dissection_offset` set to either
+  by specifying an additional argument `offset` set to either
   0 or 1 respectively.
   + "laves" a range of isohedral tilings. See [this article](https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings).
   The desired tiling is specified by the additional argument `code` which
@@ -80,7 +80,7 @@ class TileUnit(Tileable):
 
   Args:
     tiling_type (str): tiling type as detailed above.
-    dissection_offset (int): offset for "hex-dissection" tilings. See above
+    offset (int): offset for "hex-dissection" tilings. See above
       for details. Defaults to 1.
     n (int): number of dissections or colours in "hex-dissection",
       "hex-colouring", or "square-colouring" tiling types. Defaults to 3.
@@ -91,7 +91,7 @@ class TileUnit(Tileable):
     _type_: _description_
   """
   tiling_type:str = None
-  dissection_offset:int = 1
+  offset:int = 1
   n:int = 3
   code:str = "3.3.4.3.4"
 
@@ -105,9 +105,9 @@ class TileUnit(Tileable):
       self._modify_tile()
       self._modify_tiles()
       self.setup_vectors()
-      self.setup_regularised_prototile_from_tiles()
-    if self.regularised_prototile is None:
-      self.setup_regularised_prototile_from_tiles()
+    self.setup_regularised_prototile_from_tiles()
+    # if self.regularised_prototile is None:
+    #   self.setup_regularised_prototile_from_tiles()
 
 
   def _setup_tiles(self) -> None:

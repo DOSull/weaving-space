@@ -288,6 +288,10 @@ class Tileable:
     """Returns a GeoDataFrame with translated copies of the Tileable.
 
     The geodataframe takes the same form as the `Tileable.tile` attribute.
+    
+    TODO: this function has side-effects - or at any rate it recalculates
+    may override the translation vectors of the tile unit! Need to rethink
+    how the self.vectors are managed...
 
     Args:
       r (int, optional): the number of 'layers' out from the unit to
@@ -427,7 +431,7 @@ class Tileable:
     show_vectors: bool = False,
     r: int = 0,
     prototile_edgecolour: str = "k",
-    reg_prototile_edgcolour: str = "r",
+    reg_prototile_edgecolour: str = "r",
     r_alpha: float = 0.3,
     cmap: list[str] = None,
     figsize: tuple[float] = (8, 8),
@@ -454,7 +458,7 @@ class Tileable:
         central one. Defaults to 0.3.
       prototile_edgecolour (str, optional): outline colour for the tile.
         Defaults to `"k"`.
-      reg_prototile_edgcolour (str, optional): outline colour for the
+      reg_prototile_edgecolour (str, optional): outline colour for the
         regularised. Defaults to `"r"`.
       cmap (list[str], optional): colour map to apply to the central
         tiles. Defaults to `None`.
@@ -498,7 +502,7 @@ class Tileable:
           head_width = w * 0.05, length_includes_head = True, zorder = 3)
     if show_reg_prototile:
       self.regularised_prototile.plot(
-        ax = ax, ec = reg_prototile_edgcolour, fc = "#00000000", 
+        ax = ax, ec = reg_prototile_edgecolour, fc = "#00000000", 
         lw = 1.5, zorder = 2, **kwargs)
       # ax.annotate("""NOTE regularised prototile (red) indicative\nonly. Prototile and vectors (black) actually\ndo tiling. Regularised prototiles for weave\nunits are particularly problematic!""", 
       #             xycoords = "axes fraction", xy = (0.01, 0.99), ha = "left", 

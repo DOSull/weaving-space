@@ -125,9 +125,9 @@ def setup_cairo(unit:TileUnit) -> None:
 def setup_hex_slice(unit:TileUnit) -> None:
   """Tilings from radial slices of a hexagon into 2, 3, 4, 6 or 12 slices.
 
-  The supplied unit should have dissection_offset and n set.
+  The supplied unit should have offset and n set.
 
-  self.dissection_offset == 1 starts at midpoints, 0 at hexagon corners
+  self.offset == 1 starts at midpoints, 0 at hexagon corners
   self.n is the number of slices and should be 2, 3, 4, 6 or 12.
 
   Again, construction avoids intersection operations where possible.
@@ -158,7 +158,7 @@ def setup_hex_slice(unit:TileUnit) -> None:
     slices = (
       [geom.Polygon([p[0], p[2], p[4], p[6]]),
        geom.Polygon([p[6], p[8], p[10], p[0]])]
-      if unit.dissection_offset == 0 else
+      if unit.offset == 0 else
       [geom.Polygon([p[1], p[2], p[4], p[6], p[7]]),
        geom.Polygon([p[7], p[8], p[10], p[0], p[1]])])
   elif unit.n == 3:
@@ -166,7 +166,7 @@ def setup_hex_slice(unit:TileUnit) -> None:
       [geom.Polygon([p[0], p[2], p[4], (0, 0)]),
        geom.Polygon([p[4], p[6], p[8], (0, 0)]),
        geom.Polygon([p[8], p[10], p[0], (0, 0)])]
-      if unit.dissection_offset == 0 else
+      if unit.offset == 0 else
       [geom.Polygon([p[1], p[2], p[4], p[5], (0, 0)]),
        geom.Polygon([p[5], p[6], p[8], p[9], (0, 0)]),
        geom.Polygon([p[9], p[10], p[0], p[1], (0, 0)])])
@@ -176,7 +176,7 @@ def setup_hex_slice(unit:TileUnit) -> None:
        geom.Polygon([p[3], p[4], p[6], (0, 0)]),
        geom.Polygon([p[6], p[8], p[9], (0, 0)]),
        geom.Polygon([p[9], p[10], p[0], (0, 0)])]
-      if unit.dissection_offset == 0 else
+      if unit.offset == 0 else
       [geom.Polygon([p[1], p[2], p[4], (0, 0)]),
        geom.Polygon([p[4], p[6], p[7], (0, 0)]),
        geom.Polygon([p[7], p[8], p[10], (0, 0)]),
@@ -189,7 +189,7 @@ def setup_hex_slice(unit:TileUnit) -> None:
        geom.Polygon([p[6], p[8], (0, 0)]),
        geom.Polygon([p[8], p[10], (0, 0)]),
        geom.Polygon([p[10], p[0], (0, 0)])]
-      if unit.dissection_offset == 0 else
+      if unit.offset == 0 else
       [geom.Polygon([p[1], p[2], p[3], (0, 0)]),
        geom.Polygon([p[3], p[4], p[5], (0, 0)]),
        geom.Polygon([p[5], p[6], p[7], (0, 0)]),
@@ -197,7 +197,7 @@ def setup_hex_slice(unit:TileUnit) -> None:
        geom.Polygon([p[9], p[10], p[11], (0, 0)]),
        geom.Polygon([p[11], p[0], p[1], (0, 0)])])
   elif unit.n == 12:
-    if unit.dissection_offset == 0:
+    if unit.offset == 0:
       ids = [i for i in range(12)] + [0]
       slices = [geom.Polygon([p[i], p[j], (0, 0)])
                 for i, j in zip(ids[:-1], ids[1:])]
@@ -221,9 +221,9 @@ def setup_hex_slice(unit:TileUnit) -> None:
 def setup_hex_dissection(unit:TileUnit) -> None:
   """Tilings from dissection of a hexagon into parts.
 
-  The supplied unit should have dissection_offset and n set.
+  The supplied unit should have offset and n set.
 
-  self.dissection_offset == 1 starts at midpoints, 0 at hexagon corners
+  self.offset == 1 starts at midpoints, 0 at hexagon corners
   self.n is the number of slices and should be 2, 3, 4, 6 or 12.
 
   Args:
@@ -246,11 +246,11 @@ def setup_hex_dissection(unit:TileUnit) -> None:
 def get_4_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
   outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
   inner_h = affine.scale(outer_h, 1/np.sqrt(3), 1/np.sqrt(3))
-  if unit.dissection_offset == 1:
+  if unit.offset == 1:
     inner_h = affine.rotate(inner_h, 30, (0, 0))
   o_hx = tiling_utils.get_corners(outer_h)
   i_hx = tiling_utils.get_corners(inner_h)
-  if unit.dissection_offset == 1:
+  if unit.offset == 1:
     o = []
     for p1, p2 in zip(o_hx[:-1], o_hx[1:]):
       o.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
@@ -272,11 +272,11 @@ def get_4_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
 def get_7_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
   outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
   inner_h = affine.scale(outer_h, 1/np.sqrt(7), 1/np.sqrt(7))
-  if unit.dissection_offset == 1:
+  if unit.offset == 1:
     inner_h = affine.rotate(inner_h, 30, (0, 0))
   outer = tiling_utils.get_corners(outer_h)
   inner = tiling_utils.get_corners(inner_h)
-  if unit.dissection_offset == 1:
+  if unit.offset == 1:
     o = []
     for p1, p2 in zip(outer[:-1], outer[1:]):
       o.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
@@ -308,11 +308,11 @@ def get_9_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
   c = geom.Point(0, 0)
   outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
   inner_h = affine.scale(outer_h, 1/np.sqrt(3), 1/np.sqrt(3))
-  if unit.dissection_offset == 1:
+  if unit.offset == 1:
     inner_h = affine.rotate(inner_h, 30, (0, 0))
   outer = tiling_utils.get_corners(outer_h)
   inner = tiling_utils.get_corners(inner_h)
-  if unit.dissection_offset == 1:
+  if unit.offset == 1:
     o = []
     for p1, p2 in zip(outer[:-1], outer[1:]):
       o.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
@@ -373,13 +373,13 @@ def setup_laves(unit:TileUnit) -> None:
   elif unit.code == "3.4.6.4":
     # the hex 6-dissection
     unit.n = 6
-    unit.dissection_offset = 1
+    unit.offset = 1
     setup_hex_slice(unit)
     return
   elif unit.code == "3.6.3.6":
     # hex 3-dissection (also a cube weave!)
     unit.n = 3
-    unit.dissection_offset = 0
+    unit.offset = 0
     setup_hex_slice(unit)
     return
   elif unit.code == "3.12.12":
@@ -394,7 +394,7 @@ def setup_laves(unit:TileUnit) -> None:
   elif unit.code == "4.6.12":
     # hex 12-dissection
     unit.n = 12
-    unit.dissection_offset = 0
+    unit.offset = 0
     setup_hex_slice(unit)
     return
   elif unit.code == "4.8.8":

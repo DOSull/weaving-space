@@ -13,11 +13,13 @@ import string
 import copy
 
 import numpy as np
+from scipy import interpolate
 
 import geopandas as gpd
 import pandas as pd
 import shapely.geometry as geom
 import shapely.affinity as affine
+from shapely.testing import assert_geometries_equal
 # import shapely.wkt as wkt
 import shapely.ops
 
@@ -149,6 +151,14 @@ def rotate_preserving_order(polygon:geom.Polygon, angle:float,
   """
   corners = get_corners(polygon, repeat_first = False)
   return geom.Polygon([affine.rotate(c, angle, centre) for c in corners])
+
+
+def geometry_matches(geom1:geom.Polygon, geom2:geom.Polygon):
+  a = geom1.area
+  return np.isclose(a, geom1.intersection(geom2).area,
+                    rtol = RESOLUTION * 100, atol=RESOLUTION * 100)
+  return shapely.equals_exact(
+    geom1.normalize(), geom2.normalize(), RESOLUTION * 10)
 
 
 def is_convex(shape:geom.Polygon) -> bool:
@@ -898,3 +908,162 @@ def safe_union(gs:gpd.GeoSeries,
     return gridify(union)
   else:
     return gridify(gpd.GeoSeries([union], crs = gs.crs))
+
+
+def zigzag_between_points(
+    p0:geom.Point, p1: geom.Point, n:int, h:float = 1.0, 
+    smoothness: int = 0, order: int = 2):
+
+  template_steps = n * 2 + 1
+  r = p0.distance(p1)
+  
+  x = np.linspace(0, n * np.pi, template_steps, endpoint = True)
+  y = [np.sin(x) for x in x]
+  s = interpolate.InterpolatedUnivariateSpline(x, y, k = order)
+
+  spline_steps = (n + smoothness) * 2 + 1
+  xs = np.linspace(0, n * np.pi, spline_steps, endpoint = True)
+  ys = s(xs)
+  
+  sfx = 1 / max(x) * r
+  sfy = h * r / 2
+  theta = np.arctan2(p1.y - p0.y, p1.x - p0.x)
+
+  ls = geom.LineString([geom.Point(x, y) for x, y in zip(xs, ys)])
+  ls = affine.translate(ls, 0, -(ls.bounds[1] + ls.bounds[3]) / 2)
+  ls = affine.scale(ls, xfact = sfx, yfact = sfy, origin = (0, 0))
+  ls = affine.rotate(ls, theta, (0, 0), use_radians = True)
+  x0, y0 = list(ls.coords)[0]
+  return affine.translate(ls, p0.x - x0, p0.y - y0)
+
+
+def get_translation_transform(dx:float, dy:float) -> list[float]:
+  """Returns the shapely affine transform tuple for a translation.
+
+  Args:
+      dx (float): translation distance in x direction.
+      dy (float): translation distance in y direction.
+
+  Returns:
+    list[float]: a six item list of floats, per the shapely.affinity.
+    affine_transform method, see 
+      https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations
+  """
+  return [1, 0, 0, 1, dx, dy]
+
+
+def get_rotation_transform(
+    angle:float, centre:tuple[float] = None) -> list[float]:
+  """Returns the shapely affine transform tuple for a rotation, optionally
+  about a supplied centre point.
+
+  Args:
+      angle (float): the angle of rotation (in degrees).
+      centre (tuple[float], optional): An option centre location. Defaults to 
+      None, which will in turn be converted to (0, 0).
+
+  Returns:
+    list[float]: a six item list of floats, per the shapely.affinity.
+      affine_transform method, see 
+        https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations
+  """
+  if centre is None or np.allclose((0, 0), centre, atol = RESOLUTION):
+    a = np.radians(angle)
+    return [np.cos(a), -np.sin(a), np.sin(a), np.cos(a), 0, 0]
+  
+  dx, dy = centre
+  t1 = get_translation_transform(-dx, -dy)
+  r = get_rotation_transform(angle)
+  t2 = get_translation_transform(dx, dy)
+  return combine_transforms([t1, r, t2])
+
+
+def get_reflection_transform(
+    angle:float, centre:tuple[float] = None) -> list[float]:
+  """Returns a shapely affine transform tuple that will reflect a shape
+  in a line at the specified angle, optionally through a specified centre
+  point.
+
+  Args:
+    angle (float): angle to the x-axis of the line of reflection.
+    centre (tuple[float], optional): point through which the line of 
+      reflection passes. Defaults to None, which
+      will in turn be converted to (0, 0).
+
+  Returns:
+    list[float]: a six item list of floats, per the shapely.affinity.
+      affine_transform method, see 
+        https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations
+  """
+  if centre is None or np.allclose((0, 0), centre, atol = RESOLUTION):
+    A = 2 * np.radians(angle)
+    return (np.cos(A), np.sin(A), np.sin(A), -np.cos(A), 0, 0)
+  dx, dy = centre
+  t1 = get_translation_transform(-dx, -dy)
+  r = get_reflection_transform(angle)
+  t2 = get_translation_transform(dx, dy)
+  return combine_transforms([t1, r, t2])
+
+
+def combine_transforms(transforms:list[list[float]]) -> list[float]:
+  """Returns a shapely affine transform list that combines the listed
+  sequence of transforms applied in order.
+
+  Args:
+    transforms (list[list[float]]): sequence of transforms to combine.
+
+  Returns:
+    list[float]: a transform tuple combining the supplied transforms applied
+      in order, see 
+        https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations
+  """
+  result = np.identity(3)
+  for t in transforms:
+    result = as_numpy_matrix(t) @ result
+  return as_shapely_transform(result)
+
+
+def reverse_transform(transform:list[float]) -> list[float]:
+  """Returns the inverse shapely affine transform of the supplied transform.
+
+  Args:
+    transform (list[float]): the transform for which the inverse is desired.
+
+  Returns:
+    list[float]: shapely affine transform tuple that will invert the supplied
+      transform.
+  """
+  return as_shapely_transform(
+    np.linalg.inv(as_numpy_matrix(transform)))
+
+
+def as_shapely_transform(arr:np.array) -> list[float]:
+  """Returns the shapely affine transform list equivalent to the supplied
+  numpy matrix of a conventional augmented affine transform matrix.
+
+  Args:
+    arr (np.array): augmented affine transform matrix of the desired 
+      transform.
+
+  Returns:
+    list[float]: desired shapely affine transform list of floats.
+  """
+  return [arr[0][0], arr[0][1], arr[1][0], arr[1][1], arr[0][2], arr[1][2]]
+
+
+def as_numpy_matrix(transform:list[float]) -> np.array:
+  """Converts the supplied shapely affine transform list to an augmented
+  affine transform matrix in numpy array form. This makes combining transforms
+  much easier.
+
+  Args:
+    transform (list[float]): the transform in shapely format.
+
+  Returns:
+    np.array: the transform in numpy matrix format.
+  """
+  return np.array([[transform[0], transform[1], transform[4]],
+                    [transform[2], transform[3], transform[5]],
+                    [           0,            0,            1]])
+
+
