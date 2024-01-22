@@ -10,13 +10,9 @@ import string
 
 import geopandas as gpd
 import shapely.geometry as geom
-import shapely.affinity as affine
-import shapely.ops
-
 import matplotlib.pyplot as pyplot
 
 from weavingspace import TileUnit
-from weavingspace import TileShape
 from weavingspace import Symmetries
 import weavingspace.tiling_utils as tiling_utils
 

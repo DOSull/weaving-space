@@ -744,8 +744,9 @@ def touch_along_an_edge(p1:geom.Polygon, p2:geom.Polygon) -> bool:
   Returns:
     bool: True if they neighbour along an edge
   """
-  return p1.buffer(RESOLUTION) \
-    .intersection(p2.buffer(RESOLUTION)).area > 16 * RESOLUTION ** 2
+  return p1.buffer(RESOLUTION, join_style = 2, cap_style = 3) \
+    .intersection(p2.buffer(RESOLUTION, join_style = 2, cap_style = 3)) \
+      .area > 16 * RESOLUTION ** 2
 
 
 def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
