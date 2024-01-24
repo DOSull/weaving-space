@@ -912,15 +912,14 @@ def safe_union(gs:gpd.GeoSeries,
 
 
 def zigzag_between_points(
-    p0:geom.Point, p1: geom.Point, n:int, h:float = 1.0, 
-    smoothness: int = 0, order: int = 2):
+    p0:geom.Point, p1: geom.Point, n:int, h:float = 1.0,  smoothness: int = 0):
 
   template_steps = n * 2 + 1
   r = p0.distance(p1)
   
   x = np.linspace(0, n * np.pi, template_steps, endpoint = True)
   y = [np.sin(x) for x in x]
-  s = interpolate.InterpolatedUnivariateSpline(x, y, k = order)
+  s = interpolate.InterpolatedUnivariateSpline(x, y, k = 2)
 
   spline_steps = (n + smoothness) * 2 + 1
   xs = np.linspace(0, n * np.pi, spline_steps, endpoint = True)

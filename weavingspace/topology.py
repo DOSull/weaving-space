@@ -17,6 +17,7 @@ from weavingspace import Symmetries
 import weavingspace.tiling_utils as tiling_utils
 
 LETTERS = string.ascii_letters.upper()
+letters = string.ascii_letters.lower()
 
 @dataclass
 class Topology:
@@ -37,6 +38,7 @@ class Topology:
   edges: dict[int, tuple[int]] = None
   edge_lefts: dict[int, int] = None
   edge_rights: dict[int, int] = None
+  edge_labels: dict[int, str] = None
 
   tiles: list[geom.Polygon] = None
   tile_ids: list[str] = None
@@ -47,7 +49,8 @@ class Topology:
   tile_adjacents: dict[int, list[int]] = None
   tile_corners: tuple[list[int]] = None
   tile_points: list[list[int]] = None
-  tile_labels: list[list[str]] = None
+  tile_vertex_labels: list[list[str]] = None
+  tile_edge_labels: list[list[str]] = None
   
   dual_tiles: list[geom.Polygon] = None
 
@@ -76,8 +79,9 @@ class Topology:
     self._order_vertex_incident_edges()
     # identify groups of distinct tiles
     self._identify_distinct_tiles()
-    self._label_tile_vertices()
+    self._label_tiles()
     self._label_vertices()
+    self._label_edges()
     self._generate_dual()
     self._filter_back_to_r1()
 
@@ -225,17 +229,22 @@ class Topology:
       self.tile_corners[idx][offset:] + self.tile_corners[idx][:offset]
     self.tile_points[idx] = \
       self.tile_points[idx][offset:] + self.tile_points[idx][:offset]
+    self.tile_edges[idx] = \
+      self.tile_edges[idx][offset:] + self.tile_edges[idx][:offset]
 
 
-  def _label_tile_vertices(self) -> None:
-    tile_labels = {}
+  def _label_tiles(self) -> None:
+    tile_vertex_labels = {}
+    tile_edge_labels = {}
     first_letter = 0
     # find distinct tile types
     for group, tiles in self.distinct_tiles.items():
-      label = Symmetries(self.example_tiles[group]).get_unique_labels(
-        offset = first_letter)["rotations"][0]
+      s = Symmetries(self.example_tiles[group])
+      vlabels = s.get_unique_labels(offset = first_letter)["rotations"][0]
+      elabels = self._get_edge_labels_from_vertex_labels(vlabels)
       for tile_id in tiles:
-        tile_labels[tile_id] = label
+        tile_vertex_labels[tile_id] = vlabels
+        tile_edge_labels[tile_id] = elabels
         # my_label = label
         # points = self.tile_points[tile_id]
         # corners = self.tile_corners[tile_id]
@@ -243,8 +252,34 @@ class Topology:
         #   if not point in corners:
         #     my_label = my_label[:i] + LETTERS[-group - 1] + my_label[i:]
         # tile_labels[tile_id] = my_label
-      first_letter = first_letter + len(set(label))
-    self.tile_labels = [tile_labels[i] for i, t in enumerate(self.tiles)]
+      first_letter = first_letter + len(set(vlabels))
+    self.tile_vertex_labels = \
+      [tile_vertex_labels[i] for i, t in enumerate(self.tiles)]
+    self.tile_edge_labels = \
+      [tile_edge_labels[i] for i, t in enumerate(self.tiles)]
+
+
+  def _get_edge_labels_from_vertex_labels(self, vertex_labels:str) -> list[str]:
+    vlabels = list(vertex_labels)
+    edge_labels = [a + b for a, b in zip(vlabels, vlabels[1:] + vlabels[:1])]
+    letter = LETTERS.index(min(list(vlabels)))
+    elabels = {}
+    for e in edge_labels:
+      if not e in elabels:
+        if e[::-1] in elabels:
+          elabels[e] = elabels[e[::-1]]
+        else:
+          elabels[e] = letters[letter]
+          letter = letter + 1
+      # if not e in elabels:
+      #   if e[::-1] in elabels:
+      #     label = elabels[e[::-1]]
+      #     elabels[e] = label + "-"
+      #     elabels[e[::-1]] = label + "+"
+      #   else:
+      #     elabels[e] = letters[letter]
+      #     letter = letter + 1
+    return [elabels[l] for l in edge_labels]
 
 
   def _label_vertices(self) -> None:
@@ -253,14 +288,32 @@ class Topology:
       label = ""
       for tile_id in incident_tiles:
         label = label + \
-          self.tile_labels[tile_id][self.tile_points[tile_id].index(pt_id)]
+          self.tile_vertex_labels[tile_id][self.tile_points[tile_id].index(pt_id)]
       # label1 = self._cyclic_sort_first(label)
       # label2 = self._cyclic_sort_first(label[::-1])
       # point_labels[pt_id] = min(label1, label2)
-      point_labels[pt_id] = self._cyclic_sort_first(label)
+      # point_labels[pt_id] = self._cyclic_sort_first(label)
+      point_labels[pt_id] = min(list(label))
     uniques = list(set(point_labels.values()))
     self.point_labels = {k: LETTERS[uniques.index(v)] 
                          for k, v in point_labels.items()}
+
+
+  def _label_edges(self) -> None:
+    self.edge_labels = {}
+    elabels = {}
+    for i, es in enumerate(self.tile_edges):
+      labels = self.tile_edge_labels[i]
+      for j, e in enumerate(es):
+        elabels[e] = labels[j]
+    for e, label in elabels.items():
+      if -e - 1 in elabels:
+        self.edge_labels[e] = "".join(sorted([label, elabels[-e - 1]]))
+      else:
+        self.edge_labels[e] = label
+    u_labels = sorted(set(self.edge_labels.values()))
+    lookup = dict(zip(u_labels, letters[:len(u_labels)]))
+    self.edge_labels = {e: lookup[l] for e, l in self.edge_labels.items()}
 
 
   def _reorder_vertex_incident_tiles(self) -> None:
@@ -323,7 +376,8 @@ class Topology:
     self.tile_centres = self.tile_centres[:r1_n]
     self.tile_corners = self.tile_corners[:r1_n]
     self.tile_points = self.tile_points[:r1_n]
-    self.tile_labels = self.tile_labels[:r1_n]
+    self.tile_vertex_labels = self.tile_vertex_labels[:r1_n]
+    self.tile_edge_labels = self.tile_edge_labels[:r1_n]
     self.tile_edges = self.tile_edges[:r1_n]
     self.tile_group = self.tile_group[:r1_n]
     distinct_tiles = {}
@@ -360,6 +414,11 @@ class Topology:
                        if k in self.edges and v < r1_n}
     self.edge_rights = {k: v for k, v in self.edge_rights.items() 
                         if k in self.edges and v < r1_n}
+    self.edge_labels = {k: v for k, v in self.edge_labels.items() 
+                        if k in self.edges}
+    unique_labels = list(set(self.edge_labels.values()))
+    self.edge_labels = {k: letters[unique_labels.index(v)] 
+                         for k, v in self.edge_labels.items()}
 
 
   def _get_closest_point(self, point:Union[int, geom.Point], 
@@ -456,10 +515,12 @@ class Topology:
   def plot(self, show_original_tiles: bool = True,  
            show_tile_centres: bool = False,
            show_tile_vertex_labels: bool = False, 
+           show_tile_edge_labels: bool = False, 
            show_vertex_ids: bool = False,
            show_vertex_labels: bool = True,
            show_edges: bool = True,
            offset_edges: bool = True,
+           show_edge_labels:bool = False,
            show_edge_ids: bool = False,
            show_edge_corners: bool = False,
            show_dual_tiles: bool = False) -> pyplot.Axes:
@@ -476,7 +537,7 @@ class Topology:
 
     if show_tile_centres == "id":
       # for i, pt in enumerate(self.get_tile_centre_geoms()):
-      for i, pt in zip(self.tile_labels, self.get_tile_centre_geoms()):
+      for i, pt in zip(self.tile_vertex_labels, self.get_tile_centre_geoms()):
         ax.annotate(i, xy = (pt.x, pt.y), color = "b", fontsize = 9,
                     ha = "center", va = "center")
     elif show_tile_centres:
@@ -497,12 +558,26 @@ class Topology:
                       bbox = dict(boxstyle="circle", lw=0, fc="#ffffff40"))
 
     if show_tile_vertex_labels:
-      for t, c, l in zip(self.tile_points, self.tile_centres, self.tile_labels):
+      for t, c, l in zip(self.tile_points, self.tile_centres, self.tile_vertex_labels):
         for corner, label in zip(t, l):
           posn = geom.LineString(
             [self.points[corner], c]).line_interpolate_point(0.2, True)
           ax.annotate(label, xy = (posn.x, posn.y), fontsize = 7, 
                       ha = "center", va = "center")
+
+    if show_tile_edge_labels:
+      for i, c in enumerate(self.tile_centres):
+        a = self.tiles[i].area
+        d = (a ** 0.5) / 8
+        pts = [self.points[v] for v in self.tile_points[i]]
+        tile_edges = [geom.LineString([p0, p1])
+                      for p0, p1 in zip(pts, pts[1:] + pts[:1])]
+        midpoints = [l.centroid for l in tile_edges]
+        labelpts = [geom.LineString([m, c]).line_interpolate_point(d) 
+                    for m in midpoints]
+        for label, labelpoint in zip(self.tile_edge_labels[i], labelpts):
+          ax.annotate(label, xy = (labelpoint.x, labelpoint.y),
+                      ha = "center", va = "center", fontsize = 7)
     
     # if show_vertices:
     #   self.get_vertex_geoms().plot(
@@ -512,7 +587,12 @@ class Topology:
     if show_edges:
       edges = self.get_edge_geoms(dist / 200 if offset_edges else 0)
       edges.plot(ax = ax, color = "forestgreen", ls = "dashed", lw = 1)
-      if show_edge_ids or show_edge_corners:
+      if show_edge_labels:
+        for i, e in self.edges.items():
+          c = edges[i].centroid
+          ax.annotate(self.edge_labels[i], xy = (c.x, c.y),
+                      ha = "center", va = "center", fontsize = 9)
+      elif show_edge_ids or show_edge_corners:
         labels = self.get_edge_labels(show_edge_ids, show_edge_corners)
         for label, ls in zip(labels, edges): 
           ax.annotate(label, xy = (ls.centroid.x, ls.centroid.y),
@@ -537,24 +617,35 @@ class Topology:
       for edge in t:
         if edge >= 0:
           pts = self.edges[edge]
+          e_label = self.edge_labels[edge]
         else:
           pts = (self.edges[-edge - 1])[::-1]
-        e_label = f"{self.point_labels[pts[0]]}{self.point_labels[pts[-1]]}"
-        e_label_r = e_label[::-1]
-        if not (e_label in edges_to_transform or 
-                e_label_r in edges_to_transform):
+          e_label = self.edge_labels[-edge - 1]
+        # e_label = f"{self.point_labels[pts[0]]}{self.point_labels[pts[-1]]}"
+        # e_label_r = e_label[::-1]
+        if not e_label in edges_to_transform:
           new_t.extend([self.points[i] for i in pts[:-1]])
         else:
-          p0 = self.points[pts[0]]
-          p1 = self.points[pts[1]]
           if e_label in edge_transforms:
             transform = edge_transforms[e_label]
-          elif e_label_r in edge_transforms:
-            transform = edge_transforms[e_label_r]
+            transform_type = transform["type"]
+            transform_to_apply = {k: v for k, v in transform.items()
+                                  if k != "type"}
           else:
             continue
-          ls = tiling_utils.zigzag_between_points(p0, p1, **transform)
-          new_t.extend([geom.Point(xy) for xy in ls.coords][:-1])
+          if transform_type == "zigzag":
+            p0 = self.points[pts[0]]
+            p1 = self.points[pts[1]]
+            ls = tiling_utils.zigzag_between_points(
+              p0, p1, **transform_to_apply)
+            new_t.extend([geom.Point(xy) for xy in ls.coords][:-1])
+          elif transform_type == "stretch":
+            ls = tiling_utils.stretch_between_points(
+              p0, p1, **transform_to_apply)
+            if len(new_t) == 0:
+              new_t = [geom.Point(xy) for xy in ls.coords]
+            else:
+              new_t = new_t[:-1] + [geom.Point(xy) for xy in ls.coords]
       new_tiles.append(geom.Polygon(new_t))
 
     new_tile_unit = copy.deepcopy(self.tile_unit)
