@@ -57,18 +57,19 @@ class Tile(object):
     self.edges = self.edges[offset:] + self.edges[:offset]
     
   def get_vertex_label_positions(self) -> list[geom.Point]:
-    d = (self.shape.area ** 0.5) / 10
-    pts = tiling_utils.get_corners(self.shape, repeat_first = False)
-    return [
-      geom.LineString([p, self.centre]).line_interpolate_point(d)
-      for p in pts]
+    # this convoluted method required because various buffer and parallel
+    # offset options seem to return clean shapes with points removed!
+    d = (self.shape.area ** 0.5) / 8
+    corners = tiling_utils.get_corners(self.shape, repeat_first = False)
+    c = self.centre
+    return [geom.LineString([p, c]).line_interpolate_point(d) for p in corners]
     
   def get_edge_label_positions(self) -> list[geom.Point]:
-    d = (self.shape.area ** 0.5) / 10
-    pts = tiling_utils.get_sides(self.shape)
-    return [
-      geom.LineString([p.centroid, self.centre]).line_interpolate_point(d)
-      for p in pts]
+    d = (self.shape.area ** 0.5) / 8
+    sides = tiling_utils.get_sides(self.shape)
+    c = self.centre
+    return [geom.LineString(
+      [s.centroid, c]).line_interpolate_point(d) for s in sides]
 
 
 @dataclass
@@ -78,7 +79,7 @@ class Vertex:
   tiles: list[int]
   neighbours: list[int]
   edges: list[int]
-  label: str = ""
+  label: str = None
   on_boundary: bool = False
   is_tiling_vertex: bool = False
   topology: "Topology" = None
@@ -105,9 +106,9 @@ class Edge:
   ID: int
   vertices: list[int]   # only the (end) points which are tiling vertices
   corners: list[int]    # all the points
-  left_polygon: int = None
-  right_polygon: int = None
-  label: str = ""
+  left_tile: int = None
+  right_tile: int = None
+  label: str = None
   topology: "Topology" = None
   
   def __init__(self, topology:"Topology", vs:list[Vertex], ID:int):
@@ -123,6 +124,23 @@ class Edge:
   def get_topology(self):
     return geom.LineString([self.topology.points[v].point 
                             for v in self.vertices])
+
+  def zigzag(self, n:int = 2, h:float = 0.5, smoothness:int = 0):
+    p0 = self.topology.points[self.vertices[0]].point
+    p1 = self.topology.points[self.vertices[1]].point
+    ls = tiling_utils.zigzag_between_points(
+      p0, p1, n, h, smoothness)
+    # remove current corners
+    self.topology.points = {k: v for k, v in self.topology.points.items()
+                            if not k in self.corners[1:-1]}
+    id0 = max(self.topology.points.keys()) + 1
+    new_corners = []
+    for xy in ls.coords:
+      new_corners.append(id0)
+      self.topology.points[id0] = Vertex(self.topology, geom.Point(xy), id0)
+      id0 = id0 + 1
+    self.corners = self.vertices[:1] + new_corners + self.vertices[-1:]
+
 
 class Topology:
   """Class to represent topology of a Tileable.
@@ -147,9 +165,9 @@ class Topology:
     self._initialise_tiles()
     self._initialise_vertices()
     self._initialise_edges()
-    self._label_elements()
     self._generate_dual()
     self._trim_to_r1()
+    self._label_elements()
 
   def __repr__(self) -> str:
     return f"Topology: {len(self.tiles)} tiles, {len(self.points)} vertices, {len(self.edges)} edges"
@@ -274,12 +292,12 @@ class Topology:
               r_corners = list(reversed(corners))
               if r_corners in edges:
                 edge_id = list(self.edges.keys())[edges.index(r_corners)]
-                self.edges[edge_id].left_polygon = tile_id
+                self.edges[edge_id].left_tile = tile_id
                 tile.edges.append(-edge_id - 1)
               else:
                 self.edges[n_edges] = \
                   Edge(self, [self.points[v] for v in corners], n_edges)
-                self.edges[n_edges].right_polygon = tile_id
+                self.edges[n_edges].right_tile = tile_id
                 tile.edges.append(n_edges)
                 n_edges = n_edges + 1
 
@@ -346,32 +364,58 @@ class Topology:
 
   def _label_vertices(self) -> None:
     uniques = set()
-    for v in self.points.values():
+    n_tiles = self.tile_unit.tiles.shape[0]
+    # first label vertices in the core tiles
+    vs = set()
+    for t in self.tiles[:n_tiles]:
+      vs = vs.union(t.corners)
+    for vi in vs:
+      v = self.points[vi]
       label = ""
       for tile_id in v.tiles:
         tile = self.tiles[tile_id]
         label = label + \
           tile.vertex_labels[tile.corners.index(v.ID)]
-      v.label = min(list(label))
+      v.label = "".join(self._cyclic_sort_first(list(label)))
       uniques.add(v.label)
-    for v in self.points.values():
+    for vi in vs:
+      v = self.points[vi]
       v.label = LETTERS[list(uniques).index(v.label)]
+    # now copy to corresponding vertices in the rest of tiling
+    for ti, t in enumerate(self.tiles):
+      if ti >= n_tiles:
+        t0 = self.tiles[ti % n_tiles]
+        for v0, v in zip(t0.corners, t.corners):
+          if self.points[v].label is None:
+            self.points[v].label = self.points[v0].label
 
   def _label_edges(self) -> None:
-    elabels = {}
-    for tile in self.tiles:
-      labels = tile.edge_labels
-      for j, e in enumerate(tile.edges):
-        elabels[e] = labels[j]
-    for e, label in {i: lbl for i, lbl in elabels.items() if i >= 0}.items():
-      if -e - 1 in elabels:
-        self.edges[e].label = "".join(sorted([label, elabels[-e - 1]]))
-      else:
-        self.edges[e].label = label
-    u_labels = sorted(set([e.label for e in self.edges.values()]))
-    lookup = dict(zip(u_labels, letters[:len(u_labels)]))
-    for e in self.edges.values():
-      e.label = lookup[e.label]
+    uniques = set()
+    labelled = set()
+    # first label the core edges from the central tile unit
+    n_tiles = self.tile_unit.tiles.shape[0]
+    for t in self.tiles[:n_tiles]:
+      for ei in t.edges:
+        if ei >= 0:  # all edges in the core will have both L and R poly
+          e = self.edges[ei]
+          rt = self.tiles[e.right_tile]
+          lt = self.tiles[e.left_tile]
+          e.label = "".join(sorted([rt.edge_labels[rt.edges.index(ei)],
+                                    lt.edge_labels[lt.edges.index(-ei - 1)]]))
+          uniques.add(e.label)
+        labelled.add(e.ID)
+    for ei in labelled:
+      e = self.edges[ei]
+      e.label = letters[list(uniques).index(e.label)]
+    # now copy to corresponding edges in the rest of tiling
+    for ti, t in enumerate(self.tiles):
+      if ti >= n_tiles:
+        t0 = self.tiles[ti % n_tiles]
+        for e0, e in zip(t0.edges, t.edges):
+          e0 = e0 if e0 >= 0 else -e0 - 1
+          e = e if e >= 0 else -e - 1
+          if self.edges[e].label is None:
+            self.edges[e].label = self.edges[e0].label
 
   def _reorder_vertex_incident_tiles(self) -> None:
     for v in self.points.values():
@@ -403,16 +447,19 @@ class Topology:
     for tile in self.tiles:
       pts = pts.union(tile.corners)
     self.points = {k: v for k, v in self.points.items() if v.ID in pts}
-    unique_labels = list(set([v.label for v in self.points.values()]))
     for v in self.points.values():
-      v.label = LETTERS[unique_labels.index(v.label)]
+      v.tiles = [t for t in v.tiles if t < r1_n]
     es = set()
     for tile in self.tiles:
-      es = es.union(tile.edges)
+      es = es.union([e if e >=0 else -e - 1 for e in tile.edges])
     self.edges = {k: e for k, e in self.edges.items() if k in es}
-    unique_labels = list(set([e.label for e in self.edges.values()]))
     for e in self.edges.values():
-      e.label = letters[unique_labels.index(e.label)]
+      if e.right_tile >= r1_n:
+        e.right_tile = None
+      if e.left_tile >= r1_n:
+        e.left_tile = None
+    for v in self.points.values():
+      v.edges = [e for e in v.edges if e in es]
     self.dual_tiles = {k: v for k, v in self.dual_tiles.items() if k in pts}
 
   def get_tile_geoms(self) -> gpd.GeoSeries:
@@ -457,7 +504,6 @@ class Topology:
           self.dual_tiles[v.ID] = \
             geom.Polygon([self.tiles[i].centre for i in v.tiles])
 
-
   def plot(self, show_original_tiles: bool = True,  
            show_tile_centres: bool = False,
            show_tile_vertex_labels: bool = False, 
@@ -486,33 +532,35 @@ class Topology:
     
     if show_vertex_labels:
       for v in self.points.values():
-          ax.annotate(v.ID if show_vertex_ids else v.label, 
-                      xy = (v.point.x, v.point.y), color = "r", fontsize = 10,
-                      ha = "center", va = "center",
-                      bbox = dict(boxstyle="circle", lw=0, fc="#ffffff40"))
+        ax.annotate(v.ID if show_vertex_ids else v.label, 
+                    xy = (v.point.x, v.point.y), color = "r", fontsize = 10,
+                    ha = "center", va = "center",
+                    bbox = dict(boxstyle="circle", lw=0, fc="#ffffff40"))
     
     if show_tile_vertex_labels:
       for tile in self.tiles:
         for posn, label in zip(tile.get_vertex_label_positions(), 
                                tile.vertex_labels):
           ax.annotate(label, xy = (posn.x, posn.y), fontsize = 8, 
-                      ha = "center", va = "center")
+                      ha = "center", va = "center", color = "b")
     
     if show_tile_edge_labels:
       for tile in self.tiles:
         for posn, label in zip(tile.get_edge_label_positions(),
                                tile.edge_labels):
-          ax.annotate(label, xy = (posn.x, posn.y),
+          ax.annotate(label, xy = (posn.x, posn.y), color = "b",
                       ha = "center", va = "center", fontsize = 8)
     
-    if show_edges:
-      edges = self.get_edge_geoms(dist / 200 if offset_edges else 0)
-      edges.plot(ax = ax, color = "forestgreen", ls = "dashed", lw = 1)
-      if show_edge_labels:
-        for l, e in zip(edges, self.edges.values()):
-          c = l.centroid
-          ax.annotate(e.label, xy = (c.x, c.y), ha = "center", va = "center",
-            fontsize = 10 if show_edge_labels else 7, color = "k")
+    if show_edge_labels:
+      if show_edges:
+        edges = self.get_edge_geoms(dist / 200 if offset_edges else 0)
+        edges.plot(ax = ax, color = "forestgreen", ls = "dashed", lw = 1)
+      else:
+        edges = [e.get_geometry() for e in self.edges.values()]
+      for l, e in zip(edges, self.edges.values()):
+        c = l.centroid
+        ax.annotate(e.label, xy = (c.x, c.y), ha = "center", va = "center",
+          fontsize = 10 if show_edge_labels else 7, color = "k")
       
     if show_dual_tiles:
       gpd.GeoSeries(self.dual_tiles).buffer(
@@ -522,49 +570,60 @@ class Topology:
     pyplot.axis("off")
     return ax
 
+  # def get_new_tile_unit(self, edge_transforms):
+  #   edges_to_transform = list(edge_transforms.keys())
+  #   tile_edges = self.tile_edges[:self.tile_unit.tiles.geometry.shape[0]]
+  #   new_tiles = []
 
-  def get_new_tile_unit(self, edge_transforms):
-    edges_to_transform = list(edge_transforms.keys())
-    tile_edges = self.tile_edges[:self.tile_unit.tiles.geometry.shape[0]]
-    new_tiles = []
+  #   for t in tile_edges:
+  #     new_t = []
+  #     for edge in t:
+  #       if edge >= 0:
+  #         pts = self.edges[edge]
+  #         e_label = self.edge_labels[edge]
+  #       else:
+  #         pts = (self.edges[-edge - 1])[::-1]
+  #         e_label = self.edge_labels[-edge - 1]
+  #       # e_label = f"{self.point_labels[pts[0]]}{self.point_labels[pts[-1]]}"
+  #       # e_label_r = e_label[::-1]
+  #       if not e_label in edges_to_transform:
+  #         new_t.extend([self.points[i] for i in pts[:-1]])
+  #       else:
+  #         if e_label in edge_transforms:
+  #           transform = edge_transforms[e_label]
+  #           transform_type = transform["type"]
+  #           transform_to_apply = {k: v for k, v in transform.items()
+  #                                 if k != "type"}
+  #         else:
+  #           continue
+  #         if transform_type == "zigzag":
+  #           p0 = self.points[pts[0]]
+  #           p1 = self.points[pts[1]]
+  #           ls = tiling_utils.zigzag_between_points(
+  #             p0, p1, **transform_to_apply)
+  #           new_t.extend([geom.Point(xy) for xy in ls.coords][:-1])
+  #         elif transform_type == "stretch":
+  #           ls = tiling_utils.stretch_between_points(
+  #             p0, p1, **transform_to_apply)
+  #           if len(new_t) == 0:
+  #             new_t = [geom.Point(xy) for xy in ls.coords]
+  #           else:
+  #             new_t = new_t[:-1] + [geom.Point(xy) for xy in ls.coords]
+  #     new_tiles.append(geom.Polygon(new_t))
 
-    for t in tile_edges:
-      new_t = []
-      for edge in t:
-        if edge >= 0:
-          pts = self.edges[edge]
-          e_label = self.edge_labels[edge]
-        else:
-          pts = (self.edges[-edge - 1])[::-1]
-          e_label = self.edge_labels[-edge - 1]
-        # e_label = f"{self.point_labels[pts[0]]}{self.point_labels[pts[-1]]}"
-        # e_label_r = e_label[::-1]
-        if not e_label in edges_to_transform:
-          new_t.extend([self.points[i] for i in pts[:-1]])
-        else:
-          if e_label in edge_transforms:
-            transform = edge_transforms[e_label]
-            transform_type = transform["type"]
-            transform_to_apply = {k: v for k, v in transform.items()
-                                  if k != "type"}
-          else:
-            continue
-          if transform_type == "zigzag":
-            p0 = self.points[pts[0]]
-            p1 = self.points[pts[1]]
-            ls = tiling_utils.zigzag_between_points(
-              p0, p1, **transform_to_apply)
-            new_t.extend([geom.Point(xy) for xy in ls.coords][:-1])
-          elif transform_type == "stretch":
-            ls = tiling_utils.stretch_between_points(
-              p0, p1, **transform_to_apply)
-            if len(new_t) == 0:
-              new_t = [geom.Point(xy) for xy in ls.coords]
-            else:
-              new_t = new_t[:-1] + [geom.Point(xy) for xy in ls.coords]
-      new_tiles.append(geom.Polygon(new_t))
+  #   new_tile_unit = copy.deepcopy(self.tile_unit)
+  #   new_tile_unit.tiles.geometry = gpd.GeoSeries(new_tiles)
+  #   new_tile_unit.setup_regularised_prototile_from_tiles()
+  #   return new_tile_unit
 
-    new_tile_unit = copy.deepcopy(self.tile_unit)
-    new_tile_unit.tiles.geometry = gpd.GeoSeries(new_tiles)
-    new_tile_unit.setup_regularised_prototile_from_tiles()
-    return new_tile_unit
+  def transform_edges(self, label:str, type:str, **kwargs) -> "Topology":
+    new_topo = copy.deepcopy(self)
+    # for e in new_topo.edges.values():
+    #   e.topology = new_topo
+    #   if e.label == label:
+    #     if type == "zigzag":
+    #       e.zigzag(**kwargs)
+    # for t in self.tiles:
+    #   t.topology = new_topo
+    #   t.update_corners_from_edges()
+    return new_topo
