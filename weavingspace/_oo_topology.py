@@ -140,7 +140,7 @@ class Edge:
 
   def get_topology(self, forward = True):
     if forward:
-      return geom.LineString([v.point or v in self.vertices])
+      return geom.LineString([v.point for v in self.vertices])
     else:
       return geom.LineString([v.point for v in self.vertices[::-1]])
   
