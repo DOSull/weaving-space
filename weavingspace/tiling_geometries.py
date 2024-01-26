@@ -321,15 +321,15 @@ def get_9_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
     for p1, p2 in zip(inner[:-1], inner[1:]):
       i.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
     return [
-      geom.Polygon([i[1], i[2], i[4], i[5], c]),
-      geom.Polygon([i[5], i[6], i[8], i[9], c]),
-      geom.Polygon([i[9], i[10], i[0], i[1], c]),
-      geom.Polygon([i[2], i[0], o[11], o[0], o[1]]),
-      geom.Polygon([i[4], i[2]] + o[1:4]),
-      geom.Polygon([i[6], i[4]] + o[3:6]),
-      geom.Polygon([i[8], i[6]] + o[5:8]),
-      geom.Polygon([i[10], i[8]] + o[7:10]),
-      geom.Polygon([i[0], i[10]] + o[9:])
+      geom.Polygon([c, i[1], i[2], i[4], i[5]]),
+      geom.Polygon([c, i[5], i[6], i[8], i[9]]),
+      geom.Polygon([c, i[9], i[10], i[0], i[1]]),
+      geom.Polygon([o[0], o[1], i[2], i[0], o[11]]),
+      geom.Polygon([o[2], o[3], i[4], i[2], o[1]]),
+      geom.Polygon([o[4], o[5], i[6], i[4], o[3]]),
+      geom.Polygon([o[6], o[7], i[8], i[6], o[5]]),
+      geom.Polygon([o[8], o[9], i[10], i[8], o[7]]),
+      geom.Polygon([o[10], o[11], i[0], i[10], o[9]])
     ]
   else:
     return [
