@@ -88,6 +88,30 @@ class Tile(object):
       self.set_shape_from_corners()
 
 
+  def insert_vertex_at(self, v:"Vertex", i:int, update_shape:bool = False):
+    # This is not a generic vertex insertion method: it is only for use during 
+    # Topology initialisation, and does not guarantee correct maintenance of 
+    # all tile, edge and vertex relations in the general case!
+    print(f"corners={self.get_corner_IDS()},v={v.ID},{i=}")
+    self.corners = self.corners[:i] + [v] + self.corners[i:]
+    print(f"edges={self.get_edge_IDS()}\ncw={self.edges_cw}")
+    old_edge = self.edges[i - 1]
+    old_edge_ID = old_edge.ID
+    print(f"{old_edge=}")
+    new_edges = old_edge.insert_vertex(v, self.corners[i - 1])
+    if i >= len(self.edges_cw) or self.edges_cw[i]:
+      self.edges = self.edges[:(i-1)] + new_edges + self.edges[i:]
+      self.edges_cw = self.edges_cw[:(i-1)] + [True] * 2 + self.edges_cw[i:]
+    else:
+      self.edges = self.edges[:(i-1)] + new_edges + self.edges[i:]
+      self.edges_cw = self.edges_cw[:(i-1)] + [True, True] + self.edges_cw[i:]
+    print(f"corners={self.get_corner_IDS()}")
+    print(f"edges={self.get_edge_IDS()}\ncw={self.edges_cw}\n")
+    if update_shape:
+      self.set_shape_from_corners()
+    return old_edge_ID, new_edges
+
+
   def offset_corners(self, offset):
     self.shape = tiling_utils.offset_polygon_corners(self.shape, offset)
     self.corners = self.corners[offset:] + self.corners[:offset]
@@ -128,7 +152,7 @@ class Vertex:
   neighbours: list[int] = None
   label: str = None
   on_boundary: bool = False
-  is_tiling_vertex: bool = False
+  is_tiling_vertex: bool = True   # TODO: fix this...
   
 
   def __init__(self, point:geom.Point, ID:int):
@@ -180,6 +204,17 @@ class Edge:
     return [v.ID for v in self.vertices]
 
 
+  def insert_vertex(self, v:"Vertex", predecessor:"Vertex") -> list["Edge"]:
+    i = self.corners.index(predecessor)
+    new_edge = Edge([v] + self.corners[(i+1):])
+    new_edge.left_tile = self.left_tile
+    new_edge.right_tile = self.right_tile
+    self.corners = self.corners[:(i+1)] + [v]
+    self.vertices = [self.vertices[0], v]
+    self.ID = tuple(v.ID for v in self.vertices)
+    return [self, new_edge]
+
+
   def get_geometry(self, forward = True):
     if forward:
       return geom.LineString([v.point for v in self.corners])
@@ -216,8 +251,9 @@ class Topology:
     self.tile_unit = unit # keep this for reference
     self._initialise_vertices()
     self._setup_edges()
+    self._copy_base_tiles_to_patch()
     self._generate_dual()
-    self._trim_to_r1()
+    # self._trim_to_r1()
     self._label_elements()
 
 
@@ -228,8 +264,8 @@ class Topology:
   def _initialise_vertices(self):
     self._initialise_points_into_tiles()
     self._setup_vertex_tile_relations()
-    self._setup_boundary_points()
-    self._assign_vertices()
+    # self._setup_boundary_points()
+    # self._assign_vertices()
     self._reorder_vertex_incident_tiles()
 
 
@@ -243,7 +279,7 @@ class Topology:
   def _initialise_points_into_tiles(self) -> None:
     """Sets up the list of unique point locations in the tiling.
     """
-    shapes = self.tile_unit.get_local_patch(r = 2, include_0 = True).geometry
+    shapes = self.tile_unit.get_local_patch(r = 1, include_0 = True).geometry
     shapes = [tiling_utils.get_clean_polygon(s) for s in shapes]
     self.tiles = []
     n_tiles = 0
@@ -300,17 +336,33 @@ class Topology:
       tile.set_shape_from_corners()
 
 
-  def map_basetile_onto_tile(self, ti:Tile, tj:Tile):
+  def _copy_base_tiles_to_patch(self):
+    n_base = self.tile_unit.tiles.shape[0]
+    n_r1 = len(self.tiles)
+    for base_tile in self.tiles[:n_base]:
+      for other_tile in self.tiles[base_tile.ID:n_r1:n_base]:
+        self._map_reference_tile_onto_tile(base_tile, other_tile)
+
+
+  def _map_reference_tile_onto_tile(self, ti:Tile, tj:Tile):
     to_add = len(ti.corners) - len(tj.corners)
-    for i, c in enumerate(ti.corners):
-      if c.point.distance(tj.corners[i].point) > 10 * tiling_utils.RESOLUTION:
-        # add vertex to tj
-        to_add = to_add
-        v = self.add_vertex(c.point)
-        tj.corners = tj.corners[:i] + [v] + tj.corners[i:]
-        e = tj.edges[i]
-        to_add = to_add - 1
-        if to_add == 0: break
+    if to_add > 0:
+      dxy = (tj.centre.x - ti.centre.x, tj.centre.y - ti.centre.y)
+      print(f"{ti.ID=},{tj.ID=},{dxy=}")
+      for i, tic in enumerate([c.point for c in ti.corners]):
+        tjc = tj.corners[i % len(tj.corners)].point
+        if abs((tjc.x - tic.x) - dxy[0]) > 10 * tiling_utils.RESOLUTION or \
+           abs((tjc.y - tic.y) - dxy[1]) > 10 * tiling_utils.RESOLUTION:
+          # add vertex to tj
+          v = self.add_vertex(geom.Point(tic.x + dxy[0], tic.y + dxy[1]))
+          v.is_tiling_vertex = True
+          old_edge, new_edges = tj.insert_vertex_at(v, i)
+          del self.edges[old_edge]
+          for e in new_edges:
+            self.edges[e.ID] = e
+          to_add = to_add - 1
+          if to_add == 0:
+            break
 
 
   def _setup_boundary_points(self) -> list[int]:
@@ -327,9 +379,10 @@ class Topology:
 
   def _assign_vertices(self) -> None:
     for v in self.points.values():
-      v.is_tiling_vertex = \
-        not v.on_boundary and len(v.tiles) > 2 \
-        or v.on_boundary and len(v.neighbours) > 2
+      # v.is_tiling_vertex = \
+      #   not v.on_boundary and len(v.tiles) > 2 \
+      #   or v.on_boundary and len(v.neighbours) > 2
+      v.is_tiling_vertex = True
 
 
   def _setup_edges(self) -> None:
@@ -510,27 +563,27 @@ class Topology:
     return e
 
 
-  def _trim_to_r1(self):
-    # trim back tiles to the local patch radius 1
-    r1_n = len(self.tile_unit.get_local_patch(include_0 = True).geometry)
-    self.tiles = self.tiles[:r1_n]
-    # compile lists of points and edges to retain
-    pts, es = set(), set()
-    for tile in self.tiles:
-      pts = pts.union(tile.get_corner_IDS())
-      es = es.union(tile.get_edge_IDS())
-    # trim points back
-    self.points = {k: v for k, v in self.points.items() if v.ID in pts}
-    for v in self.points.values():
-      v.tiles = [t for t in v.tiles if t.ID < r1_n]
-    # trim edges back
-    self.edges = {k: e for k, e in self.edges.items() if k in es}
-    for e in self.edges.values():
-      if not e.right_tile.ID < r1_n:
-        e.right_tile = None
-      if not e.left_tile.ID < r1_n:
-        e.left_tile = None
-    self.dual_tiles = {k: v for k, v in self.dual_tiles.items() if k in pts}
+  # def _trim_to_r1(self):
+  #   # trim back tiles to the local patch radius 1
+  #   r1_n = len(self.tile_unit.get_local_patch(include_0 = True).geometry)
+  #   self.tiles = self.tiles[:r1_n]
+  #   # compile lists of points and edges to retain
+  #   pts, es = set(), set()
+  #   for tile in self.tiles:
+  #     pts = pts.union(tile.get_corner_IDS())
+  #     es = es.union(tile.get_edge_IDS())
+  #   # trim points back
+  #   self.points = {k: v for k, v in self.points.items() if v.ID in pts}
+  #   for v in self.points.values():
+  #     v.tiles = [t for t in v.tiles if t.ID < r1_n]
+  #   # trim edges back
+  #   self.edges = {k: e for k, e in self.edges.items() if k in es}
+  #   for e in self.edges.values():
+  #     if not e.right_tile.ID < r1_n:
+  #       e.right_tile = None
+  #     if not e.left_tile.ID < r1_n:
+  #       e.left_tile = None
+  #   self.dual_tiles = {k: v for k, v in self.dual_tiles.items() if k in pts}
 
 
   def get_tile_geoms(self) -> gpd.GeoSeries:

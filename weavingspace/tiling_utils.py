@@ -1063,7 +1063,7 @@ def as_numpy_matrix(transform:list[float]) -> np.array:
     np.array: the transform in numpy matrix format.
   """
   return np.array([[transform[0], transform[1], transform[4]],
-                    [transform[2], transform[3], transform[5]],
-                    [           0,            0,            1]])
+                   [transform[2], transform[3], transform[5]],
+                   [           0,            0,            1]])
 
 
