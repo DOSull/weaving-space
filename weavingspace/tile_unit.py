@@ -14,12 +14,13 @@ Examples:
   + "cairo" the Cairo tiling more formally known as the Laves
   [3<sup>2</sup>.4.3.4] tiling. The author's favourite tiling, hence it
   has its own tiling_type.
-  + "hex-dissection" a range of dissections of the regular hexagon into,
+  + "hex-slice" a range of dissections of the regular hexagon into,
   2, 3, 4, 6, or 12 'pie slices'. The number of slices is set by
   specifying an additional argument `n`. Slices are cut either starting
   at the corners of  the hexagon or from the midpoints of hexagon edges,
   by specifying an additional argument `offset` set to either
   0 or 1 respectively.
+  + "hex-dissection" a range of 4, 7 or 9-fold dissections of the hexagon.  
   + "laves" a range of isohedral tilings. See [this article](https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings).
   The desired tiling is specified by the additional argument `code` which
   is a string like "3.3.4.3.4".
@@ -77,20 +78,16 @@ import weavingspace.tiling_geometries as tiling_geometries
 @dataclass
 class TileUnit(Tileable):
   """Class to represent the tiles of a 'conventional' tiling.
-
-  Args:
-    tiling_type (str): tiling type as detailed above.
-    offset (int): offset for "hex-dissection" tilings. See above
-      for details. Defaults to 1.
-    n (int): number of dissections or colours in "hex-dissection",
-      "hex-colouring", or "square-colouring" tiling types. Defaults to 3.
-    code (str): the code for "laves" or "archimedean" tiling types.
-    Defaults to "3.3.4.3.4".
   """
   tiling_type:str = None
+  """tiling type as detailed in the class documentation preamble."""
   offset:int = 1
+  """offset for 'hex-dissection' and 'hex-slice tilings. Defaults to 1."""
   n:int = 3
+  """number of dissections or colours in 'hex-dissection', 'hex-slice' and
+  'hex-colouring' tilings. Defaults to 3."""
   code:str = "3.3.4.3.4"
+  """tne code for 'laves' or 'archimedean' tiling types."""
 
   def __init__(self, **kwargs) -> None:
     super(TileUnit, self).__init__(**kwargs)

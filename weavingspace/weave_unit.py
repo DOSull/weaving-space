@@ -34,29 +34,25 @@ from weavingspace.tileable import Tileable
 @dataclass
 class WeaveUnit(Tileable):
   """Extends Tileable to allow for tiles that appear like woven patterns.
-
-  Args:
-  weave_type (str, optional): the type of weave pattern, one of
-    "plain",  "twill", "basket", "this", "cube" or "hex". Defaults
-    to "plain".
-  aspect (float, optional): width of strands relative to the spacing.
-    Defaults to 1.
-  n (Union[int,tuple[int]]): number of over-under strands in biaxial
-    weaves. Only one item is required in a plain weave. Twill and
-    basket patterns expect an even number of entries in the tuple.
-    Defaults to (2, 2).
-  strands (str, optional): specification of the strand labels
-    along each axis. Defaults to "a|b|c".
-  debug (bool, optional): if True prints debug messages. Defaults to
-    False.
   """
+
   weave_type:str = "plain"
+  """type of weave pattern, one of `plain`, `twill`, `basket`, `cube`, `hex` or
+  `this`. Defaults to `plain`."""
   aspect:float = 1.
+  """width of strands relative to the `spacing`. Defaults to 1.0."""
   n:Union[int, tuple[int]] = (2, 2)
+  """number of over-under strands in biaxial weaves. Only one item is 
+  required in a plain weave. Twill and basket patterns expect an even number of 
+  entries in the tuple."""
   strands:str = "a|b|c"
+  """specification of the strand labels along each axis. Defaults to `a|b|c`."""
   _tie_up:np.ndarray = None
+  """optional tie-up array to pass through for `this` weave type."""
   _tr:np.ndarray = None
+  """optional treadling array to pass through for `this` weave type."""
   _th:np.ndarray = None
+  """optional threading array to pass through for `this` weave type."""
 
   def __init__(self, **kwargs):
     super(WeaveUnit, self).__init__(**kwargs)

@@ -44,37 +44,31 @@ class TileShape(Enum):
 @dataclass
 class Tileable:
   """Class to represent a tileable set of tile geometries.
-
-  Args:
-    tiles (gpd.GeoDataFrame): the geometries with associated
-      tile_id attribute encoding their different colouring.
-    prototile (gpd.GeoDataFrame): the tileable polygon (a rectangle, a
-      hexagon, or a diamond).
-    spacing (float): the tile spacing -- effectively the 'resolution' of
-      the tiling. Defaults to `1000`.
-    base_shape (TileShape): the tile shape. Defaults to
-      `TileShape.RECTANGLE`.
-    vectors (list[tuple[float]]): translation vector symmetries of the
-      tiling.
-    regularised_prototile (gpd.GeoDataFrame): a polygon containing the
-      tiles of this `weavingspace.tileable.Tileable` --- most
-      often a union of those polygons.
-    crs (int): the coordinate reference system of the tile. Most often
-      an EPSG code, but any valid geopandas CRS specification is
-      valid. Defaults to 3857 (i.e. Web Mercator).
-    debug (bool, optional): if True prints debug messages. Defaults to
-      False.
   """
 
   tiles: gpd.GeoDataFrame = None
+  """the geometries with associated `title_id` attribute encoding their 
+  different colouring."""
   prototile: gpd.GeoDataFrame = None
+  """the tileable polygon (rectangle, hexagon or diamond)"""
   spacing: float = 1000.0
+  """the tile spacing effectively the resolution of the tiling. Defaults to
+  1000"""
   base_shape: TileShape = TileShape.RECTANGLE
+  """the tile shape. Defaults to 'RECTANGLE'"""
   vectors: dict[tuple[int], tuple[float]] = None
+  """translation vector symmetries of the tiling"""
   regularised_prototile: gpd.GeoDataFrame = None
+  """polygon containing the tiles of this tileable, usually a union of its
+  tile polygons"""
   crs: int = 3857
+  """coordinate reference system of the tile. Most often an ESPG code but
+  any valid geopandas CRS specification is valid. Defaults to 3857 (i.e. Web
+  Mercator)."""
   rotation: float = 0.0
+  """cumulative rotation of the tileable."""
   debug: bool = False
+  """if True prints debug messages. Defaults to False."""
 
   # Tileable constructor called by subclasses - should not be used directly
   def __init__(self, **kwargs):

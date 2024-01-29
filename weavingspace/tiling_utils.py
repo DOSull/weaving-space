@@ -71,7 +71,7 @@ def get_strand_ids(strands_spec: str) -> tuple[list[str]]:
 
         "a|bc|(de)f" -> (["a"], ["b", "c"], ["de", "f"])
 
-      Superflous parentheses are removed, but no other error-checks are
+    Superflous parentheses are removed, but no other error-checks are
       applied.
 
   Returns:

@@ -43,33 +43,27 @@ class _TileGrid():
   space where the tile spacing is unit squares, then transforming this back
   into the original map space. Some member variables of the class are in
   the transformed grid generation space, some in the map space.
-
-  Args:
-    tile (TileUnit): the base tile in map space.
-    to_tile (gpd.GeoSeries): geometry of region to be tiled in map space.
-    transform (tuple[float]): the forward transformation from map space to
-      the grid generation space. Stored in shapely's (a, b, d, e, dx, dy)
-      format.
-    inverse_transform (tuple[float]): the inverse transformation from
-      grid generation space to map space. Stored in shapely's (a, b, d,
-      e, dx, dy) format.
-    centre (tuple[float]): centre point of the extent in map space.
-    points (gpd.GeoSeries): shapely.geometry.Points recording translation
-      vectors of the tiling in map space.
-    _extent (gpd.GeoSeries): geometry of the (circular) extent of the
-      tiling transformed to grid generation space.
-    _at_centroids (bool): if True the grid will consist of the centroids of
-      the spatial units in the to_tile region, allowing a simple way to
-      use a tile unit as a point symbol.
   """
   tile:TileUnit = None
+  """the base tile in map space."""
   to_tile:gpd.GeoSeries = None
+  """geometry of the region to be tiled in map space."""
   transform:tuple[float] = None
+  """the forward transformation from map space to tiling grid generation
+  space, stored as a shapely.affinity transform tuple of 6 floats."""
   inverse_transform:tuple[float] = None
+  """the inverse transform from tiling grid space to map space."""
   centre:tuple[float] = None
+  """centre point of the extent in map sapce."""
   points:gpd.GeoSeries = None
+  """geom.Points recording the translation vectors of the tiling in map space.
+  """
   _extent:gpd.GeoSeries = None
+  """geometry of the circular extent of the tiling transformed into tiling 
+  grid generation space."""
   _at_centroids:bool = False
+  """if True the grid will consist of the centroids of the spatial units in the 
+  to_tile region, allowing a simple way to use a tile unit as a point symbol."""
 
   def __init__(self, tile:TileUnit, to_tile:gpd.GeoSeries,
                at_centroids:bool = False):
@@ -177,11 +171,17 @@ class Tiling:
   angle.
   """
   tile_unit:Tileable = None
+  """tileable on which the tiling is based."""
   tile_shape:TileShape = None
+  """base shape of the tileable."""
   region:gpd.GeoDataFrame = None
+  """the region to be tiled."""
   grid:_TileGrid = None
+  """the grid which will be used to apply the tiling."""
   tiles:gpd.GeoDataFrame = None
+  """the tiles after tiling has been carried out."""
   rotation:float = 0.0
+  """the cumulative rotation already applied to the tiling."""
 
   def __init__(self, unit:Tileable, region:gpd.GeoDataFrame, id_var = None,
          prototile_margin:float = 0, tiles_sf:float = 1,
@@ -519,34 +519,46 @@ class TiledMap:
     created.
   """
   # these will be set at instantion by Tiling.get_tiled_map()
-  tiling:Tiling = None           # the Tiling with the required tiles
-  map:gpd.GeoDataFrame = None    # the GeoDataFrame on which this map is based
-
-  # variables and colourmaps should be set before calling self.render()
-  variables:dict[str,str] = None # lookup from tile_id to variable names
-  colourmaps:dict[str,Union[str,dict]] = None   # lookup from variables to cmaps
+  tiling:Tiling = None
+  """the Tiling with the required tiles"""
+  map:gpd.GeoDataFrame = None
+  """the GeoDataFrame on which this map is based"""
+  variables:dict[str,str] = None 
+  """lookup from tile_id to variable names"""
+  colourmaps:dict[str,Union[str,dict]] = None
+  """lookup from variables to matplotlib cmaps"""
 
   # the below parameters can be set either before calling self.render()
   # or passed in as parameters to self.render()
   # these are solely TiledMap.render() options
-  legend:bool = True             # whether or not to show a legend
-  legend_zoom:float = 1.0        # <1 zooms out from legend to show more context
-  legend_dx:float = 0.           # x shift of legend relative to the map
-  legend_dy:float = 0.           # y shift of legend relative to the map
-  use_ellipse:bool = False       # if True clips legend with an ellipse
-  ellipse_magnification:float = 1.0  # magnification to apply to clip ellipse
-  radial_key:bool = False        # if True use radial key even for ordinal/ratio
-                                 # data (normally these will be shown by 
-                                 # concentric tile geometries)
-  draft_mode:bool = False        # if True plot the map coloured by tile_id
+  legend:bool = True
+  """whether or not to show a legend"""
+  legend_zoom:float = 1.0
+  """<1 zooms out from legend to show more context"""
+  legend_dx:float = 0.
+  """x shift of legend relative to the map"""
+  legend_dy:float = 0.
+  """y shift of legend relative to the map"""
+  use_ellipse:bool = False
+  """if True clips legend with an ellipse"""
+  ellipse_magnification:float = 1.0
+  """magnification to apply to clip ellipse"""
+  radial_key:bool = False
+  """if True use radial key even for ordinal/ratio data (normally these will be 
+  shown by concentric tile geometries)"""
+  draft_mode:bool = False
+  """if True plot the map coloured by tile_id"""
 
   # the parameters below are geopandas.plot options which we intercept to
   # ensure they are applied appropriately when we plot a GDF
-  scheme:str = "equalinterval"      # geopandas scheme to apply
-  k:int = 100                       # geopandas number of classes to apply
-  figsize:tuple[float] = (20, 15)   # maptlotlib figsize
-  dpi:float = 72                    # dpi for bitmap formats
-
+  scheme:str = "equalinterval"
+  """geopandas scheme to apply"""
+  k:int = 100
+  """geopandas number of classes to apply"""
+  figsize:tuple[float] = (20, 15)
+  """maptlotlib figsize"""
+  dpi:float = 72
+  """dpi for bitmap formats"""
 
   def render(self, **kwargs) -> Figure:
     """Renders the current state to a map.

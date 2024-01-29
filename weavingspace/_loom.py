@@ -64,22 +64,19 @@ class Loom:
 
     indices: [(0, 0), (0, 1), (1, 0), (1, 1)]
     orderings: [(0, 1), (1, 0), (1, 0), (0, 1)]
-
-  Attributes:
-    indices (list[tuple]): grid coordinate pairs.
-    orderings (list[Union[tuple[int],None]]): list of the layer orders at
-      site locations indexed by the corresponding item in indices.
-    dimensions (tuple[int]): the maximum coordinate values in each
-      direction.
-    orientations (tuple[float]): the angles which strands on each axis
-      make to the x-axis. (0, -90) for 2 axes, (0, 120, 240) for 2 axes.
-    n_axes (int): 2 or 3.
   """
   indices: list[tuple]
+  """grid coordinate pairs."""
   orderings: list
+  """list of layer orders at site locations index by corresponding times in
+  `indices`."""
   dimensions: tuple
+  """maximum coordinate values in each direction."""
   orientations: tuple
+  """angles (in degrees) which strands on each axis make with the x-axis.
+  (0, -90) for 2 axes, (0, 120, 240) for 3."""
   n_axes: int
+  """number of axes, 2 or 3."""
 
   def __init__(self, *matrices:np.ndarray):
     """Constructor for a Loom. Takes either one or three weave matrices

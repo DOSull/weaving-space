@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Together the Topology, Tile, Vertex, Edge and weavingspace.symmetry.Symmetry 
-and weavingspace.symmetry.Symmetries classes enable extraction of the 
-topological structure of periodic weavingspace.tileable.Tileable objects so that
-modification of equivalent tiles can be carried out while retaining tileability.
-It is important to note that these are not fully generalised classes and 
-methods, that is, the Topology object that is supported is not a permanent 
-'backing' data structure for our Tileable objects. While it might become that
-in time, as at Feb 2024 it is not such a data structure. Instead usage is
+"""Together the `Topology`, `Tile`, `Vertex`, `Edge` and `weavingspace.symmetry.
+Symmetry` and `weavingspace.symmetry.Symmetries` classes enable extraction of 
+the topological structure of periodic `weavingspace.tileable.Tileable` objects 
+so that modification of equivalent tiles can be carried out while retaining 
+tileability. It is important to note that these are not fully generalised 
+classes and methods, that is, the Topology object that is supported is not a 
+permanent 'backing' data structure for our Tileable objects. While it might 
+become that in time, as at Feb 2024 it is not such a data structure. Instead 
+usage is
 
     tile = TileUnit(...)
     topology = Topology(tile)
@@ -43,30 +44,33 @@ alphabet = string.ascii_letters.lower()
 
 
 class Tile(object):
-  r"""Class to capture and manipulate essential features of polygons in a 
-  tiling.
-
-  Args:
-    ID (int): integer ID number which indexes the Tile in the containing
-      Topology tiles list.
-    corners (list[Vertex]): list of Vertex objects. This includes all corners
-      of the original polygon and any tiling vertices induced by (for example) a
-      the corner of an adjacent tile lying halfway along an edge of the original
-      polygon on which this tile is based. Vertex objects are stored in strictly
-      clockwise sequence.
-    edges (list[Edge]): list of Edge objects that together compose the tile
-      boundary.
-    edges_CW (list[bool): list of Edge direction. Edges are stored only once in 
-      a Topology so some edges are in clockwise order and others  are in 
-      counter-clockwise order. These boolean flags are True if the corresponding
-      Edge is clockwise, False if counter-clockwise.
-    vertex_labels (list[str]): list of (upper case) letter labels of the tile
-      corners (i.e. all corners, not only tiling vertices).
-    edge_labels (list[str]): list of (lower case) letter labels of the tile
-      edges (tiling edges, not tile sides).
-    shape (geom.Polygon): the tile geometry (which may include some redundant 
-      points along sides where neighbouring tiles induce a tiling vertex). So
-      for example a rectangle might have additional points along its sides:
+  """Class to capture and manipulate essential features of polygons in a tiling.
+  """
+  ID: int
+  """integer ID number which indexes the Tile in the containing Topology tiles 
+  list."""
+  corners: list["Vertex"]
+  """list of Vertex objects. This includes all corners of the original polygon 
+  and any tiling vertices induced by (for example) a the corner of an adjacent 
+  tile lying halfway along an edge of the original polygon on which this tile 
+  is based. Vertex objects are stored in strictly clockwise sequence."""
+  edges: list["Edge"]
+  """list of Edge objects that together compose the tile boundary."""
+  edges_CW: list[bool]
+  """list of Edge direction. Edges are stored only once in a Topology so some 
+  edges are in clockwise order and others  are in counter-clockwise order. 
+  These boolean flags are True if the corresponding Edge is clockwise, False if 
+  counter-clockwise."""
+  vertex_labels: list[str]
+  """list of (upper case) letter labels of the tile corners (i.e. all corners, 
+  not only tiling vertices)."""
+  edge_labels: list[str]
+  """list of (lower case) letter labels of the tile edges (tiling edges, not 
+  tile sides)."""
+  shape: geom.Polygon = None
+  """the tile geometry (which may include some redundant points along sides 
+  where neighbouring tiles induce a tiling vertex). So for example a rectangle 
+  might have additional points along its sides:
       
         +---+-------+
         |   |   2   |
@@ -76,22 +80,13 @@ class Tile(object):
             |   |
             +---+
       
-      In the above Tile 1 has additional point A, 2 has B and 3 has C and D 
-      induced by the corners of neighbouring tiles.
-    centre (geom.Point): a point centre for the Tile (determined by 
-      weavingspace.tiling_utils.incentre).
-    group (int): equivalence group to which this Tile has been assigned in the
-      containing Topology.
-  """
-  ID: int
-  corners: list["Vertex"]  # all the corners incl tiling vertices
-  edges: list["Edge"]
-  edges_CW: list[bool]
-  vertex_labels: list[str]
-  edge_labels: list[str]
-  shape: geom.Polygon = None
+  In the above Tile 1 has additional point A, 2 has B and 3 has C and D induced 
+  by the corners of neighbouring tiles."""
   centre: geom.Point = None
+  """a point centre for the Tile (determined by weavingspace.tiling_utils.
+  incentre)."""
   group: int = None
+  """the tile equivalence class of this tile in its containing Topology."""
   
   def __init__(self, ID:int):
     """Class constructor.
@@ -167,7 +162,7 @@ class Tile(object):
     """Sets up the edges_CW attribute by inspection of the edges list.
     It is (frankly!) hard to keep track of the correct sequence of CW/CCW order
     of edges as new ones are created or old ones merged. This method inspects
-    the 'tail-nose' relations between consecutive edges to set these flags 
+    the 'tail-head' relations between consecutive edges to set these flags 
     correctly.
 
     The test is simply to check if the 'tail' Vertex ID in each edge appears at 
@@ -218,7 +213,7 @@ class Tile(object):
     """Method to merge the edges that meet at the supplied Vertex. It is 
     assumed that only two tiles are impacted this one, and its neighbour across
     the Edge on which v lies. Both are updated. For this reason the work is
-    delegated to get_updated_edges_from_merge() which is run on both affected
+    delegated to get_updated_edges_from_merge which is run on both affected
     tiles, but only determines the edges to remove and the new edge to be added
     once. See that method for details.
     
@@ -249,7 +244,7 @@ class Tile(object):
       new_edge (Edge, optional): if another Tile has already carried out this 
         merge this should be the resulting new Edge for insertion into this 
         Tile. Defaults to None (when the new Edge will be constructed).
-
+  
     Returns:
       Union[None, tuple]: either None (if a new edge was supplied) or a tuple 
         of the two edge IDs to be removed and the new edge added for return to
@@ -401,36 +396,33 @@ class Tile(object):
 
 
 class Vertex:
-  r"""Class to store attributes of a vertex in a tiling.
-
-  Args:
-    point (geom.Point): point location of the vertex.
-    ID (int): integer (not necessarily in an obvious sequence) of vertex
-      keyed into the points dictionary of the containing Topology.
-    tiles list[Tile]: list of Tiles incident on this vertex.
-    neighbours list[int]: list of the immediately adjacent other corner IDs.
-      Only required to determin if a point is a tiling vertex (when it 
-      will have) three or more neighbours, so only IDs are stored.
-    label: the (upper case letter) label of the vertex under the symmetries of
-      the tiling.
-    is_tiling_vertex (bool): True if this is a tiling vertex, rather than a 
-      tile corner. E.g., A below is a corner, not a tiling vertex. B is a 
-      tiling vertex:
-      
-        +-------+
-        | 1     |
-        |   A---B---+
-        |   | 2     |
-        +---C   +---+
-            |   |
-            +---+
-  """
+  """Class to store attributes of a vertex in a tiling."""
   point: geom.Point
+  """point (geom.Point): point location of the vertex."""
   ID: int
+  """integer (mostly but not necessarily in sequence) of vertex keyed into the 
+  points dictionary of the containing Topology."""
   tiles: list["Tile"]
+  """list of Tiles incident on this vertex."""
   neighbours: list[int]
+  """list of the immediately adjacent other corner IDs. Only required to 
+  determine if a point is a tiling vertex (when it will have) three or more 
+  neighbours, so only IDs are stored."""
   label: str = None
+  """the (upper case letter) label of the vertex under the symmetries of the 
+  tiling."""
   is_tiling_vertex: bool = True
+  """is_tiling_vertex (bool): True if this is a tiling vertex, rather than a 
+  tile corner. E.g., A below is a corner, not a tiling vertex. B is a tiling 
+  vertex:
+      
+      +-------+
+      | 1     |
+      |   A---B---+
+      |   | 2     |
+      +---C   +---+
+          |   |
+          +---+"""
   
   def __init__(self, point:geom.Point, ID:int):
     """Class constructor.
@@ -503,29 +495,25 @@ class Vertex:
 class Edge:
   """Class to represent edges in a tiling (not tile sides) per the definitions
   in Grünbaum and Shephard.
-
-  Args:
-    ID (tuple[int]): IDs of the vertices at ends of the edge. Used as key in 
-      the containing Topology's edges dictionary.
-    vertices (list[Vertex]): two item list of the end vertices.
-    corners (list[Vertex]): list of all the vertices in the edge (including its
-      end vertices). In a 'normal' edge to edge tiling corners and vertices 
-      will be identical.
-    right_tile (Tile): the tile to the right of the edge traversed from its 
-      first to its last vertex. Given clockwise winding default, all edges will 
-      have a right_tile.
-    left_tile (Tile): the tile to the left of the edge traversed from its first
-      to its last vertex. Exterior edges of the tiles in a Topology will not 
-      have a left_tile.
-    label (str): the (lower case letter) label of the edge under the symmetries
-      of the tiling.
   """
   ID: tuple[int]
-  vertices: list["Vertex"]  # only (end) points which are tiling vertices
-  corners: list["Vertex"]   # all the points
+  """IDs of the vertices at ends of the edge. Used as key in the containing 
+  Topology's edges dictionary."""
+  vertices: list["Vertex"]
+  """two item list of the end vertices."""
+  corners: list["Vertex"]
+  """list of all the vertices in the edge (including its end vertices). In a 
+  'normal' edge to edge tiling corners and vertices will be identical."""
   right_tile: "Tile" = None
+  """the tile to the right of the edge traversed from its first to its last 
+  vertex. Given clockwise winding default, all edges will have a right_tile."""
   left_tile: "Tile" = None
+  """the tile to the left of the edge traversed from its first to its last 
+  vertex. Exterior edges of the tiles in a Topology will not have a left_tile.
+  """
   label: str = None
+  """the (lower case letter) label of the edge under the symmetries of the 
+  tiling."""
   
   def __init__(self, corners:list[Vertex]):
     """Class constructor. Initialises the corners and vertices lists and sets ID
@@ -620,42 +608,30 @@ class Edge:
 
 
 class Topology:
-  r"""Class to represent topology of a Tileable object.
+  """Class to represent topology of a Tileable object.
   
   NOTE: It is important that get_local_patch return the tileable elements and 
   the translated copies in consistent sequence, i.e. if there are (say) four 
   tiles in the unit, the local patch should be 1 2 3 4 1 2 3 4 1 2 3 4 ... and
   so on. This is because self.tiles[i % n_tiles] is frequently used to reference
   the base unit Tile which corresponds to self.tiles[i].
-  
-  Args:
-    tileable (Tileable): the Tileable on which the topology will be based.
-    tiles (list[Tile]): list of the Tiles in the topology. We use polygons
-      returned by the tileable.get_local_patch method for these. That is the
-      base tiles and 8 adjacent copies (for a rectangular tiling), or 6 
-      adjacent copies (for a hexagonal tiling).
-    points (dict[int, Vertex]): dictionary of all points (vertices and corners)
-      in the tiling, keyed by Vertex ID.
-    edges (dict(tuple[int], Edge)): dictionary of the tiling edges, keyed by 
-      Edge ID.
-    example_tile_shapes (list[geom.Polygon]): a 'reference' tile shape one per 
-      tile equivalence class.
-    dual_tiles (list[geom.Polygon]): a list of polygons representing the dual
-      tiling of the one from which this Topology was generated. TODO: use the
-      dual tiles to return a viable dual Tileable.
-    n_tiles (int): number of tiles in the base Tileable (retained for 
-      convenience).
-    n_tile_groups (int): number of tile equivalence classes (as determined by 
-      this code base... NOT mathematical theory!).
   """
   tileable: Tileable
+  """the Tileable on which the topology will be based."""
   tiles: list[Tile]
+  """list of the Tiles in the topology. We use polygons returned by the tileable.get_local_patch method for these. That is the base tiles and 8 adjacent copies (for a rectangular tiling), or 6 adjacent copies (for a hexagonal tiling)."""
   points: dict[int, Vertex]
+  """dictionary of all points (vertices and corners) in the tiling, keyed by Vertex ID."""
   edges: dict[int, Edge]
+  """dictionary of the tiling edges, keyed by Edge ID."""
   example_tile_shapes: list[geom.Polygon]
+  """a 'reference' tile shape one per tile equivalence class."""
   dual_tiles: list[geom.Polygon]
+  """list of geom.Polygons from which a dual tiling might be constructed."""
   n_tiles: int = 0
+  """number of tiles in the base Tileable (retained for convenience)."""
   n_tile_groups: int = 0
+  """number of tile equivalence classes (as determined by this code base... NOT mathematical theory!)."""
 
   def __init__(self, unit: Tileable):
     """Class constructor.
@@ -673,11 +649,11 @@ class Topology:
     self._setup_vertex_tile_relations()
     self._setup_edges()
     self._copy_base_tiles_to_patch()
-    self._generate_dual()
     self._identify_distinct_tiles()
     self._label_tiles()
     self._label_vertices()
     self._label_edges()
+    self.generate_dual()
 
   def __str__(self) -> str:
     """Returns string representation of this Topology.
@@ -1059,24 +1035,24 @@ class Topology:
     self.edges[e.ID] = e
     return e
 
-  def get_tile_geoms(self) -> gpd.GeoSeries:
+  def _get_tile_geoms(self) -> gpd.GeoSeries:
     return gpd.GeoSeries([t.shape for t in self.tiles])
 
-  def get_tile_centre_geoms(self) -> gpd.GeoSeries:
+  def _get_tile_centre_geoms(self) -> gpd.GeoSeries:
     return gpd.GeoSeries([t.centre for t in self.tiles])
 
-  def get_point_geoms(self) -> gpd.GeoSeries:
+  def _get_point_geoms(self) -> gpd.GeoSeries:
     return gpd.GeoSeries([v.point for v in self.points.values()])
 
-  def get_vertex_geoms(self) -> gpd.GeoSeries:
+  def _get_vertex_geoms(self) -> gpd.GeoSeries:
     return gpd.GeoSeries([v.point for v in self.points.values()
                           if v.is_tiling_vertex])
 
-  def get_edge_geoms(self, offset:float = 0.0) -> gpd.GeoSeries:
+  def _get_edge_geoms(self, offset:float = 0.0) -> gpd.GeoSeries:
     return gpd.GeoSeries([e.get_topology().parallel_offset(offset)
                           for e in self.edges.values()])
 
-  def _generate_dual(self) -> list[geom.Polygon]:
+  def generate_dual(self) -> list[geom.Polygon]:
     """Create the dual tiiing for the tiling of this Topology.
     
     TODO: make this a viable replacement for the existing dual tiling 
@@ -1111,7 +1087,7 @@ class Topology:
     dist = max([extent[2] - extent[0], extent[3] - extent[1]])
     
     if show_original_tiles:
-      self.get_tile_geoms().plot(
+      self._get_tile_geoms().plot(
         ax = ax, fc = "dodgerblue", ec = "#333366", alpha = 0.2, lw = 0.75)
     
     if show_tile_centres:
@@ -1142,7 +1118,7 @@ class Topology:
     
     if show_edge_labels:
       if show_edges:
-        edges = self.get_edge_geoms(dist / 100 if offset_edges else 0)
+        edges = self._get_edge_geoms(dist / 100 if offset_edges else 0)
         edges.plot(ax = ax, color = "forestgreen", ls = "dashed", lw = 1)
       else:
         edges = [e.get_geometry() for e in self.edges.values()]

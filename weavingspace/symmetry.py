@@ -21,6 +21,7 @@ import weavingspace.tiling_utils as tiling_utils
 
 class KMP_Matcher:
   sequence: Iterable
+  """Iterable in which subsequences are to be found."""
 
   def __init__(self, sequence:Iterable):
     self.sequence = sequence
@@ -102,11 +103,20 @@ class KMP_Matcher:
 @dataclass
 class Symmetry():
   type: str = "identity"
+  """description of symmetry type, one of 'identity', 'rotation' or 
+  'reflection'"""
   description: str = "none"
+  """Additional description such as the angle of rotation - primarily for
+  debugging."""
   angle: float = 0.0
+  """angle of rotation or the line of reflection in degrees."""
   centre: geom.Point = geom.Point(0, 0)
+  """centre of rotation or a point through which line of reflection passes."""
   transform: tuple[float] = (1, 0, 0, 1, 0, 0)
+  """shapely.affinity.affine_transform tuple to apply the symmetry."""
   shift: int = 0
+  """number of rotational shifts to apply between two shapes prior to aligning
+  them under this symmetry"""
   
   def apply(self, geometry:Any) -> Any:
     return affine.affine_transform(geometry, self.transform)
@@ -140,11 +150,11 @@ class Symmetry():
               for l in [arc, angle]]
         gpd.GeoSeries(ls).plot(ax = ax, ec = "b", lw = 0.35)
     else:
-        ls = geom.LineString([(min(-h, -w), 0), (max(h, w), 0)])
-        ls = affine.rotate(ls, self.angle)
-        ls = affine.translate(ls, self.centre.x, self.centre.y)
-        ls = ls.intersection(geometry)
-        gpd.GeoSeries([ls]).plot(ax = ax, ec = "r", ls = "dashed", lw = 0.5)
+      ls = geom.LineString([(min(-h, -w), 0), (max(h, w), 0)])
+      ls = affine.rotate(ls, self.angle)
+      ls = affine.translate(ls, self.centre.x, self.centre.y)
+      ls = ls.intersection(geometry)
+      gpd.GeoSeries([ls]).plot(ax = ax, ec = "r", ls = "dashed", lw = 0.5)
     pyplot.axis("off")
     return ax
 
@@ -153,13 +163,21 @@ class Symmetry():
 class Symmetries():
 
   polygon:geom.Polygon = None
+  """Polygon from which these symmetries are derived."""
   matcher:KMP_Matcher = None
+  """the subsequence matcher used in symmetry detection."""
   n:int = None
+  """number of vertices of the polygon."""
   p_code:list[tuple[float]] = None
+  """the encoding of the polygon as sequence of length, angle pairs."""
   p_code_r:list[tuple[float]] = None
+  """the reversed encoding used to detect reflection symmetries."""
   rotation_shifts:list[int] = None
+  """list of number of 2pi/n rotation symmetries."""
   reflection_shifts:list[int] = None
+  """list of pi/n relection angle symmetries."""
   symmetries:list[Symmetry] = None
+  """list of Symmetry objects with more complete information."""
 
 
   def __init__(self, polygon:geom.Polygon):
