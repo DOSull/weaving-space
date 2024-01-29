@@ -950,6 +950,9 @@ class Topology:
       for tile in v.tiles:
         label = label + \
           tile.vertex_labels[tile.corners.index(v)]
+      # TODO: resolve this question: cyclic sort seems more correct,
+      # but neither approach seems to work in all cases... see esp.
+      # cyclic sort applied to the cheese sandwich tiling.
       # v.label = "".join(self._cyclic_sort_first(list(label)))
       v.label = min(list(label))
       uniques.add(v.label)
@@ -1198,11 +1201,14 @@ class Topology:
     
     TODO: make it possible for odd numbers of 'peaks' to work (this may require
     allowing bidirectional Edges, i.e. storing Edges in both directions so that
-    all Tile edges are drawn CW).
+    all Tile edges are drawn CW). The `start` parameter is a temporary hack for 
+    this
 
     Args:
       edge (Edge): Edge to transform
       n (int, optional): number of zigs and zags in the edge. Defaults to 2.
+      start (str, optional): label at one end of edge which is used to determine
+        the sense of h, enabling C-curves with an odd number n of zigs and zags to be applied. Defaults to 'A'.
       h (float, optional): width of the zig zags relative to edge length. 
         Defaults to 0.5.
       smoothness (int, optional): spline smoothness. 0 gives a zig zag proper,
