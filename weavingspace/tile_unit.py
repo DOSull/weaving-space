@@ -86,9 +86,6 @@ class TileUnit(Tileable):
       "hex-colouring", or "square-colouring" tiling types. Defaults to 3.
     code (str): the code for "laves" or "archimedean" tiling types.
     Defaults to "3.3.4.3.4".
-
-  Returns:
-    _type_: _description_
   """
   tiling_type:str = None
   offset:int = 1
