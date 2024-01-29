@@ -165,8 +165,8 @@ class Tile(object):
     the 'tail-head' relations between consecutive edges to set these flags 
     correctly.
 
-    The test is simply to check if the 'tail' Vertex ID in each edge appears at 
-    either end of the ID tuple of the following edge, i.e. if successive edge 
+    The test is simply to check if the 'tail' Vertex ID in each edge appears
+    in the ID tuple of the following edge, i.e. if successive edge 
     IDs are (0, 1) (2, 1) or (0, 1) (1, 2), then edge (0, 1) is in clockwise
     direction, but if we have (0, 1) (2, 3) then it is not.
     """
@@ -950,7 +950,8 @@ class Topology:
       for tile in v.tiles:
         label = label + \
           tile.vertex_labels[tile.corners.index(v)]
-      v.label = "".join(self._cyclic_sort_first(list(label)))
+      # v.label = "".join(self._cyclic_sort_first(list(label)))
+      v.label = min(list(label))
       uniques.add(v.label)
     for vi in sorted(vs):
       v = self.points[vi]
@@ -1190,7 +1191,7 @@ class Topology:
     topo.tileable.setup_regularised_prototile_from_tiles()
     return topo
 
-  def zigzag_edge(self, edge:"Edge", 
+  def zigzag_edge(self, edge:"Edge", start:str = "A",
                   n:int = 2, h:float = 0.5, smoothness:int = 0):
     """Applies a zigzag transformation to the supplied Edge. Currently this will
     only work correctly if h is even.
@@ -1207,9 +1208,11 @@ class Topology:
       smoothness (int, optional): spline smoothness. 0 gives a zig zag proper,
         higher values will produce a sinusoid. Defaults to 0.
     """
-    p0 = edge.vertices[0].point
-    p1 = edge.vertices[1].point
-    ls = tiling_utils.zigzag_between_points(p0, p1, n, h, smoothness)
+    v0, v1 = edge.vertices[0], edge.vertices[1]
+    if n % 2 == 1 and v0.label != start:
+      h = -h
+    ls = tiling_utils.zigzag_between_points(v0.point, v1.point, 
+                                            n, h, smoothness)
     # remove current corners
     self.points = {k: v for k, v in self.points.items()
                    if not k in edge.get_corner_IDs()[1:-1]}
