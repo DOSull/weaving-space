@@ -1187,7 +1187,7 @@ class Topology:
           topo.zigzag_edge(e, **kwargs)
     if apply_to_tiles:
       for t in topo.tiles:
-        t.set_shape_from_corners()
+        t.set_corners_from_edges()
     topo.tileable.tiles.geometry = gpd.GeoSeries(
       [tiling_utils.get_clean_polygon(topo.tiles[i].shape) 
        for i in range(topo.n_tiles)])
