@@ -6,7 +6,7 @@ The original proof-of-concept code is in R and Rmd files in the `r-stuff` folder
 ## **Update** (*April 2022*) 
 There is now a working version in python using `geopandas` and `shapely`. It will be more extensible in the longer run and will be the basis of any further work at this stage. The python implementation also appears less prone to topological glitches when tiles are dissolved to form tilings and does not require that we use any additional libraries to get reasonable(ish) performance when tiling large maps. The python source is in the `weavingspace` folder. 
 
-There are several jupyter notebooks in this repo that show examples of how to use the codebase, and the API is documented [here](https://dosull.github.io/weaving-space/doc/weavingspace/).
+There are several jupyter notebooks in this repo that show examples of how to use the codebase, and the API is documented [here](https://dosull.github.io/weaving-space/doc/weavingspace.html).
 
 ## What does it do?
 The kind of things we can make are:
