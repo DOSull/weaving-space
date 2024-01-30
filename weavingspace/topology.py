@@ -42,7 +42,6 @@ from time import perf_counter
 ALPHABET = string.ascii_letters.upper()
 alphabet = string.ascii_letters.lower()
 
-
 class Tile(object):
   """Class to capture and manipulate essential features of polygons in a tiling.
   """
@@ -61,6 +60,8 @@ class Tile(object):
   edges are in clockwise order and others  are in counter-clockwise order. 
   These boolean flags are True if the corresponding Edge is clockwise, False if 
   counter-clockwise."""
+  label: str
+  """tile_id label from the tileable source"""
   vertex_labels: list[str]
   """list of (upper case) letter labels of the tile corners (i.e. all corners, 
   not only tiling vertices)."""
@@ -633,7 +634,7 @@ class Topology:
   n_tile_groups: int = 0
   """number of tile equivalence classes (as determined by this code base... NOT mathematical theory!)."""
 
-  def __init__(self, unit: Tileable):
+  def __init__(self, unit: Tileable, ignore_tile_ids:bool = True):
     """Class constructor.
 
     Args:
@@ -649,7 +650,7 @@ class Topology:
     self._setup_vertex_tile_relations()
     self._setup_edges()
     self._copy_base_tiles_to_patch()
-    self._identify_distinct_tiles()
+    self._identify_distinct_tiles(ignore_tile_ids)
     self._label_tiles()
     self._label_vertices()
     self._label_edges()
@@ -677,10 +678,12 @@ class Topology:
     """
     shapes = self.tileable.get_local_patch(r = 1, include_0 = True).geometry
     shapes = [tiling_utils.get_clean_polygon(s) for s in shapes]
+    labels = list(self.tileable.tiles.tile_id) * (len(shapes) // self.n_tiles)
     self.tiles = []
     self.points = {}
-    for i, shape in enumerate(shapes):
+    for (i, shape), label in zip(enumerate(shapes), labels):
       tile = Tile(i)
+      tile.label = label
       self.tiles.append(tile)
       tile.corners = []
       corners = tiling_utils.get_corners(shape, repeat_first = False)
@@ -862,27 +865,31 @@ class Topology:
           del self.edges[e]
         self.edges[new_edge.ID] = new_edge
 
-  def _identify_distinct_tiles(self):
+  def _identify_distinct_tiles(self, ignore_tile_id_labels:bool = True):
     """Determines equivalence groups of tiles based on their symmetries.
     """
     self.example_tile_shapes = []
     offsets = []
-    for tile_id in range(self.n_tiles):
-      this_tile = self.tiles[tile_id]
-      s = Symmetries(this_tile.shape)
-      transforms = [s.get_matching_transforms(other) 
+    for tile in self.tiles[:self.n_tiles]:
+      s = Symmetries(tile.shape)
+      transforms = [s.get_matching_transforms(other.shape) 
                     for other in self.example_tile_shapes]
-      matches = [not t is None for t in transforms]
-      if any(matches):
-        match = matches.index(True)
+      shape_matches = [not t is None for t in transforms]
+      if ignore_tile_id_labels:
+        label_matches = [True] * len(self.example_tile_shapes)
+      else:
+        label_matches = [tile.label == other.label
+                        for other in self.example_tile_shapes]
+      if any([x and y for x, y in zip(shape_matches, label_matches)]):
+        match = shape_matches.index(True)
         offset = transforms[match]["offset"]
         offsets.append(offset)
-        this_tile.group = match
-        this_tile.offset_corners(offset)
+        tile.group = match
+        tile.offset_corners(offset)
       else:
-        self.example_tile_shapes.append(this_tile.shape)
+        self.example_tile_shapes.append(tile)
         offsets.append(0)
-        this_tile.group = self.n_tile_groups
+        tile.group = self.n_tile_groups
         self.n_tile_groups = self.n_tile_groups + 1
     # now copy assignments from the central TileUnit to everything else
     for tile in self.tiles[self.n_tiles:]:
@@ -896,7 +903,7 @@ class Topology:
     first_letter = 0
     for group in range(self.n_tile_groups):
       tiles = [t for t in self.tiles[:self.n_tiles] if t.group == group]
-      s = Symmetries(self.example_tile_shapes[group])
+      s = Symmetries(self.example_tile_shapes[group].shape)
       vlabels = list(s.get_unique_labels(offset = first_letter)["rotations"][0])
       elabels = self._get_edge_labels_from_vertex_labels(vlabels)
       for tile in tiles:
@@ -953,8 +960,8 @@ class Topology:
       # TODO: resolve this question: cyclic sort seems more correct,
       # but neither approach seems to work in all cases... see esp.
       # cyclic sort applied to the cheese sandwich tiling.
-      # v.label = "".join(self._cyclic_sort_first(list(label)))
-      v.label = min(list(label))
+      v.label = "".join(self._cyclic_sort_first(list(label)))
+      # v.label = min(list(label))
       uniques.add(v.label)
     for vi in sorted(vs):
       v = self.points[vi]
