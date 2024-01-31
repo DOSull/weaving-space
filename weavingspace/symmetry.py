@@ -365,7 +365,7 @@ class Symmetries():
       symms = self.get_symmetries(other_polygon = other)
       rot_shifts = [s.shift for s in symms if s.type == "rotation"]
       if len(rot_shifts) == 0:
-        print(f"Polygons do not match at all!")
+        # print(f"Polygons do not match at all!")
         return None
       # now align the corners so indexes of their corners match
       offset = rot_shifts[0]
@@ -382,16 +382,18 @@ class Symmetries():
         tiling_utils.get_inner_angle(other_corners[0], c0, p0_0)
       # now find store and report the matching symmetries
       result = {}
-      symms = self.get_symmetries(other_polygon = other)
       result["offset"] = offset
       result["pre-translation"] = trans
       result["pre-rotation"] = rotation
       result["pre-transform"] = tiling_utils.combine_transforms(
         [tiling_utils.get_translation_transform(trans[0], trans[1]),
          tiling_utils.get_rotation_transform(rotation, (c0.x, c0.y))])
+      symms = self.get_symmetries(other_polygon = other)
+      result["symmetries"] = [tiling_utils.combine_transforms([
+        result["pre-transform"], s.transform]) for s in symms]
       return result
     else:
-      print(f"Polygons have different numbers of sides!")
+      # print(f"Polygons have different numbers of sides!")
       return None
 
 

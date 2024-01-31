@@ -24,13 +24,16 @@ Note also that these classes do not accurately represent the distinctions made
 in the mathematical literature between tiling vertices and tile corners, or 
 between tiling edges and tile sides.
 """
+from collections import defaultdict
 from typing import Union
 from typing import Iterable
 import pickle
 import string
 
+import numpy as np
 import geopandas as gpd
 import shapely.geometry as geom
+import shapely.affinity as affine
 import matplotlib.pyplot as pyplot
 
 from weavingspace import Tileable
@@ -87,7 +90,9 @@ class Tile(object):
   """a point centre for the Tile (determined by weavingspace.tiling_utils.
   incentre)."""
   group: int = None
-  """the tile equivalence class of this tile in its containing Topology."""
+  """the tile shape group of this tile in its containing Topology."""
+  equivalence_class: int = None
+  """the tile equivalence class of this tile its containing Topology"""
   
   def __init__(self, ID:int):
     """Class constructor.
@@ -110,12 +115,12 @@ class Tile(object):
       str: string including Tile ID, list of corner vertex IDs and list of
         edge IDs.
     """
-    return f"Tile {self.ID} Corners: {self.get_corner_IDS()} Edges: {self.get_edge_IDS()}"
+    return f"Tile {self.ID} Corners: {self.get_corner_IDs()} Edges: {self.get_edge_IDs()}"
   
   def __repr__(self) -> str:
     return str(self)
 
-  def get_corner_IDS(self) -> list[int]:
+  def get_corner_IDs(self) -> list[int]:
     """Convenience method to return list of corner IDs (not Vertex objects).
 
     Returns:
@@ -123,7 +128,7 @@ class Tile(object):
     """
     return [c.ID for c in self.corners]
 
-  def get_edge_IDS(self) -> list[tuple[int]]:
+  def get_edge_IDs(self) -> list[tuple[int]]:
     """Convenience method to return list of edge IDs (not Edge objects).
 
     Returns:
@@ -171,7 +176,7 @@ class Tile(object):
     IDs are (0, 1) (2, 1) or (0, 1) (1, 2), then edge (0, 1) is in clockwise
     direction, but if we have (0, 1) (2, 3) then it is not.
     """
-    edge_IDs = self.get_edge_IDS()
+    edge_IDs = self.get_edge_IDs()
     self.edges_CW = [e1[-1] in e2 for e1, e2 in 
                      zip(edge_IDs, edge_IDs[1:] + edge_IDs[:1])]
 
@@ -339,7 +344,7 @@ class Tile(object):
     Returns:
         str: requested edge label.
     """
-    return self.edge_labels[self.get_edge_IDS().index(e.ID)]
+    return self.edge_labels[self.get_edge_IDs().index(e.ID)]
 
   def get_corner_label(self, v:"Vertex") -> str:
     """Returns corner label of specified corner.
@@ -350,7 +355,7 @@ class Tile(object):
     Returns:
         str: requested corner label.
     """
-    return self.edge_labels[self.get_corner_IDS().index(v.ID)]
+    return self.edge_labels[self.get_corner_IDs().index(v.ID)]
 
   def get_vertex_label_positions(self) -> list[geom.Point]:
     """Returns a viable location at which to position corner labels inside
@@ -625,14 +630,23 @@ class Topology:
   """dictionary of all points (vertices and corners) in the tiling, keyed by Vertex ID."""
   edges: dict[int, Edge]
   """dictionary of the tiling edges, keyed by Edge ID."""
-  example_tile_shapes: list[geom.Polygon]
+  unique_tile_shapes: list[geom.Polygon]
   """a 'reference' tile shape one per tile equivalence class."""
   dual_tiles: list[geom.Polygon]
   """list of geom.Polygons from which a dual tiling might be constructed."""
   n_tiles: int = 0
   """number of tiles in the base Tileable (retained for convenience)."""
+  n_patch: int = 0
+  """number of tiles in the first order patch of the base Tileable (retained 
+  for convenience)."""
   n_tile_groups: int = 0
   """number of tile equivalence classes (as determined by this code base... NOT mathematical theory!)."""
+  tile_groups: list[list["Tile"]]
+  """list of lists of the tiles distinguished by shape and optionally tile_id"""
+  tile_matching_transforms: list[tuple[float]]
+  """shapely transform tuples that map tiles onto other tiles"""
+  tile_equivalence_classes: list[tuple[int]]
+  """list of lists of tile IDs in each equivalence class"""
 
   def __init__(self, unit: Tileable, ignore_tile_ids:bool = True):
     """Class constructor.
@@ -651,6 +665,7 @@ class Topology:
     self._setup_edges()
     self._copy_base_tiles_to_patch()
     self._identify_distinct_tiles(ignore_tile_ids)
+    self._find_tile_equivalence_classes()
     self._label_tiles()
     self._label_vertices()
     self._label_edges()
@@ -678,6 +693,7 @@ class Topology:
     """
     shapes = self.tileable.get_local_patch(r = 1, include_0 = True).geometry
     shapes = [tiling_utils.get_clean_polygon(s) for s in shapes]
+    self.n_patch = len(shapes)
     labels = list(self.tileable.tiles.tile_id) * (len(shapes) // self.n_tiles)
     self.tiles = []
     self.points = {}
@@ -714,7 +730,7 @@ class Topology:
       if debug: print(f"Checking for vertices incident on Tile {tile.ID}")
       corners = []
       # performance is much improved using the vertex IDs
-      initial_corner_IDs = tile.get_corner_IDS()
+      initial_corner_IDs = tile.get_corner_IDs()
       # we need the current shape (not yet set) to check for incident vertices 
       shape = geom.Polygon([c.point for c in tile.corners])
       # get points incident on tile boundary, not already in the tile corners
@@ -771,7 +787,7 @@ class Topology:
       # finding Vertex objects, hence we use lists of IDs not Vertex objects
       if len(vertices) > 1:
         for v1, v2 in zip(vertices, vertices[1:] + vertices[:1]):
-          corner_IDs = tile.get_corner_IDS()
+          corner_IDs = tile.get_corner_IDs()
           idx1 = corner_IDs.index(v1.ID)
           idx2 = corner_IDs.index(v2.ID)
           if idx1 < idx2:
@@ -866,35 +882,132 @@ class Topology:
         self.edges[new_edge.ID] = new_edge
 
   def _identify_distinct_tiles(self, ignore_tile_id_labels:bool = True):
-    """Determines equivalence groups of tiles based on their symmetries.
+    """Determines unique tiles based on their symmetries and shapes. At the
+    same time assembles a list of the affine transforms under which matches
+    occurs since these are potential symmetries of the tiling.
+    
+    Args:
+      ignore_tile_id_labels (bool): if True only the shape of tiles matters;
+        if False the tile_id label is also considered. Defaults to True.
     """
-    self.example_tile_shapes = []
+    self.unique_tile_shapes = []
     offsets = []
+    self.tile_matching_transforms = {}
+    n_symmetries = 0
     for tile in self.tiles[:self.n_tiles]:
       s = Symmetries(tile.shape)
       transforms = [s.get_matching_transforms(other.shape) 
-                    for other in self.example_tile_shapes]
+                    for other in self.unique_tile_shapes]
       shape_matches = [not t is None for t in transforms]
       if ignore_tile_id_labels:
-        label_matches = [True] * len(self.example_tile_shapes)
+        label_matches = [True] * len(self.unique_tile_shapes)
       else:
         label_matches = [tile.label == other.label
-                        for other in self.example_tile_shapes]
+                        for other in self.unique_tile_shapes]
       if any([x and y for x, y in zip(shape_matches, label_matches)]):
         match = shape_matches.index(True)
         offset = transforms[match]["offset"]
         offsets.append(offset)
         tile.group = match
         tile.offset_corners(offset)
+        for s in transforms[match]["symmetries"]:
+          self.tile_matching_transforms[n_symmetries] = s
+          n_symmetries = n_symmetries + 1
       else:
-        self.example_tile_shapes.append(tile)
+        self.unique_tile_shapes.append(tile)
         offsets.append(0)
         tile.group = self.n_tile_groups
         self.n_tile_groups = self.n_tile_groups + 1
     # now copy assignments from the central TileUnit to everything else
+    # and rotate tiles if required to ensure their corners match
     for tile in self.tiles[self.n_tiles:]:
       tile.group = self.tiles[tile.ID % self.n_tiles].group
       tile.offset_corners(offsets[tile.ID % self.n_tiles])
+    # also add into the list of tile matching transforms the symmetries
+    # of the prototile, which might also be symmetries of the tiling
+    for s in Symmetries(self.tileable.prototile.geometry[0]).symmetries:
+      self.tile_matching_transforms[n_symmetries] = s.transform
+      n_symmetries = n_symmetries + 1
+    # filter back the tile matching transforms to a unique set
+    self._remove_duplicate_symmetries()
+    self.tile_groups = [[t.ID for t in self.tiles if t.group == group]
+                        for group in range(self.n_tile_groups)]
+
+  def _remove_duplicate_symmetries(self):
+    """Filters the supplied list of shapely affine transforms so that no 
+    duplicates are retained.
+    """
+    uniques = []
+    for k, v in self.tile_matching_transforms.items():
+      already_exists = False
+      for u in uniques:
+        already_exists = np.allclose(v, u[1], atol = 1e-6, rtol = 1e-6)
+        if already_exists:
+          break
+      if not already_exists:
+        uniques.append((k, v))
+    self.tile_matching_transforms = dict(uniques)
+
+  def _find_tile_equivalence_classes(self):
+    base_tiles = [t for t in self.tiles[:self.n_tiles]]
+    patch_tiles = [t for t in self.tiles[:self.n_patch]]
+    equivalents = defaultdict(set)
+    # every tile is in its own set of equivalents, so add them
+    for group in self.tile_groups:
+      group_symmetries = []
+      in_group_equivalents = {}
+      # make up source and target tiles within this group
+      source_tiles = [t for t in base_tiles if t.ID in group]
+      target_tiles = [t for t in patch_tiles if t.ID in group]
+      for tr_i, transform in self.tile_matching_transforms.items():
+        matched_geoms = {}
+        possible_symmetry = True
+        for source in source_tiles:
+          match_id = self._match_under_transform(
+            source.shape, target_tiles, transform)
+          if match_id == -1:
+            possible_symmetry = False
+          else:
+            matched_geoms[source.ID] = match_id
+        if possible_symmetry:
+          for k, v in matched_geoms.items():
+            in_group_equivalents[(tr_i, k)] = match_id % self.n_tiles
+          group_symmetries.append(tr_i)
+      # any transform not a symmetry of group is not a symmetry of tiling
+      # so remove from consideration and also from the list of tile matches
+      self.tile_matching_transforms = {
+        i: self.tile_matching_transforms[i] for i in group_symmetries}
+      for k, v in in_group_equivalents.items():
+        equivalents[k[1]].add(v)
+    self.tile_equivalence_classes = \
+      list(set([tuple(sorted(v)) for v in equivalents.values()]))
+    for c, eclass in enumerate(self.tile_equivalence_classes):
+      for tile in self.tiles:
+        if tile.ID % self.n_tiles in eclass:
+          tile.equivalence_class = c
+      
+
+  def _match_under_transform(self, tile:Tile, patch:list[Tile], 
+                             transform:tuple[float]) -> int:
+    """Determines if there is a tile in the supplied patch onto which the
+    supplied tile is mapped by the supplied symmetry.
+
+    Args:
+        tile (Tile): _description_
+        patch (list[Tile]): _description_
+        transform (tuple[float]): _description_
+
+    Returns:
+      int: ID of the tile in patch that matches tile under the transform if one
+        exists, otherwise returns -1.
+    """
+    match_id = -1
+    for tile2 in patch:
+      match = tiling_utils.geometry_matches(
+        affine.affine_transform(tile, transform), tile2.shape)
+      if match:
+        return tile2.ID
+    return match_id
 
   def _label_tiles(self):
     """Labels the base tile vertices, then copies to corresponding tile in the 
@@ -903,7 +1016,7 @@ class Topology:
     first_letter = 0
     for group in range(self.n_tile_groups):
       tiles = [t for t in self.tiles[:self.n_tiles] if t.group == group]
-      s = Symmetries(self.example_tile_shapes[group].shape)
+      s = Symmetries(self.unique_tile_shapes[group].shape)
       vlabels = list(s.get_unique_labels(offset = first_letter)["rotations"][0])
       elabels = self._get_edge_labels_from_vertex_labels(vlabels)
       for tile in tiles:
@@ -949,7 +1062,7 @@ class Topology:
     # first label vertices in the core tiles
     vs = set()
     for t in self.tiles[:self.n_tiles]:
-      vs = vs.union(t.get_corner_IDS())
+      vs = vs.union(t.get_corner_IDs())
     # Note: sorting is important for repeatable labelling!
     for vi in sorted(vs):
       v = self.points[vi]
