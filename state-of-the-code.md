@@ -24,7 +24,7 @@ The symmetry code needs to be revisited: it works, but the 'clever' quick fix th
 
 Also in relation to symmetries it would be nice on diagram like that below to show the symmetry involved in each transformation. This relates to how tiling symmetries are implemented as a class. Although they are currently a class, there's not a lot there... This is also related to the previous point about transformations between two distinct polygons and would be a secondary goal of addressing the symmetry code issues.
 
-<a name="#cairo-symmetries"></a><img src="sketches/cairo-symmetries.png" style="display:block; width:75%; margin-left:auto; margin-right:auto;">
+<img src="sketches/cairo-symmetries.png" style="display:block; width:75%; margin-left:auto; margin-right:auto;">
 
 ## Graphs and `networkx`
 Late in the process of implementing equivalence classes, I (with some reluctance) imported `networkx` to resolve a gnarly problem of extracting the 'exclusive supersets' of a list of sets. And of course... 5 lines of graph code specifically the [`connected_components`](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.components.connected_components.html#networkx.algorithms.components.connected_components) method and the problem disappeared.
@@ -49,7 +49,7 @@ A point on the perimeter of a tile polygon where the perimeter changes direction
 #### Dual tiling
 The tiling formed from an existing tiling by placing a [vertex](#vertex) at each [tile](#tile) and joining them by [edges](#edge) between any two tiles that share an edge in the original tiling. Tiles become vertices and vertices become tiles. The relation is reciprocal and essentially topological not geometric, since the placement of a vertex in a tile is ill-defined. An important dual relation is that between the [Archimedean](https://en.wikipedia.org/wiki/Euclidean_tilings_by_convex_regular_polygons#Archimedean,_uniform_or_semiregular_tilings) and the [Laves](https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings) tilings.
 
-<img src="sketches/archimedean-tilings.png" width=50%><img src="sketches/laves-tilings.png" width=50%>
+<img src="sketches/archimedean-tilings.png" style="width:50%;"><img src="sketches/laves-tilings.png" style="width:50%;">
 
 #### Edge
 The line along which two [tiles](#tile) in a tiling meet. An edge has a [vertex](#vertex) at each end and any number of [corners](#corner) along its length. Edges are a property of a tiling, not of individual tiles.
@@ -58,7 +58,7 @@ Collective term for [tiles](#tile), [edges](#edge) and [vertices](#vertex).
 #### Equivalence class
 A group of [elements](#element) ([tiles](#tile), [vertices](#vertex), or [edges](#edge)) that map onto one another under the [symmetries](#symmetry) of the [tiling](#tiling). This concept is a subtle one. The tiling below has _two_ equivalence classes of tile, since there is no transformation that maps central tiles on to outer tiles while also.
 
-<a name="#cheese-sandwich"></a><img src="sketches/basket-tiles.png" style="display:block; width:60%; margin-left:auto; margin-right:auto;">
+<img src="sketches/basket-tiles.png" style="display:block; width:60%; margin-left:auto; margin-right:auto;">
 
 #### Fundamental unit
 A subset of a tiling which under two non-parallel [translations](#translation) can tile the plane. It is important to realise that the fundamental unit of a tiling is not uniquely defined. In a tiling with two orthogonal translation vectors, for example, any square region defined by those two vectors is a fundamental unit. In our implementation approximately equivalent to a [`Tileable`](#tileable).
@@ -73,7 +73,7 @@ A [transformation](#transformation) of the plane around a fixed point (the centr
 #### Side
 A side of a polygon as commonly understood, connecting two of its [corners](#corner). Distinct from a tiling [edge](#edge). There is always a change in direction at a corner, but there may be many corners along a tiling edge. Tile [corners](#corner) and tiling [vertices](#vertex) are often coincident but a vertex is not always a corner (there might be no change in direction) and corner is not always a vertex (if it is along an edge, when it will be incident on only two tiles).
 #### Symmetry
-OMG. All of mathematics. But seriously... albeit briefly, in our context a symmetry is any [transformation](#transformation) of a tiling that maps its [elements](#element) back on to other elements. Tiles also have symmetries but the symmetries of a tiling and of its constituent tiles are not the same. For example in the [example above of the Cairo tiling](#cairo-symmetries) the tiles have only a single reflection symmetry (also symmetry of the tiling), but the tiling also has 90&deg; rotational symmetries.
+OMG. All of mathematics. But seriously... albeit briefly, in our context a symmetry is any [transformation](#transformation) of a tiling that maps its [elements](#element) back on to other elements. Tiles also have symmetries but the symmetries of a tiling and of its constituent tiles are not the same. For example in the example above of the Cairo tiling the tiles have only a single reflection symmetry (also symmetry of the tiling), but the tiling also has 90&deg; rotational symmetries.
 #### Tile
 A polygon that when arranged in a [tiling](#tiling) exhausts the plane. A polygon is formed by straight [sides](#side) connecting [corners](#corner).
 #### Tiling
@@ -84,7 +84,7 @@ A one-to-one mapping of every point in the plane to another point in the plane.
 #### Translation
 A [transformation](#transformation) in which every point in the plane is displaced by a defined vector, i.e. $(x,y)\rarr(x+\delta x,y+\delta y)$. In our case all tilings are [periodic](#periodic-tiling), meaning that they have two non-parallel transformation [symmetries](#symmetry). 
 #### Vertex
-Points in a tiling at which three or more [tiles](#tile) meet, which are therefore the end points of tiling [edges](#edge). Often but not always coincident with the [corners](#corner) of tiles. In particular tiling vertices may result from the tiling. For example in the 'cheese sandwich' tiling [above](#cheese-sandwich) the tiling induces two vertices along the long sides of each rectangle.
+Points in a tiling at which three or more [tiles](#tile) meet, which are therefore the end points of tiling [edges](#edge). Often but not always coincident with the [corners](#corner) of tiles. In particular tiling vertices may result from the tiling. For example in the 'cheese sandwich' tiling above, the tiling induces two vertices along the long sides of each rectangle.
 
 ### More implementation related
 #### Labelling
