@@ -25,12 +25,16 @@ in the mathematical literature between tiling vertices and tile corners, or
 between tiling edges and tile sides.
 """
 from collections import defaultdict
+from itertools import chain
+from itertools import compress
+from functools import reduce
 from typing import Union
 from typing import Iterable
 import pickle
 import string
 
 import numpy as np
+import networkx as nx
 import geopandas as gpd
 import shapely.geometry as geom
 import shapely.affinity as affine
@@ -525,6 +529,8 @@ class Edge:
   """
   base_ID: tuple[int] = (1_000_000, 1_000_000)
   """ID of corresponding edge in the base tileable"""
+  equivalence_class: int = None
+  """equivalence class of the edge under symmetries of the tiling"""
   label: str = ""
   """the (lower case letter) label of the edge under the symmetries of the 
   tiling."""
@@ -655,12 +661,10 @@ class Topology:
   """shapely transform tuples that map tiles onto other tiles"""
   tile_equivalence_classes: list[tuple[int]]
   """list of lists of tile IDs in each equivalence class"""
-  vertex_equivalence_classes: list[tuple[int]]
+  vertex_equivalence_classes: list[list[int]]
   """list of lists of vertex IDs in each equivalence class"""
-  # vertex_tile_index_to_ID_lookup: dict[tuple[int], int]
-  # """lookup table from vertex tile indices to vertex IDs"""
-  # edge_tile_index_to_ID_lookup: dict[tuple[int], tuple[int]]
-  # """lookup table from edge tile indices to edge IDs"""
+  edge_equivalence_classes: list[list[tuple[int]]]
+  """list of lists of edge IDs in each equivalence class"""
 
   def __init__(self, unit: Tileable, ignore_tile_ids:bool = True):
     """Class constructor.
@@ -682,6 +686,7 @@ class Topology:
     self._identify_distinct_tiles(ignore_tile_ids)
     self._find_tile_equivalence_classes()
     self._find_vertex_equivalence_classes()
+    self._find_edge_equivalence_classes()
     self._label_tiles()
     # self._label_vertices_and_edges()
     self._label_vertices()
@@ -1063,12 +1068,6 @@ class Topology:
   def _find_vertex_equivalence_classes(self):
     equivalent_vertices = defaultdict(set)
     base_vertices = self.vertices_in_tiles(self.tiles[:self.n_tiles])
-    # base_vertices = set()
-    # for tile in self.tiles: #[:self.n_tiles]:
-    #   for v in tile.get_corner_IDs():
-    #     base_vertices.add(v)
-    # base_vertices = [self.points[v] for v in base_vertices]
-    # base_vertices = self.points.values()
     for transform in self.tile_matching_transforms.values():
       for v in base_vertices:
         match_ID = \
@@ -1077,7 +1076,6 @@ class Topology:
           equivalent_vertices[v.ID].add(match_ID)
     equivalent_vertices = self._get_exclusive_supersets(
       [tuple(sorted(s)) for s in equivalent_vertices.values()])
-    equivalent_vertices = self._get_exclusive_supersets(equivalent_vertices)
     self.vertex_equivalence_classes = defaultdict(list)
     for c, vclass in enumerate(equivalent_vertices):
       for v in self.points.values():
@@ -1087,16 +1085,27 @@ class Topology:
     self.vertex_equivalence_classes = list(
       self.vertex_equivalence_classes.values())
 
-  # def _find_edge_equivalence_classes(self):
-  #   equivalent_edges = defaultdict(set)
-  #     source_edges = self.edges_in_tiles(source_tiles)
-  #     target_edges = self.edges_in_tiles(target_tiles)
-  #       matched_edges = {}
-  #           for source_edge in source_edges:
-  #             matched_edges[source_edge.ID] = \
-  #               self._match_geoms_under_transform(
-  #                 source_edge, target_edges, transform)
-
+  def _find_edge_equivalence_classes(self):
+    equivalent_edges = defaultdict(set)
+    base_edges = self.edges_in_tiles(self.tiles[:self.n_tiles])
+    for transform in self.tile_matching_transforms.values():
+      for e in base_edges:
+        match_id = \
+          self._match_geoms_under_transform(e, base_edges, transform)
+        if match_id != -1:
+          equivalent_edges[e.ID].add(match_id)
+    equivalent_edges = self._get_exclusive_supersets(
+      [tuple(sorted(s)) for s in equivalent_edges.values()])
+    self.edge_equivalence_classes = defaultdict(list)
+    for c, eclass in enumerate(equivalent_edges):
+      # print(f"{c=} {eclass=}")
+      for e in self.edges.values():
+        if e.base_ID in eclass:
+          e.equivalence_class = c
+          self.edge_equivalence_classes[c].append(e.ID)
+    self.edge_equivalence_classes = list(
+      self.edge_equivalence_classes.values())
+    
   def _match_geoms_under_transform(self, geom1:Tile, geoms2:list[Tile], 
                                    transform:tuple[float]) -> int:
     """Determines if there is a geometry in the supplied patch onto which the
@@ -1126,30 +1135,24 @@ class Topology:
           .distance(c2) <= 10 *tiling_utils.RESOLUTION
       if match:
         return geom2.base_ID
-        # if isinstance(geom1, Tile):
-        #   return geom2.base_ID
-        # elif isinstance(geom1, Vertex):
-        #   return geom2.base_ID
-        # else: # must be an Edge
-        #   return geom2.ID
     return match_id
 
-  def _get_exclusive_supersets(self, sets:list[tuple[int]]):
-    usets = []
-    for t1 in sets:
-      # usets is empty, add it
-      if len(usets) == 0:
-        usets.append(t1)
-      else:
-        intersects = [len(set(t) & set(t1)) > 0 for t in usets]
-        # it has no intersections with any existing set, add it
-        if not any(intersects):
-          usets.append(t1)
-        else: # replace all overlaps with the union
-          usets = [
-            tuple(sorted(set(ts).union(set(t1)))) if i else ts
-            for i, ts in zip(intersects, usets)]
-    return usets
+  def _get_exclusive_supersets(self, sets:dict[int, tuple[int]]):
+    edges = []
+    for i, si in enumerate(sets):
+      s1 = set(si)
+      for j, sj in enumerate(sets):
+        s2 = set(sj)
+        if len(s1 & s2) > 0:
+          edges.append((i, j))
+    G = nx.from_edgelist(edges)
+    result = []
+    for component in nx.connected_components(G):
+      s = set()
+      for i in component:
+        s = s.union(sets[i])
+      result.append(tuple(s))
+    return result
 
   def vertices_in_tiles(self, tiles:list[Tile]) -> list[Vertex]:
     vs = set()
@@ -1254,27 +1257,29 @@ class Topology:
   def _label_edges(self):
     """Labels edges based on the tile edge label on each side.
     """
-    uniques = set()
-    labelled = set()
-    # first label base tile edges from the central tile unit
-    for t in self.tiles[:self.n_tiles]:
-      for e in t.edges:
-        rt, lt = e.right_tile, e.left_tile
-        rlab, llab = rt.get_edge_label(e), lt.get_edge_label(e)
-        e.label = "".join(sorted([rlab, llab]))
-        uniques.add(e.label)
-        labelled.add(e.ID)
-    for ei in sorted(labelled):
-      e = self.edges[ei]
-      e.label = alphabet[sorted(uniques).index(e.label)]
-    # now copy to corresponding edges in the rest of tiling
-    for ti, t in enumerate(self.tiles):
-      if ti >= self.n_tiles:
-        t0 = self.tiles[ti % self.n_tiles]
-        for e0, e in zip(t0.edges, t.edges):
-          # edges may appear in more than one tile, only label once!
-          if e.label == "":
-            e.label = e0.label
+    for e in self.edges.values():
+      e.label = alphabet[e.equivalence_class]
+    # uniques = set()
+    # labelled = set()
+    # # first label base tile edges from the central tile unit
+    # for t in self.tiles[:self.n_tiles]:
+    #   for e in t.edges:
+    #     rt, lt = e.right_tile, e.left_tile
+    #     rlab, llab = rt.get_edge_label(e), lt.get_edge_label(e)
+    #     e.label = "".join(sorted([rlab, llab]))
+    #     uniques.add(e.label)
+    #     labelled.add(e.ID)
+    # for ei in sorted(labelled):
+    #   e = self.edges[ei]
+    #   e.label = alphabet[sorted(uniques).index(e.label)]
+    # # now copy to corresponding edges in the rest of tiling
+    # for ti, t in enumerate(self.tiles):
+    #   if ti >= self.n_tiles:
+    #     t0 = self.tiles[ti % self.n_tiles]
+    #     for e0, e in zip(t0.edges, t.edges):
+    #       # edges may appear in more than one tile, only label once!
+    #       if e.label == "":
+    #         e.label = e0.label
 
   def _cyclic_sort_first(self, lst:Iterable) -> Iterable:
     """Returns supplied Iterable in canonical cyclic sorted form. E.g. the sequence ACABD, yields 5 possible cycles ACABD, CABDA, ABDAC, BDACA, and 
@@ -1411,7 +1416,7 @@ class Topology:
         edges = [e.get_geometry() for e in self.edges.values()]
       for l, e in zip(edges, self.edges.values()):
         c = l.centroid
-        ax.annotate(e.base_ID, xy = (c.x, c.y), ha = "center", va = "center",
+        ax.annotate(e.label, xy = (c.x, c.y), ha = "center", va = "center",
           fontsize = 10 if show_edge_labels else 7, color = "k")
       
     if show_dual_tiles:
