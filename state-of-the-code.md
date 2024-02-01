@@ -14,7 +14,7 @@ In no particular order:
 ## Modifying tiles
 The whole point of venturing into [topology](#topology) was to enable principled modification of tiles&mdash;typically making them more ‘elaborate’ in an Escher-like way. For example, [this tiling](example-tiles-wobbly-escherian.ipynb) is derived (by hand) by putting a sinusoidal curve along each edge of square tiling, and indicates the surprising variety in tilings that might be enabled by allowing this possibility.
 
-At the moment the only modification we’ve got is to [‘zig-zag’ an edge](doc/weavingspace/topology.html#transform-edges). More transforms of edges/vertices remain to be considered.
+At the moment the only modification we’ve got is to [‘zig-zag’ an edge](https://dosull.github.io/weaving-space/doc/weavingspace/topology.html#Topology.transform_edges). More transforms of edges/vertices remain to be considered.
 
 ## Corners and vertices
 The tile [corner](#corner) / tiling [vertex](#vertex) distinction is not carefully observed in the code. The [equivalence class](#equivalence-class) implementation should make this easier to do. For example it should be easy enough now to *not* label corners, as the logic of tiling symmetry implies.
@@ -35,7 +35,7 @@ On reflection there are a number of places in the equivalence class code, which 
 The first round of attempts to label vertices and edges was 'tile-centric' and revolved around labelling tile [corners](#corner) and [sides](#side) under the tile's symmetries. It remains to be seen if this code still has a role to play.
 
 ## Integration
-At the moment, the `Topology` code is almost entirely independent of the main codebase. A `Topology` object is constructed by supplying a `Tileable` instance, and the code makes extensive use of functions in the [`tiling_utils`](doc/weavingspace/tiling_utils.html) module, but no more than that. Whether a `Topology` should be embedded in a [`Tileable`](#tileable) by default, or whether one should be used to generate [dual tilings](#dual-tiling) or not is an open question \[the [dual generation code in `Topology`](doc/weavingspace/topology.html#Topology.generate_dual) is much more satisfying and (probably) robust than the [`tiling_utils` implementation](doc/weavingspace/tiling_utils.html#get_dual_tile_unit)\].
+At the moment, the `Topology` code is almost entirely independent of the main codebase. A `Topology` object is constructed by supplying a `Tileable` instance, and the code makes extensive use of functions in the [`tiling_utils`](doc/weavingspace/tiling_utils.html) module, but no more than that. Whether a `Topology` should be embedded in a [`Tileable`](#tileable) by default, or whether one should be used to generate [dual tilings](#dual-tiling) or not is an open question \[the [dual generation code in `Topology`](https://dosull.github.io/weaving-space/doc/weavingspace/topology.html#Topology.generate_dual) is much more satisfying and (probably) robust than the [`tiling_utils` implementation](https://dosull.github.io/weaving-space/doc/weavingspace/tiling_utils.html#get_dual_tile_unit)\].
 
 ## The superfluity of tiles in `WeaveUnit` tilings
 Because of how they are generated our weave based `Tileable` objects (`WeaveUnit`s) often contain more tiles than strictly required. In many biaxial tilings there are two times the required number. In the triaxial case it is often much worse than that with as many as 9 times more tiles than required. This causes the `Topology` code to choke and fail. Needs investigation...
