@@ -3,6 +3,7 @@ Setting aside the small matter of [the discovery in 2023 of an aperiodic monotil
 
 ## Notes on the code
 **2 February 2024**
+
 The latest round of coding has added a lot, particularly with respect to correctly implementing the labelling of distinct [equivalence classes](#equivalence-class) of [tiling](#tiling) [vertices](#vertex), tiling [edges](#edge), and [tiles](#tiling) themselves. 
 
 In our case [translations](#translation) are baked in&mdash;we know these exist, because we put them there. Finding [rotation](#rotation) and [reflection](#reflection) [symmetries](#symmetry) which preserve the tiling is necessary for detecting [equivalence classes](#equivalence-class), which in turn is required to [label](#labelling) edges and vertices in order to support principled modification of tiles so as to maintain tileability.
@@ -22,9 +23,9 @@ The tile [corner](#corner) / tiling [vertex](#vertex) distinction is not careful
 ### The [`symmetry` code](doc/weavingspace/symmetry.html)
 The symmetry code needs to be revisited: it works, but the 'clever' quick fix that reuses code for finding the symmetries of a single polygon to identify the [transformations](#transformation) between two distinct tiles is shaky. In particular when presented with a polygon and its mirror image, if the polygon has no rotational symmetries the function returns a `None` result, suggesting the two polygons are unrelated. This has possible implications for the reliability of correctly labelling some tilings. While the 12-slices of a hexagon (Laves 4.6.12) tiling is correctly labelled, the two orientations of triangle are incorrectly assigned to different ['groups'](#shape-group) during [`Topology`](doc/weavingspace/topology.html) construction.
 
-Also in relation to symmetries it would be nice on diagram like that below to show the symmetry involved in each transformation. This relates to how tiling symmetries are implemented as a class. Although they are currently a class, there's not a lot there... This is also related to the previous point about transformations between two distinct polygons and would be a secondary goal of addressing the symmetry code issues.
+Also in relation to symmetries it would be nice on a diagram like that below to show the symmetry involved in each transformation. This relates to how tiling symmetries are implemented as a class. Although they are currently a class, there's not a lot there... This is also related to the previous point about transformations between two distinct polygons and would be a secondary goal of addressing the symmetry code issues.
 
-<img src="sketches/cairo-symmetries.png" style="display:block; width:75%; margin-left:auto; margin-right:auto;">
+![symmetries of the Cairo tiling](sketches/cairo-symmetries.png)
 
 ### Graphs and `networkx`
 Late in the process of implementing equivalence classes, I (with some reluctance) imported `networkx` to resolve a gnarly problem of extracting the 'exclusive supersets' of a list of sets. And of course... 5 lines of graph code specifically the [`connected_components`](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.components.connected_components.html#networkx.algorithms.components.connected_components) method and the problem disappeared.
@@ -56,9 +57,9 @@ The line along which two [tiles](#tile) in a tiling meet. An edge has a [vertex]
 #### Element
 Collective term for [tiles](#tile), [edges](#edge) and [vertices](#vertex).
 #### Equivalence class
-A group of [elements](#element) ([tiles](#tile), [vertices](#vertex), or [edges](#edge)) that map onto one another under the [symmetries](#symmetry) of the [tiling](#tiling). This concept is a subtle one. The tiling below has _two_ equivalence classes of tile, since there is no transformation that maps central tiles on to outer tiles while also.
+A group of [elements](#element) ([tiles](#tile), [vertices](#vertex), or [edges](#edge)) that map onto one another under the [symmetries](#symmetry) of the [tiling](#tiling). This concept is a subtle one. The tiling below has _two_ equivalence classes of tile, since there is no transformation that maps central tiles on to outer tiles while also mapping all tiles onto a tile. Those central tiles only ever map onto other central tiles, hence they are in a different equivalence class than the outer tiles, which form a second equivalence class. A tiling with one equivalence class is termed _isohedral_, and 2-hedral, _n_-hedral etc. are terms that are also used. Similar notions apply to vertices and edges, where the terms are respectively _isogonality_ and _isotoxality_. The isohedral tilings of the plane have been thoroughly explored (for example it is proven that there are 81 types...).
 
-<img src="sketches/basket-tiles.png" style="display:block; width:60%; margin-left:auto; margin-right:auto;">
+![the 'cheese sandwich' 2-hedral tiling](sketches/basket-tiles.png)
 
 #### Fundamental unit
 A subset of a tiling which under two non-parallel [translations](#translation) can tile the plane. It is important to realise that the fundamental unit of a tiling is not uniquely defined. In a tiling with two orthogonal translation vectors, for example, any square region defined by those two vectors is a fundamental unit. In our implementation approximately equivalent to a [`Tileable`](#tileable).
@@ -79,6 +80,8 @@ A polygon that when arranged in a [tiling](#tiling) exhausts the plane. A polygo
 #### Tiling
 A covering of the plane with tiles. According to Grünbaum and Shephard 1987, page 16:
 > "... a countable family of closed sets $\mathcal{T}=\{T_1,T_2,\ldots\}$ which covers the plane without gaps or overlaps. More explicitly, the union of the sets $T_1,T_2,\ldots$ (which are known as the *tiles* of $\mathcal{T}$) is to be the whole plane, and the interiors of the sets $T_i$ are to be pairwise disjoint"
+
+So... closely related to a GIS coverage then...
 #### Transformation
 A one-to-one mapping of every point in the plane to another point in the plane. 
 #### Translation
@@ -92,20 +95,23 @@ A general term for the process of assigning tiles, vertices and edges to equival
 #### `prototile`
 A simple polygon associated with a `Tileable` object derived from either a rectangle or a hexagon.
 #### Regularised prototile
-This really only matters for 
+This really only matters for weave based tilings where generation of the `Tileable` object produces 'fragments' that are parts of the tiles that lie outside the simple prototile rectangle of hexagon shape. Some nasty code attempts to assemble such fragment back into a more manageable set and the result jigaw puzzle shaped piece is the regularised prototile. Here's an example (the red outline below):
+
+![](sketches/regularised-prototile.png)
+
 #### 'Shape group'
 An early implementation of [labelling](#labelling) relied on labelling the corners and sides of tile polygons. Identifying the different shapes in a tiling was a key step in this process. There is still a `tile_groups` attribute of the `Topology` class as a result. More work on the [symmetry code](#the-symmetry-code) will probably make these assignments more reliable.
 #### Tileable
 The central object class in the code base. A `Tileable` instance has the following attributes that more or less loosely link to the [mathematical concepts](#mathematical-tiling-terms) above:
-+ `tiles` a [geopandas.GeoDataFrame](https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html) of [shapely.geometry.Polygon](https://shapely.readthedocs.io/en/stable/reference/shapely.Polygon.html) objects, with associated `tile_id` (by default a single character string) identifying tiles that can be associated with different data attributes;
-+ `prototile` also a GeoDataFrame, containing a single polygon shape which will be a rectangle or hexagon or simple modification (by stretching or skewing) of those, which indicates how the tiling can be constructed. Vectors joining opposite faces of the prototile form the `vectors` of the `Tileable` and model the translation symmetries of the tiling.
-+ `regularised prototile` also a GeoDataFrame containing a single polygon. It is possible for the `prototile` to cut across tile polygons in the `Tileable`; the regularised prototile is a different tileable polygon containing only complete tiles.
-+ `vectors` a set of tuples of x and y displacements by which the polygons in the `Tileable`'s `tiles` attribute are 'copied and pasted' across a map area. These are not a minimal set of translation vectors. For example, hexagonally based tilings have 6 vectors (3 each in two different directions) where a strict mathematical represenation would require only 2 (the third is the difference between the other two).
++ `tiles` a [geopandas.GeoDataFrame](https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html) of [shapely.geometry.Polygon](https://shapely.readthedocs.io/en/stable/reference/shapely.Polygon.html) objects, with associated `tile_id` (by default a single character string) identifying tiles that can be associated with different data attributes.
++ `prototile` also a `GeoDataFrame`, containing a single polygon shape which will be a rectangle or hexagon or simple modification (by stretching or skewing) of those, which indicates how the tiling can be constructed. Vectors joining opposite faces of the prototile form the `vectors` of the `Tileable` and model the translation symmetries of the tiling.
++ `regularised prototile` also a `GeoDataFrame` containing a single polygon. It is possible for the `prototile` to cut across tile polygons in the `Tileable`; the regularised prototile is a different tileable polygon containing only complete tiles.
++ `vectors` a set of tuples of x and y displacements by which the polygons in the `Tileable`'s `tiles` attribute are 'copied and pasted' across a map area. These are not a minimal set of translation vectors. For example, hexagonally based tilings have 6 vectors (3 each in two different directions) where a strict mathematical representation would require only 2 (the third is the difference between the other two).
 #### Tile unit
 A specialisation of the `Tileable` class that represents 'traditional' geometric tilings, constructed by geometry as implemented in the [`tiling_geometries` module](https://dosull.github.io/weaving-space/doc/weavingspace/tiling_geometries.html).
 #### Topology
 A class that attempts to represent the [elements](#element) in a tiling (i.e. tiles, vertices and edges) and the relations among them, in particular enabling [labelling](#labelling) by detecting the [equivalence classes](#equivalence-class) of the tiling.
 #### Translation vector
-An `(x, y)` tuple displacement by which (in many directions) repeats the `Tileable.tiles` objects to produce a tiling.
+An $(x, y)$ tuple displacement by which repetitions of the `Tileable.tiles` polygons are combined to yield  a tiling.
 #### Weave unit
-A specialisation of the `Tileable` class that represents tilings that can be produced by weaving. A particular feature of note is the `aspect` attribute which defines the width of 'strands' in the weave relative to their spacing, and may mean that the resulting tiling has 'holes' (and are hence not tilings [as defined by Grünbaum \& Shephard](#tiling)). Note that there is theory of _isonemal_ tilings which are precisely tilings that can be generated by weaving albeith without gaps (which in our implementation equates to `aspect = 1`).
+A specialisation of the `Tileable` class that represents tilings that can be produced by weaving. A particular feature of note is the `aspect` attribute which defines the width of 'strands' in the weave relative to their spacing, and may mean that the resulting tiling has 'holes' (and are hence not tilings [as defined by Grünbaum \& Shephard](#tiling)). Note that there is theory of _isonemal_ tilings which are precisely tilings that can be generated by weaving albeit without gaps (which in our implementation equates to `aspect = 1`).
