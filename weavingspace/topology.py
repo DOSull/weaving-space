@@ -202,7 +202,7 @@ class Tile(object):
 
     Args:
         v (Vertex): the Vertex to insert.
-        i (int): index position in current corners after which to insert
+        i (int): index position in current corners after which to insert 
           supplied Vertex.
         update_shape (bool, optional): if True shape attribute is updated. 
           Defaults to False.
@@ -319,10 +319,10 @@ class Tile(object):
     # DON'T MESS WITH THIS!!!
     # for predecessors (the head) we want everything including the Vertex 
     # where the merge is occurring; for successors (the tail) we want all but 
-    # the first Vertex (which is the one where the merge is occurring).
-    # In both cases contingent on whether existing Edges are CW or CCW we
-    # may need to flip the Vertex sequence to ensure that the merge Vertex
-    # is in the middle of the new edge that will be created
+    # the first Vertex (which is the one where the merge is occurring). In both 
+    # cases contingent on whether existing Edges are CW or CCW we may need to 
+    # flip the Vertex sequence to ensure that the merge Vertex is in the middle 
+    # of the new edge that will be created
     head = ei.corners if CWi else ei.corners[::-1]
     tail = ej.corners[1:] if CWj else ej.corners[::-1][1:]
     v_sequence = (head if CWi else head[::-1]) + (tail if CWj else tail[::-1])
@@ -389,8 +389,8 @@ class Tile(object):
     c = self.centre
     # note direction is important as edge might not be a simple line segment
     sides = [e.get_geometry(CW) for e, CW in zip(self.edges, self.edges_CW)]
-    return [geom.LineString(
-      [s.centroid, c]).line_interpolate_point(d) for s in sides]
+    return [geom.LineString([s.centroid, c]).line_interpolate_point(d) 
+            for s in sides]
 
   def angle_at(self, v:"Vertex") -> float:
     """Returns interior angle at the specified corner (in degrees).
@@ -840,8 +840,6 @@ class Topology:
     and visualisation.
     """
     self._assign_vertex_base_IDs(True, False)
-    # self._assign_vertex_base_IDs(False, False)
-    # self._assign_vertex_base_IDs(False, False)
     self._assign_vertex_base_IDs(False, True)
     self._assign_edge_base_IDs()
 
@@ -1003,8 +1001,8 @@ class Topology:
     occurs since these are potential symmetries of the tiling.
     
     Args:
-      ignore_tile_id_labels (bool): if True only the shape of tiles matters;
-        if False the tile_id label is also considered. Defaults to True.
+      ignore_tile_id_labels (bool): if True only the shape of tiles matters; if 
+        False the tile_id label is also considered. Defaults to True.
     """
     self.unique_tile_shapes = []
     self.tile_matching_transforms = self.get_initial_possible_symmetries()
@@ -1021,7 +1019,7 @@ class Topology:
         label_matches = [True] * len(self.unique_tile_shapes)
       else:
         label_matches = [tile.label == other.label
-                        for other in self.unique_tile_shapes]
+                         for other in self.unique_tile_shapes]
       if any([x and y for x, y in zip(shape_matches, label_matches)]):
         match = shape_matches.index(True)
         offset = transforms[match]["offset"]
@@ -1048,15 +1046,15 @@ class Topology:
                         for group in range(self.n_tile_groups)]
 
   def _find_tile_equivalence_classes(self):
-    """Finds tiles equivalent under symmetries, at the same time updating
-    the tile_matching_transforms attribute to contain only those transforms
-    that pass this test. 
+    """Finds tiles equivalent under symmetries, at the same time updating the 
+    tile_matching_transforms attribute to contain only those transforms that 
+    pass this test. 
     
     TODO: In theory, this code should attend to the tile groups, but and drop
     those transforms that fail on any group because they cannot be a symmetry of
     the tiling. However... due, I think, to issues with tiles that are mirror
     images of one another being (wrongly) to different groups, there is a 
-    problem with this. Some commented out code can be reinstated if this issue
+    problem with this. Some commented out code can be reinstated if this issue 
     is fixed.
     """
     base_tiles = [t for t in self.tiles[:self.n_tiles]]
@@ -1120,8 +1118,8 @@ class Topology:
     base_vertices = self.vertices_in_tiles(self.tiles[:self.n_tiles])
     for transform in self.tile_matching_transforms.values():
       for v in base_vertices:
-        match_ID = \
-          self._match_geoms_under_transform(v, base_vertices, transform)
+        match_ID = self._match_geoms_under_transform(
+          v, base_vertices, transform)
         if match_ID != -1:
           equivalent_vertices[v.ID].add(match_ID)
     equivalent_vertices = self._get_exclusive_supersets(
@@ -1152,15 +1150,13 @@ class Topology:
     base_edges = self.edges_in_tiles(self.tiles[:self.n_tiles])
     for transform in self.tile_matching_transforms.values():
       for e in base_edges:
-        match_id = \
-          self._match_geoms_under_transform(e, base_edges, transform)
+        match_id = self._match_geoms_under_transform(e, base_edges, transform)
         if match_id != -1:
           equivalent_edges[e.ID].add(match_id)
     equivalent_edges = self._get_exclusive_supersets(
       [tuple(sorted(s)) for s in equivalent_edges.values()])
     self.edge_equivalence_classes = defaultdict(list)
     for c, eclass in enumerate(equivalent_edges):
-      # print(f"{c=} {eclass=}")
       for e in self.edges.values():
         if e.base_ID in eclass:
           e.equivalence_class = c
@@ -1249,8 +1245,8 @@ class Topology:
         list[Vertex]: the required vertices.
     """
     vs = set()
-    for t in tiles:
-      vs = vs.union(t.get_corner_IDs())
+    for tile in tiles:
+      vs = vs.union(tile.get_corner_IDs())
     return [self.points[v] for v in vs]
 
   def edges_in_tiles(self, tiles:list[Tile]) -> list[Edge]:
@@ -1263,8 +1259,8 @@ class Topology:
         list[Edge]: the required edges.
     """
     es = set()
-    for t in tiles:
-      es = es.union(t.get_edge_IDs())
+    for tile in tiles:
+      es = es.union(tile.get_edge_IDs())
     return [self.edges[e] for e in es]
 
   def _label_tiles(self):
@@ -1304,19 +1300,19 @@ class Topology:
     Returns:
       list[str]: corresponding list of edge labels.
     """
-    edge_labels = [a + b for a, b in zip(vlabels, vlabels[1:] + vlabels[:1])]
+    AB_labels = [a + b for a, b in zip(vlabels, vlabels[1:] + vlabels[:1])]
     letter = ALPHABET.index(min(list(vlabels)))
-    elabels = {}
-    for e in edge_labels:
-      if not e in elabels:
-        if e[::-1] in elabels:
-          label = elabels[e[::-1]]
-          elabels[e] = label + "-"
-          elabels[e[::-1]] = label + "+"
+    edge_labels = {}
+    for AB_label in AB_labels:
+      if not AB_label in edge_labels:
+        if AB_label[::-1] in edge_labels:
+          label = edge_labels[AB_label[::-1]]
+          edge_labels[AB_label] = label + "-"
+          edge_labels[AB_label[::-1]] = label + "+"
         else:
-          elabels[e] = alphabet[letter]
+          edge_labels[AB_label] = alphabet[letter]
           letter = letter + 1
-    return [elabels[l] for l in edge_labels]
+    return [edge_labels[i] for i in AB_labels]
 
   def add_vertex(self, pt:geom.Point) -> "Vertex":
     """Adds a Vertex at the specified point location, returning it to the 
@@ -1559,9 +1555,9 @@ class Topology:
       for tile in v.tiles:
         label = label + \
           tile.vertex_labels[tile.corners.index(v)]
-      # TODO: resolve this question: cyclic sort seems more correct,
-      # but neither approach seems to work in all cases... see esp.
-      # cyclic sort applied to the cheese sandwich tiling.
+      # TODO: resolve this question: cyclic sort seems more correct, but 
+      # neither approach seems to work in all cases... see esp. cyclic sort 
+      # applied to the cheese sandwich tiling.
       v.label = "".join(self._cyclic_sort_first(list(label)))
       # v.label = "".join(sorted(list(label)))
       # v.label = min(list(label))
