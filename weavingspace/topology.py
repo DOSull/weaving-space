@@ -29,6 +29,7 @@ from itertools import chain
 from itertools import compress
 from functools import reduce
 from typing import Union
+from typing import Any
 from typing import Iterable
 import pickle
 import string
@@ -672,10 +673,8 @@ class Topology:
     Args:
       unit (Tileable): the Tileable whose topology is required.
     """
-    # Note that the order of these setup steps is fragile and sometimes
-    # not obviously so. For example vertex labelling will not operate 
-    # correctly if the dual tile generation has not been carried out as
-    # this operation reorders tiles around each vertex clockwise.
+    # Note that the order of these setup steps is fragile sometimes
+    # not obviously so.
     self.tileable = unit # keep this for reference
     self.n_tiles = self.tileable.tiles.shape[0]
     self._initialise_points_into_tiles()
@@ -687,10 +686,7 @@ class Topology:
     self._find_tile_equivalence_classes()
     self._find_vertex_equivalence_classes()
     self._find_edge_equivalence_classes()
-    self._label_tiles()
-    # self._label_vertices_and_edges()
-    self._label_vertices()
-    self._label_edges()
+    self._label_tiles() # now no longer required...
     self.generate_dual()
 
   def __str__(self) -> str:
@@ -777,6 +773,7 @@ class Topology:
         corners.extend(all_points[:-1])
         for x1, x2 in zip(all_points[:-1], all_points[1:]):
           # x2 will add the tile and neigbour when we get to the next side
+          # every vertex gets a turn!
           x1.add_tile(tile)
           x1.add_neighbour(x2.ID)
       tile.corners = corners
@@ -837,15 +834,34 @@ class Topology:
       tile.set_edge_directions()
 
   def _assign_vertex_and_edge_base_IDs(self):
+    """Assigns the base_ID attributes of vertices and edges. These allow us
+    to determine corrspondences between vertices and edges in the 'base' tiles
+    in the Topology tileable, and those we have added at radius 1 for labelling
+    and visualisation.
+    """
     self._assign_vertex_base_IDs(True, False)
-    self._assign_vertex_base_IDs(False, False)
-    self._assign_vertex_base_IDs(False, False)
+    # self._assign_vertex_base_IDs(False, False)
+    # self._assign_vertex_base_IDs(False, False)
     self._assign_vertex_base_IDs(False, True)
     self._assign_edge_base_IDs()
 
   def _assign_vertex_base_IDs(self, first_pass:bool = True,
                               last_pass:bool = False):
-    vs = set()
+    """Assigns base_ID attribute of vertices. Two passes are required.
+    
+    TODO: consider if there is a networkx.connected_communities option
+    here, since this is in essence about finding connected groups of tiles,
+    vertices and edges. At very least, the need to run the code twice suggests
+    that a more elegant approach is out there...
+
+    Args:
+      first_pass (bool, optional): it True the core vertices on the tiles in 
+        the Topology tileable are assigned; if False this step is skipped and
+        IDs are propagated to neighbours. Defaults to True.
+      last_pass (bool, optional): if True, it is the last pass and IDs are 
+        finally assigned based on the lowest ID assigned in previous rounds. 
+        Defaults to False.
+    """
     if first_pass:
       for i, v in enumerate(self.vertices_in_tiles(self.tiles[:self.n_tiles])):
         v.base_ID = set([i])
@@ -862,6 +878,9 @@ class Topology:
             v.base_ID = min(v.base_ID)
 
   def _assign_edge_base_IDs(self):
+    """Assigns base_ID attribute of edges, based on the base_ID attributes of
+    vertices. This might be oversimplified...
+    """
     for tile in self.tiles:
       for e, eb in zip(tile.edges, self.tiles[tile.base_ID].edges):
         v0 = self.points[eb.ID[0]].base_ID
@@ -937,6 +956,18 @@ class Topology:
         self.edges[new_edge.ID] = new_edge
 
   def get_initial_possible_symmetries(self) -> dict[int, tuple[float]]:
+    """Assembles potential symmetries of the tiling from symmetries of the 
+    tileable.prototile and of the tileable.tiles. Removes any duplicates that
+    result. Result is assigned to the tile_matching_transforms attribute.
+    
+    TODO: consider retaining the Symmetry objects as these carry additional 
+    information that might facilitate labelling under a limited number of the
+    symmetries not all of them.
+
+    Returns:
+      dict[int, tuple[float]]: dictionary of the symmetries (transforms 
+        actually) in shapely affine transform 6-tuple format.
+    """
     self.tile_matching_transforms = {}
     i = 0
     pt = self.tileable.prototile.geometry[0]
@@ -950,7 +981,21 @@ class Topology:
     self.tile_matching_transforms = self._remove_duplicate_symmetries(
       self.tile_matching_transforms)
     return self.tile_matching_transforms
-      
+
+  def _remove_duplicate_symmetries(self, transforms:dict[tuple[float]]):
+    """Filters the supplied list of shapely affine transforms so that no 
+    duplicates are retained.
+    """
+    uniques = []
+    for k, v in transforms.items():
+      already_exists = False
+      for u in uniques:
+        already_exists = np.allclose(v, u[1], atol = 1e-4, rtol = 1e-4)
+        if already_exists:
+          break
+      if not already_exists:
+        uniques.append((k, v))
+    return dict(uniques)
 
   def _identify_distinct_tiles(self, ignore_tile_id_labels:bool = True):
     """Determines unique tiles based on their symmetries and shapes. At the
@@ -969,6 +1014,8 @@ class Topology:
       s = Symmetries(tile.shape)
       transforms = [s.get_matching_transforms(other.shape) 
         for other in self.unique_tile_shapes]
+      # TODO: this is not entirely safe since there might be a reflection 
+      # transform that matches the tiles...
       shape_matches = [not t is None for t in transforms]
       if ignore_tile_id_labels:
         label_matches = [True] * len(self.unique_tile_shapes)
@@ -1000,22 +1047,18 @@ class Topology:
     self.tile_groups = [[t.ID for t in self.tiles if t.group == group]
                         for group in range(self.n_tile_groups)]
 
-  def _remove_duplicate_symmetries(self, transforms:dict[tuple[float]]):
-    """Filters the supplied list of shapely affine transforms so that no 
-    duplicates are retained.
-    """
-    uniques = []
-    for k, v in transforms.items():
-      already_exists = False
-      for u in uniques:
-        already_exists = np.allclose(v, u[1], atol = 1e-4, rtol = 1e-4)
-        if already_exists:
-          break
-      if not already_exists:
-        uniques.append((k, v))
-    return dict(uniques)
-
   def _find_tile_equivalence_classes(self):
+    """Finds tiles equivalent under symmetries, at the same time updating
+    the tile_matching_transforms attribute to contain only those transforms
+    that pass this test. 
+    
+    TODO: In theory, this code should attend to the tile groups, but and drop
+    those transforms that fail on any group because they cannot be a symmetry of
+    the tiling. However... due, I think, to issues with tiles that are mirror
+    images of one another being (wrongly) to different groups, there is a 
+    problem with this. Some commented out code can be reinstated if this issue
+    is fixed.
+    """
     base_tiles = [t for t in self.tiles[:self.n_tiles]]
     patch_tiles = [t for t in self.tiles[:self.n_patch]]
     equivalent_tiles = defaultdict(set)
@@ -1057,6 +1100,7 @@ class Topology:
     self.tile_equivalence_classes = defaultdict(list)
     equivalent_tiles = list(set([tuple(sorted(v)) 
                                  for v in equivalent_tiles.values()]))
+    # now do the assignments
     for c, eclass in enumerate(equivalent_tiles):
       for tile in self.tiles:
         if tile.base_ID in eclass:
@@ -1066,6 +1110,12 @@ class Topology:
       v for k, v in sorted(self.tile_equivalence_classes.items())]
 
   def _find_vertex_equivalence_classes(self):
+    """Finds vertex equivalence classes by checking which vertices align
+    with which others under transforms in the tile_matching_transforms 
+    attribute. The process need only determine the classes for vertices
+    in the core tileable.tiles, then assign those to all vertices by 
+    matched base_ID.
+    """
     equivalent_vertices = defaultdict(set)
     base_vertices = self.vertices_in_tiles(self.tiles[:self.n_tiles])
     for transform in self.tile_matching_transforms.values():
@@ -1084,8 +1134,20 @@ class Topology:
           self.vertex_equivalence_classes[c].append(v.ID)
     self.vertex_equivalence_classes = list(
       self.vertex_equivalence_classes.values())
+    # label vertices based on their equivalence class
+    for v in self.points.values():
+      v.label = ALPHABET[v.equivalence_class]
 
   def _find_edge_equivalence_classes(self):
+    """Finds edge equivalence classes by checking which edges align
+    with which others under transforms in the tile_matching_transforms 
+    attribute. The process need only determine the classes for edges
+    in the core tileable.tiles, then assign those to all edges by 
+    matched base_ID.
+    
+    TODO: Note that this code is identical to the vertex equivalence code
+    so it might make sense to merge.
+    """
     equivalent_edges = defaultdict(set)
     base_edges = self.edges_in_tiles(self.tiles[:self.n_tiles])
     for transform in self.tile_matching_transforms.values():
@@ -1105,30 +1167,39 @@ class Topology:
           self.edge_equivalence_classes[c].append(e.ID)
     self.edge_equivalence_classes = list(
       self.edge_equivalence_classes.values())
+    # label edges based on their equivalence class
+    for e in self.edges.values():
+      e.label = alphabet[e.equivalence_class]
     
-  def _match_geoms_under_transform(self, geom1:Tile, geoms2:list[Tile], 
-                                   transform:tuple[float]) -> int:
+  def _match_geoms_under_transform(
+      self, geom1:Union[Tile,Vertex,Edge], 
+      geoms2:list[Union[Tile,Vertex,Edge]], transform:tuple[float]) -> int:
     """Determines if there is a geometry in the supplied patch onto which the
     supplied geometry is mapped by the supplied symmetry.
 
     Args:
-        tile (Tile): _description_
-        patch (list[Tile]): _description_
-        transform (tuple[float]): _description_
+      tile (Union[Tile,Vertex,Edge]): element whose geometry we want to match.
+      patch (list[Union[Tile,Vertex,Edge]]): set of elements among which a 
+        match is sought.
+      transform (tuple[float]): shapely affine transform 6-tuple to apply.
 
     Returns:
-      int: ID of the tile in patch that matches tile under the transform if one
-        exists, otherwise returns -1.
+      Union[int,tuple[int]]: ID of the element in patch that matches the geom1
+        element under the transform if one exists, otherwise returns -1.
     """
     match_id = -1
     for geom2 in geoms2:
       if isinstance(geom1, Tile):
+        # an area of intersection based test
         match = tiling_utils.geometry_matches(
           affine.affine_transform(geom1.shape, transform), geom2.shape)
       elif isinstance(geom1, Vertex):
+        # distance test
         match = affine.affine_transform(geom1.point, transform).distance(
           geom2.point) <= 10 * tiling_utils.RESOLUTION
       else: # must be an Edge
+        # since edges _should not_ intersect this test should work in
+        # lieu of a more complete point by point comparison
         c1 = geom1.get_geometry().centroid
         c2 = geom2.get_geometry().centroid
         match = affine.affine_transform(c1, transform) \
@@ -1137,15 +1208,29 @@ class Topology:
         return geom2.base_ID
     return match_id
 
-  def _get_exclusive_supersets(self, sets:dict[int, tuple[int]]):
-    edges = []
+  def _get_exclusive_supersets(self, 
+                               sets:list[Iterable[Any]]) -> list[Iterable[Any]]:
+    """For the supplied list of lists, which may share elements, i.e. they are
+    non-exclusives sets, returns a list of lists which are exclusive: each 
+    element will only appear in one of the lists in the returned list. Uses
+    networkx connected components function to achieve this based on a graph 
+    where an intersection between two sets is an edge.
+
+    Args:
+        sets (list[Iterable[Any]]): list of lists of possibly overlapping sets.
+
+    Returns:
+      list[Iterable[Any]]: list of lists that include all the original 
+        elements without overlaps.
+    """
+    overlaps = []
     for i, si in enumerate(sets):
       s1 = set(si)
       for j, sj in enumerate(sets):
         s2 = set(sj)
         if len(s1 & s2) > 0:
-          edges.append((i, j))
-    G = nx.from_edgelist(edges)
+          overlaps.append((i, j))
+    G = nx.from_edgelist(overlaps)
     result = []
     for component in nx.connected_components(G):
       s = set()
@@ -1155,20 +1240,39 @@ class Topology:
     return result
 
   def vertices_in_tiles(self, tiles:list[Tile]) -> list[Vertex]:
+    """Gets the vertices from self.points in the tiles in the supplied list.
+
+    Args:
+        tiles (list[Tile]): tiles whose vertices are required.
+
+    Returns:
+        list[Vertex]: the required vertices.
+    """
     vs = set()
     for t in tiles:
       vs = vs.union(t.get_corner_IDs())
     return [self.points[v] for v in vs]
 
   def edges_in_tiles(self, tiles:list[Tile]) -> list[Edge]:
+    """Gets the edges from self.edges in the tiles in the supplied list.
+
+    Args:
+        tiles (list[Tile]): tiles whose edges are required.
+
+    Returns:
+        list[Edge]: the required edges.
+    """
     es = set()
     for t in tiles:
       es = es.union(t.get_edge_IDs())
     return [self.edges[e] for e in es]
 
   def _label_tiles(self):
-    """Labels the base tile vertices, then copies to corresponding tile in the 
-    radius-1 patch.
+    """Labels the base tile vertices and edges at a per tile level, then copies 
+    to corresponding tiles in the radius-1 patch.
+    
+    NOTE: this is effectively legacy code, since its purpose originally was as 
+    a (flawed) basis for determining vertex and edge labels.
     """
     first_letter = 0
     for group in range(self.n_tile_groups):
@@ -1187,8 +1291,12 @@ class Topology:
   def _get_edge_labels_from_vertex_labels(self, vlabels:list[str]) -> list[str]:
     r"""Given a list of vertex labels, returns a list of edge labels such that
     each distinct pair of vertex labels at the ends of an edge will be given a
-    distinct lower case letter label. E.g., A B C B A will yield a b b a c from 
-    AB -> a, BC -> b, CB -> b, BA -> a, AA -> c
+    distinct lower case letter label. E.g., A B C B A will yield a+ b+ b- a- c 
+    from AB -> a+ BC -> b+ CB -> b- BA -> a- AA -> c, where + designated CW
+    traversal, - CCW, and no symbol means that edge appears only once.
+    
+    This may yet have use in more elaborate edge transformations. (See G&S 87 
+    on tile incidence symbols.)
 
     Args:
       vlabels (list[str]): ordered list of vertex labels.
@@ -1201,106 +1309,21 @@ class Topology:
     elabels = {}
     for e in edge_labels:
       if not e in elabels:
-        # if e[::-1] in elabels:
-        #   label = elabels[e[::-1]]
-        #   elabels[e] = label + "-"
-        #   elabels[e[::-1]] = label + "+"
         if e[::-1] in elabels:
-          elabels[e] = elabels[e[::-1]]
+          label = elabels[e[::-1]]
+          elabels[e] = label + "-"
+          elabels[e[::-1]] = label + "+"
         else:
           elabels[e] = alphabet[letter]
           letter = letter + 1
     return [elabels[l] for l in edge_labels]
 
-  def relabel_from_start(
-      self, elements:list[Union["Vertex","Edge"]], letters:str):
-    uniques = set([x.label for x in elements])
-    for x in elements:
-      x.label = letters[sorted(uniques).index(x.label)]
-
-  def _label_vertices(self):
-    """Labels vertices based on cycle of tile vertex labels around them.
-    """
-    for v in self.points.values():
-      v.label = ALPHABET[v.equivalence_class]
-    # uniques = set()
-    # # first label vertices in the core tiles
-    # vs = set()
-    # for t in self.tiles[:self.n_tiles]:
-    #   vs = vs.union(t.get_corner_IDs())
-    # # Note: sorting is important for repeatable labelling!
-    # for vi in sorted(vs):
-    #   v = self.points[vi]
-    #   label = ""
-    #   for tile in v.tiles:
-    #     label = label + \
-    #       tile.vertex_labels[tile.corners.index(v)]
-    #   # TODO: resolve this question: cyclic sort seems more correct,
-    #   # but neither approach seems to work in all cases... see esp.
-    #   # cyclic sort applied to the cheese sandwich tiling.
-    #   v.label = "".join(self._cyclic_sort_first(list(label)))
-    #   # v.label = "".join(sorted(list(label)))
-    #   # v.label = min(list(label))
-    #   uniques.add(v.label)
-    # for vi in sorted(vs):
-    #   v = self.points[vi]
-    #   v.label = ALPHABET[sorted(uniques).index(v.label)]
-    # # now copy to corresponding vertices in the rest of tiling
-    # for ti, t in enumerate(self.tiles):
-    #   if ti >= self.n_tiles:
-    #     t0 = self.tiles[ti % self.n_tiles]
-    #     for v0, v in zip(t0.corners, t.corners):
-    #       # Vertices may appear in more than one tile, only label once!
-    #       if self.points[v.ID].label == "":
-    #         self.points[v.ID].label = self.points[v0.ID].label
-
-  def _label_edges(self):
-    """Labels edges based on the tile edge label on each side.
-    """
-    for e in self.edges.values():
-      e.label = alphabet[e.equivalence_class]
-    # uniques = set()
-    # labelled = set()
-    # # first label base tile edges from the central tile unit
-    # for t in self.tiles[:self.n_tiles]:
-    #   for e in t.edges:
-    #     rt, lt = e.right_tile, e.left_tile
-    #     rlab, llab = rt.get_edge_label(e), lt.get_edge_label(e)
-    #     e.label = "".join(sorted([rlab, llab]))
-    #     uniques.add(e.label)
-    #     labelled.add(e.ID)
-    # for ei in sorted(labelled):
-    #   e = self.edges[ei]
-    #   e.label = alphabet[sorted(uniques).index(e.label)]
-    # # now copy to corresponding edges in the rest of tiling
-    # for ti, t in enumerate(self.tiles):
-    #   if ti >= self.n_tiles:
-    #     t0 = self.tiles[ti % self.n_tiles]
-    #     for e0, e in zip(t0.edges, t.edges):
-    #       # edges may appear in more than one tile, only label once!
-    #       if e.label == "":
-    #         e.label = e0.label
-
-  def _cyclic_sort_first(self, lst:Iterable) -> Iterable:
-    """Returns supplied Iterable in canonical cyclic sorted form. E.g. the sequence ACABD, yields 5 possible cycles ACABD, CABDA, ABDAC, BDACA, and 
-    DACAB. The lexically first of these is ABDAC, which would be returned. 
-
-    Args:
-        lst (Iterable): an Iterable of elements (usu. strings).
-
-    Returns:
-      Iterable: the lexically first of the possible cycles in the supplied 
-        iterable.
-    """
-    cycle = lst + lst
-    n = len(lst)
-    cycles = [cycle[i:i + n] for i in range(n)]
-    return sorted(cycles)[0]
-
   def add_vertex(self, pt:geom.Point) -> "Vertex":
-    """Adds a Vertex at the specified location, returning it to the caller. No
-    attempt is made to ensure Vertex IDs are an unbroken sequemce: a new ID is 
-    generated one greater than the existing highest ID.
+    """Adds a Vertex at the specified point location, returning it to the 
+    caller. No attempt is made to ensure Vertex IDs are an unbroken sequemce: a 
+    new ID is generated one greater than the existing highest ID. IDs will 
+    usually be an unbroken sequence up to removals when geometry transformations
+    are applied.
 
     Args:
         pt (geom.Point): point location of the Vertex.
@@ -1517,3 +1540,83 @@ class Topology:
       edge.right_tile.set_corners_from_edges(False)
     if not edge.left_tile is None:
       edge.left_tile.set_corners_from_edges(False)
+
+  ##----------------------------------------------------------------------
+  # RETIRED CODE (at least for now)
+  ##----------------------------------------------------------------------
+  def _label_vertices(self):
+    """Labels vertices based on cycle of tile vertex labels around them.
+    """
+    uniques = set()
+    # first label vertices in the core tiles
+    vs = set()
+    for t in self.tiles[:self.n_tiles]:
+      vs = vs.union(t.get_corner_IDs())
+    # Note: sorting is important for repeatable labelling!
+    for vi in sorted(vs):
+      v = self.points[vi]
+      label = ""
+      for tile in v.tiles:
+        label = label + \
+          tile.vertex_labels[tile.corners.index(v)]
+      # TODO: resolve this question: cyclic sort seems more correct,
+      # but neither approach seems to work in all cases... see esp.
+      # cyclic sort applied to the cheese sandwich tiling.
+      v.label = "".join(self._cyclic_sort_first(list(label)))
+      # v.label = "".join(sorted(list(label)))
+      # v.label = min(list(label))
+      uniques.add(v.label)
+    for vi in sorted(vs):
+      v = self.points[vi]
+      v.label = ALPHABET[sorted(uniques).index(v.label)]
+    # now copy to corresponding vertices in the rest of tiling
+    for ti, t in enumerate(self.tiles):
+      if ti >= self.n_tiles:
+        t0 = self.tiles[ti % self.n_tiles]
+        for v0, v in zip(t0.corners, t.corners):
+          # Vertices may appear in more than one tile, only label once!
+          if self.points[v.ID].label == "":
+            self.points[v.ID].label = self.points[v0.ID].label
+
+  def _label_edges(self):
+    """Labels edges based on the tile edge label on each side.
+    """
+    uniques = set()
+    labelled = set()
+    # first label base tile edges from the central tile unit
+    for t in self.tiles[:self.n_tiles]:
+      for e in t.edges:
+        rt, lt = e.right_tile, e.left_tile
+        rlab, llab = rt.get_edge_label(e), lt.get_edge_label(e)
+        e.label = "".join(sorted([rlab, llab]))
+        uniques.add(e.label)
+        labelled.add(e.ID)
+    for ei in sorted(labelled):
+      e = self.edges[ei]
+      e.label = alphabet[sorted(uniques).index(e.label)]
+    # now copy to corresponding edges in the rest of tiling
+    for ti, t in enumerate(self.tiles):
+      if ti >= self.n_tiles:
+        t0 = self.tiles[ti % self.n_tiles]
+        for e0, e in zip(t0.edges, t.edges):
+          # edges may appear in more than one tile, only label once!
+          if e.label == "":
+            e.label = e0.label
+
+  def _cyclic_sort_first(self, lst:Iterable) -> Iterable:
+    """Returns supplied Iterable in canonical cyclic sorted form. E.g. the sequence ACABD, yields 5 possible cycles ACABD, CABDA, ABDAC, BDACA, and 
+    DACAB. The lexically first of these is ABDAC, which would be returned. 
+
+    Args:
+        lst (Iterable): an Iterable of elements (usu. strings).
+
+    Returns:
+      Iterable: the lexically first of the possible cycles in the supplied 
+        iterable.
+    """
+    cycle = lst + lst
+    n = len(lst)
+    cycles = [cycle[i:i + n] for i in range(n)]
+    return sorted(cycles)[0]
+
+      
