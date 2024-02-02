@@ -1,5 +1,5 @@
 # The state of the tiling universe
-Setting aside the small matter of [the discovery in 2023 of an aperiodic monotile](https://arxiv.org/abs/2305.17743), here are some notes (in lieu of a long slack post) on where the *weavingspace* project is at. Words in *italics* are defined in the [glossary](#glossary).
+Setting aside the small matter of [the discovery in 2023 of an aperiodic monotile](https://arxiv.org/abs/2305.17743), here are some notes (in lieu of a long slack post) on where the *weavingspace* project is at. Most links in the below are to items in the [glossary](#glossary).
 
 ## Notes on the code
 **2 February 2024**
