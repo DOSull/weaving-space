@@ -1050,11 +1050,11 @@ class Topology:
     tile_matching_transforms attribute to contain only those transforms that 
     pass this test. 
     
-    TODO: In theory, this code should attend to the tile groups, but and drop
-    those transforms that fail on any group because they cannot be a symmetry of
-    the tiling. However... due, I think, to issues with tiles that are mirror
-    images of one another being (wrongly) to different groups, there is a 
-    problem with this. Some commented out code can be reinstated if this issue 
+    TODO: In theory, this code should attend to the tile groups, and drop those 
+    transforms that fail on any group because they cannot be a symmetry of the 
+    tiling. However... due, I think, to issues with tiles that are mirror 
+    images of one another being (wrongly) assigned to different groups, there 
+    is a problem with this. Some commented out code can be reinstated if this 
     is fixed.
     """
     base_tiles = [t for t in self.tiles[:self.n_tiles]]

@@ -10,6 +10,8 @@ import copy
 
 import numpy as np
 import matplotlib.pyplot as pyplot
+import io
+import PIL
 
 import shapely.geometry as geom
 import shapely.affinity as affine
@@ -158,7 +160,6 @@ class Symmetry():
     pyplot.axis("off")
     return ax
 
-
 @dataclass
 class Symmetries():
 
@@ -178,6 +179,8 @@ class Symmetries():
   """list of pi/n relection angle symmetries."""
   symmetries:list[Symmetry] = None
   """list of Symmetry objects with more complete information."""
+  symmetry_group:str = None
+  """the code denoting the symmetry group"""
 
 
   def __init__(self, polygon:geom.Polygon):
@@ -187,7 +190,8 @@ class Symmetries():
     self.p_code_r = self._get_polygon_code(self.polygon, mirrored = True)
     self.matcher = KMP_Matcher(self.p_code + self.p_code[:-1])
     self.symmetries = self.get_symmetries()
-    
+    self.symmetry_group = self.get_symmetry_group_code()
+
 
   def _get_polygon_code(self, p:geom.Polygon, 
                         mirrored = False) -> list[tuple[float]]:
@@ -326,6 +330,11 @@ class Symmetries():
             for reflection, angle, offset 
             in zip(reflections, ref_angles, offsets)]
 
+  def get_symmetry_group_code(self):
+    if len(self.reflection_shifts) == 0:
+      return f"C{len(self.rotation_shifts)}"
+    else:
+      return f"D{len(self.rotation_shifts)}"
 
   def get_matching_transforms(self, 
                               other:geom.Polygon) -> dict[str, list[float]]:
@@ -436,18 +445,23 @@ class Symmetries():
             "reflections": under_reflection}
 
 
-  def plot(self):
+  def plot(self, as_image:bool = False, title:str = ""):
+    fig = pyplot.figure()
+    fig.suptitle(title)
+
     n_subplots = len(self.symmetries)
-    
-    nr = int(np.round(np.sqrt(n_subplots), 0))
+    nr = int(np.ceil(np.sqrt(n_subplots)))
     nc = int(np.ceil(n_subplots / nr))
     n_plots = 0
 
-    fig = pyplot.figure(figsize = (10, 10))
-    
     for s in self.symmetries:
       n_plots = n_plots + 1
       ax = fig.add_subplot(nr, nc, n_plots)
       s.plot(ax, self.polygon)
-
-    return ax
+    
+    if as_image:
+      buf = io.BytesIO()
+      fig.savefig(buf)
+      buf.seek(0)
+      return PIL.Image.open(buf)
+    return fig
