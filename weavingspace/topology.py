@@ -1059,7 +1059,8 @@ class Topology:
     """
     base_tiles = [t for t in self.tiles[:self.n_tiles]]
     patch_tiles = [t for t in self.tiles[:self.n_patch]]
-    equivalent_tiles = defaultdict(set)
+    # equivalent_tiles = defaultdict(set)
+    equivalences = []
     to_remove = []
     for group in self.tile_groups:
       # group_symmetries = []
@@ -1070,16 +1071,19 @@ class Topology:
       for tr_i, transform in self.tile_matching_transforms.items():
         matched_tiles = {}
         possible_symmetry = True
-        for source_tile in source_tiles:
+        for i, source_tile in enumerate(source_tiles):
           matched_tile_id = self._match_geoms_under_transform(
             source_tile, target_tiles, transform)
           if matched_tile_id == -1:
             possible_symmetry = False
+            break
           else:
             matched_tiles[source_tile.ID] = matched_tile_id
         if possible_symmetry:
           for k, v in matched_tiles.items():
-            equivalent_tiles[k].add(v)
+            equivalences.append((k, v))
+            equivalences.append((v, k))
+            # equivalent_tiles[k].add(v)
             # in_group_tile_equivs[(tr_i, k)] = matched_tile_id
         else:
           to_remove.append(tr_i)
@@ -1095,17 +1099,26 @@ class Topology:
     self.tile_matching_transforms = {
       k: v for k, v in self.tile_matching_transforms.items()
       if not k in to_remove}
-    self.tile_equivalence_classes = defaultdict(list)
-    equivalent_tiles = list(set([tuple(sorted(v)) 
-                                 for v in equivalent_tiles.values()]))
-    # now do the assignments
-    for c, eclass in enumerate(equivalent_tiles):
+    # self.tile_equivalence_classes = defaultdict(list)
+    # equivalent_tiles = list(set([tuple(sorted(v)) 
+    #                              for v in equivalent_tiles.values()]))
+    # # now do the assignments
+    # for c, eclass in enumerate(equivalent_tiles):
+    #   for tile in self.tiles:
+    #     if tile.base_ID in eclass:
+    #       tile.equivalence_class = c
+    #       self.tile_equivalence_classes[c].append(tile.ID)
+    # self.tile_equivalence_classes = [
+    #   v for k, v in sorted(self.tile_equivalence_classes.items())]
+    self.tile_equivalence_classes = []
+    equivalences = nx.connected_components(nx.from_edgelist(equivalences))
+    for c, base_IDs in enumerate(equivalences):
+      equivalence_class = []
       for tile in self.tiles:
-        if tile.base_ID in eclass:
+        if tile.base_ID in base_IDs:
+          equivalence_class.append(tile.ID)
           tile.equivalence_class = c
-          self.tile_equivalence_classes[c].append(tile.ID)
-    self.tile_equivalence_classes = [
-      v for k, v in sorted(self.tile_equivalence_classes.items())]
+      self.tile_equivalence_classes.append(equivalence_class)
 
   def _find_vertex_equivalence_classes(self):
     """Finds vertex equivalence classes by checking which vertices align
