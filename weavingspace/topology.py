@@ -43,6 +43,8 @@ import matplotlib.pyplot as pyplot
 
 from weavingspace import Tileable
 from weavingspace import Symmetries
+from weavingspace import Shape_Matcher
+from weavingspace import Transform
 import weavingspace.tiling_utils as tiling_utils
 
 from time import perf_counter
@@ -969,31 +971,44 @@ class Topology:
     self.tile_matching_transforms = {}
     i = 0
     pt = self.tileable.prototile.geometry[0]
-    for s in Symmetries(pt).symmetries:
-      self.tile_matching_transforms[i] = s.get_recentred(pt.centroid).transform
-      i = i + 1
+    # for s in Symmetries(pt).symmetries:
+    #   self.tile_matching_transforms[i] = s.get_recentred(pt.centroid).transform
+    #   i = i + 1
+    for k, trs in Shape_Matcher(pt).get_polygon_matches(pt).items():
+      if k == "symmetries":
+        for tr in trs:
+          self.tile_matching_transforms[i] = tr
+          i = i + 1
+    # for tile in self.tiles[:self.n_tiles]:
+    #   t = tile.shape
+    #   for s in Symmetries(t).symmetries:
+    #     self.tile_matching_transforms[i] = s.get_recentred(t.centroid).transform
     for tile in self.tiles[:self.n_tiles]:
-      t = tile.shape
-      for s in Symmetries(t).symmetries:
-        self.tile_matching_transforms[i] = s.get_recentred(t.centroid).transform
+      for k, trs in Shape_Matcher(tile.shape). \
+        get_polygon_matches(tile.shape).items():
+        if k == "symmetries":
+          for tr in trs:
+            self.tile_matching_transforms[i] = tr
+            i = i + 1
     self.tile_matching_transforms = self._remove_duplicate_symmetries(
       self.tile_matching_transforms)
     return self.tile_matching_transforms
 
-  def _remove_duplicate_symmetries(self, transforms:dict[tuple[float]]):
+  def _remove_duplicate_symmetries(self, transforms:dict[int,Any]):
     """Filters the supplied list of shapely affine transforms so that no 
     duplicates are retained.
     """
-    uniques = []
+    uniques = {}
     for k, v in transforms.items():
       already_exists = False
-      for u in uniques:
-        already_exists = np.allclose(v, u[1], atol = 1e-4, rtol = 1e-4)
+      for i, u in uniques.items():
+        already_exists = np.allclose(
+          v.transform, u.transform, atol = 1e-4, rtol = 1e-4)
         if already_exists:
           break
       if not already_exists:
-        uniques.append((k, v))
-    return dict(uniques)
+        uniques[k] = v
+    return uniques
 
   def _identify_distinct_tiles(self, ignore_tile_id_labels:bool = True):
     """Determines unique tiles based on their symmetries and shapes. At the
@@ -1009,9 +1024,16 @@ class Topology:
     n_symmetries = len(self.tile_matching_transforms)
     offsets = []
     for tile in self.tiles[:self.n_tiles]:
-      s = Symmetries(tile.shape)
-      transforms = [s.get_matching_transforms(other.shape) 
-        for other in self.unique_tile_shapes]
+      # s = Symmetries(tile.shape)
+      sm = Shape_Matcher(tile.shape)
+      # transforms = [s.get_matching_transforms(other.shape) 
+      #   for other in self.unique_tile_shapes]
+      # transforms = []
+      # for other in self.unique_tile_shapes:
+      #   print(f"{tile.ID=} {other.ID=}")
+      #   transforms.append(sm.get_polygon_matches(other.shape))
+      transforms = [sm.get_polygon_matches(other.shape) 
+        for other in self.unique_tile_shapes if tile.base_ID != other.base_ID]
       # TODO: this is not entirely safe since there might be a reflection 
       # transform that matches the tiles...
       shape_matches = [not t is None for t in transforms]
@@ -1071,9 +1093,9 @@ class Topology:
       for tr_i, transform in self.tile_matching_transforms.items():
         matched_tiles = {}
         possible_symmetry = True
-        for i, source_tile in enumerate(source_tiles):
+        for source_tile in source_tiles:
           matched_tile_id = self._match_geoms_under_transform(
-            source_tile, target_tiles, transform)
+            source_tile, target_tiles, transform.transform)
           if matched_tile_id == -1:
             possible_symmetry = False
             break
@@ -1082,7 +1104,7 @@ class Topology:
         if possible_symmetry:
           for k, v in matched_tiles.items():
             equivalences.append((k, v))
-            equivalences.append((v, k))
+            # equivalences.append((v, k))
             # equivalent_tiles[k].add(v)
             # in_group_tile_equivs[(tr_i, k)] = matched_tile_id
         else:
@@ -1132,7 +1154,7 @@ class Topology:
     for transform in self.tile_matching_transforms.values():
       for v in base_vertices:
         match_ID = self._match_geoms_under_transform(
-          v, base_vertices, transform)
+          v, base_vertices, transform.transform)
         if match_ID != -1:
           equivalent_vertices[v.ID].add(match_ID)
     equivalent_vertices = self._get_exclusive_supersets(
@@ -1163,7 +1185,8 @@ class Topology:
     base_edges = self.edges_in_tiles(self.tiles[:self.n_tiles])
     for transform in self.tile_matching_transforms.values():
       for e in base_edges:
-        match_id = self._match_geoms_under_transform(e, base_edges, transform)
+        match_id = self._match_geoms_under_transform(
+          e, base_edges, transform.transform)
         if match_id != -1:
           equivalent_edges[e.ID].add(match_id)
     equivalent_edges = self._get_exclusive_supersets(
@@ -1403,43 +1426,35 @@ class Topology:
            offset_edges: bool = True,
            show_edge_labels:bool = False,
            show_dual_tiles: bool = False) -> pyplot.Axes:
-    
     fig = pyplot.figure(figsize = (10, 10))
     ax = fig.add_axes(111)
-    
     extent = gpd.GeoSeries([t.shape for t in self.tiles]).total_bounds
     dist = max([extent[2] - extent[0], extent[3] - extent[1]])
-    
     if show_original_tiles:
       self._get_tile_geoms().plot(
         ax = ax, fc = "dodgerblue", ec = "#333366", alpha = 0.2, lw = 0.75)
-    
     if show_tile_centres:
       for i, tile in enumerate(self.tiles):
         ax.annotate(i, xy = (tile.centre.x, tile.centre.y), color = "b", 
                     fontsize = 10, ha = "center", va = "center")
-    
     if show_vertex_labels:
       for v in self.points.values():
         ax.annotate(v.label if show_vertex_ids else v.label, 
                     xy = (v.point.x, v.point.y), color = "r", fontsize = 10,
                     ha = "center", va = "center",
                     bbox = dict(boxstyle="circle", lw=0, fc="#ffffff40"))
-    
     if show_tile_vertex_labels:
       for tile in self.tiles:
         for posn, label in zip(tile.get_vertex_label_positions(), 
                                tile.vertex_labels):
           ax.annotate(label, xy = (posn.x, posn.y), fontsize = 8, 
                       ha = "center", va = "center", color = "b")
-    
     if show_tile_edge_labels:
       for tile in self.tiles:
         for posn, label in zip(tile.get_edge_label_positions(),
                                tile.edge_labels):
           ax.annotate(label, xy = (posn.x, posn.y), color = "b",
                       ha = "center", va = "center", fontsize = 8)
-    
     if show_edge_labels:
       if show_edges:
         edges = self._get_edge_geoms(dist / 100 if offset_edges else 0)
@@ -1450,14 +1465,35 @@ class Topology:
         c = l.centroid
         ax.annotate(e.label, xy = (c.x, c.y), ha = "center", va = "center",
           fontsize = 10 if show_edge_labels else 7, color = "k")
-      
     if show_dual_tiles:
       gpd.GeoSeries(self.dual_tiles).buffer(
         -dist / 400, join_style = 2, cap_style = 3).plot(
           ax = ax, fc = "red", alpha = 0.1)
-    
     pyplot.axis("off")
     return ax
+
+  def plot_tiling_symmetries(self):
+    n = len(self.tile_matching_transforms)
+    nc = int(np.ceil(np.sqrt(n)))
+    nr = int(np.ceil(n / nc))
+    gs = gpd.GeoSeries([t.shape for t in self.tiles])
+    gsb = gs[:self.n_tiles]
+    fig = pyplot.figure(figsize = (12, 12 * nr / nc))
+    for i, tr in enumerate(self.tile_matching_transforms.values()):
+      ax = fig.add_subplot(nr, nc, i + 1)
+      gs.plot(ax = ax, fc = "b", alpha = 0.2, ec = "k", lw = 1)
+      gsb.plot(ax = ax, fc = "#00000000", ec = "w", lw = 1, zorder = 2)
+      gsm = gpd.GeoSeries([tr.apply(g) for g in gsb])
+      gsm.plot(ax = ax, fc = "r", alpha = 0.2, lw = 0, ec = "r")
+      if tr.transform_type == "rotation":
+        tr.draw(ax, radius = 200)
+      elif tr.transform_type == "reflection":
+        tr.draw(ax, w = 5, mirror_length = 1000)
+      elif tr.transform_type == "translation":
+        tr.draw(ax, c = gs.unary_union.centroid)
+      elif tr.transform_type == "identity":
+        tr.draw(ax)
+      pyplot.axis("off")
 
   def transform_edges(self, new_topology:bool, apply_to_tiles:bool,
                       selector:str, type:str, **kwargs) -> "Topology":

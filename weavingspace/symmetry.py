@@ -3,7 +3,8 @@
 
 from typing import Iterable
 from typing import Any
-from typing import Callable
+from typing import Union
+from collections import namedtuple
 from dataclasses import dataclass
 import string
 import copy
@@ -101,7 +102,6 @@ class KMP_Matcher:
     display purposes."""
     return tuple([np.round(x, digits) for x in t])
 
-
 @dataclass
 class Symmetry():
   type: str = "identity"
@@ -182,7 +182,6 @@ class Symmetries():
   symmetry_group:str = None
   """the code denoting the symmetry group"""
 
-
   def __init__(self, polygon:geom.Polygon):
     self.polygon = polygon
     self.n = shapely.count_coordinates(self.polygon) - 1
@@ -191,7 +190,6 @@ class Symmetries():
     self.matcher = KMP_Matcher(self.p_code + self.p_code[:-1])
     self.symmetries = self.get_symmetries()
     self.symmetry_group = self.get_symmetry_group_code()
-
 
   def _get_polygon_code(self, p:geom.Polygon, 
                         mirrored = False) -> list[tuple[float]]:
@@ -238,7 +236,6 @@ class Symmetries():
       angles = raw_angles[1:] + raw_angles[:1]
       return list(zip(lengths, angles))
 
-
   def get_symmetries(
       self, other_polygon:geom.Polygon = None) -> tuple[list[int], list[int]]:
     """Finds rotation and reflection symmetries of the supplied polygon.
@@ -282,7 +279,6 @@ class Symmetries():
     self.reflection_shifts = self.matcher.find_matches(p_code_r)
     return self.get_rotations(self.rotation_shifts) + \
            self.get_reflections(self.reflection_shifts)
-
 
   def get_rotations(self, offsets:list[int]) -> list[Symmetry]:
     """Gets the rotations associated with this collection of symmetries.
@@ -336,76 +332,6 @@ class Symmetries():
     else:
       return f"D{len(self.rotation_shifts)}"
 
-  def get_matching_transforms(self, 
-                              other:geom.Polygon) -> dict[str, list[float]]:
-    """Finds the transforms that will map another polygon onto this one.
-    Reuses the _find_symmetries() method, but supplying the other polygon
-    as that method's optional argument. Before determining the match the
-    points on the perimeter of the other polygon are reordered so that the
-    index positions match those of the reference polygon.
-
-    Args:
-        other (geom.Polygon): the polygon to match.
-
-    Returns:
-      dict[str,Union[str,list[float]]]: A dictionary with the following entries:
-      'rotation-shifts': vertex offsets to form matches by rotation
-      'reflection-shifts': vertex offsets to form matches by reflection
-      'rotation-angles': list of rotation angles of matches (in degrees)
-      'reflection-angles': list of angles of reflection axes (in degrees)
-      'rotation-transforms': list of shapely affine transform tuples of    
-        rotation matches
-      'reflection-transforms': list of shapely affine transform tuples of
-        reflection matches
-      'pre-translation': translation to align other with this polygon as tuple
-        of floats
-      'pre-rotation': rotation to align other with this polygon (in degrees)
-      'pre-transform': shapely affine transform tuple that brings other into
-        alignment with this polygon such that the matching transforms work 
-    """
-    if self.n == shapely.count_coordinates(other) - 1:
-      # shift them to the same centroid
-      c0 = self.polygon.centroid
-      trans = (c0.x - other.centroid.x, c0.y - other.centroid.y)
-      other = affine.translate(other, trans[0], trans[1])
-      # now see if they align at all
-      # symms = self.get_symmetries(other_polygon = other)
-      # rot_shifts = symms["rotation-shifts"]
-      symms = self.get_symmetries(other_polygon = other)
-      rot_shifts = [s.shift for s in symms if s.type == "rotation"]
-      if len(rot_shifts) == 0:
-        # print(f"Polygons do not match at all!")
-        return None
-      # now align the corners so indexes of their corners match
-      offset = rot_shifts[0]
-      if offset != 0:
-        other = tiling_utils.offset_polygon_corners(other, -offset)
-        rotation = -self.get_rotations(rot_shifts)[0].angle #["angles"][0]
-        other = tiling_utils.rotate_preserving_order(other, rotation, c0)
-      else:
-        rotation = 0
-      # now determine the additional rotation needed to line them up
-      p0_0 = tiling_utils.get_corners(self.polygon)[0]
-      other_corners = tiling_utils.get_corners(other, repeat_first = False)
-      rotation = rotation + \
-        tiling_utils.get_inner_angle(other_corners[0], c0, p0_0)
-      # now find store and report the matching symmetries
-      result = {}
-      result["offset"] = offset
-      result["pre-translation"] = trans
-      result["pre-rotation"] = rotation
-      result["pre-transform"] = tiling_utils.combine_transforms(
-        [tiling_utils.get_translation_transform(trans[0], trans[1]),
-         tiling_utils.get_rotation_transform(rotation, (c0.x, c0.y))])
-      symms = self.get_symmetries(other_polygon = other)
-      result["symmetries"] = [tiling_utils.combine_transforms([
-        result["pre-transform"], s.transform]) for s in symms]
-      return result
-    else:
-      # print(f"Polygons have different numbers of sides!")
-      return None
-
-
   def get_corner_labels(self) -> dict[str, list[str]]:
     """Returns all the reorderings of vertex labels corresponding to each
     symmetry.
@@ -417,7 +343,6 @@ class Symmetries():
     """
     labels = list(string.ascii_letters.upper())[:self.n]
     return self._get_labels_under_symmetries(labels)
-
 
   def get_unique_labels(self, offset:int = 0) -> list[str]:
     labellings = self.get_corner_labels()
@@ -444,7 +369,6 @@ class Symmetries():
     return {"rotations": under_rotation,
             "reflections": under_reflection}
 
-
   def plot(self, as_image:bool = False, title:str = ""):
     fig = pyplot.figure()
     fig.suptitle(title)
@@ -465,3 +389,215 @@ class Symmetries():
       buf.seek(0)
       return PIL.Image.open(buf)
     return fig
+
+
+@dataclass
+class Transform:
+  transform_type: str
+  angle: float
+  centre: geom.Point
+  translation: tuple[float] 
+  transform: tuple[float]
+
+  def apply(self, geometry:Any) -> Any:
+    return affine.affine_transform(geometry, self.transform)
+  
+  def draw(self, ax:pyplot.axes, **kwargs):
+    if self.transform_type == "rotation":
+      self._draw_rotation(ax = ax, **kwargs)
+    elif self.transform_type == "reflection":
+      self._draw_reflection(ax = ax, **kwargs)
+    if self.transform_type == "translation":
+      self._draw_translation(ax = ax, **kwargs)
+    elif self.transform_type == "identity":
+      ax.set_title(f"{self.transform_type}")
+
+  def _draw_rotation(self, ax:pyplot.Axes, radius = 200):
+    x, y = self.centre.x, self.centre.y
+    axis = geom.LineString([(x, y), (x + radius * 1.25, y)])
+    arc = geom.LineString([
+      geom.Point(x + radius * np.cos(np.radians(a)),
+                  y + radius * np.sin(np.radians(a)))
+      for a in np.linspace(0, self.angle, 50)])
+    gpd.GeoSeries([self.centre]).plot(
+      ax = ax, color = "r", markersize = 4, zorder = 5)
+    gpd.GeoSeries([axis, arc]).plot(ax = ax, color = "r", lw = .5)
+    ax.set_title(f"{self.transform_type} {np.round(self.angle, 2)}")
+
+  def _draw_reflection(self, ax:pyplot.Axes, w = 5, mirror_length = 100):
+    x, y = self.centre.x, self.centre.y
+    dx, dy = self.translation
+    r = np.sqrt(self.translation[0] ** 2 + self.translation[1] ** 2) 
+    mirror = geom.LineString([
+      (x - mirror_length / 2 * np.cos(np.radians(self.angle)), 
+        y - mirror_length / 2 * np.sin(np.radians(self.angle))),
+      (x + mirror_length / 2 * np.cos(np.radians(self.angle)), 
+        y + mirror_length / 2 * np.sin(np.radians(self.angle)))])
+    gpd.GeoSeries([mirror]).plot(
+      ax = ax, color = "r", lw = 1, ls = "dashdot", zorder = 5)
+    no_slide = np.isclose(r, 0, rtol = 1e-6, atol = 1e-6)
+    if not no_slide:
+      pyplot.arrow(
+        x - dx / 2, y - dy / 2, dx, dy, length_includes_head = True,
+        width = w, fc = "k", ec = None, head_width = w * 6, zorder = 5)
+    ax.set_title(f"{self.transform_type} {np.round(self.angle, 2)}")
+
+  def _draw_translation(self, ax:pyplot.Axes, c:geom.Point, w:float = 5):
+    gpd.GeoSeries([c]).plot(ax = ax, color = "b")
+    pyplot.arrow(c.x, c.y, self.translation[0], self.translation[1], lw = 0.5,
+                width = w, fc = "b", ec = None, head_width = w * 6, zorder = 5)
+    ax.set_title(f"{self.transform_type} {tuple([np.round(x, 2)
+                                                 for x in self.translation])}")
+
+
+StraightLine = namedtuple("StraightLine", "A B C")
+
+
+class Shape_Matcher:
+  shape: geom.Polygon
+  s1: Symmetries
+  other: geom.Polygon
+  centre: geom.Point
+  translation: tuple[float]
+  matches: list[Transform]
+  identity_transform: tuple[float] = (1, 0, 0, 1, 0, 0)
+  
+  def __init__(self, shape: geom.Polygon):
+    self.shape = shape
+    self.s1 = Symmetries(shape)
+
+  def get_polygon_matches(self, shape2: geom.Polygon):
+    s2 = Symmetries(shape2)
+    if self.s1.symmetry_group != s2.symmetry_group:
+      # print("No matches")
+      return None
+    else:
+      match_rot, rots, offset = self._get_rotation_matches(s2)
+      match_ref, refs = self._get_reflection_matches(s2)
+      if match_rot and match_ref:
+        # print(f"Rotation and reflection matches found")
+        return {"offset": offset, 
+                "symmetries": rots + refs}
+      elif match_rot:
+        # print(f"Only rotation matches found")
+        return {"offset": offset, 
+                "symmetries": rots}
+      elif match_ref:
+        # print(f"Only reflection matches found")
+        return {"offset": 0, 
+                "symmetries": refs}
+      else:
+        # print (f"No matches found")
+        return None
+
+  def _get_reflection_matches(self, s2:Symmetries):
+    tr = (1, 0, 0, 1, 0, 0)
+    ctr1 = self.s1.polygon.centroid
+    ctr2 = s2.polygon.centroid
+    c = ((ctr1.x + ctr2.x) / 2, (ctr1.y + ctr2.y) / 2)
+    matches = self.s1.matcher.find_matches(s2.p_code_r)
+    if len(matches) == 0:
+      return False, tr
+    reflections1 = self.s1.get_reflections(matches)
+    reflections2 = s2.get_reflections(matches)
+    angles = [(ref1.angle + ref2.angle) / 2
+              for ref1, ref2 in zip(reflections1, reflections2)]
+    trs = [tiling_utils.get_reflection_transform(angle, c)
+           for angle in angles]
+    ctrs2r = [affine.affine_transform(ctr2, tr) for tr in trs]
+    dxdys = [(ctr1.x - ctr2r.x, ctr1.y - ctr2r.y) for ctr2r in ctrs2r]
+    return True, [Transform(
+      "reflection", angle, geom.Point(c), dxdy,
+      tiling_utils.combine_transforms(
+        [tiling_utils.get_reflection_transform(angle, c),
+        (1, 0, 0, 1, dxdy[0], dxdy[1])])) 
+      for angle, dxdy in zip(angles, dxdys)]
+
+  def _get_rotation_matches(self, s2:Symmetries):
+    matches = self.s1.matcher.find_matches(s2.p_code)
+    if len(matches) == 0:
+      return False, [Transform("null", 0, geom.Point(0, 0), (0, 0),
+                               (1, 0, 0, 1, 0, 0))], 0
+    else:
+      transforms = []
+      # get lists of polygon corners aligned correctly to measure the angle
+      p1_corners = tiling_utils.get_corners(self.shape, repeat_first = False)
+      p2_corners = tiling_utils.get_corners(s2.polygon, repeat_first = False)
+      for offset in matches:
+        a, c = self.get_angle_between_polygons(p1_corners, p2_corners, offset)
+        if a == "translation":
+          print("One of the rotation matches is a translation.")
+          transforms.append(
+            Transform("translation", None, None, c, (1, 0, 0, 1, c[0], c[1])))
+        elif a == "identity":
+          transforms.append(
+            Transform("identity", None, None, c, (1, 0, 0, 1, 0, 0)))
+          break
+        elif a is None:
+          continue
+        else:
+          transforms.append(Transform("rotation", a, c, (0, 0),
+            tiling_utils.get_rotation_transform(a, (c.x, c.y))))
+      return True, transforms, offset
+
+  def get_angle_between_polygons(self, corners1:list[geom.Point], 
+      corners2:list[geom.Point], offset:int) -> tuple[Union[float,geom.Point]]:
+    corners2 = corners2[offset:] + corners2[:offset]
+    dists = [p1.distance(p2) for p1, p2 in zip(corners1, corners2)]
+    if all([np.isclose(dists[0], d, atol = 1e-3, rtol = 1e-3) for d in dists]):
+      if np.isclose(dists[0], 0, atol = 1e-3, rtol  = 1e-3):
+        return "identity", (0, 0)
+      else:
+        return "translation", (corners1[0].x - corners2[0].x,
+                               corners1[0].y - corners2[0].y)
+    ordered_dists = sorted([(i, d) for i, d in enumerate(dists)], 
+                           key = lambda x: x[1])
+    AB = ordered_dists[-2:]
+    p1A, p1B = corners1[AB[0][0]], corners1[AB[1][0]]
+    p2A, p2B = corners2[AB[0][0]], corners2[AB[1][0]]
+    perpAA = self.get_straight_line(p1A, p2A, True)
+    perpBB = self.get_straight_line(p1B, p2B, True)
+    centre = self.get_intersection(perpAA, perpBB)
+    if centre is None:
+      angle = None
+    else:
+      angle = -tiling_utils.get_inner_angle(p1A, centre, p2A)
+      if angle < -179:
+        angle = angle + 360
+      elif angle > 180:
+        angle = angle - 360
+    return angle, centre
+
+  def get_straight_line(self, p1:geom.Point, p2:geom.Point, 
+                        perpendicular:bool = False) -> StraightLine:
+    if perpendicular:
+      ls = affine.rotate(geom.LineString([p1, p2]), 90)
+      pts = [p for p in ls.coords]
+      x1, y1 = pts[0]
+      x2, y2 = pts[1]
+    else:
+      x1, y1 = p1.x, p1.y
+      x2, y2 = p2.x, p2.y
+    return StraightLine(y1 - y2, x2 - x1, x1 * y2 - x2 * y1)
+
+  def get_intersection(self, line1:StraightLine, 
+                       line2:StraightLine) -> geom.Point:
+    x_set, y_set = False, False
+    denominator = line1.A * line2.B - line2.A * line1.B
+    if np.isclose(line1.A, 0, atol = 1e-4, rtol = 1e-4):
+      y = -line1.C / line1.B
+      y_set = True
+    elif np.isclose(line2.A, 0, atol = 1e-4, rtol = 1e-4):
+      y = -line2.C / line2.B
+      y_set = True
+    if np.isclose(line1.B, 0, atol = 1e-4, rtol = 1e-4):
+      x = -line1.C / line1.A
+      x_set = True
+    elif np.isclose(line2.B, 0, atol = 1e-4, rtol = 1e-4):
+      x = -line2.C / line2.A
+      x_set = True
+    if np.isclose(denominator, 0, atol = 1e-4, rtol = 1e-4):
+      return None
+    x = x if x_set else (line1.B * line2.C - line2.B * line1.C) / denominator
+    y = y if y_set else (line1.C * line2.A - line2.C * line1.A) / denominator
+    return geom.Point(x, y)
