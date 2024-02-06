@@ -974,22 +974,17 @@ class Topology:
     # for s in Symmetries(pt).symmetries:
     #   self.tile_matching_transforms[i] = s.get_recentred(pt.centroid).transform
     #   i = i + 1
-    for k, trs in Shape_Matcher(pt).get_polygon_matches(pt).items():
-      if k == "symmetries":
-        for tr in trs:
-          self.tile_matching_transforms[i] = tr
-          i = i + 1
+    for tr in Shape_Matcher(pt).get_polygon_matches(pt):
+      self.tile_matching_transforms[i] = tr
+      i = i + 1
     # for tile in self.tiles[:self.n_tiles]:
     #   t = tile.shape
     #   for s in Symmetries(t).symmetries:
     #     self.tile_matching_transforms[i] = s.get_recentred(t.centroid).transform
     for tile in self.tiles[:self.n_tiles]:
-      for k, trs in Shape_Matcher(tile.shape). \
-        get_polygon_matches(tile.shape).items():
-        if k == "symmetries":
-          for tr in trs:
-            self.tile_matching_transforms[i] = tr
-            i = i + 1
+      for tr in Shape_Matcher(tile.shape).get_polygon_matches(tile.shape):
+        self.tile_matching_transforms[i] = tr
+        i = i + 1
     self.tile_matching_transforms = self._remove_duplicate_symmetries(
       self.tile_matching_transforms)
     return self.tile_matching_transforms
@@ -1033,7 +1028,7 @@ class Topology:
       #   print(f"{tile.ID=} {other.ID=}")
       #   transforms.append(sm.get_polygon_matches(other.shape))
       transforms = [sm.get_polygon_matches(other.shape) 
-        for other in self.unique_tile_shapes if tile.base_ID != other.base_ID]
+        for other in self.unique_tile_shapes] # if tile.base_ID != other.base_ID]
       # TODO: this is not entirely safe since there might be a reflection 
       # transform that matches the tiles...
       shape_matches = [not t is None for t in transforms]
@@ -1044,11 +1039,11 @@ class Topology:
                          for other in self.unique_tile_shapes]
       if any([x and y for x, y in zip(shape_matches, label_matches)]):
         match = shape_matches.index(True)
-        offset = transforms[match]["offset"]
+        offset = transforms[match][0].offset
         offsets.append(offset)
         tile.group = match
         tile.offset_corners(offset)
-        for s in transforms[match]["symmetries"]:
+        for s in transforms[match]:
           self.tile_matching_transforms[n_symmetries] = s
           n_symmetries = n_symmetries + 1
       else:

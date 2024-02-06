@@ -296,7 +296,6 @@ class Symmetries():
                      angle, c, rotation, offset)
             for rotation, angle, offset
             in zip(rotations, rot_angles, offsets)]
-    
 
   def get_reflections(self, offsets:list[int]) -> list[Symmetry]:
     """Gets the reflections associated with this collection of symmetries.
@@ -358,7 +357,6 @@ class Symmetries():
         i = i + 1
     return self._get_labels_under_symmetries([mapping[x] for x in labellings])
   
-  
   def _get_labels_under_symmetries(
       self, labels:list[str]) -> dict[str, list[str]]:
     cycle = labels * 2
@@ -398,6 +396,7 @@ class Transform:
   centre: geom.Point
   translation: tuple[float] 
   transform: tuple[float]
+  offset: int
 
   def apply(self, geometry:Any) -> Any:
     return affine.affine_transform(geometry, self.transform)
@@ -472,20 +471,17 @@ class Shape_Matcher:
       # print("No matches")
       return None
     else:
-      match_rot, rots, offset = self._get_rotation_matches(s2)
+      match_rot, rots = self._get_rotation_matches(s2)
       match_ref, refs = self._get_reflection_matches(s2)
       if match_rot and match_ref:
         # print(f"Rotation and reflection matches found")
-        return {"offset": offset, 
-                "symmetries": rots + refs}
+        return rots + refs
       elif match_rot:
         # print(f"Only rotation matches found")
-        return {"offset": offset, 
-                "symmetries": rots}
+        return rots
       elif match_ref:
         # print(f"Only reflection matches found")
-        return {"offset": 0, 
-                "symmetries": refs}
+        return refs
       else:
         # print (f"No matches found")
         return None
@@ -510,35 +506,38 @@ class Shape_Matcher:
       "reflection", angle, geom.Point(c), dxdy,
       tiling_utils.combine_transforms(
         [tiling_utils.get_reflection_transform(angle, c),
-        (1, 0, 0, 1, dxdy[0], dxdy[1])])) 
+        (1, 0, 0, 1, dxdy[0], dxdy[1])]), 0) 
       for angle, dxdy in zip(angles, dxdys)]
 
   def _get_rotation_matches(self, s2:Symmetries):
     matches = self.s1.matcher.find_matches(s2.p_code)
     if len(matches) == 0:
       return False, [Transform("null", 0, geom.Point(0, 0), (0, 0),
-                               (1, 0, 0, 1, 0, 0))], 0
+                               (1, 0, 0, 1, 0, 0), 0)]
     else:
       transforms = []
       # get lists of polygon corners aligned correctly to measure the angle
       p1_corners = tiling_utils.get_corners(self.shape, repeat_first = False)
       p2_corners = tiling_utils.get_corners(s2.polygon, repeat_first = False)
-      for offset in matches:
-        a, c = self.get_angle_between_polygons(p1_corners, p2_corners, offset)
+      offset = matches[0]
+      for m in matches:
+        a, c = self.get_angle_between_polygons(p1_corners, p2_corners, m)
         if a == "translation":
-          print("One of the rotation matches is a translation.")
+          # print("One of the rotation matches is a translation.")
           transforms.append(
-            Transform("translation", None, None, c, (1, 0, 0, 1, c[0], c[1])))
+            Transform("translation", None, None, c, 
+                      (1, 0, 0, 1, c[0], c[1]), 0))
         elif a == "identity":
           transforms.append(
-            Transform("identity", None, None, c, (1, 0, 0, 1, 0, 0)))
+            Transform("identity", None, None, c, 
+                      (1, 0, 0, 1, 0, 0), 0))
           break
         elif a is None:
           continue
         else:
           transforms.append(Transform("rotation", a, c, (0, 0),
-            tiling_utils.get_rotation_transform(a, (c.x, c.y))))
-      return True, transforms, offset
+            tiling_utils.get_rotation_transform(a, (c.x, c.y)), offset))
+      return True, transforms
 
   def get_angle_between_polygons(self, corners1:list[geom.Point], 
       corners2:list[geom.Point], offset:int) -> tuple[Union[float,geom.Point]]:
