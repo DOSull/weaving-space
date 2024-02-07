@@ -291,10 +291,11 @@ class Tile(object):
     Args:
       offset int: the number of positions to shift the lists.
     """
-    self.shape = tiling_utils.offset_polygon_corners(self.shape, offset)
-    self.corners = self.corners[offset:] + self.corners[:offset]
-    self.edges = self.edges[offset:] + self.edges[:offset]
-    self.edges_CW = self.edges_CW[offset:] + self.edges_CW[:offset]
+    if not offset is None or offset == 0:
+      self.shape = tiling_utils.offset_polygon_corners(self.shape, offset)
+      self.corners = self.corners[offset:] + self.corners[:offset]
+      self.edges = self.edges[offset:] + self.edges[:offset]
+      self.edges_CW = self.edges_CW[offset:] + self.edges_CW[:offset]
 
   def get_edge_label(self, e:"Edge") -> str:
     """Returns edge label of specified edge.

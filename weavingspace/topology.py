@@ -25,6 +25,7 @@ in the mathematical literature between tiling vertices and tile corners, or
 between tiling edges and tile sides.
 """
 from collections import defaultdict
+import itertools
 from typing import Union
 from typing import Any
 from typing import Iterable
@@ -368,99 +369,43 @@ class Topology:
           del self.edges[e]
         self.edges[new_edge.ID] = new_edge
 
-  def get_initial_potential_symmetries(self) -> dict[int, tuple[float]]:
-    """Assembles potential symmetries of the tiling from symmetries of the 
-    tileable.prototile and of the tileable.tiles. Removes any duplicates that
-    result. Result is assigned to the tile_matching_transforms attribute.
-    
-    TODO: consider retaining the Symmetry objects as these carry additional 
-    information that might facilitate labelling under a limited number of the
-    symmetries not all of them.
-
-    Returns:
-      dict[int, tuple[float]]: dictionary of the symmetries (transforms 
-        actually) in shapely affine transform 6-tuple format.
-    """
-    self.tile_matching_transforms = {}
-    i = 0
-    pt = self.tileable.prototile.geometry[0]
-    for tr in Shape_Matcher(pt).get_polygon_matches(pt):
-      self.tile_matching_transforms[i] = tr
-      i = i + 1
-    for tile in self.tiles[:self.n_tiles]:
-      for tr in Shape_Matcher(tile.shape).get_polygon_matches(tile.shape):
-        self.tile_matching_transforms[i] = tr
-        i = i + 1
-    self.tile_matching_transforms = self._remove_duplicate_symmetries(
-      self.tile_matching_transforms)
-    return self.tile_matching_transforms
-
-  def _remove_duplicate_symmetries(self, transforms:dict[int,Any]):
-    """Filters the supplied list of shapely affine transforms so that no 
-    duplicates are retained.
-    """
-    uniques = {}
-    for k, v in transforms.items():
-      already_exists = False
-      for i, u in uniques.items():
-        already_exists = np.allclose(
-          v.transform, u.transform, atol = 1e-4, rtol = 1e-4)
-        if already_exists:
-          break
-      if not already_exists:
-        uniques[k] = v
-    return uniques
-
   def _identify_distinct_tiles(self, ignore_tile_id_labels:bool = True):
     """Determines unique tiles based on their symmetries and shapes. At the
     same time assembles a list of the affine transforms under which matches
     occurs since these are potential symmetries of the tiling.
     
+    TODO: reimplement consideration of tile_id
+    
     Args:
       ignore_tile_id_labels (bool): if True only the shape of tiles matters; if 
         False the tile_id label is also considered. Defaults to True.
     """
-    self.unique_tile_shapes = []
-    self.tile_groups = defaultdict(list)
-    n_tile_groups = 0
-    self.tile_matching_transforms = self.get_initial_potential_symmetries()
-    n_symmetries = len(self.tile_matching_transforms)
-    offsets = []
+    shape_groups = []
+    offsets = {}
     for tile in self.tiles[:self.n_tiles]:
-      sm = Shape_Matcher(tile.shape)
-      transforms = [sm.get_polygon_matches(other.shape) 
-        for other in self.unique_tile_shapes]
-      shape_matches = [not t is None for t in transforms]
-      if ignore_tile_id_labels:
-        label_matches = [True] * len(self.unique_tile_shapes)
+      to_add = None
+      s = Symmetries(tile.shape)
+      for i, group in enumerate(shape_groups):
+        offset = s.get_corner_offset(self.tiles[group[0]].shape)
+        if not offset is None:
+          offsets[tile.base_ID] = offset
+          to_add = tile
+          tile.group = i
+      if not to_add is None:
+        shape_groups[tile.group].append(tile.ID)
       else:
-        label_matches = [tile.label == other.label
-                         for other in self.unique_tile_shapes]
-      if any([x and y for x, y in zip(shape_matches, label_matches)]):
-        match = shape_matches.index(True)
-        offset = transforms[match][0].offset
-        offsets.append(offset)
-        tile.group = match
-        tile.offset_corners(offset)
-        self.tile_groups[match].append(tile.ID)
-        for s in transforms[match]:
-          self.tile_matching_transforms[n_symmetries] = s
-          n_symmetries = n_symmetries + 1
-      else:
-        self.unique_tile_shapes.append(tile)
-        offsets.append(0)
-        tile.group = n_tile_groups
-        self.tile_groups[n_tile_groups].append(tile.ID)
-        n_tile_groups = n_tile_groups + 1
-    # now copy assignments from the central TileUnit to everything else
-    # and rotate tiles if required to ensure their corners match
-    for tile in self.tiles[self.n_tiles:]:
-      tile.group = self.tiles[tile.base_ID].group
-      tile.offset_corners(offsets[tile.base_ID])
-    # filter back the tile matching transforms to a unique set
-    self.tile_matching_transforms = self._remove_duplicate_symmetries(
-      self.tile_matching_transforms)
-    self.tile_groups = list(self.tile_groups.values())
+        tile.group = len(shape_groups)
+        shape_groups.append([tile.ID])
+        offsets[tile.base_ID] = 0
+    self.tile_groups = []
+    for i, group in enumerate(shape_groups):
+      full_group = []
+      for tile in self.tiles:
+        if tile.base_ID in group:
+          tile.group = i
+          tile.offset_corners(offsets[tile.base_ID])
+          full_group.append(tile.ID)
+      self.tile_groups.append(full_group)
 
   def _find_tile_equivalence_classes(self):
     """Finds tiles equivalent under symmetries, at the same time updating the 
@@ -471,6 +416,7 @@ class Topology:
     group in self.tile_groups: loop... and this would allow dropping of some
     symmetries that fail in one group before checking the next group.
     """
+    self.tile_matching_transforms = self.get_potential_symmetries()
     base_tiles = [t for t in self.tiles[:self.n_tiles]]
     equivalences = set()
     to_remove = []
@@ -518,6 +464,59 @@ class Topology:
           equivalence_class.append(tile.ID)
           tile.equivalence_class = c
       self.tile_equivalence_classes.append(equivalence_class)
+
+  def get_potential_symmetries(self) -> dict[int, tuple[float]]:
+    """Assembles potential symmetries of the tiling from symmetries of the 
+    tileable.prototile and of the tileable.tiles. Removes any duplicates that
+    result. Result is assigned to the tile_matching_transforms attribute.
+    
+    TODO: consider retaining the Symmetry objects as these carry additional 
+    information that might facilitate labelling under a limited number of the
+    symmetries not all of them.
+
+    Returns:
+      dict[int, tuple[float]]: dictionary of the symmetries (transforms 
+        actually) in shapely affine transform 6-tuple format.
+    """
+    self.tile_matching_transforms = {}
+    n_symmetries = 0
+    pt = self.tileable.prototile.geometry[0]
+    for tr in Shape_Matcher(pt).get_polygon_matches(pt):
+      if not tr.transform_type in ["identity", "translation"]:
+        self.tile_matching_transforms[n_symmetries] = tr
+        n_symmetries = n_symmetries + 1
+    for tile in self.tiles[:self.n_tiles]:
+      for tr in Shape_Matcher(tile.shape).get_polygon_matches(tile.shape):
+        if not tr.transform_type in ["identity", "translation"]:
+          self.tile_matching_transforms[n_symmetries] = tr
+          n_symmetries = n_symmetries + 1
+    for tile in self.tiles[:self.n_tiles]:
+      sm = Shape_Matcher(tile.shape)
+      transforms = [sm.get_polygon_matches(self.tiles[i].shape) 
+        for i in self.tile_groups[tile.group] if i < self.n_tiles]
+      for tr in itertools.chain(*transforms):
+        if not tr.transform_type in ["identity", "translation"]:
+          self.tile_matching_transforms[n_symmetries] = tr
+          n_symmetries = n_symmetries + 1
+    self.tile_matching_transforms = self._remove_duplicate_symmetries(
+      self.tile_matching_transforms)
+    return self.tile_matching_transforms
+
+  def _remove_duplicate_symmetries(self, transforms:dict[int,Any]):
+    """Filters the supplied list of shapely affine transforms so that no 
+    duplicates are retained.
+    """
+    uniques = {}
+    for k, v in transforms.items():
+      already_exists = False
+      for i, u in uniques.items():
+        already_exists = np.allclose(
+          v.transform, u.transform, atol = 1e-4, rtol = 1e-4)
+        if already_exists:
+          break
+      if not already_exists:
+        uniques[k] = v
+    return uniques
 
   def _find_vertex_equivalence_classes(self):
     """Finds vertex equivalence classes by checking which vertices align
@@ -805,7 +804,7 @@ class Topology:
     pyplot.axis("off")
     return ax
 
-  def plot_tiling_symmetries(self):
+  def plot_tiling_symmetries(self, **kwargs):
     n = len(self.tile_matching_transforms)
     nc = int(np.ceil(np.sqrt(n)))
     nr = int(np.ceil(n / nc))
@@ -814,18 +813,11 @@ class Topology:
     fig = pyplot.figure(figsize = (12, 12 * nr / nc))
     for i, tr in enumerate(self.tile_matching_transforms.values()):
       ax = fig.add_subplot(nr, nc, i + 1)
-      gs.plot(ax = ax, fc = "b", alpha = 0.2, ec = "k", lw = 1)
+      gs.plot(ax = ax, fc = "b", alpha = 0.15, ec = "k", lw = 0.5)
       gsb.plot(ax = ax, fc = "#00000000", ec = "w", lw = 1, zorder = 2)
       gsm = gpd.GeoSeries([tr.apply(g) for g in gsb])
       gsm.plot(ax = ax, fc = "r", alpha = 0.2, lw = 0, ec = "r")
-      if tr.transform_type == "rotation":
-        tr.draw(ax, radius = 200)
-      elif tr.transform_type == "reflection":
-        tr.draw(ax, w = 5, mirror_length = 1000)
-      elif tr.transform_type == "translation":
-        tr.draw(ax, c = gs.unary_union.centroid)
-      elif tr.transform_type == "identity":
-        tr.draw(ax)
+      tr.draw(ax, **kwargs)
       pyplot.axis("off")
 
   def transform_edges(self, new_topology:bool, apply_to_tiles:bool,
@@ -932,7 +924,7 @@ class Topology:
     first_letter = 0
     for i, group in enumerate(self.tile_groups):
       tiles = [t for t in self.tiles[:self.n_tiles] if t.ID in group]
-      s = Symmetries(self.unique_tile_shapes[i].shape)
+      s = Symmetries(self.tiles[group[0]].shape)
       vlabels = list(s.get_unique_labels(offset = first_letter)["rotations"][0])
       elabels = self._get_edge_labels_from_vertex_labels(vlabels)
       for tile in tiles:
