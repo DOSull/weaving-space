@@ -50,7 +50,7 @@ class Tile(object):
   centre: geom.Point = None
   """a point centre for the Tile (determined by weavingspace.tiling_utils.
   incentre)."""
-  group: int = None
+  shape_group: int = None
   """the tile shape group of this tile in its containing Topology."""
   equivalence_class: int = None
   """the tile equivalence class of this tile its containing Topology"""

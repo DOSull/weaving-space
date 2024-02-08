@@ -121,7 +121,7 @@ class Transform:
 
   def __str__(self) -> str:
     return \
-      f"{self.transform_type} {self.angle}deg {self.centre} {self.transform}"
+      f"{self.transform_type} {self.angle:.1f}° POINT ({self.centre.x:.1f} {self.centre.y:.1f}) {tuple([np.round(x, 3) for x in self.transform])}"
 
   def __repr__(self) -> str:
     return str(self)

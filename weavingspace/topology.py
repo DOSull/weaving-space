@@ -72,7 +72,7 @@ class Topology:
   """list of geom.Polygons from which a dual tiling might be constructed."""
   n_tiles: int = 0
   """number of tiles in the base Tileable (retained for convenience)."""
-  tile_groups: list[list[int]]
+  shape_groups: list[list[int]]
   """list of lists of tile IDs distinguished by shape and optionally tile_id"""
   tile_matching_transforms: list[tuple[float]] 
   """shapely transform tuples that map tiles onto other tiles"""
@@ -98,7 +98,7 @@ class Topology:
     self._setup_edges()
     self._copy_base_tiles_to_patch()
     self._assign_vertex_and_edge_base_IDs()
-    self._identify_distinct_tiles(ignore_tile_ids)
+    self._identify_distinct_tile_shapes(ignore_tile_ids)
     self._find_tile_equivalence_classes()
     self._find_vertex_equivalence_classes()
     self._find_edge_equivalence_classes()
@@ -369,7 +369,7 @@ class Topology:
           del self.edges[e]
         self.edges[new_edge.ID] = new_edge
 
-  def _identify_distinct_tiles(self, ignore_tile_id_labels:bool = True):
+  def _identify_distinct_tile_shapes(self, ignore_tile_id_labels:bool = True):
     """Determines unique tiles based on their symmetries and shapes. At the
     same time assembles a list of the affine transforms under which matches
     occurs since these are potential symmetries of the tiling.
@@ -380,83 +380,81 @@ class Topology:
       ignore_tile_id_labels (bool): if True only the shape of tiles matters; if 
         False the tile_id label is also considered. Defaults to True.
     """
-    shape_groups = []
+    matches = {}
     offsets = {}
     for tile in self.tiles[:self.n_tiles]:
-      to_add = None
+      matches[tile.base_ID] = [tile.base_ID]
+      matched = False
       s = Symmetries(tile.shape)
-      for i, group in enumerate(shape_groups):
-        offset = s.get_corner_offset(self.tiles[group[0]].shape)
-        if not offset is None:
-          offsets[tile.base_ID] = offset
-          to_add = tile
-          tile.group = i
-      if not to_add is None:
-        shape_groups[tile.group].append(tile.ID)
-      else:
-        tile.group = len(shape_groups)
-        shape_groups.append([tile.ID])
+      for other in self.tiles[:self.n_tiles]:
+        if other.ID > tile.ID:
+          offset = s.get_corner_offset(other.shape)
+          if not offset is None:
+            offsets[tile.base_ID] = offset
+            matches[tile.base_ID].append(other.base_ID)
+            matched = True
+      if not matched:
         offsets[tile.base_ID] = 0
-    self.tile_groups = []
-    for i, group in enumerate(shape_groups):
+    base_groups = list(nx.connected_components(nx.from_dict_of_lists(matches)))
+    self.shape_groups = []
+    for i, group in enumerate(base_groups):
       full_group = []
       for tile in self.tiles:
         if tile.base_ID in group:
-          tile.group = i
+          tile.shape_group = i
           tile.offset_corners(offsets[tile.base_ID])
           full_group.append(tile.ID)
-      self.tile_groups.append(full_group)
+      self.shape_groups.append(full_group)
 
   def _find_tile_equivalence_classes(self):
     """Finds tiles equivalent under symmetries, at the same time updating the 
     tile_matching_transforms attribute to contain only those transforms that 
     pass this test. 
-    
-    TODO: In theory, this code should attend to the tile shapes,hence the for
-    group in self.tile_groups: loop... and this would allow dropping of some
-    symmetries that fail in one group before checking the next group.
     """
     self.tile_matching_transforms = self.get_potential_symmetries()
     base_tiles = [t for t in self.tiles[:self.n_tiles]]
-    equivalences = set()
-    to_remove = []
-    for group in self.tile_groups:
-      # group_symmetries = []
-      in_group_tile_equivs = {}
-      # make up source and target tiles within this group
-      source_tiles = [t for t in base_tiles if t.ID in group]
-      target_tiles = [t for t in self.tiles if t.ID in group]
-      for tr_i, transform in self.tile_matching_transforms.items():
+    # it is quicker (should be!) to only do within shape group tests
+    # often there is only one when it will make no difference
+    by_group_equivalences = []
+    # maintain a set of transforms still potentially tiling symmetries
+    poss_transforms = set(self.tile_matching_transforms.keys())
+    # and a dictionary of booleans tracking which transforms are still valid
+    eq_under_transform = {tr: True for tr in poss_transforms}
+    for g, group in enumerate(self.shape_groups):
+      by_group_equivalences.append(set())
+      source_tiles = [tile for tile in base_tiles if tile.shape_group == g]
+      target_tiles = [tile for tile in self.tiles if tile.shape_group == g]
+      for tr in poss_transforms:
+        transform = self.tile_matching_transforms[tr].transform
         matched_tiles = {}
-        possible_symmetry = True
+        eq_under_transform[tr] = True
         for source_tile in source_tiles:
           matched_tile_id = self._match_geoms_under_transform(
-            source_tile, target_tiles, transform.transform)
+            source_tile, target_tiles, transform)
           if matched_tile_id == -1:
-            possible_symmetry = False
+            eq_under_transform[tr] = False
             break
           else:
             matched_tiles[source_tile.ID] = matched_tile_id
-        if possible_symmetry:
+        if eq_under_transform[tr]:
           for k, v in matched_tiles.items():
-            equivalences.add((k, v))
-            # in_group_tile_equivs[(tr_i, k)] = matched_tile_id
-        else:
-          to_remove.append(tr_i)
-          # group_symmetries.append(tr_i)
-      # any transform not a symmetry of group is not a symmetry of tiling
-      # so remove from consideration and also from the list of tile matches
-      # THIS FEELS LIKE IT SHOULD WORK BUT BREAKS MANY EXAMPLES
-      # self.tile_matching_transforms = {
-      #   i: self.tile_matching_transforms[i] for i in group_symmetries}
-      # add the group tile equivalences to the equivalent tile lists
-      # for k, v in in_group_tile_equivs.items():
-      #   equivalent_tiles[k[1]].add(v)
+            # print(f"src {k} tgt {v} {tr=} {transform}")
+            # here we record the transform, in case it is later invalidated
+            by_group_equivalences[g].add((tr, k, v))
+      # remove valid transforms that didn't make it through this group
+      poss_transforms = set([t for t, x in eq_under_transform.items() if x])
+    # compile equivalences from all groups made under still valid transforms
+    # a dict of sets so singletons aren't lost in finding connected components
+    equivalences = {i: set() for i in range(self.n_tiles)}
+    for group_equivalences in by_group_equivalences:
+      for (tr, tile_i, tile_j) in group_equivalences:
+        if tr in poss_transforms:
+          equivalences[tile_i].add(tile_j)
     self.tile_matching_transforms = {
-      k: v for k, v in self.tile_matching_transforms.items()
-      if not k in to_remove}
+      k: v for k, v in self.tile_matching_transforms.items() if k in 
+      poss_transforms}
     self.tile_equivalence_classes = []
-    equivalences = nx.connected_components(nx.from_edgelist(list(equivalences)))
+    equivalences = nx.connected_components(nx.from_dict_of_lists(equivalences))
     for c, base_IDs in enumerate(equivalences):
       equivalence_class = []
       for tile in self.tiles:
@@ -493,7 +491,7 @@ class Topology:
     for tile in self.tiles[:self.n_tiles]:
       sm = Shape_Matcher(tile.shape)
       transforms = [sm.get_polygon_matches(self.tiles[i].shape) 
-        for i in self.tile_groups[tile.group] if i < self.n_tiles]
+        for i in self.shape_groups[tile.shape_group] if i < self.n_tiles]
       for tr in itertools.chain(*transforms):
         if not tr.transform_type in ["identity", "translation"]:
           self.tile_matching_transforms[n_symmetries] = tr
@@ -922,7 +920,7 @@ class Topology:
     a (flawed) basis for determining vertex and edge labels.
     """
     first_letter = 0
-    for i, group in enumerate(self.tile_groups):
+    for i, group in enumerate(self.shape_groups):
       tiles = [t for t in self.tiles[:self.n_tiles] if t.ID in group]
       s = Symmetries(self.tiles[group[0]].shape)
       vlabels = list(s.get_unique_labels(offset = first_letter)["rotations"][0])
