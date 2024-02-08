@@ -729,8 +729,10 @@ class Topology:
     self.edges[e.ID] = e
     return e
 
-  def _get_tile_geoms(self) -> gpd.GeoSeries:
-    return gpd.GeoSeries([t.shape for t in self.tiles])
+  def _get_tile_geoms(self) -> gpd.GeoDataFrame:
+    return gpd.GeoDataFrame(
+      data = {"equivalence_class": [t.equivalence_class for t in self.tiles]},
+      geometry = gpd.GeoSeries([t.shape for t in self.tiles]))
 
   def _get_tile_centre_geoms(self) -> gpd.GeoSeries:
     return gpd.GeoSeries([t.centre for t in self.tiles])
@@ -761,8 +763,8 @@ class Topology:
     extent = gpd.GeoSeries([t.shape for t in self.tiles]).total_bounds
     dist = max([extent[2] - extent[0], extent[3] - extent[1]])
     if show_original_tiles:
-      self._get_tile_geoms().plot(
-        ax = ax, fc = "dodgerblue", ec = "#333366", alpha = 0.2, lw = 0.75)
+      self._get_tile_geoms().plot(column = "equivalence_class", cmap = "Set2",
+        ax = ax, ec = "#444444", alpha = 0.2, lw = 0.75)
     if show_tile_centres:
       for i, tile in enumerate(self.tiles):
         ax.annotate(i, xy = (tile.centre.x, tile.centre.y), color = "b", 
@@ -798,7 +800,7 @@ class Topology:
     if show_dual_tiles:
       gpd.GeoSeries(self.dual_tiles).buffer(
         -dist / 400, join_style = 2, cap_style = 3).plot(
-          ax = ax, fc = "red", alpha = 0.1)
+          ax = ax, fc = "k", alpha = 0.2)
     pyplot.axis("off")
     return ax
 

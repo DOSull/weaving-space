@@ -143,7 +143,8 @@ class Transform:
       trans_dict = {k: kwargs.pop(k) for k in dict(kwargs) if k in trans_args}
       return self._draw_translation(ax = ax, **trans_dict)
     elif self.transform_type == "identity":
-      return ax.set_title(f"{self.transform_type}")
+      w = ax.get_window_extent().width
+      return ax.set_title(f"{self.transform_type}", fontsize = w / 20)
 
   def _draw_rotation(self, ax:pyplot.Axes, 
                      radius = 200, add_title = True) -> pyplot.Axes:
@@ -157,7 +158,9 @@ class Transform:
       ax = ax, color = "r", markersize = 4, zorder = 5)
     gpd.GeoSeries([axis, arc]).plot(ax = ax, color = "r", lw = .5)
     if add_title:
-      ax.set_title(f"{self.transform_type} {np.round(self.angle, 2)}")
+      w = ax.get_window_extent().width
+      ax.set_title(f"{self.transform_type} {np.round(self.angle, 2)}",
+                   fontsize = w / 20)
     return ax
 
   def _draw_reflection(self, ax:pyplot.Axes, w = 5, 
@@ -178,7 +181,9 @@ class Transform:
         x - dx / 2, y - dy / 2, dx, dy, length_includes_head = True,
         width = w, fc = "k", ec = None, head_width = w * 6, zorder = 5)
     if add_title:
-      ax.set_title(f"{self.transform_type} {np.round(self.angle, 2)}")
+      w = ax.get_window_extent().width
+      ax.set_title(f"{self.transform_type} {np.round(self.angle, 2)}",
+                   fontsize = w / 20)
     return ax
 
   def _draw_translation(self, ax:pyplot.Axes, c:geom.Point, 
@@ -187,8 +192,10 @@ class Transform:
     pyplot.arrow(c.x, c.y, self.translation[0], self.translation[1], lw = 0.5,
                 width = w, fc = "b", ec = None, head_width = w * 6, zorder = 5)
     if add_title:
+      w = ax.get_window_extent().width
       rounded_tr = tuple([np.round(x, 1) for x in self.translation])
-      ax.set_title(f"{self.transform_type} {rounded_tr}")
+      ax.set_title(f"{self.transform_type} {rounded_tr}",
+                   fontsize = w / 20)
     return ax
 
 
