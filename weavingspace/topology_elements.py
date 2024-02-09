@@ -52,8 +52,8 @@ class Tile(object):
   incentre)."""
   shape_group: int = None
   """the tile shape group of this tile in its containing Topology."""
-  equivalence_class: int = None
-  """the tile equivalence class of this tile its containing Topology"""
+  transitivity_class: int = None
+  """the tile transitivity class of this tile its containing Topology"""
   
   def __init__(self, ID:int):
     """Class constructor.
@@ -378,8 +378,8 @@ class Vertex:
   neighbours, so only IDs are stored."""
   base_ID: int = 1_000_000
   """ID of corresponding Vertex in the tileable base_unit"""
-  equivalence_class: int = None
-  """equivalence class of the vertex under symmetries of the tiling"""
+  transitivity_class: int = None
+  """transitivity class of the vertex under symmetries of the tiling"""
   label: str = ""
   """the (upper case letter) label of the vertex under the symmetries of the 
   tiling."""
@@ -485,8 +485,8 @@ class Edge:
   """
   base_ID: tuple[int] = (1_000_000, 1_000_000)
   """ID of corresponding edge in the base tileable"""
-  equivalence_class: int = None
-  """equivalence class of the edge under symmetries of the tiling"""
+  transitivity_class: int = None
+  """transitivity class of the edge under symmetries of the tiling"""
   label: str = ""
   """the (lower case letter) label of the edge under the symmetries of the 
   tiling."""

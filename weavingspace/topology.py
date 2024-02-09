@@ -67,7 +67,9 @@ class Topology:
   edges: dict[int, Edge]
   """dictionary of the tiling edges, keyed by Edge ID."""
   unique_tile_shapes: list[geom.Polygon]
-  """a 'reference' tile shape one per tile equivalence class."""
+  """a 'reference' tile shape one per tile shape (up to vertices, so two tiles
+  might be the same shape, but one might have extra vertices induced by the
+  tiling and hence is a different shape under this definition)."""
   dual_tiles: list[geom.Polygon]
   """list of geom.Polygons from which a dual tiling might be constructed."""
   n_tiles: int = 0
@@ -76,12 +78,12 @@ class Topology:
   """list of lists of tile IDs distinguished by shape and optionally tile_id"""
   tile_matching_transforms: list[tuple[float]] 
   """shapely transform tuples that map tiles onto other tiles"""
-  tile_equivalence_classes: list[tuple[int]]
-  """list of lists of tile IDs in each equivalence class"""
-  vertex_equivalence_classes: list[list[int]]
-  """list of lists of vertex IDs in each equivalence class"""
-  edge_equivalence_classes: list[list[tuple[int]]]
-  """list of lists of edge IDs in each equivalence class"""
+  tile_transitivity_classes: list[tuple[int]]
+  """list of lists of tile IDs in each transitivity class"""
+  vertex_transitivity_classes: list[list[int]]
+  """list of lists of vertex IDs in each transitivity class"""
+  edge_transitivity_classes: list[list[tuple[int]]]
+  """list of lists of edge IDs in each transitivity class"""
 
   def __init__(self, unit: Tileable, ignore_tile_ids:bool = True):
     """Class constructor.
@@ -99,9 +101,9 @@ class Topology:
     self._copy_base_tiles_to_patch()
     self._assign_vertex_and_edge_base_IDs()
     self._identify_distinct_tile_shapes(ignore_tile_ids)
-    self._find_tile_equivalence_classes()
-    self._find_vertex_equivalence_classes()
-    self._find_edge_equivalence_classes()
+    self._find_tile_transitivity_classes()
+    self._find_vertex_transitivity_classes()
+    self._find_edge_transitivity_classes()
     self._label_tiles() # now no longer required...
     self.generate_dual()
 
@@ -406,7 +408,7 @@ class Topology:
           full_group.append(tile.ID)
       self.shape_groups.append(full_group)
 
-  def _find_tile_equivalence_classes(self):
+  def _find_tile_transitivity_classes(self):
     """Finds tiles equivalent under symmetries, at the same time updating the 
     tile_matching_transforms attribute to contain only those transforms that 
     pass this test. 
@@ -415,13 +417,13 @@ class Topology:
     base_tiles = [t for t in self.tiles[:self.n_tiles]]
     # it is quicker (should be!) to only do within shape group tests
     # often there is only one when it will make no difference
-    by_group_equivalences = []
+    by_group_equivalent_tiles = []
     # maintain a set of transforms still potentially tiling symmetries
     poss_transforms = set(self.tile_matching_transforms.keys())
     # and a dictionary of booleans tracking which transforms are still valid
     eq_under_transform = {tr: True for tr in poss_transforms}
     for g, group in enumerate(self.shape_groups):
-      by_group_equivalences.append(set())
+      by_group_equivalent_tiles.append(set())
       source_tiles = [tile for tile in base_tiles if tile.shape_group == g]
       target_tiles = [tile for tile in self.tiles if tile.shape_group == g]
       for tr in poss_transforms:
@@ -440,28 +442,28 @@ class Topology:
           for k, v in matched_tiles.items():
             # print(f"src {k} tgt {v} {tr=} {transform}")
             # here we record the transform, in case it is later invalidated
-            by_group_equivalences[g].add((tr, k, v))
+            by_group_equivalent_tiles[g].add((tr, k, v))
       # remove valid transforms that didn't make it through this group
       poss_transforms = set([t for t, x in eq_under_transform.items() if x])
     # compile equivalences from all groups made under still valid transforms
     # a dict of sets so singletons aren't lost in finding connected components
-    equivalences = {i: set() for i in range(self.n_tiles)}
-    for group_equivalences in by_group_equivalences:
-      for (tr, tile_i, tile_j) in group_equivalences:
+    equivalents = {i: set() for i in range(self.n_tiles)}
+    for group_equivalents in by_group_equivalent_tiles:
+      for (tr, tile_i, tile_j) in group_equivalents:
         if tr in poss_transforms:
-          equivalences[tile_i].add(tile_j)
+          equivalents[tile_i].add(tile_j)
     self.tile_matching_transforms = {
       k: v for k, v in self.tile_matching_transforms.items() if k in 
       poss_transforms}
-    self.tile_equivalence_classes = []
-    equivalences = nx.connected_components(nx.from_dict_of_lists(equivalences))
-    for c, base_IDs in enumerate(equivalences):
-      equivalence_class = []
+    self.tile_transitivity_classes = []
+    equivalents = nx.connected_components(nx.from_dict_of_lists(equivalents))
+    for c, base_IDs in enumerate(equivalents):
+      transitivity_class = []
       for tile in self.tiles:
         if tile.base_ID in base_IDs:
-          equivalence_class.append(tile.ID)
-          tile.equivalence_class = c
-      self.tile_equivalence_classes.append(equivalence_class)
+          transitivity_class.append(tile.ID)
+          tile.transitivity_class = c
+      self.tile_transitivity_classes.append(transitivity_class)
 
   def get_potential_symmetries(self) -> dict[int, tuple[float]]:
     """Assembles potential symmetries of the tiling from symmetries of the 
@@ -516,8 +518,8 @@ class Topology:
         uniques[k] = v
     return uniques
 
-  def _find_vertex_equivalence_classes(self):
-    """Finds vertex equivalence classes by checking which vertices align
+  def _find_vertex_transitivity_classes(self):
+    """Finds vertex transitivity classes by checking which vertices align
     with which others under transforms in the tile_matching_transforms 
     attribute. The process need only determine the classes for vertices
     in the core tileable.tiles, then assign those to all vertices by 
@@ -533,26 +535,26 @@ class Topology:
           equivalent_vertices[v.ID].add(match_ID)
     equivalent_vertices = self._get_exclusive_supersets(
       [tuple(sorted(s)) for s in equivalent_vertices.values()])
-    self.vertex_equivalence_classes = defaultdict(list)
+    self.vertex_transitivity_classes = defaultdict(list)
     for c, vclass in enumerate(equivalent_vertices):
       for v in self.points.values():
         if v.base_ID in vclass:
-          v.equivalence_class = c
-          self.vertex_equivalence_classes[c].append(v.ID)
-    self.vertex_equivalence_classes = list(
-      self.vertex_equivalence_classes.values())
-    # label vertices based on their equivalence class
+          v.transitivity_class = c
+          self.vertex_transitivity_classes[c].append(v.ID)
+    self.vertex_transitivity_classes = list(
+      self.vertex_transitivity_classes.values())
+    # label vertices based on their transitivity class
     for v in self.points.values():
-      v.label = ALPHABET[v.equivalence_class]
+      v.label = ALPHABET[v.transitivity_class]
 
-  def _find_edge_equivalence_classes(self):
-    """Finds edge equivalence classes by checking which edges align
+  def _find_edge_transitivity_classes(self):
+    """Finds edge transitivity classes by checking which edges align
     with which others under transforms in the tile_matching_transforms 
     attribute. The process need only determine the classes for edges
     in the core tileable.tiles, then assign those to all edges by 
     matched base_ID.
     
-    TODO: Note that this code is identical to the vertex equivalence code
+    TODO: Note that this code is identical to the vertex transitivity code
     so it might make sense to merge.
     """
     equivalent_edges = defaultdict(set)
@@ -565,17 +567,17 @@ class Topology:
           equivalent_edges[e.ID].add(match_id)
     equivalent_edges = self._get_exclusive_supersets(
       [tuple(sorted(s)) for s in equivalent_edges.values()])
-    self.edge_equivalence_classes = defaultdict(list)
+    self.edge_transitivity_classes = defaultdict(list)
     for c, eclass in enumerate(equivalent_edges):
       for e in self.edges.values():
         if e.base_ID in eclass:
-          e.equivalence_class = c
-          self.edge_equivalence_classes[c].append(e.ID)
-    self.edge_equivalence_classes = list(
-      self.edge_equivalence_classes.values())
-    # label edges based on their equivalence class
+          e.transitivity_class = c
+          self.edge_transitivity_classes[c].append(e.ID)
+    self.edge_transitivity_classes = list(
+      self.edge_transitivity_classes.values())
+    # label edges based on their transitivity class
     for e in self.edges.values():
-      e.label = alphabet[e.equivalence_class]
+      e.label = alphabet[e.transitivity_class]
     
   def _match_geoms_under_transform(
       self, geom1:Union[Tile,Vertex,Edge], 
@@ -731,7 +733,7 @@ class Topology:
 
   def _get_tile_geoms(self) -> gpd.GeoDataFrame:
     return gpd.GeoDataFrame(
-      data = {"equivalence_class": [t.equivalence_class for t in self.tiles]},
+      data = {"transitivity_class": [t.transitivity_class for t in self.tiles]},
       geometry = gpd.GeoSeries([t.shape for t in self.tiles]))
 
   def _get_tile_centre_geoms(self) -> gpd.GeoSeries:
@@ -763,7 +765,7 @@ class Topology:
     extent = gpd.GeoSeries([t.shape for t in self.tiles]).total_bounds
     dist = max([extent[2] - extent[0], extent[3] - extent[1]])
     if show_original_tiles:
-      self._get_tile_geoms().plot(column = "equivalence_class", cmap = "Set2",
+      self._get_tile_geoms().plot(column = "transitivity_class", cmap = "Set2",
         ax = ax, ec = "#444444", alpha = 0.2, lw = 0.75)
     if show_tile_centres:
       for i, tile in enumerate(self.tiles):
