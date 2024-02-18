@@ -406,6 +406,7 @@ class Vertex:
     """
     self.point = point
     self.ID = ID
+    self.base_ID = self.ID
     self.tiles = []
     self.neighbours = []
 

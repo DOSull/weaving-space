@@ -220,7 +220,8 @@ class Tileable:
           frags_to_remove.add(j)
         fragments = [f for i, f in enumerate(fragments)
                      if not (i in frags_to_remove)] + next_frags
-    self.regularised_prototile.geometry[0] = reg_prototile
+    self.regularised_prototile.loc[0, "geometry"] = reg_prototile
+    # self.regularised_prototile.geometry[0] = reg_prototile
     return [f for f in fragments if not f.is_empty] # don't return any duds
 
 
@@ -241,7 +242,8 @@ class Tileable:
           new_reg_prototile = new_reg_prototile.union(t_p)
           new_tiles[i] = t_p
     self.tiles.geometry = gpd.GeoSeries(new_tiles)
-    self.regularised_prototile.geometry[0] = new_reg_prototile
+    self.regularised_prototile.loc[0, "geometry"] = new_reg_prototile
+    # self.regularised_prototile.geometry[0] = new_reg_prototile
     return None
 
 

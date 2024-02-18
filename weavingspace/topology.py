@@ -25,8 +25,9 @@ in the mathematical literature between tiling vertices and tile corners, or
 between tiling edges and tile sides.
 """
 from collections import defaultdict
+import inspect
 import itertools
-from typing import Union
+from typing import Callable, Union
 from typing import Any
 from typing import Iterable
 import pickle
@@ -250,7 +251,7 @@ class Topology:
               tile.edges.append(e)
       # initialise the edge direction information in the tile
       tile.set_edge_directions()
-
+      
   def _assign_vertex_and_edge_base_IDs(self):
     """Assigns the base_ID attributes of vertices and edges. These allow us
     to determine corrspondences between vertices and edges in the 'base' tiles
@@ -283,7 +284,7 @@ class Topology:
         v.base_ID = set([i])
     for tile in self.tiles:
       for v, vb in zip(tile.corners, self.tiles[tile.base_ID].corners):
-        if v.base_ID == 1_000_000:
+        if v.base_ID == v.ID: # 1_000_000:
           v.base_ID = set([x for x in vb.base_ID])
         else:
           v.base_ID = v.base_ID.union(vb.base_ID)
@@ -524,9 +525,14 @@ class Topology:
     attribute. The process need only determine the classes for vertices
     in the core tileable.tiles, then assign those to all vertices by 
     matched base_ID.
+    
+    TODO: carefully consider here whether labelling only the tiling vertices
+    is the right thing to do or not...
     """
     equivalent_vertices = defaultdict(set)
-    base_vertices = self.vertices_in_tiles(self.tiles[:self.n_tiles])
+    base_vertices = [v for v in 
+                     self.vertices_in_tiles(self.tiles[:self.n_tiles])
+                     if v.is_tiling_vertex]
     for transform in self.tile_matching_transforms.values():
       for v in base_vertices:
         match_ID = self._match_geoms_under_transform(
@@ -545,7 +551,8 @@ class Topology:
       self.vertex_transitivity_classes.values())
     # label vertices based on their transitivity class
     for v in self.points.values():
-      v.label = ALPHABET[v.transitivity_class]
+      if v.is_tiling_vertex:
+        v.label = ALPHABET[v.transitivity_class]
 
   def _find_edge_transitivity_classes(self):
     """Finds edge transitivity classes by checking which edges align
@@ -773,7 +780,7 @@ class Topology:
                     fontsize = 10, ha = "center", va = "center")
     if show_vertex_labels:
       for v in self.points.values():
-        ax.annotate(v.label if show_vertex_ids else v.label, 
+        ax.annotate(v.ID if show_vertex_ids else v.label, 
                     xy = (v.point.x, v.point.y), color = "r", fontsize = 10,
                     ha = "center", va = "center",
                     bbox = dict(boxstyle="circle", lw=0, fc="#ffffff40"))
@@ -822,26 +829,26 @@ class Topology:
       tr.draw(ax, **kwargs)
       pyplot.axis("off")
 
-  def transform_edges(self, new_topology:bool, apply_to_tiles:bool,
-                      selector:str, type:str, **kwargs) -> "Topology":
-    r"""Applies a specified transformation of Edges in the Topology whose labels
-    match the label parameter, optionally applying the transform to update tile
-    shapes, and optionally returning a new Topology object (or applying it to 
-    this one). 
+  def transform_geometry(self, new_topology:bool, apply_to_tiles:bool,
+                         selector:str, type:str, **kwargs) -> "Topology":
+    r"""Applies a specified transformation of elements in the Topology whose 
+    labels match the selector parameter, optionally applying the transform to 
+    update tile and optionally returning a new Topology object (or applying it 
+    to this one). 
     
     Implemented in this way so that transformations can be applied one at a time
     without creating an intermediate set of new tiles, which may be invalid and
     fail. So, if you wish to apply (say) 3 transforms and generate a new 
     Topology leaving the existing one intact:
     
-        new_topo = old_topo.transform_edges(True,  False, "a", ...) \
-                           .transform_edges(False, False, "b", ...) \
-                           .transform_edges(False, True,  "c", ...)
+        new_topo = old_topo.transform_geometry(True,  False, "a", ...) \
+                           .transform_geometry(False, False, "B", ...) \
+                           .transform_geometry(False, True,  "C", ...)
     
     The first transform requests a new Topology, subsequent steps do not, and it
     is only the last step which attempts to create the new tile polygons.
     
-    **kwargs supply named parameters for the requested type of transformation.
+    **kwargs supply named parameters for the requested transformation.
 
     Args:
       new_topology (bool): if True returns a new Topology object, else returns 
@@ -850,34 +857,52 @@ class Topology:
         transformation has been applied. Usually set to False, unless the last
         transformation in a pipeline, to avoid problems of topologically invalid
         tiles at intermediate steps.
-      selector (str): label of edges to which to apply the transformation. Note
-        that all letters in the supplied string are checked, so you can use e.g.
-        "abc" to apply a transformation to edges labelled "a", "b" or "c".
-      type (str): name of the type of transformation requested. Currently only
-        "zigzag" is supported. Different types will expect different kwargs
-        per the associated <type>_edge method.
+      selector (str): label of elements to which to apply the transformation.   
+        Note that all letters in the supplied string are checked, so you can 
+        use e.g. "abc" to apply a transformation to edges labelled "a", "b" or 
+        "c", or "AB" for vertices labelled "A" or "B".
+      type (str): name of the type of transformation requested. Currently
+        supported are "zigzag_edge", "push_vertex", and "nudge_vertex". Keyword
+        arguments for each are documented in the corresponding methods.
 
     Returns:
       Topology: if new_topology is True a new Topology based on this one with
         after transformation, if False this Topology is returned after the
         transformation.
     """
-    # TODO: check if this is the best way to make a deep copy...
+    print(
+f"""CAUTION: new Topology will probably not be correctly labelled. To build a 
+correct Topology, extract the tileable attribute and rebuild Topology from that.
+""")
     topo = pickle.loads(pickle.dumps(self)) if new_topology else self
-    for e in topo.edges.values():
-      if e.label in selector:
-        if type == "zigzag":
-          topo.zigzag_edge(e, **kwargs)
+    transform_args = topo.get_kwargs(getattr(topo, type), **kwargs)
+    if type == "zigzag_edge":
+      for e in topo.edges.values():
+        if e.label in selector:
+          topo.zigzag_edge(e, **transform_args)
+    # ---------------------------
+    elif type == "push_vertex":
+      pushes = {}
+      for v in topo.vertices_in_tiles(topo.tiles[:topo.n_tiles]):
+        if v.label in selector:
+          pushes[v.base_ID] = topo.push_vertex(v, **transform_args)
+      for base_ID, (dx, dy) in pushes.items():
+        for v in [v for v in topo.points.values() if v.base_ID == base_ID]:
+          v.point = affine.translate(v.point, dx, dy)
+    # ---------------------------
+    elif type == "nudge_vertex":
+       for v in topo.points.values():
+         if v.label in selector:
+           topo.nudge_vertex(v, **transform_args)
     if apply_to_tiles:
       for t in topo.tiles:
         t.set_corners_from_edges()
     topo.tileable.tiles.geometry = gpd.GeoSeries(
-      [tiling_utils.get_clean_polygon(topo.tiles[i].shape) 
-       for i in range(topo.n_tiles)])
+      [topo.tiles[i].shape for i in range(topo.n_tiles)])
     topo.tileable.setup_regularised_prototile_from_tiles()
     return topo
 
-  def zigzag_edge(self, edge:"Edge", start:str = "A",
+  def zigzag_edge(self, edge:Edge, start:str = "A",
                   n:int = 2, h:float = 0.5, smoothness:int = 0):
     """Applies a zigzag transformation to the supplied Edge. Currently this will
     only work correctly if h is even.
@@ -912,6 +937,23 @@ class Topology:
       edge.right_tile.set_corners_from_edges(False)
     if not edge.left_tile is None:
       edge.left_tile.set_corners_from_edges(False)
+
+  def push_vertex(self, vertex:Vertex, push_d:float) -> tuple[float]:
+    neighbours = [self.points[v] for v in vertex.neighbours]
+    dists = [vertex.point.distance(v.point) for v in neighbours]
+    x, y = vertex.point.x, vertex.point.y
+    unit_vectors = [((x - v.point.x) / d, (y - v.point.y) / d)
+                    for v, d in zip(neighbours, dists)]
+    return  (push_d * sum([xy[0] for xy in unit_vectors]),
+             push_d * sum([xy[1] for xy in unit_vectors]))
+
+  def nudge_vertex(self, vertex:Vertex, dx:float, dy:float):
+    vertex.point = affine.translate(vertex.point, dx, dy)
+
+  def get_kwargs(self, fn:Callable, **kwargs) -> dict[Any]:
+      args = list(inspect.signature(fn).parameters)
+      return {k: kwargs.pop(k) for k in dict(kwargs) if k in args}
+    
 
   # ===========================================================================
   # potentially redundant code

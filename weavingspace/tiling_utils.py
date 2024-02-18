@@ -369,6 +369,10 @@ def is_tangential(shape:geom.Polygon) -> bool:
       return True
     # odd number of sides there is a nice solvable system  of equations
     # see https://math.stackexchange.com/questions/4065370/tangential-polygons-conditions-on-edge-lengths
+    #
+    # TODO: this is not reliable for reasons I don't fully understand
+    # there is a corresponding crude catch exception in incentre... but
+    # this needs a more complete investigation
     mat = np.identity(n) + np.roll(np.identity(n), 1, axis = 1)
     fractions = np.linalg.inv(mat) @ side_lengths / side_lengths
     if not(np.isclose(np.mean(fractions), 
@@ -426,7 +430,10 @@ def incentre(shape:geom.Polygon) -> geom.Point:
       r = get_apothem_length(shape)
       e1 = geom.LineString(corners[:2]).parallel_offset(r, side = "right")
       e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = "right")
-      return e1.intersection(e2)  # TODO: add exception if no intersection
+      c = e1.intersection(e2)
+      # is_tangential is unreliable, and sometimes we get to here and do not
+      # get a Point, but a LineString, or even no intersection, so...
+      return c if isinstance(c, geom.Point) else shape.centroid
   return shape.centroid
 
 
