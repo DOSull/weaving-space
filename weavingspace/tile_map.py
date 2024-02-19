@@ -176,10 +176,13 @@ class Tiling:
   """base shape of the tileable."""
   region:gpd.GeoDataFrame = None
   """the region to be tiled."""
+  region_union: geom.Polygon = None
   grid:_TileGrid = None
   """the grid which will be used to apply the tiling."""
   tiles:gpd.GeoDataFrame = None
   """the tiles after tiling has been carried out."""
+  prototiles:gpd.GeoDataFrame = None
+  """the prototiles after tiling has been carried out."""
   rotation:float = 0.0
   """the cumulative rotation already applied to the tiling."""
 
@@ -236,6 +239,7 @@ class Tiling:
               {prototile_margin}.""")
     self.region = region
     self.region.sindex
+    self.region_union = self.region.geometry.unary_union
     if id_var != None:
       print("""id_var is no longer required and will be deprecated soon.
             A temporary unique index attribute is added and removed when 
@@ -244,15 +248,16 @@ class Tiling:
       self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
     else:
       self.grid = _TileGrid(self.tile_unit, self.region.geometry)
-    self.tiles = self.make_tiling()
+    self.tiles, self.prototiles = self.make_tiling()
     self.tiles.sindex
 
 
   def get_tiled_map(self, rotation:float = 0.,
-            prioritise_tiles:bool = True,
-            ragged_edges:bool = True,
-            use_centroid_lookup_approximation = False,
-            debug = False) -> "TiledMap":
+                    join_on_prototiles:bool = True,
+                    prioritise_tiles:bool = True,
+                    ragged_edges:bool = True,
+                    use_centroid_lookup_approximation = False,
+                    debug = False) -> "TiledMap":
     """Returns a `TiledMap` filling a region at the requested rotation.
 
     HERE BE DRAGONS! This function took a lot of trial and error to get
@@ -272,6 +277,11 @@ class Tiling:
     Args:
       rotation (float, optional): An optional rotation to apply. Defaults
         to 0.
+      join_on_prototiles (bool, optional): if True data from the region
+        dataset are joined to tiles based on the prototile to which they
+        belong. If False the join is based on the tiles in relation to the
+        region areas. For weave-based tilings False is probably to be
+        preferred. Defaults to True.
       prioritise_tiles (bool, optional): if True tiles will not be
         broken at boundaries in the region dataset. Defaults to True.
       ragged_edges (bool, optional): if True tiles at the edge of the
@@ -292,7 +302,15 @@ class Tiling:
       t1 = perf_counter()
 
     id_var = self._setup_region_DZID()
-    tiled_map = self.rotated(rotation)
+    if join_on_prototiles:
+      tiled_map, join_layer = self.rotated(rotation)
+      tiled_map["joinUID"] = self.tiles["prototile_id"]
+    else:
+      tiled_map = self.rotated(rotation)[0]
+      tiled_map["joinUID"] = self.tiles["tile_id"]
+      join_layer = tiled_map
+    join_layer["joinUID"] = list(range(join_layer.shape[0]))
+
     # compile a list of the variable names we are NOT going to change
     # i.e. everything except the geometry and the id_var
     region_vars = list(self.region.columns)
@@ -307,11 +325,14 @@ class Tiling:
       # select only tiles inside a spacing buffer of the region
       # make column with unique ID for every tile in the tiling
       # the join ID is unique per tile
-      tiled_map["joinUID"] = list(range(tiled_map.shape[0]))
-
+      # if join_on_prototiles:
+      #   tiled_map["joinUID"] = self.tiles["prototile_id"]
+      # else:
+      #   tiled_map["joinUID"] = self.tiles["tile_id"]
+ 
       if use_centroid_lookup_approximation:
         t5 = perf_counter()
-        tile_pts = copy.deepcopy(tiled_map)
+        tile_pts = copy.deepcopy(join_layer)
         tile_pts.geometry = tile_pts.centroid
         lookup = tile_pts.sjoin(
           self.region, how = "inner")[["joinUID", id_var]]
@@ -321,7 +342,8 @@ class Tiling:
         # overlay(tiles) seems to be faster??
         # TODO: also... this part is performance-critical, think about fixes -- 
         # possibly including the above centroid-based approx
-        overlaps = self.region.overlay(tiled_map, make_valid = False)
+        overlaps = self.region.overlay(join_layer, make_valid = False)
+        # overlaps = self.region.overlay(tiled_map, make_valid = False)
         if debug:
           t3 = perf_counter()
           print(f"STEP A2: overlay zones with tiling: {t3 - t2:.3f}")
@@ -354,6 +376,10 @@ class Tiling:
       t7 = perf_counter()
       if debug:
         print(f"STEP B2: overlay tiling with zones: {t7 - t2:.3f}")
+
+    if join_on_prototiles:
+      tiled_map = tiled_map.loc[
+        shapely.intersects(self.region_union, np.array(tiled_map.geometry)), :]
 
     tiled_map.drop(columns = [id_var], inplace = True)
     self.region.drop(columns = [id_var], inplace = True)
@@ -432,17 +458,25 @@ class Tiling:
     tiles = itertools.chain(*[
       self.tile_unit.tiles.geometry.translate(p.x, p.y)
       for p in self.grid.points])
+    prototiles = itertools.chain(*[
+      self.tile_unit.prototile.geometry.translate(p.x, p.y)
+      for p in self.grid.points])
     # replicate the tile ids
-    ids = list(self.tile_unit.tiles.tile_id) * len(self.grid.points)
-    tile_ids = sorted(list(range(len(self.grid.points))) *
-              self.tile_unit.tiles.shape[0])
+    prototile_ids = list(range(len(self.grid.points)))
+    tile_ids = list(self.tile_unit.tiles.tile_id) * len(self.grid.points)
+    tile_prototile_ids = sorted(prototile_ids * self.tile_unit.tiles.shape[0])
     tiles_gs = gpd.GeoSeries(tiles)
-    # assemble and return as a GeoDataFrame
+    prototiles_gs = gpd.GeoSeries(prototiles)
+    # assemble and return as GeoDataFrames
     tiles_gdf = gpd.GeoDataFrame(
-      data = {"tile_id": ids, "prototile_id": tile_ids},
+      data = {"tile_id": tile_ids, "prototile_id": tile_prototile_ids},
       geometry = tiles_gs, crs = self.tile_unit.crs)
-    # unclear if we need the below or not...
-    return tiling_utils.gridify(tiles_gdf)
+    prototiles_gdf = gpd.GeoDataFrame(
+      data = {"prototile_id": prototile_ids},
+      geometry = prototiles_gs, crs = self.tile_unit.crs)
+    # unclear if we need the gridify or not...
+    return (tiling_utils.gridify(tiles_gdf),
+            tiling_utils.gridify(prototiles_gdf))
 
 
   def rotated(self, rotation:float = None) -> gpd.GeoDataFrame:
@@ -459,13 +493,19 @@ class Tiling:
       self.tiles = self.make_tiling()
     self.rotation = rotation
     if self.rotation == 0:
-      return self.tiles
-    return gpd.GeoDataFrame(
+      return self.tiles, self.prototiles
+    tiles = gpd.GeoDataFrame(
       data = {"tile_id": self.tiles.tile_id,
-          "prototile_id": self.tiles.tile_id},
+              "prototile_id": self.tiles.tile_id},
       crs = self.tiles.crs,
       geometry = tiling_utils.gridify(
         self.tiles.geometry.rotate(rotation, origin = self.grid.centre)))
+    prototiles = gpd.GeoDataFrame(
+      data = {"prototile_id": self.prototiles.prototile_id},
+      crs = self.prototiles.crs,
+      geometry = tiling_utils.gridify(
+        self.prototiles.geometry.rotate(rotation, origin = self.grid.centre)))
+    return tiles, prototiles
 
 
 @dataclass
