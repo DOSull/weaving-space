@@ -881,6 +881,11 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
         if e.label in selector:
           topo.zigzag_edge(e, **transform_args)
     # ---------------------------
+    elif type == "rotate_edge":
+      for e in topo.edges.values():
+        if e.label in selector:
+          topo.rotate_edge(e, **transform_args)
+    # ---------------------------
     elif type == "push_vertex":
       pushes = {}
       for v in topo.vertices_in_tiles(topo.tiles[:topo.n_tiles]):
@@ -937,6 +942,17 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
       edge.right_tile.set_corners_from_edges(False)
     if not edge.left_tile is None:
       edge.left_tile.set_corners_from_edges(False)
+
+  def rotate_edge(self, edge:Edge, centre:str = "A", angle:float = 0) -> None:
+    v0, v1 = edge.vertices[0], edge.vertices[1]
+    if v0.label == centre:
+      c = v0.point
+    elif v1.label == centre:
+      c = v1.point
+    else:
+      c = ls.centroid
+    ls = affine.rotate(geom.LineString([v0.point, v1.point]), angle, origin = c)
+    v0.point, v1.point = [geom.Point(c) for c in ls.coords]
 
   def push_vertex(self, vertex:Vertex, push_d:float) -> tuple[float]:
     neighbours = [self.points[v] for v in vertex.neighbours]
