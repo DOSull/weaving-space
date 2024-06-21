@@ -2,8 +2,8 @@
 # coding: utf-8
 
 """Functions to generate the matrices summarising tiles of tileable repeating 
-geometries that when repeated across a map area give the appearance of a  
-woven surface composed of criss-crossing strand. 
+geometries that when repeated across a map area give the appearance of a woven surface 
+composed of criss-crossing strands. 
 
 Implementation is based on ideas discussed in variously
  
@@ -44,7 +44,8 @@ def get_pattern(tie_up:np.ndarray, treadling:np.ndarray, threading:np.ndarray,
         warp_n:int, weft_n:int, rep:int = 1) -> np.ndarray:
   """Returns a 0/1 encoded weave matrix. 
   
-  Given tie_up, treadling and threading matrices. The following conditions  must be satisfied to avoid non-conformable matrix error:
+  Given tie_up, treadling and threading matrices. The following conditions 
+  must be satisfied to avoid non-conformable matrix error:
   
     treadling.shape[1] == tie_up.shape[0]
     tie_up.shape[1] == threading.shape[0]
@@ -260,7 +261,8 @@ def make_this_pattern(tie_up:np.ndarray,
             warp_n:int = 1, weft_n:int = 1) -> np.ndarray:
   """Pass through returns weave pattern matrix from supplied input.
 
-  This is just a pass through function which applies suitable size identity. Could try to enforce
+  This is just a pass through function which applies suitable size identity. 
+  Could try to enforce
   
     treadling.shape[1] == tie_up.shape[0] and 
     tie_up.shape[1] == threading.shape[0]

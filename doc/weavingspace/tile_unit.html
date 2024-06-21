@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 14.1.0"/>
+    <meta name="generator" content="pdoc 14.5.0"/>
     <title>weavingspace.tile_unit API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -76,63 +76,61 @@
                         <div class="docstring"><p>The <code><a href="#TileUnit">TileUnit</a></code> subclass of <code><a href="tileable.html#Tileable">weavingspace.tileable.Tileable</a></code> implements
 many 'conventional' tilings of the plane.</p>
 
-<h6 id="examples">Examples:</h6>
+<p>Examples:
+  A <code><a href="#TileUnit">TileUnit</a></code> is initialised like this</p>
 
-<blockquote>
-  <p>A <code><a href="#TileUnit">TileUnit</a></code> is initialised like this</p>
-  
-  <p>tile_unit = TileUnit(tiling_type = "cairo")</p>
-  
-  <p>The <code>tiling_type</code> may be one of the following</p>
-  
-  <ul>
-  <li>"cairo" the Cairo tiling more formally known as the Laves
-  [3<sup>2</sup>.4.3.4] tiling. The author's favourite tiling, hence it
-  has its own tiling_type.</li>
-  <li>"hex-slice" a range of dissections of the regular hexagon into,
-  2, 3, 4, 6, or 12 'pie slices'. The number of slices is set by
-  specifying an additional argument <code>n</code>. Slices are cut either starting
-  at the corners of  the hexagon or from the midpoints of hexagon edges,
-  by specifying an additional argument <code>offset</code> set to either
-  0 or 1 respectively.</li>
-  <li>"hex-dissection" a range of 4, 7 or 9-fold dissections of the hexagon.  </li>
-  <li>"laves" a range of isohedral tilings. See <a href="https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings">this article</a>.
-  The desired tiling is specified by the additional argument <code>code</code> which
-  is a string like "3.3.4.3.4".</li>
-  <li>"archimedean" a range of tilings by regular polygons. See <a href="https://en.wikipedia.org/wiki/Euclidean_tilings_by_convex_regular_polygons#Archimedean,_uniform_or_semiregular_tilings">this
-  article</a>. Many of these are the dual tilings of
-  the Laves tilings. The desired tiling is specified by the additional
-  argument <code>code</code> which is a string like "3.3.4.3.4". Not all the
-  possible Archimedean tilings are implemented.</li>
-  <li>"hex-colouring" three colourings of the regular hexagon tiling, of
-  either 3, 4, or 7 colours, as specified by the argument <code>n</code>.</li>
-  <li>"square-colouring" one colouring of the regular square tiling, of 5
-  colours as specified by the argument <code>n = 5</code>.</li>
-  </ul>
-  
-  <p>See <a href="https://github.com/DOSull/weaving-space/blob/main/weavingspace/all-the-tiles.ipynb">this notebook</a> for exact usage, and illustrations of
-  each tiling.</p>
-  
-  <p>Spacing and coordinate reference of the tile unit are specified by the
-  <code><a href="tileable.html#Tileable">weavingspace.tileable.Tileable</a></code> superclass variables
-  <code><a href="tileable.html#Tileable.spacing">weavingspace.tileable.Tileable.spacing</a></code> and
-  <code><a href="tileable.html#Tileable.crs">weavingspace.tileable.Tileable.crs</a></code>.</p>
-  
-  <p>Base tilings by squares, hexagons or triangles can also be requested
-  using</p>
-  
-  <p>tile_unit = TileUnit()  # square tiling, the default
-    tile_unit = TileUnit(tile_shape = TileShape.HEXAGON)
-    tile_unit = TileUnit(tile_shape = TileShape.TRIANGLE)</p>
-  
-  <p>The first two of these have only one tile_id value, and so cannot be
-  used for multivariate mapping. The triangle case has two tile_id
-  values so may be useful in its base form.</p>
-  
-  <p>To create custom tilings start from one of the base tiles above, and
-  explicitly set the <code><a href="tileable.html#Tileable.tiles">weavingspace.tileable.Tileable.tiles</a></code> variable
-  by geometric construction of suitable shapely.geometry.Polygons. TODO: A detailed example of this usage can be found here ....</p>
-</blockquote>
+<pre><code>tile_unit = TileUnit(tiling_type = "cairo")
+</code></pre>
+
+<p>The <code>tiling_type</code> may be one of the following</p>
+
+<ul>
+<li>"cairo" the Cairo tiling more formally known as the Laves
+[3<sup>2</sup>.4.3.4] tiling. The author's favourite tiling, hence it
+has its own tiling_type.</li>
+<li>"hex-slice" a range of dissections of the regular hexagon into,
+2, 3, 4, 6, or 12 'pie slices'. The number of slices is set by
+specifying an additional argument <code>n</code>. Slices are cut either starting
+at the corners of  the hexagon or from the midpoints of hexagon edges,
+by specifying an additional argument <code>offset</code> set to either
+0 or 1 respectively.</li>
+<li>"hex-dissection" a range of 4, 7 or 9-fold dissections of the hexagon.  </li>
+<li>"laves" a range of isohedral tilings. See <a href="https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings">this article</a>.
+The desired tiling is specified by the additional argument <code>code</code> which
+is a string like "3.3.4.3.4".</li>
+<li>"archimedean" a range of tilings by regular polygons. See <a href="https://en.wikipedia.org/wiki/Euclidean_tilings_by_convex_regular_polygons#Archimedean,_uniform_or_semiregular_tilings">this
+article</a>. Many of these are the dual tilings of
+the Laves tilings. The desired tiling is specified by the additional
+argument <code>code</code> which is a string like "3.3.4.3.4". Not all the
+possible Archimedean tilings are implemented.</li>
+<li>"hex-colouring" three colourings of the regular hexagon tiling, of
+either 3, 4, or 7 colours, as specified by the argument <code>n</code>.</li>
+<li><p>"square-colouring" one colouring of the regular square tiling, of 5
+colours as specified by the argument <code>n = 5</code>.</p>
+
+<p>See <a href="https://github.com/DOSull/weaving-space/blob/main/weavingspace/all-the-tiles.ipynb">this notebook</a> for exact usage, and illustrations of
+each tiling.</p>
+
+<p>Spacing and coordinate reference of the tile unit are specified by the
+<code><a href="tileable.html#Tileable">weavingspace.tileable.Tileable</a></code> superclass variables
+<code><a href="tileable.html#Tileable.spacing">weavingspace.tileable.Tileable.spacing</a></code> and
+<code><a href="tileable.html#Tileable.crs">weavingspace.tileable.Tileable.crs</a></code>.</p>
+
+<p>Base tilings by squares, hexagons or triangles can also be requested
+using</p>
+
+<p>tile_unit = TileUnit()  # square tiling, the default
+tile_unit = TileUnit(tile_shape = TileShape.HEXAGON)
+tile_unit = TileUnit(tile_shape = TileShape.TRIANGLE)</p>
+
+<p>The first two of these have only one tile_id value, and so cannot be
+used for multivariate mapping. The triangle case has two tile_id
+values so may be useful in its base form.</p>
+
+<p>To create custom tilings start from one of the base tiles above, and
+explicitly set the <code><a href="tileable.html#Tileable.tiles">weavingspace.tileable.Tileable.tiles</a></code> variable
+by geometric construction of suitable shapely.geometry.Polygons. TODO: A detailed example of this usage can be found here ....</p></li>
+</ul>
 </div>
 
                         <input id="mod-tile_unit-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -706,17 +704,11 @@ many 'conventional' tilings of the plane.</p>
             <div class="docstring"><p>Returns a new TileUnit clipped by <code>self.regularised_tile</code> after
 a negative buffer d has been applied.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  d (float, optional): the inset distance. Defaults to 0.</p>
 
-<ul>
-<li><strong>d (float, optional):</strong>  the inset distance. Defaults to 0.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>TileUnit: the new TileUnit with inset applied.</p>
-</blockquote>
+<p>Returns:
+  TileUnit: the new TileUnit with inset applied.</p>
 </div>
 
 
@@ -750,17 +742,11 @@ a negative buffer d has been applied.</p>
 
             <div class="docstring"><p>Scales the tiles by the specified factor, centred on (0, 0).</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  sf (float, optional): scale factor to apply. Defaults to 1.</p>
 
-<ul>
-<li><strong>sf (float, optional):</strong>  scale factor to apply. Defaults to 1.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>TileUnit: the scaled TileUnit.</p>
-</blockquote>
+<p>Returns:
+  TileUnit: the scaled TileUnit.</p>
 </div>
 
 
