@@ -2412,8 +2412,11 @@ the base unit Tile which corresponds to self.tiles[i].</p>
 
             <div class="docstring"><p>Class constructor.</p>
 
-<p>Args:
-  unit (Tileable): the Tileable whose topology is required.</p>
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>unit (Tileable):</strong>  the Tileable whose topology is required.</li>
+</ul>
 </div>
 
 
@@ -2635,9 +2638,12 @@ result. Result is assigned to the tile_matching_transforms attribute.</p>
 information that might facilitate labelling under a limited number of the
 symmetries not all of them.</p>
 
-<p>Returns:
-  dict[int, tuple[float]]: dictionary of the symmetries (transforms 
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>dict[int, tuple[float]]: dictionary of the symmetries (transforms 
     actually) in shapely affine transform 6-tuple format.</p>
+</blockquote>
 </div>
 
 
@@ -2673,11 +2679,17 @@ symmetries not all of them.</p>
             <div class="docstring"><p>Gets the vertices from self.points that are incident on the tiles in the 
 supplied list.</p>
 
-<p>Args:
-    tiles (list[Tile]): tiles whose vertices are required.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-    list[Vertex]: the required vertices.</p>
+<ul>
+<li><strong>tiles (list[Tile]):</strong>  tiles whose vertices are required.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[Vertex]: the required vertices.</p>
+</blockquote>
 </div>
 
 
@@ -2713,11 +2725,17 @@ supplied list.</p>
             <div class="docstring"><p>Gets the edges from self.edges that are part of the boundary of tiles in 
 the supplied list.</p>
 
-<p>Args:
-    tiles (list[Tile]): tiles whose edges are required.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-    list[Edge]: the required edges.</p>
+<ul>
+<li><strong>tiles (list[Tile]):</strong>  tiles whose edges are required.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[Edge]: the required edges.</p>
+</blockquote>
 </div>
 
 
@@ -2762,8 +2780,11 @@ the supplied list.</p>
 <p>TODO: make this a viable replacement for the existing dual tiling 
 generation.</p>
 
-<p>Returns:
-  list[geom.Polygon]: a list of polygon objects.</p>
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[geom.Polygon]: a list of polygon objects.</p>
+</blockquote>
 </div>
 
 
@@ -2805,11 +2826,17 @@ new ID is generated one greater than the existing highest ID. IDs will
 usually be an unbroken sequence up to removals when geometry transformations
 are applied.</p>
 
-<p>Args:
-    pt (geom.Point): point location of the Vertex.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-    Vertex: the added Vertex object.</p>
+<ul>
+<li><strong>pt (geom.Point):</strong>  point location of the Vertex.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>Vertex: the added Vertex object.</p>
+</blockquote>
 </div>
 
 
@@ -2844,11 +2871,17 @@ are applied.</p>
             <div class="docstring"><p>Adds an Edge to the edges dictionary. Edges are self indexing by the IDs
  of their end Vertices. Returns the new Edge to the caller.</p>
 
-<p>Args:
-  vs (list[Vertex]): list of Vertices in the Edge to be created.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-    Edge: the added Edge.</p>
+<ul>
+<li><strong>vs (list[Vertex]):</strong>  list of Vertices in the Edge to be created.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>Edge: the added Edge.</p>
+</blockquote>
 </div>
 
 
@@ -3055,38 +3088,46 @@ to this one). </p>
 
 <p>Implemented in this way so that transformations can be applied one at a time
 without creating an intermediate set of new tiles, which may be invalid and
-fail. So, if you wish to apply (say) 3 transforms and generate a new 
-Topology leaving the existing one intact:</p>
+fail. So, if you wish to apply (say) 3 transforms and generate a new </p>
 
-<pre><code>new_topo = old_topo.transform_geometry(True,  False, "a", ...) \
-                   .transform_geometry(False, False, "B", ...) \
-                   .transform_geometry(False, True,  "C", ...)
-</code></pre>
+<h6 id="topology-leaving-the-existing-one-intact">Topology leaving the existing one intact:</h6>
+
+<blockquote>
+  <p>new_topo = old_topo.transform_geometry(True,  False, "a", ...) \
+                     .transform_geometry(False, False, "B", ...) \
+                     .transform_geometry(False, True,  "C", ...)</p>
+</blockquote>
 
 <p>The first transform requests a new Topology, subsequent steps do not, and it
 is only the last step which attempts to create the new tile polygons.</p>
 
 <p>**kwargs supply named parameters for the requested transformation.</p>
 
-<p>Args:
-  new_topology (bool): if True returns a new Topology object, else returns 
-    the current Topology modified.
-  apply_to_tiles (bool): if True attempts to create new Tiles after the 
-    transformation has been applied. Usually set to False, unless the last
-    transformation in a pipeline, to avoid problems of topologically invalid
-    tiles at intermediate steps.
-  selector (str): label of elements to which to apply the transformation. <br />
-    Note that all letters in the supplied string are checked, so you can 
-    use e.g. "abc" to apply a transformation to edges labelled "a", "b" or 
-    "c", or "AB" for vertices labelled "A" or "B".
-  type (str): name of the type of transformation requested. Currently
-    supported are "zigzag_edge", "push_vertex", and "nudge_vertex". Keyword
-    arguments for each are documented in the corresponding methods.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  Topology: if new_topology is True a new Topology based on this one with
+<ul>
+<li><strong>new_topology (bool):</strong>  if True returns a new Topology object, else returns 
+the current Topology modified.</li>
+<li><strong>apply_to_tiles (bool):</strong>  if True attempts to create new Tiles after the 
+transformation has been applied. Usually set to False, unless the last
+transformation in a pipeline, to avoid problems of topologically invalid
+tiles at intermediate steps.</li>
+<li><strong>selector (str):</strong>  label of elements to which to apply the transformation. <br />
+Note that all letters in the supplied string are checked, so you can 
+use e.g. "abc" to apply a transformation to edges labelled "a", "b" or 
+"c", or "AB" for vertices labelled "A" or "B".</li>
+<li><strong>type (str):</strong>  name of the type of transformation requested. Currently
+supported are "zigzag_edge", "push_vertex", and "nudge_vertex". Keyword
+arguments for each are documented in the corresponding methods.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>Topology: if new_topology is True a new Topology based on this one with
     after transformation, if False this Topology is returned after the
     transformation.</p>
+</blockquote>
 </div>
 
 
@@ -3148,15 +3189,18 @@ allowing bidirectional Edges, i.e. storing Edges in both directions so that
 all Tile edges are drawn CW). The <code>start</code> parameter is a temporary hack for 
 this</p>
 
-<p>Args:
-  edge (Edge): Edge to transform
-  n (int, optional): number of zigs and zags in the edge. Defaults to 2.
-  start (str, optional): label at one end of edge which is used to determine
-    the sense of h, enabling C-curves with an odd number n of zigs and zags to be applied. Defaults to 'A'.
-  h (float, optional): width of the zig zags relative to edge length. 
-    Defaults to 0.5.
-  smoothness (int, optional): spline smoothness. 0 gives a zig zag proper,
-    higher values will produce a sinusoid. Defaults to 0.</p>
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>edge (Edge):</strong>  Edge to transform</li>
+<li><strong>n (int, optional):</strong>  number of zigs and zags in the edge. Defaults to 2.</li>
+<li><strong>start (str, optional):</strong>  label at one end of edge which is used to determine
+the sense of h, enabling C-curves with an odd number n of zigs and zags to be applied. Defaults to 'A'.</li>
+<li><strong>h (float, optional):</strong>  width of the zig zags relative to edge length. 
+Defaults to 0.5.</li>
+<li><strong>smoothness (int, optional):</strong>  spline smoothness. 0 gives a zig zag proper,
+higher values will produce a sinusoid. Defaults to 0.</li>
+</ul>
 </div>
 
 

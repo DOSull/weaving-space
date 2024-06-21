@@ -791,8 +791,10 @@ break with this is in get_visible_cell_strands, where strands in higher
 layers are buffered by a small amount to avoid closely aligned polygon
 edges producing slivers etc.</p>
 
-<p>Atrributes:
-  basis (np.ndarray): matrix to calculate x,y coordinates of a
+<h6 id="atrributes">Atrributes:</h6>
+
+<blockquote>
+  <p>basis (np.ndarray): matrix to calculate x,y coordinates of a
     site from its (integer) grid coordinates,
   orientations (tuple[float]: orientations of the two or three
     axes either (0, -90) or (0, 120, 240).
@@ -800,6 +802,7 @@ edges producing slivers etc.</p>
   n_axes (int): the number of axes in the weave, 2 or 3.
     Defaults to 2.
   spacing (float): spacing of the strands. Defaults to 10_000.</p>
+</blockquote>
 </div>
 
 
@@ -922,10 +925,13 @@ edges producing slivers etc.</p>
 
             <div class="docstring"><p>Sets up the basis of the grid coordinate generation matrix.</p>
 
-<p>Returns:
-  np.nd.array: self.n_axes x 2 matrix to generate float coordinates
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>np.nd.array: self.n_axes x 2 matrix to generate float coordinates
     of cells in Cartesian space from integer grid coordinates of
     cells.</p>
+</blockquote>
 </div>
 
 
@@ -958,11 +964,17 @@ edges producing slivers etc.</p>
             <div class="docstring"><p>Uses self.basis to determine Cartesian coordinates of cell centroid
 from grid coordinates.</p>
 
-<p>Args:
-  coords (tuple[int]): integer coordinate pair of grid location.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  np.ndarray: float coordinate pair of grid cell centroid.</p>
+<ul>
+<li><strong>coords (tuple[int]):</strong>  integer coordinate pair of grid location.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>np.ndarray: float coordinate pair of grid cell centroid.</p>
+</blockquote>
 </div>
 
 
@@ -1005,12 +1017,18 @@ from grid coordinates.</p>
 
             <div class="docstring"><p>Returns grid cell polygon centred on coords.</p>
 
-<p>Args:
-  coords (tuple[int], optional): _description_. Defaults to None.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  geom.Polygon: square or triangle centred at the specified
+<ul>
+<li><strong>coords (tuple[int], optional):</strong>  _description_. Defaults to None.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>geom.Polygon: square or triangle centred at the specified
     coordinates.</p>
+</blockquote>
 </div>
 
 
@@ -1072,20 +1090,26 @@ from grid coordinates.</p>
 
 <p>Returns visible parts of the strands in a grid cell, given strand width, strand layer order and the number of slices in each direction.</p>
 
-<p>Args:
-  width (float): total width of strands relative to self.spacing.
-    Defaults to 1.0.
-  coords (tuple[int], optional): grid cell coordinates. Defaults
-    to None.
-  strand_order (tuple[int], optional): order of the layers from top,
-    at this cell site. Defaults to (0, 1, 2).
-  n_slices (tuple[int], optional): number of slices in each layer
-    at this cell site. Defaults to (1, 1, 1).</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  list[Union[geom.Polygon,geom.MultiPolygon]]: those polygons that
+<ul>
+<li><strong>width (float):</strong>  total width of strands relative to self.spacing.
+Defaults to 1.0.</li>
+<li><strong>coords (tuple[int], optional):</strong>  grid cell coordinates. Defaults
+to None.</li>
+<li><strong>strand_order (tuple[int], optional):</strong>  order of the layers from top,
+at this cell site. Defaults to (0, 1, 2).</li>
+<li><strong>n_slices (tuple[int], optional):</strong>  number of slices in each layer
+at this cell site. Defaults to (1, 1, 1).</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[Union[geom.Polygon,geom.MultiPolygon]]: those polygons that
     will be visible at this site given requested strand order from
     the top.</p>
+</blockquote>
 </div>
 
 
@@ -1139,12 +1163,18 @@ supplied approximation to a tile.</p>
 6 cornered polygon, but the MultiPolygon formed by unary_union is likely
 to have many more corners than this (for some reason...).</p>
 
-<p>Args:
-  approx_tile (geom.Polygon): MultiPolygon formed from the cells of
-    the tile.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  geom.Polygon (geom.Polygon): rectangle or hexagon geom.Polygon.</p>
+<ul>
+<li><strong>approx_tile (geom.Polygon):</strong>  MultiPolygon formed from the cells of
+the tile.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>geom.Polygon (geom.Polygon): rectangle or hexagon geom.Polygon.</p>
+</blockquote>
 </div>
 
 

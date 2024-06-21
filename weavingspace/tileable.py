@@ -418,21 +418,11 @@ class Tileable:
     return result
 
 
-  def plot(
-    self,
-    ax=None,
-    show_prototile: bool = True,
-    show_reg_prototile: bool = True,
-    show_ids: str = "tile_id",
-    show_vectors: bool = False,
-    r: int = 0,
-    prototile_edgecolour: str = "k",
-    reg_prototile_edgecolour: str = "r",
-    r_alpha: float = 0.3,
-    cmap: list[str] = None,
-    figsize: tuple[float] = (8, 8),
-    **kwargs,
-  ) -> pyplot.axes:
+  def plot(self, ax = None, show_prototile: bool = True, 
+    show_reg_prototile: bool = True, show_ids: str = "tile_id",
+    show_vectors: bool = False, r: int = 0, prototile_edgecolour: str = "k", 
+    reg_prototile_edgecolour: str = "r", r_alpha: float = 0.3, 
+    cmap: list[str] = None, figsize: tuple[float] = (8, 8), **kwargs) -> pyplot.axes:
     """Plots a representation of the Tileable on the supplied axis. **kwargs
     are passed on to matplotlib.plot()
 
@@ -443,7 +433,7 @@ class Tileable:
       show_reg_prototile (bool, optional): if `True` show the regularised tile
         outline. Defaults to `True`.
       show_ids (str, optional): if `tile_id` show the tile_ids. If
-        `id` show index number. If None or `""` don't label tiles.
+        `id` show index number. If None or `''` don't label tiles.
         Defaults to `tile_id`.
       show_vectors (bool, optional): if `True` show the translation
         vectors (not the minimal pair, but those used by
@@ -460,6 +450,9 @@ class Tileable:
         tiles. Defaults to `None`.
       figsize (tuple[float], optional): size of the figure.
         Defaults to `(8, 8)`.
+    
+    Returns:
+      pyplot.axes: to which calling context may add things.
     """
     w = self.prototile.geometry[0].bounds[2] - \
       self.prototile.geometry[0].bounds[0]
@@ -501,9 +494,6 @@ class Tileable:
       self.regularised_prototile.plot(
         ax = ax, ec = reg_prototile_edgecolour, fc = "#00000000", 
         lw = 1.5, zorder = 2, **kwargs)
-      # ax.annotate("""NOTE regularised prototile (red) indicative\nonly. Prototile and vectors (black) actually\ndo tiling. Regularised prototiles for weave\nunits are particularly problematic!""", 
-      #             xycoords = "axes fraction", xy = (0.01, 0.99), ha = "left", 
-      #             va = "top", bbox = {"lw": 0, "fc": "#ffffff40"})
     return ax
 
 

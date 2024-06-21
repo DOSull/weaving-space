@@ -1231,8 +1231,11 @@
 
             <div class="docstring"><p>Class constructor.</p>
 
-<p>Args:
-  ID (int): Tile ID which indexes it in the containing Topology tiles list.</p>
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>ID (int):</strong>  Tile ID which indexes it in the containing Topology tiles list.</li>
+</ul>
 </div>
 
 
@@ -1444,8 +1447,11 @@ incentre).</p>
 
             <div class="docstring"><p>Convenience method to return list of corner IDs (not Vertex objects).</p>
 
-<p>Returns:
-  list[int]: list of integer IDs of tile corners.</p>
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[int]: list of integer IDs of tile corners.</p>
+</blockquote>
 </div>
 
 
@@ -1474,9 +1480,12 @@ incentre).</p>
 
             <div class="docstring"><p>Convenience method to return list of edge IDs (not Edge objects).</p>
 
-<p>Returns:
-  list[tuple[int]]: list of 2-element tuples of the start and end Vertex IDs
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[tuple[int]]: list of 2-element tuples of the start and end Vertex IDs
     of each edge.</p>
+</blockquote>
 </div>
 
 
@@ -1545,9 +1554,12 @@ after modification of topology edges. Optionally the shape attribute is NOT
 updated, which may save time when multiple changes to the edges of a tile
 are in process (i.e., only update the shape after all changes are complete).</p>
 
-<p>Args:
-  update_shape (bool, optional): if True the shape attribute will be 
-    updated, otherwise not. Defaults to True.</p>
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>update_shape (bool, optional):</strong>  if True the shape attribute will be 
+updated, otherwise not. Defaults to True.</li>
+</ul>
 </div>
 
 
@@ -1654,16 +1666,22 @@ Topology initialisation, and does not guarantee correct maintenance of
 all tile, edge and vertex relations in the general case---at any rate it
 has not been tested for this!</p>
 
-<p>Args:
-    v (Vertex): the Vertex to insert.
-    i (int): index position in current corners after which to insert 
-      supplied Vertex.
-    update_shape (bool, optional): if True shape attribute is updated. 
-      Defaults to False.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  tuple: the (tuple) ID of the old edge which should be deleted, and 
+<ul>
+<li><strong>v (Vertex):</strong>  the Vertex to insert.</li>
+<li><strong>i (int):</strong>  index position in current corners after which to insert 
+supplied Vertex.</li>
+<li><strong>update_shape (bool, optional):</strong>  if True shape attribute is updated. 
+Defaults to False.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>tuple: the (tuple) ID of the old edge which should be deleted, and 
     the new Edges arising from insertion of this Vertex.</p>
+</blockquote>
 </div>
 
 
@@ -1709,13 +1727,19 @@ delegated to get_updated_edges_from_merge which is run on both affected
 tiles, but only determines the edges to remove and the new edge to be added
 once. See that method for details.</p>
 
-<p>Args:
-  v (Vertex): Vertex at which to merge Edges. This should currently be an
-    end</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  tuple: 2 item list of the edge IDs to be removed and a new Edge object to
+<ul>
+<li><strong>v (Vertex):</strong>  Vertex at which to merge Edges. This should currently be an
+end</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>tuple: 2 item list of the edge IDs to be removed and a new Edge object to
     be added by the calling context (i.e. the containing Topology).</p>
+</blockquote>
 </div>
 
 
@@ -1784,16 +1808,22 @@ will be 'slotted in' at the appropriate spot in the edges list.</p>
 <p>The edges_CW is also updated to maintain correct directions of the edges.
 The corners attribute is unaffected by these changes.</p>
 
-<p>Args:
-  v (Vertex): existing Vertex at which to carry out the merge.
-  new_edge (Edge, optional): if another Tile has already carried out this 
-    merge this should be the resulting new Edge for insertion into this 
-    Tile. Defaults to None (when the new Edge will be constructed).</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  Union[None, tuple]: either None (if a new edge was supplied) or a tuple 
+<ul>
+<li><strong>v (Vertex):</strong>  existing Vertex at which to carry out the merge.</li>
+<li><strong>new_edge (Edge, optional):</strong>  if another Tile has already carried out this 
+merge this should be the resulting new Edge for insertion into this 
+Tile. Defaults to None (when the new Edge will be constructed).</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>Union[None, tuple]: either None (if a new edge was supplied) or a tuple 
     of the two edge IDs to be removed and the new edge added for return to
     the calling context (i.e. the containing Topology).</p>
+</blockquote>
 </div>
 
 
@@ -1824,11 +1854,17 @@ The corners attribute is unaffected by these changes.</p>
 
             <div class="docstring"><p>Gets the (two) index positions of the edges that include supplied Vertex.</p>
 
-<p>Args:
-    v (Vertex): Vertex of interest.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  tuple[int]: two index positions of Edges in edges list that contain v.</p>
+<ul>
+<li><strong>v (Vertex):</strong>  Vertex of interest.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>tuple[int]: two index positions of Edges in edges list that contain v.</p>
+</blockquote>
 </div>
 
 
@@ -1887,8 +1923,11 @@ of edge IDs was</p>
 <p>and the merge Vertex was #2, the resulting new edge is constructed from 
 vertices (0 1 2 4). </p>
 
-<p>Returns:
-  Edge: the requested new Edge.</p>
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>Edge: the requested new Edge.</p>
+</blockquote>
 </div>
 
 
@@ -1926,8 +1965,11 @@ used to align tiles that are similar, which is required for correct
 transfer of 'base' tile labelling on to 'radius 1' tiles during Topology 
 construction.</p>
 
-<p>Args:
-  offset int: the number of positions to shift the lists.</p>
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>offset int:</strong>  the number of positions to shift the lists.</li>
+</ul>
 </div>
 
 
@@ -1958,11 +2000,17 @@ construction.</p>
 
             <div class="docstring"><p>Returns edge label of specified edge.</p>
 
-<p>Args:
-    e (Edge): Edge whose label is required.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-    str: requested edge label.</p>
+<ul>
+<li><strong>e (Edge):</strong>  Edge whose label is required.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>str: requested edge label.</p>
+</blockquote>
 </div>
 
 
@@ -1993,11 +2041,17 @@ construction.</p>
 
             <div class="docstring"><p>Returns corner label of specified corner.</p>
 
-<p>Args:
-    v (Vertex): corner whose label is required.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-    str: requested corner label.</p>
+<ul>
+<li><strong>v (Vertex):</strong>  corner whose label is required.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>str: requested corner label.</p>
+</blockquote>
 </div>
 
 
@@ -2034,8 +2088,11 @@ tile shape. The method is convoluted because a negative buffer may remove
 colinear corners resulting in fewer positions than we have corners in the
 tile shape!</p>
 
-<p>Returns:
-    list[geom.Point]: list of locations.</p>
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[geom.Point]: list of locations.</p>
+</blockquote>
 </div>
 
 
@@ -2070,8 +2127,11 @@ tile shape!</p>
             <div class="docstring"><p>Returns a reasonable location at which to position edge labels inside
 tile shape.</p>
 
-<p>Returns:
-    list[geom.Point]: list of locations</p>
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[geom.Point]: list of locations</p>
+</blockquote>
 </div>
 
 
@@ -2106,11 +2166,17 @@ tile shape.</p>
 
             <div class="docstring"><p>Returns interior angle at the specified corner (in degrees).</p>
 
-<p>Args:
-    v (Vertex): corner where angle is requested.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-    float: angle at corner v in degrees.</p>
+<ul>
+<li><strong>v (Vertex):</strong>  corner where angle is requested.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>float: angle at corner v in degrees.</p>
+</blockquote>
 </div>
 
 
@@ -2262,10 +2328,13 @@ tile shape.</p>
 
             <div class="docstring"><p>Class constructor.</p>
 
-<p>Args:
-  point (geom.Point): point location of the vertex.
-  ID (int): a unique integer ID (which will be its key in the containing
-    Topology points dictionary).</p>
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>point (geom.Point):</strong>  point location of the vertex.</li>
+<li><strong>ID (int):</strong>  a unique integer ID (which will be its key in the containing
+Topology points dictionary).</li>
+</ul>
 </div>
 
 
@@ -2416,8 +2485,11 @@ vertex:</p>
 
             <div class="docstring"><p>Convenience method to return list of Tile IDs (not the Tiles themselves).</p>
 
-<p>Returns:
-    list[int]: list of Tile IDs</p>
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[int]: list of Tile IDs</p>
+</blockquote>
 </div>
 
 
@@ -2446,8 +2518,11 @@ vertex:</p>
 
             <div class="docstring"><p>Adds supplied Tile to the tiles list if it is not already present.</p>
 
-<p>Args:
-    tile (Tile): Tile to add.</p>
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>tile (Tile):</strong>  Tile to add.</li>
+</ul>
 </div>
 
 
@@ -2476,8 +2551,11 @@ vertex:</p>
 
             <div class="docstring"><p>Adds supplied ID to the neighbours list if it is not already present</p>
 
-<p>Args:
-  vertex_id (int): ID to add to the neighbours list.</p>
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>vertex_id (int):</strong>  ID to add to the neighbours list.</li>
+</ul>
 </div>
 
 
@@ -2533,8 +2611,11 @@ vertex:</p>
             <div class="docstring"><p>Tests if vertex is completely enclosed by its incident Tiles. Based on
 summing the interior angles of the incident tiles at this vertex.</p>
 
-<p>Returns:
-    bool: True if vertex is completely enclosed by incident Tiles.</p>
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>bool: True if vertex is completely enclosed by incident Tiles.</p>
+</blockquote>
 </div>
 
 
@@ -2708,8 +2789,11 @@ with is_tiling_vertex property True -- Note that during initialisation the
 default of this property is True until after the relations between tiles and
 vertices have been determined.</p>
 
-<p>Args:
-  corners (list[Vertex]): list of all corners along the edge.</p>
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>corners (list[Vertex]):</strong>  list of all corners along the edge.</li>
+</ul>
 </div>
 
 
@@ -2851,8 +2935,11 @@ tiling.</p>
 
             <div class="docstring"><p>Convenience method to get the IDs of edge corners.</p>
 
-<p>Returns:
-    list[int]: IDs of all corners.</p>
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[int]: IDs of all corners.</p>
+</blockquote>
 </div>
 
 
@@ -2880,8 +2967,11 @@ tiling.</p>
 
             <div class="docstring"><p>Convenience method to get IDs of edge vertices.</p>
 
-<p>Returns:
-    list[int]: list of IDs of the vertices.</p>
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>list[int]: list of IDs of the vertices.</p>
+</blockquote>
 </div>
 
 
@@ -2958,12 +3048,18 @@ the returned edges would be (0 1 v) and (v 2 5).</p>
             <div class="docstring"><p>Returns a geom.LineString representing the geometry (including all
 corners) of this Edge, optionally starting at either end.</p>
 
-<p>Args:
-  forward (bool, optional): if True the returned LineString starts at
-    corners[0], else at corners[-1]. Defaults to True.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-  geom.LineString: the required LineString.</p>
+<ul>
+<li><strong>forward (bool, optional):</strong>  if True the returned LineString starts at
+corners[0], else at corners[-1]. Defaults to True.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>geom.LineString: the required LineString.</p>
+</blockquote>
 </div>
 
 
@@ -3000,12 +3096,18 @@ corners) of this Edge, optionally starting at either end.</p>
             <div class="docstring"><p>Returns a LineString connecting the first and last corners (i.e. the
 vertices) of this tilin edge, optionally starting from either end.</p>
 
-<p>Args:
-  forward (bool, optional): if True LineString starts at vertices[0], 
-    else at vertices[1]. Defaults to True.</p>
+<h6 id="arguments">Arguments:</h6>
 
-<p>Returns:
-    geom.LineString: the required LineString.</p>
+<ul>
+<li><strong>forward (bool, optional):</strong>  if True LineString starts at vertices[0], 
+else at vertices[1]. Defaults to True.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>geom.LineString: the required LineString.</p>
+</blockquote>
 </div>
 
 
