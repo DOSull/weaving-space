@@ -234,8 +234,8 @@ class Transform:
 
 @dataclass
 class Symmetries():
-  """Class to store the symmetries (as a list of `Transform` objects) of a
-  supplied shapely.Polygon.
+  """Class to identify and store the symmetries of a supplied shapely.Polygon
+  as a list of `Transform` objects.
   """
   polygon:geom.Polygon = None
   """Polygon from which these symmetries are derived."""
@@ -310,8 +310,7 @@ class Symmetries():
       angles = raw_angles[1:] + raw_angles[:1]
       return list(zip(lengths, angles))
 
-  def get_symmetries(
-      self, other_polygon:geom.Polygon = None) -> list[Transform]:
+  def get_symmetries(self) -> list[Transform]:
     """Finds rotation and reflection symmetries of the supplied polygon.
     Based on
     
@@ -329,29 +328,14 @@ class Symmetries():
     developed based on them, but with a lot of trial and error to get the index
     offsets and (especially) retrieval of the reflection axes angles to work.
 
-    Args:
-      other (geom.Polygon, optional): finds transforms between this polygon and 
-        another that may be supplied. Defaults to None, when the comparison 
-        polygon will be that for which this Symmetries object has been  
-        initialised.
-
     Returns:
       list[Transform]: a list of Transform objects representing the polygon
         symmetries.
     """
-    # compose extended sequence of length-angle pairs for cyclic matching
-    # S = self.p_code + self.p_code[:-1]
-    # get code for the 'other' polygon, if it exists...
-    if not other_polygon is None:
-      p_code = self._get_polygon_code(other_polygon)
-      p_code_r = self._get_polygon_code(other_polygon, mirrored = True)
-    else:
-      p_code = self.p_code
-      p_code_r = self.p_code_r
     # ==== Rotations ====
-    self.rotation_shifts = self.matcher.find_matches(p_code)
+    self.rotation_shifts = self.matcher.find_matches(self.p_code)
     # ==== Reflections ====
-    self.reflection_shifts = self.matcher.find_matches(p_code_r)
+    self.reflection_shifts = self.matcher.find_matches(self.p_code_r)
     return self.get_rotations(self.rotation_shifts) + \
            self.get_reflections(self.reflection_shifts)
 
