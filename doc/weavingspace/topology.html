@@ -139,15 +139,15 @@
                     <h1 class="modulename">
 <a href="./../weavingspace.html">weavingspace</a><wbr>.topology    </h1>
 
-                        <div class="docstring"><p>Together the <code><a href="#Topology">Topology</a></code>, <code>Tile</code>, <code>Vertex</code>, <code>Edge</code> and <code><a href="symmetry.html">weavingspace.symmetry</a>.
-Symmetry</code> and <code><a href="symmetry.html#Symmetries">weavingspace.symmetry.Symmetries</a></code> classes enable extraction of 
-the topological structure of periodic <code><a href="tileable.html#Tileable">weavingspace.tileable.Tileable</a></code> objects 
-so that modification of equivalent tiles can be carried out while retaining 
-tileability. It is important to note that these are not fully generalised 
-classes and methods, that is, the Topology object that is supported is not a 
-permanent 'backing' data structure for our Tileable objects. While it might 
-become that in time, as at Feb 2024 it is not such a data structure. Instead 
-usage is</p>
+                        <div class="docstring"><p>Together the <code><a href="#Topology">Topology</a></code>, <code>topology_elements.Tile</code>, <code>topology_elements.Vertex</code>,
+<code>topology_elements.Edge</code> and <code>weavingspace.symmetry.Symmetry</code> and 
+<code><a href="symmetry.html#Symmetries">weavingspace.symmetry.Symmetries</a></code> classes enable extraction of the topological 
+structure of periodic <code><a href="tileable.html#Tileable">weavingspace.tileable.Tileable</a></code> objects so that 
+modification of equivalent tiles can be carried out while retaining tileability. 
+It is important to note that these are not fully generalised classes and methods, 
+that is, the Topology object that is supported is not a permanent 'backing' data 
+structure for our Tileable objects. While it might become that in time, as at Feb 
+2024 it is not such a data structure. Instead usage is</p>
 
 <pre><code>tile = TileUnit(...)
 topology = Topology(tile)
@@ -171,15 +171,15 @@ between tiling edges and tile sides.</p>
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">   1</span></a><span class="ch">#!/usr/bin/env python</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos">   2</span></a><span class="c1"># coding: utf-8</span>
 </span><span id="L-3"><a href="#L-3"><span class="linenos">   3</span></a>
-</span><span id="L-4"><a href="#L-4"><span class="linenos">   4</span></a><span class="sd">&quot;&quot;&quot;Together the `Topology`, `Tile`, `Vertex`, `Edge` and `weavingspace.symmetry.</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos">   5</span></a><span class="sd">Symmetry` and `weavingspace.symmetry.Symmetries` classes enable extraction of </span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos">   6</span></a><span class="sd">the topological structure of periodic `weavingspace.tileable.Tileable` objects </span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos">   7</span></a><span class="sd">so that modification of equivalent tiles can be carried out while retaining </span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos">   8</span></a><span class="sd">tileability. It is important to note that these are not fully generalised </span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos">   9</span></a><span class="sd">classes and methods, that is, the Topology object that is supported is not a </span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">  10</span></a><span class="sd">permanent &#39;backing&#39; data structure for our Tileable objects. While it might </span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">  11</span></a><span class="sd">become that in time, as at Feb 2024 it is not such a data structure. Instead </span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">  12</span></a><span class="sd">usage is</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">   4</span></a><span class="sd">&quot;&quot;&quot;Together the `Topology`, `topology_elements.Tile`, `topology_elements.Vertex`,</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">   5</span></a><span class="sd">`topology_elements.Edge` and `weavingspace.symmetry.Symmetry` and </span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">   6</span></a><span class="sd">`weavingspace.symmetry.Symmetries` classes enable extraction of the topological </span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">   7</span></a><span class="sd">structure of periodic `weavingspace.tileable.Tileable` objects so that </span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">   8</span></a><span class="sd">modification of equivalent tiles can be carried out while retaining tileability. </span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">   9</span></a><span class="sd">It is important to note that these are not fully generalised classes and methods, </span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">  10</span></a><span class="sd">that is, the Topology object that is supported is not a permanent &#39;backing&#39; data </span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">  11</span></a><span class="sd">structure for our Tileable objects. While it might become that in time, as at Feb </span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">  12</span></a><span class="sd">2024 it is not such a data structure. Instead usage is</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos">  13</span></a>
 </span><span id="L-14"><a href="#L-14"><span class="linenos">  14</span></a><span class="sd">    tile = TileUnit(...)</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos">  15</span></a><span class="sd">    topology = Topology(tile)</span>

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Together the `Topology`, `Tile`, `Vertex`, `Edge` and `weavingspace.symmetry.
-Symmetry` and `weavingspace.symmetry.Symmetries` classes enable extraction of 
-the topological structure of periodic `weavingspace.tileable.Tileable` objects 
-so that modification of equivalent tiles can be carried out while retaining 
-tileability. It is important to note that these are not fully generalised 
-classes and methods, that is, the Topology object that is supported is not a 
-permanent 'backing' data structure for our Tileable objects. While it might 
-become that in time, as at Feb 2024 it is not such a data structure. Instead 
-usage is
+"""Together the `Topology`, `topology_elements.Tile`, `topology_elements.Vertex`,
+`topology_elements.Edge` and `weavingspace.symmetry.Symmetry` and 
+`weavingspace.symmetry.Symmetries` classes enable extraction of the topological 
+structure of periodic `weavingspace.tileable.Tileable` objects so that 
+modification of equivalent tiles can be carried out while retaining tileability. 
+It is important to note that these are not fully generalised classes and methods, 
+that is, the Topology object that is supported is not a permanent 'backing' data 
+structure for our Tileable objects. While it might become that in time, as at Feb 
+2024 it is not such a data structure. Instead usage is
 
     tile = TileUnit(...)
     topology = Topology(tile)
