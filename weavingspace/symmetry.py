@@ -24,6 +24,8 @@ import weavingspace.tiling_utils as tiling_utils
 
 
 class KMP_Matcher:
+  """Class to find matching subsequences in a sequence."""
+
   sequence: Iterable
   """Iterable in which subsequences are to be found."""
 
@@ -104,11 +106,20 @@ class KMP_Matcher:
     return tuple([np.round(x, digits) for x in t])
 
 class Transform:
+  """Class to store details of a transform and draw it."""
   transform_type: str
+  """Type of transform, 'rotation', 'reflection', 'translation' or 'identity'."""
   angle: float
+  """Angle of rotation (degrees)."""
   centre: geom.Point
+  """Centre of the transformation."""
   translation: tuple[float] 
+  """X and Y coordinates shifts of a translation transform. A glide reflection
+  may also include this."""
   transform: tuple[float]
+  """Six element tuple for the transform in shapely.transform format. See
+  https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations and
+  methods in `weavingspace.tiling_utils`."""
   offset: int
 
   def __init__(self, transform_type:str, angle:float, centre:geom.Point, 
@@ -120,34 +131,56 @@ class Transform:
     self.transform = transform
 
   def __str__(self) -> str:
-    return \
-      f"{self.transform_type} {self.angle:.1f}° POINT ({self.centre.x:.1f} {self.centre.y:.1f}) {tuple([np.round(x, 3) for x in self.transform])}"
+    if self.transform_type == "rotation":
+      return f"{self.transform_type} {self.angle:.1f}° POINT ({self.centre.x:.1f} {self.centre.y:.1f}) {tuple([np.round(x, 3) for x in self.transform])}"
+    elif self.transform_type == "reflection":
+      return f"{self.transform_type} {self.angle:.1f}° {tuple([np.round(x, 3) for x in self.transform])}"
+    else:
+      return f"{self.transform_type} {tuple([np.round(x, 3) for x in self.transform])}"
 
   def __repr__(self) -> str:
     return str(self)
 
   def apply(self, geometry:Any) -> Any:
+    """Applies this transform to supplied shapely geometry and returns result.
+
+    Args:
+      geometry (Any): a shapely geometry to transform.
+    
+    Returns:
+      Any: the resulting transformed shapely geometry.
+    """
     return affine.affine_transform(geometry, self.transform)
 
   def draw(self, ax:pyplot.axes, **kwargs) -> pyplot.Axes:
+    """Draws this transform on the supplied axes. Arguments specific to each
+    transform type are supplied as **kwargs and are documented in 
+    `draw_rotation`, `draw_reflection`, and `draw_translation`.
+
+    Args:
+        ax (pyplot.axes): the axes on which to draw the transform.
+
+    Returns:
+        pyplot.Axes: the axes with the rendering of this transform added.
+    """
     if self.transform_type == "rotation":
-      rotn_args = list(inspect.signature(self._draw_rotation).parameters)
+      rotn_args = list(inspect.signature(self.draw_rotation).parameters)
       rotn_dict = {k: kwargs.pop(k) for k in dict(kwargs) if k in rotn_args}
-      return self._draw_rotation(ax = ax, **rotn_dict)
+      return self.draw_rotation(ax = ax, **rotn_dict)
     elif self.transform_type == "reflection":
-      refn_args = list(inspect.signature(self._draw_reflection).parameters)
+      refn_args = list(inspect.signature(self.draw_reflection).parameters)
       refn_dict = {k: kwargs.pop(k) for k in dict(kwargs) if k in refn_args}
-      return self._draw_reflection(ax = ax, **refn_dict)
+      return self.draw_reflection(ax = ax, **refn_dict)
     if self.transform_type == "translation":
-      trans_args = list(inspect.signature(self._draw_translation).parameters)
+      trans_args = list(inspect.signature(self.draw_translation).parameters)
       trans_dict = {k: kwargs.pop(k) for k in dict(kwargs) if k in trans_args}
-      return self._draw_translation(ax = ax, **trans_dict)
+      return self.draw_translation(ax = ax, **trans_dict)
     elif self.transform_type == "identity":
       w = ax.get_window_extent().width
       return ax.set_title(f"{self.transform_type}", fontsize = w / 20)
 
-  def _draw_rotation(self, ax:pyplot.Axes, 
-                     radius = 200, add_title = True) -> pyplot.Axes:
+  def draw_rotation(self, ax:pyplot.Axes, 
+                    radius = 200, add_title = True) -> pyplot.Axes:
     x, y = self.centre.x, self.centre.y
     axis = geom.LineString([(x, y), (x + radius * 1.25, y)])
     arc = geom.LineString([
@@ -163,8 +196,8 @@ class Transform:
                    fontsize = w / 20)
     return ax
 
-  def _draw_reflection(self, ax:pyplot.Axes, w = 5, 
-                       mirror_length = 100, add_title = True) -> pyplot.Axes:
+  def draw_reflection(self, ax:pyplot.Axes, w = 5, 
+                      mirror_length = 100, add_title = True) -> pyplot.Axes:
     x, y = self.centre.x, self.centre.y
     dx, dy = self.translation
     r = np.sqrt(self.translation[0] ** 2 + self.translation[1] ** 2) 
@@ -186,8 +219,8 @@ class Transform:
                    fontsize = w / 20)
     return ax
 
-  def _draw_translation(self, ax:pyplot.Axes, c:geom.Point, 
-                        w:float = 5, add_title = True) -> pyplot.Axes:
+  def draw_translation(self, ax:pyplot.Axes, c:geom.Point, 
+                       w:float = 5, add_title = True) -> pyplot.Axes:
     gpd.GeoSeries([c]).plot(ax = ax, color = "b")
     pyplot.arrow(c.x, c.y, self.translation[0], self.translation[1], lw = 0.5,
                 width = w, fc = "b", ec = None, head_width = w * 6, zorder = 5)
@@ -201,7 +234,9 @@ class Transform:
 
 @dataclass
 class Symmetries():
-
+  """Class to store the symmetries (as a list of `Transform` objects) of a
+  supplied shapely.Polygon.
+  """
   polygon:geom.Polygon = None
   """Polygon from which these symmetries are derived."""
   matcher:KMP_Matcher = None
@@ -258,7 +293,7 @@ class Symmetries():
     
     Args:
       p (geom.Polygon): the polygon to encode
-        mirrored (bool, optional): if true encoding will be in CCC order. 
+      mirrored (bool, optional): if true encoding will be in CCC order. 
         Defaults to False.
 
     Returns:
@@ -301,7 +336,8 @@ class Symmetries():
         initialised.
 
     Returns:
-      dict[str, list[float]]: _description_
+      list[Transform]: a list of Transform objects representing the polygon
+        symmetries.
     """
     # compose extended sequence of length-angle pairs for cyclic matching
     # S = self.p_code + self.p_code[:-1]
@@ -436,7 +472,7 @@ class Symmetries():
 
 StraightLine = namedtuple("StraightLine", "A B C")
 """Named tuple to represent equation of a straight line in standard 
-Ax + Bx + C = 0 form."""
+Ax + By + C = 0 form."""
 
 
 class Shape_Matcher:
