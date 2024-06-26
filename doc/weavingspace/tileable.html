@@ -1643,13 +1643,10 @@ coordinates, e.g.</p>
 <p>{( 1,  0): ( 100, 0), ( 0,  1): (0,  100),
    (-1,  0): (-100, 0), ( 0, -1): (0, -100)}</p>
 
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]:
+<p>Returns:
+  Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]:
     either the vectors as a list of float tuples, or a dictionary
     of those vectors indexed by integer coordinate tuples.</p>
-</blockquote>
 </div>
 
 
@@ -1768,17 +1765,11 @@ may be fragmented as supplied but will combine after tiling into single
 tiles. This step makes for more efficient implementation of the
 tiling of map regions.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  fragments (list[geom.Polygon]): A set of polygons to merge.</p>
 
-<ul>
-<li><strong>fragments (list[geom.Polygon]):</strong>  A set of polygons to merge.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[geom.Polygon]: A minimal list of merged polygons.</p>
-</blockquote>
+<p>Returns:
+  list[geom.Polygon]: A minimal list of merged polygons.</p>
 </div>
 
 
@@ -1972,21 +1963,15 @@ attribute accordingly.</p>
 
 <p>The geodataframe takes the same form as the <code>Tileable.tile</code> attribute.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  r (int, optional): the number of 'layers' out from the unit to
+    which the translate copies will extendt. Defaults to <code>1</code>.
+  include_0 (bool, optional): If True includes the Tileable itself at
+    (0, 0). Defaults to <code>False</code>.</p>
 
-<ul>
-<li><strong>r (int, optional):</strong>  the number of 'layers' out from the unit to
-which the translate copies will extendt. Defaults to <code>1</code>.</li>
-<li><strong>include_0 (bool, optional):</strong>  If True includes the Tileable itself at
-(0, 0). Defaults to <code>False</code>.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>gpd.GeoDataFrame: A GeoDataframe of the tiles extended by a number 
+<p>Returns:
+  gpd.GeoDataFrame: A GeoDataframe of the tiles extended by a number 
     of 'layers'.</p>
-</blockquote>
 </div>
 
 
@@ -2038,12 +2023,9 @@ method will clip them so that they don't. This may result in
 'fragmented' tiles, i.e. pieces that would form a single tile
 after tiling which are separated into fragments.</p>
 
-<h6 id="arguments">Arguments:</h6>
-
-<ul>
-<li><strong>centre_tile (int, optional):</strong>  the index position of the central
-tile. Defaults to <code>0</code>.</li>
-</ul>
+<p>Args:
+  centre_tile (int, optional): the index position of the central
+    tile. Defaults to <code>0</code>.</p>
 </div>
 
 
@@ -2098,17 +2080,11 @@ attribute updated accordingly.</p>
 
 <p>NOTE: this method is likely to not preserve the relative area of tiles.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  inset (float, optional): The distance to inset. Defaults to <code>0</code>.</p>
 
-<ul>
-<li><strong>inset (float, optional):</strong>  The distance to inset. Defaults to <code>0</code>.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>"Tileable": the new inset Tileable.</p>
-</blockquote>
+<p>Returns:
+  "Tileable": the new inset Tileable.</p>
 </div>
 
 
@@ -2118,7 +2094,7 @@ attribute updated accordingly.</p>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">plot</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">ax</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">show_prototile</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">show_reg_prototile</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">show_ids</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;tile_id&#39;</span>,</span><span class="param">	<span class="n">show_vectors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">r</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>,</span><span class="param">	<span class="n">prototile_edgecolour</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span>,</span><span class="param">	<span class="n">reg_prototile_edgecolour</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span>,</span><span class="param">	<span class="n">r_alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span>,</span><span class="param">	<span class="n">cmap</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">figsize</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>,</span><span class="param">	<span class="o">**</span><span class="n">kwargs</span></span><span class="return-annotation">) -> <span class="o">&lt;</span><span class="n">function</span> <span class="n">axes</span> <span class="n">at</span> <span class="mh">0x14a19e480</span><span class="o">&gt;</span>:</span></span>
+        <span class="name">plot</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">ax</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">show_prototile</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">show_reg_prototile</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">show_ids</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;tile_id&#39;</span>,</span><span class="param">	<span class="n">show_vectors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">r</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>,</span><span class="param">	<span class="n">prototile_edgecolour</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span>,</span><span class="param">	<span class="n">reg_prototile_edgecolour</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span>,</span><span class="param">	<span class="n">r_alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span>,</span><span class="param">	<span class="n">cmap</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">figsize</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>,</span><span class="param">	<span class="o">**</span><span class="n">kwargs</span></span><span class="return-annotation">) -> <span class="o">&lt;</span><span class="n">function</span> <span class="n">axes</span> <span class="n">at</span> <span class="mh">0x14c89e480</span><span class="o">&gt;</span>:</span></span>
 
                 <label class="view-source-button" for="Tileable.plot-view-source"><span>View Source</span></label>
 
@@ -2207,39 +2183,33 @@ attribute updated accordingly.</p>
             <div class="docstring"><p>Plots a representation of the Tileable on the supplied axis. **kwargs
 are passed on to matplotlib.plot()</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  ax (_type_, optional): matplotlib axis to draw to. Defaults to None.
+  show_prototile (bool, optional): if <code>True</code> show the tile outline.
+    Defaults to <code>True</code>.
+  show_reg_prototile (bool, optional): if <code>True</code> show the regularised tile
+    outline. Defaults to <code>True</code>.
+  show_ids (str, optional): if <code>tile_id</code> show the tile_ids. If
+    <code>id</code> show index number. If None or <code>''</code> don't label tiles.
+    Defaults to <code>tile_id</code>.
+  show_vectors (bool, optional): if <code>True</code> show the translation
+    vectors (not the minimal pair, but those used by
+    <code><a href="#Tileable.get_local_patch">get_local_patch()</a></code>). Defaults to <code>False</code>.
+  r (int, optional): passed to <code><a href="#Tileable.get_local_patch">get_local_patch()</a></code> to show context if
+    greater than 0. Defaults to <code>0</code>.
+  r_alpha (float, optional): alpha setting for units other than the
+    central one. Defaults to 0.3.
+  prototile_edgecolour (str, optional): outline colour for the tile.
+    Defaults to <code>"k"</code>.
+  reg_prototile_edgecolour (str, optional): outline colour for the
+    regularised. Defaults to <code>"r"</code>.
+  cmap (list[str], optional): colour map to apply to the central
+    tiles. Defaults to <code>None</code>.
+  figsize (tuple[float], optional): size of the figure.
+    Defaults to <code>(8, 8)</code>.</p>
 
-<ul>
-<li><strong>ax (_type_, optional):</strong>  matplotlib axis to draw to. Defaults to None.</li>
-<li><strong>show_prototile (bool, optional):</strong>  if <code>True</code> show the tile outline.
-Defaults to <code>True</code>.</li>
-<li><strong>show_reg_prototile (bool, optional):</strong>  if <code>True</code> show the regularised tile
-outline. Defaults to <code>True</code>.</li>
-<li><strong>show_ids (str, optional):</strong>  if <code>tile_id</code> show the tile_ids. If
-<code>id</code> show index number. If None or <code>''</code> don't label tiles.
-Defaults to <code>tile_id</code>.</li>
-<li><strong>show_vectors (bool, optional):</strong>  if <code>True</code> show the translation
-vectors (not the minimal pair, but those used by
-<code><a href="#Tileable.get_local_patch">get_local_patch()</a></code>). Defaults to <code>False</code>.</li>
-<li><strong>r (int, optional):</strong>  passed to <code><a href="#Tileable.get_local_patch">get_local_patch()</a></code> to show context if
-greater than 0. Defaults to <code>0</code>.</li>
-<li><strong>r_alpha (float, optional):</strong>  alpha setting for units other than the
-central one. Defaults to 0.3.</li>
-<li><strong>prototile_edgecolour (str, optional):</strong>  outline colour for the tile.
-Defaults to <code>"k"</code>.</li>
-<li><strong>reg_prototile_edgecolour (str, optional):</strong>  outline colour for the
-regularised. Defaults to <code>"r"</code>.</li>
-<li><strong>cmap (list[str], optional):</strong>  colour map to apply to the central
-tiles. Defaults to <code>None</code>.</li>
-<li><strong>figsize (tuple[float], optional):</strong>  size of the figure.
-Defaults to <code>(8, 8)</code>.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>pyplot.axes: to which calling context may add things.</p>
-</blockquote>
+<p>Returns:
+  pyplot.axes: to which calling context may add things.</p>
 </div>
 
 
@@ -2279,18 +2249,12 @@ Defaults to <code>(8, 8)</code>.</li>
 
             <div class="docstring"><p>Transforms tileable by scaling.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  xscale (float, optional): x scale factor. Defaults to 1.0.
+  yscale (float, optional): y scale factor. Defaults to 1.0.</p>
 
-<ul>
-<li><strong>xscale (float, optional):</strong>  x scale factor. Defaults to 1.0.</li>
-<li><strong>yscale (float, optional):</strong>  y scale factor. Defaults to 1.0.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>Tileable: the transformed Tileable.</p>
-</blockquote>
+<p>Returns:
+  Tileable: the transformed Tileable.</p>
 </div>
 
 
@@ -2330,17 +2294,11 @@ Defaults to <code>(8, 8)</code>.</li>
 
             <div class="docstring"><p>Transforms tiling by rotation.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  angle (float, optional): angle to rotate by. Defaults to 0.0.</p>
 
-<ul>
-<li><strong>angle (float, optional):</strong>  angle to rotate by. Defaults to 0.0.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>Tileable: the transformed Tileable.</p>
-</blockquote>
+<p>Returns:
+  Tileable: the transformed Tileable.</p>
 </div>
 
 
@@ -2380,18 +2338,12 @@ Defaults to <code>(8, 8)</code>.</li>
 
             <div class="docstring"><p>Transforms tiling by skewing</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  xa (float, optional): x direction skew. Defaults to 0.0.
+  ya (float, optional): y direction skew. Defaults to 0.0.</p>
 
-<ul>
-<li><strong>xa (float, optional):</strong>  x direction skew. Defaults to 0.0.</li>
-<li><strong>ya (float, optional):</strong>  y direction skew. Defaults to 0.0.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>Tileable: the transformed Tileable.</p>
-</blockquote>
+<p>Returns:
+  Tileable: the transformed Tileable.</p>
 </div>
 
 

@@ -1331,23 +1331,19 @@
             <div class="docstring"><p>Conversts a strands specification string to a list of lists of strand
 labels.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  strands_spec (str): string format "a|bc|(de)f" | separates strands in
+    each direction and () designates combining labels into a single
+    strand that will be sliced lengthwise. Example output:</p>
 
-<ul>
-<li><p><strong>strands_spec (str):</strong>  string format "a|bc|(de)f" | separates strands in
-each direction and () designates combining labels into a single
-strand that will be sliced lengthwise. Example output:</p>
+<pre><code>  "a|bc|(de)f" -&gt; (["a"], ["b", "c"], ["de", "f"])
+</code></pre>
 
-<p>"a|bc|(de)f" -> (["a"], ["b", "c"], ["de", "f"])</p></li>
-<li>Superflous parentheses are removed, but no other error-checks are
-applied.</li>
-</ul>
+<p>Superflous parentheses are removed, but no other error-checks are
+    applied.</p>
 
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>tuple[str]: tuple of lists of labels for each set of strands.</p>
-</blockquote>
+<p>Returns:
+  tuple[str]: tuple of lists of labels for each set of strands.</p>
 </div>
 
 
@@ -1382,19 +1378,13 @@ applied.</li>
 
             <div class="docstring"><p>Returns vector required to move centroid of polygon to target.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shape (Polygon): polygon to move.
+  target (tuple[float], optional): target to move to.
+    Defaults to (0, 0).</p>
 
-<ul>
-<li><strong>shape (Polygon):</strong>  polygon to move.</li>
-<li><strong>target (tuple[float], optional):</strong>  target to move to.
-Defaults to (0, 0).</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>tuple[float]: tuple of x, y movement required.</p>
-</blockquote>
+<p>Returns:
+  tuple[float]: tuple of x, y movement required.</p>
 </div>
 
 
@@ -1432,18 +1422,12 @@ Defaults to (0, 0).</li>
 
             <div class="docstring"><p>Returns regular polygon with n sides centered on (0, 0) with a horizontal base, and height given by spacing.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  spacing (_type_): required height.
+  n (int): number of sides.</p>
 
-<ul>
-<li><strong>spacing (_type_):</strong>  required height.</li>
-<li><strong>n (int):</strong>  number of sides.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>geom.Polygon: required geom.Polygon.</p>
-</blockquote>
+<p>Returns:
+  geom.Polygon: required geom.Polygon.</p>
 </div>
 
 
@@ -1482,19 +1466,13 @@ Defaults to (0, 0).</li>
 original position in the coordinate sequence. The returned polygon will
 be identical but stored differently internally.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  polygon (geom.Polygon): the polygon to reorder.
+  offset (int): the number of corner positions by which to shift the
+    sequence.</p>
 
-<ul>
-<li><strong>polygon (geom.Polygon):</strong>  the polygon to reorder.</li>
-<li><strong>offset (int):</strong>  the number of corner positions by which to shift the
-sequence.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>geom.Polygon: the reordered polygon.</p>
-</blockquote>
+<p>Returns:
+    geom.Polygon: the reordered polygon.</p>
 </div>
 
 
@@ -1532,20 +1510,14 @@ sequence.</li>
             <div class="docstring"><p>Returns the supplied polygon rotated with the order of its corner points
 preserved (not guaranteed by shapely.affinity.rotate).</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+    polygon (geom.Polygon): polygon to rotate.
+    angle (float): desired angle of rotation (in degrees).
+    centre (geom.Point): the rotation centre (passed on to shapely.affinity.
+      rotate).</p>
 
-<ul>
-<li><strong>polygon (geom.Polygon):</strong>  polygon to rotate.</li>
-<li><strong>angle (float):</strong>  desired angle of rotation (in degrees).</li>
-<li><strong>centre (geom.Point):</strong>  the rotation centre (passed on to shapely.affinity.
-rotate).</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>geom.Polygon: rotated polygon.</p>
-</blockquote>
+<p>Returns:
+    geom.Polygon: rotated polygon.</p>
 </div>
 
 
@@ -1603,17 +1575,11 @@ rotate).</li>
 e.g. using something like the get_interior_angles() function, but simply
 checking if the area is close to that of its convex hull works too!</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shape (geom.Polygon): polygon to check</p>
 
-<ul>
-<li><strong>shape (geom.Polygon):</strong>  polygon to check</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>bool: True if the polygon is convex, False otherwise.</p>
-</blockquote>
+<p>Returns:
+  bool: True if the polygon is convex, False otherwise.</p>
 </div>
 
 
@@ -1659,19 +1625,13 @@ repeating the first. Does no simplification (e.g. if a line segment has a
 that). Points have precision set to the package default tiling_utils.
 RESOLUTION.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shape (geom.Polygon): polygon whose corners are required.
+  repeat_first (bool, optional): if True the first corner is repeated in the 
+    returned list, if False it is omitted. Defaults to True.</p>
 
-<ul>
-<li><strong>shape (geom.Polygon):</strong>  polygon whose corners are required.</li>
-<li><strong>repeat_first (bool, optional):</strong>  if True the first corner is repeated in the 
-returned list, if False it is omitted. Defaults to True.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[geom.Point]: list of geom.Point vertices of the polygon.</p>
-</blockquote>
+<p>Returns:
+  list[geom.Point]: list of geom.Point vertices of the polygon.</p>
 </div>
 
 
@@ -1708,17 +1668,11 @@ returned list, if False it is omitted. Defaults to True.</li>
 to the package default tiling_utils.RESOLUTION. No simplification for 
 successive colinear sides is carried out.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shape (geom.Polygon): polygon whose edges are required.</p>
 
-<ul>
-<li><strong>shape (geom.Polygon):</strong>  polygon whose edges are required.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[geom.LineString]: list of geom.LineString sides of the polygon.</p>
-</blockquote>
+<p>Returns:
+  list[geom.LineString]: list of geom.LineString sides of the polygon.</p>
 </div>
 
 
@@ -1752,17 +1706,11 @@ successive colinear sides is carried out.</p>
             <div class="docstring"><p>Returns list of lengths of polygon sides. No simplification for corners
 along sides is carried out.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shape (geom.Polygon): polygon whose edge lengths are required.</p>
 
-<ul>
-<li><strong>shape (geom.Polygon):</strong>  polygon whose edge lengths are required.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[float]: list of side lengths.</p>
-</blockquote>
+<p>Returns:
+  list[float]: list of side lengths.</p>
 </div>
 
 
@@ -1799,17 +1747,11 @@ along sides is carried out.</p>
 the positive x-axis, when proceeding from the first point in each side to its
 end point. This should usually be CW around the polygon.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shape (geom.Polygon): polygon whose side bearings are required.</p>
 
-<ul>
-<li><strong>shape (geom.Polygon):</strong>  polygon whose side bearings are required.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>tuple[tuple[float]]: tuple of bearings of each edge.</p>
-</blockquote>
+<p>Returns:
+  tuple[tuple[float]]: tuple of bearings of each edge.</p>
 </div>
 
 
@@ -1847,17 +1789,11 @@ end point. This should usually be CW around the polygon.</p>
 polygon simplification is carried out so some angles may be 180 (i.e. a 
 'corner' along a side, such that successive sides are colinear). </p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shape (geom.Polygon): polygon whose angles are required.</p>
 
-<ul>
-<li><strong>shape (geom.Polygon):</strong>  polygon whose angles are required.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[float]: list of angles.</p>
-</blockquote>
+<p>Returns:
+  list[float]: list of angles.</p>
 </div>
 
 
@@ -1914,17 +1850,11 @@ side or very close to one another removed. </p>
 <p>Particularly useful for tidying polygons weave tilings that have been 
 assembled from multiple 'cells' in the weave grid.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shape (Union[geom.MultiPolygon,geom.Polygon]): polygon to clean.</p>
 
-<ul>
-<li><strong>shape (Union[geom.MultiPolygon,geom.Polygon]):</strong>  polygon to clean.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>geom.Polygon: cleaned polygon.</p>
-</blockquote>
+<p>Returns:
+  geom.Polygon: cleaned polygon.</p>
 </div>
 
 
@@ -1971,19 +1901,13 @@ angle A below</p>
   p1     p3
 </code></pre>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  p1 (geom.Point): first point.
+  p2 (geom.Point): second 'corner' point.
+  p3 (geom.Point): third point.</p>
 
-<ul>
-<li><strong>p1 (geom.Point):</strong>  first point.</li>
-<li><strong>p2 (geom.Point):</strong>  second 'corner' point.</li>
-<li><strong>p3 (geom.Point):</strong>  third point.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>float: angle in degrees.</p>
-</blockquote>
+<p>Returns:
+    float: angle in degrees.</p>
 </div>
 
 
@@ -2033,19 +1957,13 @@ angle A below</p>
   p1     p3
 </code></pre>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  p1 (geom.Point): first point.
+  p2 (geom.Point): second 'corner' point.
+  p3 (geom.Point): third point.</p>
 
-<ul>
-<li><strong>p1 (geom.Point):</strong>  first point.</li>
-<li><strong>p2 (geom.Point):</strong>  second 'corner' point.</li>
-<li><strong>p3 (geom.Point):</strong>  third point.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>float: angle in degrees.</p>
-</blockquote>
+<p>Returns:
+  float: angle in degrees.</p>
 </div>
 
 
@@ -2079,17 +1997,11 @@ angle A below</p>
 
             <div class="docstring"><p>Tests if supplied polygon is regular (i.e. equal sides and angles).</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+    shape (geom.Polygon): polygon to test.</p>
 
-<ul>
-<li><strong>shape (geom.Polygon):</strong>  polygon to test.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>bool: True if polygon is regular, False if not.</p>
-</blockquote>
+<p>Returns:
+    bool: True if polygon is regular, False if not.</p>
 </div>
 
 
@@ -2229,11 +2141,8 @@ the circle, givng the incentre of the polygon.</p>
 <p>Args:
   shape (geom.Polygon): the polygon.</p>
 
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>geom.Point: the incentre of the polygon.</p>
-</blockquote>
+<p>Returns:
+  geom.Point: the incentre of the polygon.</p>
 </div>
 
 
@@ -2297,11 +2206,8 @@ sense to impose this order.</p>
 <p>Args:
   shape (geom.Polygon): the polygon.</p>
 
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>geom.Polygon: the polygon in clockwise order.</p>
-</blockquote>
+<p>Returns:
+  geom.Polygon: the polygon in clockwise order.</p>
 </div>
 
 
@@ -2349,19 +2255,13 @@ sense to impose this order.</p>
             <div class="docstring"><p>Returns a line which is the angle bisector of the specified corner of the
 supplied polygon.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+    shape (geom.Polygon): the polygon
+    v (int, optional): index of the corner whose bisector is required. 
+    Defaults to 0.</p>
 
-<ul>
-<li><strong>shape (geom.Polygon):</strong>  the polygon</li>
-<li><strong>v (int, optional):</strong>  index of the corner whose bisector is required. </li>
-<li>Defaults to 0.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>geom.LineString: line which bisects the specified corner.</p>
-</blockquote>
+<p>Returns:
+    geom.LineString: line which bisects the specified corner.</p>
 </div>
 
 
@@ -2426,18 +2326,12 @@ supplied polygon.</p>
 
             <div class="docstring"><p>Returns the supplied GeoSeries rounded to the specified precision.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  gs (gpd.GeoSeries): geometries to gridify.
+  precision (int, optional): digits of precision. Defaults to 6.</p>
 
-<ul>
-<li><strong>gs (gpd.GeoSeries):</strong>  geometries to gridify.</li>
-<li><strong>precision (int, optional):</strong>  digits of precision. Defaults to 6.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>gpd.GeoSeries: the rounded geometries.</p>
-</blockquote>
+<p>Returns:
+  gpd.GeoSeries: the rounded geometries.</p>
 </div>
 
 
@@ -2555,18 +2449,12 @@ for inspection. However some <code><a href="tile_unit.html#TileUnit">weavingspac
 methods in <code><a href="tiling_geometries.html">weavingspace.tiling_geometries</a></code> use this method, where we are
 confident the returned dual is valid.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  unit (TileUnit): the tiling for which the dual is required.</p>
 
-<ul>
-<li><strong>unit (TileUnit):</strong>  the tiling for which the dual is required.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>gpd.GeoDataFrame: GeoDataFrame that could be the tiles attribute for
+<p>Returns:
+  gpd.GeoDataFrame: GeoDataFrame that could be the tiles attribute for
     a TileUnit of the dual tiling.</p>
-</blockquote>
 </div>
 
 
@@ -2605,17 +2493,11 @@ confident the returned dual is valid.</p>
             <div class="docstring"><p>Returns supplied data reassigned with unique values from
 string.ascii_letters.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  data (Iterable): the data to relabel</p>
 
-<ul>
-<li><strong>data (Iterable):</strong>  the data to relabel</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list: the reassigned data</p>
-</blockquote>
+<p>Returns:
+  list: the reassigned data</p>
 </div>
 
 
@@ -2657,19 +2539,13 @@ string.ascii_letters.</p>
             <div class="docstring"><p>Sorts supplied tuple of x, y, ID into clockwise order relative to their
 mean centre.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  pts_ids (list[tuple[float, float, str]]): A tuple of a pair of
+    floats and a string.</p>
 
-<ul>
-<li><strong>pts_ids (list[tuple[float, float, str]]):</strong>  A tuple of a pair of
-floats and a string.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list: a list in the same format as supplied sorted into
+<p>Returns:
+  list: a list in the same format as supplied sorted into
     clockwise order of the point locations.</p>
-</blockquote>
 </div>
 
 
@@ -2707,18 +2583,12 @@ floats and a string.</li>
             <div class="docstring"><p>Returns the order of the supplied points clockwise relative to supplied 
 centre point, i.e. a list of the indices in clockwise order.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+    pts (list[geom.Point]): list of points to order.
+    centre (geom.Point): centre relative to which CW order is determined.</p>
 
-<ul>
-<li><strong>pts (list[geom.Point]):</strong>  list of points to order.</li>
-<li><strong>centre (geom.Point):</strong>  centre relative to which CW order is determined.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>_type_: list of reordered points.</p>
-</blockquote>
+<p>Returns:
+    _type_: list of reordered points.</p>
 </div>
 
 
@@ -2754,14 +2624,11 @@ centre point, i.e. a list of the indices in clockwise order.</p>
             <div class="docstring"><p>Writes supplied GeoDataFrame to a GPKG file with layers based on
 the tile_var attribute.</p>
 
-<h6 id="arguments">Arguments:</h6>
-
-<ul>
-<li><strong>gdf (gpd.GeoDataFrame):</strong>  the GeoDataFrame.</li>
-<li><strong>fname (str, optional):</strong>  filename to write.</li>
-<li><strong>tile_var (str, optional):</strong>  the attribute to use to separate
-output file into layers. Defaults to "tile_id".</li>
-</ul>
+<p>Args:
+  gdf (gpd.GeoDataFrame): the GeoDataFrame.
+  fname (str, optional): filename to write.
+  tile_var (str, optional): the attribute to use to separate
+    output file into layers. Defaults to "tile_id".</p>
 </div>
 
 
@@ -2815,17 +2682,11 @@ to nothing if negatively buffered by that distance.</p>
 <p>Performs a binary search between an upper bound based on the radius of
 the circle of equal area to the polygon, and 0.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  geometry (geom.Polygon): the polygon.</p>
 
-<ul>
-<li><strong>geometry (geom.Polygon):</strong>  the polygon.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>float: its collapse distance.</p>
-</blockquote>
+<p>Returns:
+  float: its collapse distance.</p>
 </div>
 
 
@@ -2860,17 +2721,11 @@ the circle of equal area to the polygon, and 0.</p>
 
             <div class="docstring"><p>Returns the largest polygon in a GeoSeries as a GeoSeries of one polygon.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  polygons (gpd.GeoSeries): the set of polygons to pick from.</p>
 
-<ul>
-<li><strong>polygons (gpd.GeoSeries):</strong>  the set of polygons to pick from.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>gpd.GeoSeries: the largest polygon.</p>
-</blockquote>
+<p>Returns:
+  gpd.GeoSeries: the largest polygon.</p>
 </div>
 
 
@@ -2912,18 +2767,12 @@ the circle of equal area to the polygon, and 0.</p>
 a small amount is large enough to indicate that they neighbour at more
 than a corner.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  p1 (geom.Polygon): First polygon
+  p2 (geom.Polygon): Second polygon</p>
 
-<ul>
-<li><strong>p1 (geom.Polygon):</strong>  First polygon</li>
-<li><strong>p2 (geom.Polygon):</strong>  Second polygon</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>bool: True if they neighbour along an edge</p>
-</blockquote>
+<p>Returns:
+  bool: True if they neighbour along an edge</p>
 </div>
 
 
@@ -2956,17 +2805,11 @@ than a corner.</p>
 
             <div class="docstring"><p>Returns width, height, left and bottom limits of a GeoSeries</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  gs (geopandas.GeoSeries): GeoSeries for which limits are required.</p>
 
-<ul>
-<li><strong>gs (geopandas.GeoSeries):</strong>  GeoSeries for which limits are required.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>tuple: four float values of width, height, left and bottom of gs.</p>
-</blockquote>
+<p>Returns:
+  tuple: four float values of width, height, left and bottom of gs.</p>
 </div>
 
 
@@ -3015,19 +2858,13 @@ than a corner.</p>
 the shapes, if they had an aspect ratio 1, then stretch the circle in
 the x, y directions according to the actual aspect ratio of the shapes.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shapes (gpd.GeoSeries): the shapes to be contained.
+  mag (float, optional): optionally increase the size of the returned
+    ellipse by this scale factor. Defaults to 1.0.</p>
 
-<ul>
-<li><strong>shapes (gpd.GeoSeries):</strong>  the shapes to be contained.</li>
-<li><strong>mag (float, optional):</strong>  optionally increase the size of the returned
-ellipse by this scale factor. Defaults to 1.0.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>gpd.GeoSeries: the set of shapes.</p>
-</blockquote>
+<p>Returns:
+  gpd.GeoSeries: the set of shapes.</p>
 </div>
 
 
@@ -3068,17 +2905,11 @@ ellipse by this scale factor. Defaults to 1.0.</li>
 masked by an ellipse (if we instead clip polygons then the ellipse edge
 will also show in the result.)</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shapes (gpd.GeoSeries): Polygons to convert.</p>
 
-<ul>
-<li><strong>shapes (gpd.GeoSeries):</strong>  Polygons to convert.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>gpd.GeoSeries: LineStrings from the supplied Polygons.</p>
-</blockquote>
+<p>Returns:
+  gpd.GeoSeries: LineStrings from the supplied Polygons.</p>
 </div>
 
 
@@ -3141,21 +2972,15 @@ will also show in the result.)</p>
 normalized start and end positions, and including the polygon centroid.
 Should (probably) only be applied to convex polygons.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  shape (geom.Polygon): the Polygon.
+  start (float): normalized start position along the boundary. Defaults to
+    0.
+  end (float): normalized start position along the boundary. Defaults to
+    1.</p>
 
-<ul>
-<li><strong>shape (geom.Polygon):</strong>  the Polygon.</li>
-<li><strong>start (float):</strong>  normalized start position along the boundary. Defaults to
-0.</li>
-<li><strong>end (float):</strong>  normalized start position along the boundary. Defaults to
-1.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>geom.Polygon: the requested polygon sector.</p>
-</blockquote>
+<p>Returns:
+  geom.Polygon: the requested polygon sector.</p>
 </div>
 
 
@@ -3219,21 +3044,15 @@ even in the shapely docs, to resolve topology issues and extraneous
 additional vertices appearing when spatial operations are repeatedly
 applied.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  p (Union[geom.Polygon, gpd.GeoSeries]): Polygon or GeoSeries to clean.
+  res (float, optional): buffer size to use. Defaults to 1e-3.
+  shrink_then_grow (bool, optional): if True the negative buffer is
+    applied first, otherwise the buffer operations are applied in
+    reverse. Defaults to True.</p>
 
-<ul>
-<li><strong>p (Union[geom.Polygon, gpd.GeoSeries]):</strong>  Polygon or GeoSeries to clean.</li>
-<li><strong>res (float, optional):</strong>  buffer size to use. Defaults to 1e-3.</li>
-<li><strong>shrink_then_grow (bool, optional):</strong>  if True the negative buffer is
-applied first, otherwise the buffer operations are applied in
-reverse. Defaults to True.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>Union[geom.Polygon, gpd.GeoSeries]: the cleaned Polygon or GeoSeries.</p>
-</blockquote>
+<p>Returns:
+  Union[geom.Polygon, gpd.GeoSeries]: the cleaned Polygon or GeoSeries.</p>
 </div>
 
 
@@ -3288,21 +3107,15 @@ internal boundaries remain in the result. We can avoid this by buffering the
 polygons before unioning them, then reversing the buffer on the unioned
 shape.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  gs (gpd.GeoSeries): the Polygons to union.
+  res (float, optional): size of the buffer to use. Defaults to 1e-3.
+  as_polygon (bool, optional): if True returns a Polygon, otherwise
+    returns a one Polygon GeoSeries. Defaults to False.</p>
 
-<ul>
-<li><strong>gs (gpd.GeoSeries):</strong>  the Polygons to union.</li>
-<li><strong>res (float, optional):</strong>  size of the buffer to use. Defaults to 1e-3.</li>
-<li><strong>as_polygon (bool, optional):</strong>  if True returns a Polygon, otherwise
-returns a one Polygon GeoSeries. Defaults to False.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>Union[gpd.GeoSeries, geom.Polygon]: the resulting union of supplied
+<p>Returns:
+  Union[gpd.GeoSeries, geom.Polygon]: the resulting union of supplied
     polygons.</p>
-</blockquote>
 </div>
 
 
@@ -3377,20 +3190,14 @@ returns a one Polygon GeoSeries. Defaults to False.</li>
 
             <div class="docstring"><p>Returns the shapely affine transform tuple for a translation.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+    dx (float): translation distance in x direction.
+    dy (float): translation distance in y direction.</p>
 
-<ul>
-<li><strong>dx (float):</strong>  translation distance in x direction.</li>
-<li><strong>dy (float):</strong>  translation distance in y direction.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[float]: a six item list of floats, per the shapely.affinity.
+<p>Returns:
+  list[float]: a six item list of floats, per the shapely.affinity.
   affine_transform method, see 
     <a href="https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations">https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations</a></p>
-</blockquote>
 </div>
 
 
@@ -3436,21 +3243,15 @@ returns a one Polygon GeoSeries. Defaults to False.</li>
             <div class="docstring"><p>Returns the shapely affine transform tuple for a rotation, optionally
 about a supplied centre point.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+    angle (float): the angle of rotation (in degrees).
+    centre (tuple[float], optional): An option centre location. Defaults to 
+    None, which will in turn be converted to (0, 0).</p>
 
-<ul>
-<li><strong>angle (float):</strong>  the angle of rotation (in degrees).</li>
-<li><strong>centre (tuple[float], optional):</strong>  An option centre location. Defaults to </li>
-<li>None, which will in turn be converted to (0, 0).</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[float]: a six item list of floats, per the shapely.affinity.
+<p>Returns:
+  list[float]: a six item list of floats, per the shapely.affinity.
     affine_transform method, see 
       <a href="https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations">https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations</a></p>
-</blockquote>
 </div>
 
 
@@ -3498,22 +3299,16 @@ about a supplied centre point.</p>
 in a line at the specified angle, optionally through a specified centre
 point.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  angle (float): angle to the x-axis of the line of reflection.
+  centre (tuple[float], optional): point through which the line of 
+    reflection passes. Defaults to None, which
+    will in turn be converted to (0, 0).</p>
 
-<ul>
-<li><strong>angle (float):</strong>  angle to the x-axis of the line of reflection.</li>
-<li><strong>centre (tuple[float], optional):</strong>  point through which the line of 
-reflection passes. Defaults to None, which
-will in turn be converted to (0, 0).</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[float]: a six item list of floats, per the shapely.affinity.
+<p>Returns:
+  list[float]: a six item list of floats, per the shapely.affinity.
     affine_transform method, see 
       <a href="https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations">https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations</a></p>
-</blockquote>
 </div>
 
 
@@ -3551,19 +3346,13 @@ will in turn be converted to (0, 0).</li>
             <div class="docstring"><p>Returns a shapely affine transform list that combines the listed
 sequence of transforms applied in order.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  transforms (list[list[float]]): sequence of transforms to combine.</p>
 
-<ul>
-<li><strong>transforms (list[list[float]]):</strong>  sequence of transforms to combine.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[float]: a transform tuple combining the supplied transforms applied
+<p>Returns:
+  list[float]: a transform tuple combining the supplied transforms applied
     in order, see 
       <a href="https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations">https://shapely.readthedocs.io/en/stable/manual.html#affine-transformations</a></p>
-</blockquote>
 </div>
 
 
@@ -3596,18 +3385,12 @@ sequence of transforms applied in order.</p>
 
             <div class="docstring"><p>Returns the inverse shapely affine transform of the supplied transform.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  transform (list[float]): the transform for which the inverse is desired.</p>
 
-<ul>
-<li><strong>transform (list[float]):</strong>  the transform for which the inverse is desired.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[float]: shapely affine transform tuple that will invert the supplied
+<p>Returns:
+  list[float]: shapely affine transform tuple that will invert the supplied
     transform.</p>
-</blockquote>
 </div>
 
 
@@ -3641,18 +3424,12 @@ sequence of transforms applied in order.</p>
             <div class="docstring"><p>Returns the shapely affine transform list equivalent to the supplied
 numpy matrix of a conventional augmented affine transform matrix.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  arr (np.array): augmented affine transform matrix of the desired 
+    transform.</p>
 
-<ul>
-<li><strong>arr (np.array):</strong>  augmented affine transform matrix of the desired 
-transform.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[float]: desired shapely affine transform list of floats.</p>
-</blockquote>
+<p>Returns:
+  list[float]: desired shapely affine transform list of floats.</p>
 </div>
 
 
@@ -3689,17 +3466,11 @@ transform.</li>
 affine transform matrix in numpy array form. This makes combining transforms
 much easier.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  transform (list[float]): the transform in shapely format.</p>
 
-<ul>
-<li><strong>transform (list[float]):</strong>  the transform in shapely format.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>np.array: the transform in numpy matrix format.</p>
-</blockquote>
+<p>Returns:
+  np.array: the transform in numpy matrix format.</p>
 </div>
 
 

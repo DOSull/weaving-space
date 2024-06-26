@@ -487,18 +487,12 @@ treadling matrices. An accessible introduction can be found at
             <div class="docstring"><p>Returns how many repetitions of sequences of length x1 and x2 are 
 needed to make a matched length sequence </p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  x1 (int): length of first sequence.
+  x2 (int): length of second sequence.</p>
 
-<ul>
-<li><strong>x1 (int):</strong>  length of first sequence.</li>
-<li><strong>x2 (int):</strong>  length of second sequence.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>tuple[int]: (number of repeats of x1, number of repeats of x2).</p>
-</blockquote>
+<p>Returns:
+  tuple[int]: (number of repeats of x1, number of repeats of x2).</p>
 </div>
 
 
@@ -563,23 +557,17 @@ If the warp_n and weft_n values are not factors of treadling.shape[0] and
 threading.shape[1] respectively, the output matrix will be repeated as
 needed to make this match</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  tie_up (np.ndarray): the tie up matrix.
+  treadling (np.ndarray): the treadling matrix.
+  threading (np.ndarray): the threading matrix.
+  warp_n (int): the number of uniquely labelled warp threads.
+  weft_n (int): the number of uniquely labelled weft threads.
+  rep (int, optional): optional additional repetition of the output <br />
+    applied in both directions. Defaults to 1.</p>
 
-<ul>
-<li><strong>tie_up (np.ndarray):</strong>  the tie up matrix.</li>
-<li><strong>treadling (np.ndarray):</strong>  the treadling matrix.</li>
-<li><strong>threading (np.ndarray):</strong>  the threading matrix.</li>
-<li><strong>warp_n (int):</strong>  the number of uniquely labelled warp threads.</li>
-<li><strong>weft_n (int):</strong>  the number of uniquely labelled weft threads.</li>
-<li><strong>rep (int, optional):</strong>  optional additional repetition of the output <br />
-applied in both directions. Defaults to 1.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>np.ndarray: _description_</p>
-</blockquote>
+<p>Returns:
+  np.ndarray: _description_</p>
 </div>
 
 
@@ -611,18 +599,12 @@ applied in both directions. Defaults to 1.</li>
 
             <div class="docstring"><p>Returns plain weave (checkerboard) matrix.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  warp_n (int, optional): number of warp thread labels. Defaults to 1.
+  weft_n (int, optional): number of weft thread labels. Defaults to 1.</p>
 
-<ul>
-<li><strong>warp_n (int, optional):</strong>  number of warp thread labels. Defaults to 1.</li>
-<li><strong>weft_n (int, optional):</strong>  number of weft thread labels. Defaults to 1.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>np.ndarray: 0/1 matrix where 1 = warp on top.</p>
-</blockquote>
+<p>Returns:
+  np.ndarray: 0/1 matrix where 1 = warp on top.</p>
 </div>
 
 
@@ -664,20 +646,14 @@ applied in both directions. Defaults to 1.</li>
 
 <p>n is the number of over-unders. With n = 1 we get a plain weave.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  n (Union[int,tuple[int]], optional): specifies over-under sequence in
+    the weave. Defaults to 2.
+  warp_n (int, optional): number of warp thread labels. Defaults to 2.
+  weft_n (int, optional): number of weft thread labels. Defaults to 2.</p>
 
-<ul>
-<li><strong>n (Union[int,tuple[int]], optional):</strong>  specifies over-under sequence in
-the weave. Defaults to 2.</li>
-<li><strong>warp_n (int, optional):</strong>  number of warp thread labels. Defaults to 2.</li>
-<li><strong>weft_n (int, optional):</strong>  number of weft thread labels. Defaults to 2.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>np.ndarray: _description_</p>
-</blockquote>
+<p>Returns:
+  np.ndarray: _description_</p>
 </div>
 
 
@@ -738,17 +714,11 @@ length over-under sequence. This is required to avoid cases such as
 e.g, (1,2,3) -> 100111 which repeated is 1001111001111, i.e. a (2,4)
 pattern. Repeating it yields 100111011000 which is the requested pattern.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  n (Union[int,tuple[int]]): requested over-under sequence. See details.</p>
 
-<ul>
-<li><strong>n (Union[int,tuple[int]]):</strong>  requested over-under sequence. See details.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[int]: list of runs of 1s and 0s in the requested pattern.</p>
-</blockquote>
+<p>Returns:
+  list[int]: list of runs of 1s and 0s in the requested pattern.</p>
 </div>
 
 
@@ -786,18 +756,12 @@ pattern. Repeating it yields 100111011000 which is the requested pattern.</p>
 <p>Positive by will shift right.
 Negative shifts left.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  r (list): list to wrap.
+  by (int, optional): number of positions to shift by. Defaults to 1.</p>
 
-<ul>
-<li><strong>r (list):</strong>  list to wrap.</li>
-<li><strong>by (int, optional):</strong>  number of positions to shift by. Defaults to 1.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list: wrapped list.</p>
-</blockquote>
+<p>Returns:
+  list: wrapped list.</p>
 </div>
 
 
@@ -855,18 +819,12 @@ Negative shifts left.</p>
 <p>where the repeat runs in each row are lengths returned by
 make_over_under_rown(n)</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  over_under (Union[int,tuple[int]]): over-under run specification. See
+    make_over_under_row().</p>
 
-<ul>
-<li><strong>over_under (Union[int,tuple[int]]):</strong>  over-under run specification. See
-make_over_under_row().</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>np.ndarray: a matrix of 0s and 1s.</p>
-</blockquote>
+<p>Returns:
+  np.ndarray: a matrix of 0s and 1s.</p>
 </div>
 
 
@@ -903,19 +861,13 @@ make_over_under_row().</li>
 
             <div class="docstring"><p>Returns basket pattern matrix extended for warp and weft patterns.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  n (int, optional): over under count. Defaults to 2.
+  warp_n (int, optional): number of warp thread labels. Defaults to 2.
+  weft_n (int, optional): number of weft thread labels. Defaults to 2.</p>
 
-<ul>
-<li><strong>n (int, optional):</strong>  over under count. Defaults to 2.</li>
-<li><strong>warp_n (int, optional):</strong>  number of warp thread labels. Defaults to 2.</li>
-<li><strong>weft_n (int, optional):</strong>  number of weft thread labels. Defaults to 2.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>np.ndarray: _description_</p>
-</blockquote>
+<p>Returns:
+  np.ndarray: _description_</p>
 </div>
 
 
@@ -965,17 +917,11 @@ make_over_under_row().</li>
 
 <p>where the repeat runs in each row are length n</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  n (int): dimension of the 'basket' over-under pattern.</p>
 
-<ul>
-<li><strong>n (int):</strong>  dimension of the 'basket' over-under pattern.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>np.ndarray: 0/1 matrix in basket weave pattern.</p>
-</blockquote>
+<p>Returns:
+  np.ndarray: 0/1 matrix in basket weave pattern.</p>
 </div>
 
 
@@ -1035,21 +981,15 @@ Could try to enforce</p>
 
 <p>but unsure what would be an appropriate way to do this...</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  tie_up (np.ndarray): desired weave pattern.
+  threading (np.ndarray): desired threading pattern.
+  treadling (np.ndarray): desired treadling pattern.
+  warp_n (int, optional): number of warp thread labels. Defaults to 1.
+  weft_n (int, optional): number of weft thread labels. Defaults to 1.</p>
 
-<ul>
-<li><strong>tie_up (np.ndarray):</strong>  desired weave pattern.</li>
-<li><strong>threading (np.ndarray):</strong>  desired threading pattern.</li>
-<li><strong>treadling (np.ndarray):</strong>  desired treadling pattern.</li>
-<li><strong>warp_n (int, optional):</strong>  number of warp thread labels. Defaults to 1.</li>
-<li><strong>weft_n (int, optional):</strong>  number of weft thread labels. Defaults to 1.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>np.ndarray: resulting 0/1 weave pattern matrix.</p>
-</blockquote>
+<p>Returns:
+  np.ndarray: resulting 0/1 weave pattern matrix.</p>
 </div>
 
 
@@ -1134,30 +1074,24 @@ Could try to enforce</p>
 These are explained in the respective functions to which this function
 delegates construction of the base matrices before applying the encoding.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  weave_type (str, optional): one of "plain", "twill", "basket" or
+    "this". Defaults to "plain".
+  n (Union[int,tuple[int]], optional): over under pattern. See 
+    make_over_under_row() for details. Defaults to 2.
+  warp (Union[list[str],tuple[str]], optional): list of labels for warp 
+    strands. Defaults to ["a", "b"].
+  weft (Union[list[str],tuple[str]], optional): list of labels for weft 
+    strands. Defaults to ["c", "d"].
+  tie_up (np.ndarray, optional): a weave pattern matrix to pass thru in 
+    the "this" case. Defaults to make_twill_matrix((2, 2)).
+  tr (np.ndarray, optional): treadling matrix for the "this" case. <br />
+    Defaults to None.
+  th (np.ndarray, optional): threading matrix for the "this" case. <br />
+    Defaults to None.</p>
 
-<ul>
-<li><strong>weave_type (str, optional):</strong>  one of "plain", "twill", "basket" or
-"this". Defaults to "plain".</li>
-<li><strong>n (Union[int,tuple[int]], optional):</strong>  over under pattern. See 
-make_over_under_row() for details. Defaults to 2.</li>
-<li><strong>warp (Union[list[str],tuple[str]], optional):</strong>  list of labels for warp 
-strands. Defaults to ["a", "b"].</li>
-<li><strong>weft (Union[list[str],tuple[str]], optional):</strong>  list of labels for weft 
-strands. Defaults to ["c", "d"].</li>
-<li><strong>tie_up (np.ndarray, optional):</strong>  a weave pattern matrix to pass thru in 
-the "this" case. Defaults to make_twill_matrix((2, 2)).</li>
-<li><strong>tr (np.ndarray, optional):</strong>  treadling matrix for the "this" case. <br />
-Defaults to None.</li>
-<li><strong>th (np.ndarray, optional):</strong>  threading matrix for the "this" case. <br />
-Defaults to None.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>np.ndarray: encoded weave pattern matrix.</p>
-</blockquote>
+<p>Returns:
+  np.ndarray: encoded weave pattern matrix.</p>
 </div>
 
 

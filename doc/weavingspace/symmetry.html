@@ -989,17 +989,11 @@ strings. SIAM Journal on Computing 6(2): 323–350. doi: 10.1137/0206024.</p>
 <p>This implementation expects sequences of tuples of floats, although in 
 principle any objects could be contained in the Iterables.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  pat (Iterable[tuple[float]]): The sequence to match.</p>
 
-<ul>
-<li><strong>pat (Iterable[tuple[float]]):</strong>  The sequence to match.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>Iterable[int]: _description_</p>
-</blockquote>
+<p>Returns:
+  Iterable[int]: _description_</p>
 </div>
 
 
@@ -1731,20 +1725,14 @@ Based on</p>
 developed based on them, but with a lot of trial and error to get the index
 offsets and (especially) retrieval of the reflection axes angles to work.</p>
 
-<h6 id="arguments">Arguments:</h6>
+<p>Args:
+  other (geom.Polygon, optional): finds transforms between this polygon and 
+    another that may be supplied. Defaults to None, when the comparison 
+    polygon will be that for which this Symmetries object has been <br />
+    initialised.</p>
 
-<ul>
-<li><strong>other (geom.Polygon, optional):</strong>  finds transforms between this polygon and 
-another that may be supplied. Defaults to None, when the comparison 
-polygon will be that for which this Symmetries object has been <br />
-initialised.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>dict[str, list[float]]: _description_</p>
-</blockquote>
+<p>Returns:
+  dict[str, list[float]]: _description_</p>
 </div>
 
 
@@ -1779,12 +1767,9 @@ initialised.</li>
 
             <div class="docstring"><p>Gets the rotations associated with this collection of symmetries.</p>
 
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[Transform]: A list of the rotation symmetries associated with this
+<p>Returns:
+  list[Transform]: A list of the rotation symmetries associated with this
     polygon.</p>
-</blockquote>
 </div>
 
 
@@ -1830,12 +1815,9 @@ initialised.</li>
 
             <div class="docstring"><p>Gets the reflections associated with this collection of symmetries.</p>
 
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>list[Transform]: A list of the reflection symmetries associated with this
+<p>Returns:
+  list[Transform]: A list of the reflection symmetries associated with this
     polygon.</p>
-</blockquote>
 </div>
 
 
@@ -1916,13 +1898,10 @@ initialised.</li>
             <div class="docstring"><p>Returns all the reorderings of vertex labels corresponding to each
 symmetry.</p>
 
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>dict[str, list[str]]: A dictionary with two entries. "rotations" is
+<p>Returns:
+  dict[str, list[str]]: A dictionary with two entries. "rotations" is
     a list of labels under the rotation symmetries, "reflections" those
     under the reflection symmetries.</p>
-</blockquote>
 </div>
 
 

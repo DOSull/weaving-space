@@ -62,7 +62,9 @@ class Topology:
   tileable: Tileable
   """the Tileable on which the topology will be based."""
   tiles: list[Tile]
-  """list of the Tiles in the topology. We use polygons returned by the tileable.get_local_patch method for these. That is the base tiles and 8 adjacent copies (for a rectangular tiling), or 6 adjacent copies (for a hexagonal tiling)."""
+  """list of the Tiles in the topology. We use polygons returned by the
+  tileable.get_local_patch method for these. That is the base tiles and 8 adjacent 
+  copies (for a rectangular tiling), or 6 adjacent copies (for a hexagonal tiling)."""
   points: dict[int, Vertex]
   """dictionary of all points (vertices and corners) in the tiling, keyed by Vertex ID."""
   edges: dict[int, Edge]
@@ -116,7 +118,8 @@ class Topology:
         attributes.
 
     """
-    return f"Topology of Tileable with {self.n_tiles} tiles.\nExamine .tiles, .points and .edges for more details."
+    return f"""Topology of Tileable with {self.n_tiles} tiles.\n
+    Examine .tiles, .points and .edges for more details."""
 
   def __repr__(self) -> str:
     return str(self)
@@ -201,10 +204,9 @@ class Topology:
   def _setup_edges(self, debug:bool = False):
     """Sets up the tiling edges. 
     
-    First vertices in the base tiles are classified
-    as tiling vertices or not -- only these can be classified reliably (e.g 
-    vertices on the perimeter are tricky).. Up to here all vertices have been 
-    considered tiling vertices.
+    First vertices in the base tiles are classified as tiling vertices or not -- 
+    only these can be classified reliably (e.g vertices on the perimeter are 
+    tricky).. Up to here all vertices have been considered tiling vertices.
     
     Second edges are created by traversing tile corner lists. Edges are stored
     once only by checking for edges in the reverse direction already in the 
@@ -344,7 +346,7 @@ class Topology:
         if abs((t2c.x - t1c.x) - dxy[0]) > 10 * tiling_utils.RESOLUTION or \
            abs((t2c.y - t1c.y) - dxy[1]) > 10 * tiling_utils.RESOLUTION:
           # add vertex to t2 by copying the t1 vertex appropriately offset
-          # note that this might alter the length ot t2.corners
+          # note that this might alter the length of t2.corners
           v = self.add_vertex(geom.Point(t1c.x + dxy[0], t1c.y + dxy[1]))
           v.is_tiling_vertex = True
           old_edge, new_edges = tile2.insert_vertex_at(v, i)
@@ -862,8 +864,9 @@ class Topology:
         use e.g. "abc" to apply a transformation to edges labelled "a", "b" or 
         "c", or "AB" for vertices labelled "A" or "B".
       type (str): name of the type of transformation requested. Currently
-        supported are "zigzag_edge", "push_vertex", and "nudge_vertex". Keyword
-        arguments for each are documented in the corresponding methods.
+        supported are `zigzag_edge`, `rotate_edge`, `push_vertex`, and 
+        `nudge_vertex`. Keyword arguments for each are documented in the 
+        corresponding methods.
 
     Returns:
       Topology: if new_topology is True a new Topology based on this one with
@@ -921,7 +924,8 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
       edge (Edge): Edge to transform
       n (int, optional): number of zigs and zags in the edge. Defaults to 2.
       start (str, optional): label at one end of edge which is used to determine
-        the sense of h, enabling C-curves with an odd number n of zigs and zags to be applied. Defaults to 'A'.
+        the sense of h, enabling C-curves with an odd number n of zigs and zags 
+        to be applied. Defaults to 'A'.
       h (float, optional): width of the zig zags relative to edge length. 
         Defaults to 0.5.
       smoothness (int, optional): spline smoothness. 0 gives a zig zag proper,
@@ -1088,7 +1092,8 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
             e.label = e0.label
 
   def _cyclic_sort_first(self, lst:Iterable) -> Iterable:
-    """Returns supplied Iterable in canonical cyclic sorted form. E.g. the sequence ACABD, yields 5 possible cycles ACABD, CABDA, ABDAC, BDACA, and 
+    """Returns supplied Iterable in canonical cyclic sorted form. E.g. the 
+    sequence ACABD, yields 5 possible cycles ACABD, CABDA, ABDAC, BDACA, and 
     DACAB. The lexically first of these is ABDAC, which would be returned. 
 
     Args:
