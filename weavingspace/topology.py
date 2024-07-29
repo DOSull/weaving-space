@@ -890,6 +890,11 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
         if e.label in selector:
           topo.rotate_edge(e, **transform_args)
     # ---------------------------
+    elif type == "scale_edge":
+      for e in topo.edges.values():
+        if e.label in selector:
+          topo.scale_edge(e, **transform_args)
+    # ---------------------------
     elif type == "push_vertex":
       pushes = {}
       for v in topo.vertices_in_tiles(topo.tiles[:topo.n_tiles]):
@@ -911,7 +916,7 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
     topo.tileable.setup_regularised_prototile_from_tiles()
     return topo
 
-  def zigzag_edge(self, edge:Edge, start:str = "A",
+  def zigzag_edge(self, edge:Edge, start:str = "A", sf:float = 1.0,
                   n:int = 2, h:float = 0.5, smoothness:int = 0):
     """Applies a zigzag transformation to the supplied Edge. Currently this will
     only work correctly if h is even.
@@ -950,13 +955,20 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
 
   def rotate_edge(self, edge:Edge, centre:str = "A", angle:float = 0) -> None:
     v0, v1 = edge.vertices[0], edge.vertices[1]
+    ls = geom.LineString([v0.point, v1.point])
     if v0.label == centre:
       c = v0.point
     elif v1.label == centre:
       c = v1.point
     else:
       c = ls.centroid
-    ls = affine.rotate(geom.LineString([v0.point, v1.point]), angle, origin = c)
+    ls = affine.rotate(ls, angle, origin = c)
+    v0.point, v1.point = [geom.Point(c) for c in ls.coords]
+
+  def scale_edge(self, edge:Edge, sf:float = 1.0) -> None:
+    v0, v1 = edge.vertices[0], edge.vertices[1]
+    ls = geom.LineString([v0.point, v1.point])
+    ls = affine.scale(ls, xfact = sf, yfact = sf, origin = ls.centroid)
     v0.point, v1.point = [geom.Point(c) for c in ls.coords]
 
   def push_vertex(self, vertex:Vertex, push_d:float) -> tuple[float]:
