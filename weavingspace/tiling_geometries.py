@@ -35,10 +35,10 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 
 from weavingspace.tileable import TileShape
-from weavingspace.tile_unit import TileUnit
+# from weavingspace.tile_unit import TileUnit
 import weavingspace.tiling_utils as tiling_utils
 
-def _setup_none_tile(unit:TileUnit) -> None:
+def _setup_none_tile(unit:"TileUnit") -> None:
   """Setups a 'null' tile unit with one tile and one tile_id.
 
   Args:
@@ -51,7 +51,7 @@ def _setup_none_tile(unit:TileUnit) -> None:
   return
 
 
-def _setup_base_tile(unit:TileUnit, shape:TileShape) -> None:
+def _setup_base_tile(unit:"TileUnit", shape:TileShape) -> None:
   """_summary_
 
   Args:
@@ -76,7 +76,7 @@ def _setup_base_tile(unit:TileUnit, shape:TileShape) -> None:
   return
 
 
-def setup_cairo(unit:TileUnit) -> None:
+def setup_cairo(unit:"TileUnit") -> None:
   """Sets up the Cairo tiling. King of tilings. All hail the Cairo tiling.
   This code shows how a 'handcoded' set of geometries can be applied.
 
@@ -123,7 +123,7 @@ def setup_cairo(unit:TileUnit) -> None:
   unit.setup_regularised_prototile_from_tiles()
 
 
-def setup_hex_slice(unit:TileUnit) -> None:
+def setup_hex_slice(unit:"TileUnit") -> None:
   """Tilings from radial slices of a hexagon into 2, 3, 4, 6 or 12 slices.
 
   The supplied unit should have offset and n set.
@@ -219,7 +219,7 @@ def setup_hex_slice(unit:TileUnit) -> None:
   unit.regularised_prototile = copy.deepcopy(unit.prototile)
 
 
-def setup_hex_dissection(unit:TileUnit) -> None:
+def setup_hex_dissection(unit:"TileUnit") -> None:
   """Tilings from dissection of a hexagon into parts.
 
   The supplied unit should have offset and n set.
@@ -244,7 +244,7 @@ def setup_hex_dissection(unit:TileUnit) -> None:
   unit.regularised_prototile = copy.deepcopy(unit.prototile)
 
 
-def get_4_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
+def get_4_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
   outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
   inner_h = affine.scale(outer_h, 1/np.sqrt(3), 1/np.sqrt(3))
   if unit.offset == 1:
@@ -270,7 +270,7 @@ def get_4_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
     ]
 
 
-def get_7_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
+def get_7_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
   outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
   inner_h = affine.scale(outer_h, 1/np.sqrt(7), 1/np.sqrt(7))
   if unit.offset == 1:
@@ -305,7 +305,7 @@ def get_7_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
     ]
 
 
-def get_9_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
+def get_9_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
   c = geom.Point(0, 0)
   outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
   inner_h = affine.scale(outer_h, 1/np.sqrt(3), 1/np.sqrt(3))
@@ -345,7 +345,7 @@ def get_9_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
     ]
 
 
-def setup_laves(unit:TileUnit) -> None:
+def setup_laves(unit:"TileUnit") -> None:
   """The Laves tilings. See https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings.
 
   These are all isohedral, but mostly not regular polygons. We
@@ -415,7 +415,7 @@ def setup_laves(unit:TileUnit) -> None:
   return
 
 
-def _setup_laves_33336(unit:TileUnit) -> None:
+def _setup_laves_33336(unit:"TileUnit") -> None:
   """Sets up Laves [3.3.3.3.6] which is like a 6 petal flower.
 
   Similar to the H3 7 hexagon group with the central hex removed and each
@@ -445,7 +445,7 @@ def _setup_laves_33336(unit:TileUnit) -> None:
   unit.setup_regularised_prototile_from_tiles()
 
 
-def _setup_laves_488(unit:TileUnit) -> None:
+def _setup_laves_488(unit:"TileUnit") -> None:
   """The 4-dissection of the square by its diagonals.
 
   Args:
@@ -462,7 +462,7 @@ def _setup_laves_488(unit:TileUnit) -> None:
   unit.setup_regularised_prototile_from_tiles()
 
 
-def _setup_laves_31212(unit:TileUnit) -> None:
+def _setup_laves_31212(unit:"TileUnit") -> None:
   """This is also a hexagon dissection... like 3.6.3.6 with each rhombus
   sliced in half along its long diagonal.
 
@@ -487,7 +487,7 @@ def _setup_laves_31212(unit:TileUnit) -> None:
   unit.regularised_prototile = copy.deepcopy(unit.prototile)
 
 
-def setup_archimedean(unit:TileUnit) -> None:
+def setup_archimedean(unit:"TileUnit") -> None:
   """The Archimedean 'regular tilings. See https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Convex_uniform_tilings_of_the_Euclidean_plane
 
   Many of these are most easily constructed as duals of the Laves tilings.
@@ -566,7 +566,7 @@ def setup_archimedean(unit:TileUnit) -> None:
   return
 
 
-def _setup_archimedean_3464(unit:TileUnit) -> None:
+def _setup_archimedean_3464(unit:"TileUnit") -> None:
   """The dual of Laves 3.4.6.4 is not accurately rendered
   by our code, so we do this one by hand.
 
@@ -600,7 +600,7 @@ def _setup_archimedean_3464(unit:TileUnit) -> None:
   unit.setup_regularised_prototile_from_tiles()
 
 
-def setup_hex_colouring(unit:TileUnit) -> None:
+def setup_hex_colouring(unit:"TileUnit") -> None:
   """3, 4, and 7 colourings of a regular array of hexagons.
 
   Args:
@@ -653,7 +653,7 @@ def setup_hex_colouring(unit:TileUnit) -> None:
   unit.setup_regularised_prototile_from_tiles()
 
 
-def setup_square_colouring(unit:TileUnit) -> None:
+def setup_square_colouring(unit:"TileUnit") -> None:
   """Colourings of a regular array of squares. Only supports n = 5 at present
   but we need a n=5 option
 
