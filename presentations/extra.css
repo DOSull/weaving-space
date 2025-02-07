@@ -1,0 +1,19 @@
+#content{
+    background:#fcfcfc;
+    height:100%;
+    margin-left:200px;
+    /* margin:auto; */
+    max-width:1720px;
+    min-height:100%;
+}
+#sidebar {
+    left: 0;
+    width: 200px;
+}
+.menu ul li {
+    list-style: none;
+    padding: 0px 0 0px 0px;
+    font-size: 15px;
+    font-weight: normal;
+    cursor: pointer;
+}

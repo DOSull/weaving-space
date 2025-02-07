@@ -10,7 +10,7 @@ QGIS/
 *.pdf
 data/0*.gpkg
 odds-and-ends/
-NACIS-2022/output/
-NACIS-2022/anthromes.gpkg
+presentations/NACIS-2022/
 .DS_Store
 marimo/
+superseded/
