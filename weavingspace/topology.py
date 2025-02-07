@@ -41,7 +41,7 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import matplotlib.pyplot as pyplot
 
-from weavingspace.tileable import Tileable
+# from weavingspace.tileable import Tileable
 from weavingspace.symmetry import Symmetries
 from weavingspace.symmetry import Shape_Matcher
 from weavingspace.topology_elements import Tile
@@ -62,7 +62,7 @@ class Topology:
   so on. This is because self.tiles[i % n_tiles] is frequently used to reference
   the base unit Tile which corresponds to self.tiles[i].
   """
-  tileable: Tileable
+  tileable: 'Tileable'
   """the Tileable on which the topology will be based."""
   tiles: list[Tile]
   """list of the Tiles in the topology. We use polygons returned by the
@@ -91,7 +91,7 @@ class Topology:
   edge_transitivity_classes: list[list[tuple[int]]]
   """list of lists of edge IDs in each transitivity class"""
 
-  def __init__(self, unit: Tileable, ignore_tile_ids:bool = True):
+  def __init__(self, unit: 'Tileable', ignore_tile_ids:bool = True):
     """Class constructor.
 
     Args:

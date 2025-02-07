@@ -3,7 +3,6 @@ NZCS-Aug-2022
 NZCS-Nov-2021
 Palmerston-North-Nov-2022
 anthromes
-app
 code-junkyard
 data
 dist
@@ -17,4 +16,5 @@ other-data
 presentations
 r-stuff
 sketches
+tiling-explorer
 weavingspace

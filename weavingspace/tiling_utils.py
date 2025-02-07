@@ -539,80 +539,80 @@ def gridify(
     return gs
 
 
-def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
-  """Converts supplied TileUnit to a candidate GeoDataFrame of its dual
-  TileUnit.
+# def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
+#   """Converts supplied TileUnit to a candidate GeoDataFrame of its dual
+#   TileUnit.
 
-  NOTE: this is complicated and not remotely guaranteed to work!
-  a particular issue is that where to place the vertices of the faces
-  of the dual with respect to the tiles in the original is ill-defined.
-  This is because the dual process is topologically not metrically defined,
-  so that exact vertex locations are ambiguous. Tiling duality is defined in
-  Section 4.2 of Grunbaum B, Shephard G C, 1987 _Tilings and Patterns_ (W. H.
-  Freeman and Company, New York)
+#   NOTE: this is complicated and not remotely guaranteed to work!
+#   a particular issue is that where to place the vertices of the faces
+#   of the dual with respect to the tiles in the original is ill-defined.
+#   This is because the dual process is topologically not metrically defined,
+#   so that exact vertex locations are ambiguous. Tiling duality is defined in
+#   Section 4.2 of Grunbaum B, Shephard G C, 1987 _Tilings and Patterns_ (W. H.
+#   Freeman and Company, New York)
 
-  NOTE: In general, this method will work only if all supplied tiles are
-  regular polygons. A known exception is if the only non-regular polygons are
-  triangles.
+#   NOTE: In general, this method will work only if all supplied tiles are
+#   regular polygons. A known exception is if the only non-regular polygons are
+#   triangles.
 
-  NOTE: 'clean' polygons are required. If supplied polygons have messy
-  vertices with multiple points where there is only one proper point, bad
-  things are likely to happen! Consider using `clean_polygon()` on the
-  tile geometries.
+#   NOTE: 'clean' polygons are required. If supplied polygons have messy
+#   vertices with multiple points where there is only one proper point, bad
+#   things are likely to happen! Consider using `clean_polygon()` on the
+#   tile geometries.
 
-  Because of the above limitations, we only return a GeoDataFrame
-  for inspection. However some `weavingspace.tile_unit.TileUnit` setup
-  methods in `weavingspace.tiling_geometries` use this method, where we are
-  confident the returned dual is valid.
+#   Because of the above limitations, we only return a GeoDataFrame
+#   for inspection. However some `weavingspace.tile_unit.TileUnit` setup
+#   methods in `weavingspace.tiling_geometries` use this method, where we are
+#   confident the returned dual is valid.
 
-  Args:
-    unit (TileUnit): the tiling for which the dual is required.
+#   Args:
+#     unit (TileUnit): the tiling for which the dual is required.
 
-  Returns:
-    gpd.GeoDataFrame: GeoDataFrame that could be the tiles attribute for
-      a TileUnit of the dual tiling.
-  """
-  # get a local patch of this Tiling
-  local_patch = unit.get_local_patch(r = 1, include_0 = True)
-  # Find the interior points of these tiles - these will be guaranteed
-  # to have a sequence of surrounding tiles incident on them
-  interior_pts = _get_interior_vertices(local_patch)
-  # Compile a list of the polygons incident on the interior points
-  cycles = []
-  for pt in interior_pts:
-    cycles.append(
-      set([poly_id for poly_id, p in enumerate(local_patch.geometry)
-           if pt.distance(p) < RESOLUTION * 2]))
-  # convert the polygon ID sequences to (centroid.x, centroid.y, ID) tuples
-  dual_faces = []
-  for cycle in cycles:
-    ids, pts = [], []
-    for poly_id in cycle:
-      ids.append(local_patch.tile_id[poly_id])
-      poly = local_patch.geometry[poly_id]
-      pts.append(incentre(poly))
-    # sort them into CW order so they are well formed
-    sorted_coords = sort_cw([(pt.x, pt.y, id)
-                              for pt, id in zip(pts, ids)])
-    dual_faces.append(
-      (geom.Polygon([(pt_id[0], pt_id[1]) for pt_id in sorted_coords]),
-       "".join([pt_id[2] for pt_id in sorted_coords])))
-  # ensure the resulting face centroids are inside the original tile
-  # displaced a little to avoid uncertainties at corners/edges
-  # TODO: Check  the logic of this - it seems like dumb luck that it works...
-  dual_faces = [(f, id) for f, id in dual_faces
-                if affine.translate(
-                  unit.prototile.geometry[0], RESOLUTION * 10, 
-                  RESOLUTION * 10).contains(f.centroid)]
-  gdf = gpd.GeoDataFrame(
-    data = {"tile_id": [f[1] for f in dual_faces]}, crs = unit.crs,
-    geometry = gridify(gpd.GeoSeries([f[0] for f in dual_faces])))
-  # ensure no duplicates
-  gdf = gdf.dissolve(by = "tile_id", as_index = False).explode(
-    index_parts = False, ignore_index = True)
+#   Returns:
+#     gpd.GeoDataFrame: GeoDataFrame that could be the tiles attribute for
+#       a TileUnit of the dual tiling.
+#   """
+#   # get a local patch of this Tiling
+#   local_patch = unit.get_local_patch(r = 1, include_0 = True)
+#   # Find the interior points of these tiles - these will be guaranteed
+#   # to have a sequence of surrounding tiles incident on them
+#   interior_pts = _get_interior_vertices(local_patch)
+#   # Compile a list of the polygons incident on the interior points
+#   cycles = []
+#   for pt in interior_pts:
+#     cycles.append(
+#       set([poly_id for poly_id, p in enumerate(local_patch.geometry)
+#            if pt.distance(p) < RESOLUTION * 2]))
+#   # convert the polygon ID sequences to (centroid.x, centroid.y, ID) tuples
+#   dual_faces = []
+#   for cycle in cycles:
+#     ids, pts = [], []
+#     for poly_id in cycle:
+#       ids.append(local_patch.tile_id[poly_id])
+#       poly = local_patch.geometry[poly_id]
+#       pts.append(incentre(poly))
+#     # sort them into CW order so they are well formed
+#     sorted_coords = sort_cw([(pt.x, pt.y, id)
+#                               for pt, id in zip(pts, ids)])
+#     dual_faces.append(
+#       (geom.Polygon([(pt_id[0], pt_id[1]) for pt_id in sorted_coords]),
+#        "".join([pt_id[2] for pt_id in sorted_coords])))
+#   # ensure the resulting face centroids are inside the original tile
+#   # displaced a little to avoid uncertainties at corners/edges
+#   # TODO: Check  the logic of this - it seems like dumb luck that it works...
+#   dual_faces = [(f, id) for f, id in dual_faces
+#                 if affine.translate(
+#                   unit.prototile.geometry[0], RESOLUTION * 10, 
+#                   RESOLUTION * 10).contains(f.centroid)]
+#   gdf = gpd.GeoDataFrame(
+#     data = {"tile_id": [f[1] for f in dual_faces]}, crs = unit.crs,
+#     geometry = gridify(gpd.GeoSeries([f[0] for f in dual_faces])))
+#   # ensure no duplicates
+#   gdf = gdf.dissolve(by = "tile_id", as_index = False).explode(
+#     index_parts = False, ignore_index = True)
 
-  gdf.tile_id = relabel(gdf.tile_id)
-  return gdf
+#   gdf.tile_id = relabel(gdf.tile_id)
+#   return gdf
 
 
 def relabel(data:Iterable) -> list:
