@@ -1,4 +1,4 @@
-# Geographical weaving
+# Geographical tiling and weaving
 This is ongoing work developing tiled geospatial data layers for symbolisation of complex multi-attribute choropleths.  
 
 A working version is available in python using `geopandas` and `shapely`. The python source is in the `weavingspace` folder. It can be installed from PyPI using 
