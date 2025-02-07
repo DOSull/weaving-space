@@ -17,4 +17,4 @@ The kind of things we can make are:
 An overview of the concepts assembled from early proof-of-concept _R_ code is on [this webpage](https://dosull.github.io/weaving-space/presentations/NZCS-Nov-2021/make-weave-map.html). A similar follow-up talk is [available here](https://dosull.github.io/weaving-space/presentations/Palmerston-North-Nov-2022/slides/index.html). Slides from a more recent talk explaining the work, extended to tiled maps (of which woven maps are a special case) is available [here](https://dosull.github.io/weaving-space/presentations/Palmerston-North-Nov-2022/slides/).
 
 ## Other explanatory stuff
-Any of the notebooks in the `examples` folder may be of interest. Some background material and thinking about tiling is in [this notebook](https://dosull.github.io/weaving-space/notes/notes-on-tiling.html).
+Any of the notebooks in the `examples` folder may be of interest. Some background material and thinking about tiling is in [these notes](https://dosull.github.io/weaving-space/notes/notes-on-tiling.html) and these reflections on the [state of the code](https://dosull.github.io/weaving-space/notes/state-of-the-code.html).
