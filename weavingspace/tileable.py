@@ -26,7 +26,6 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 
 import weavingspace.tiling_utils as tiling_utils
-from weavingspace.topology import Topology
 
 
 class TileShape(Enum):
@@ -571,12 +570,3 @@ class Tileable:
       self.regularised_prototile.geometry.skew(xa, ya, origin=(0, 0)))
     result.setup_vectors()
     return result
-
-
-  def get_dual(self) -> "Tileable":
-    dual_tiles = list(Topology(self).dual_tiles.values())
-    self.tiles = gpd.GeoDataFrame(
-      data = {"tile_id": list("abcdefghijklmnopqrstuvwxyz")[:len(dual_tiles)]},
-      geometry = gpd.GeoSeries(dual_tiles))
-    self.setup_regularised_prototile_from_tiles()
-    return self

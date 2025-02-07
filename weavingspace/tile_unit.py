@@ -97,8 +97,8 @@ class TileUnit(Tileable):
       self.tiling_type = self.tiling_type.lower()
     if self.base_shape == TileShape.TRIANGLE:
       self._modify_tile()
-      # self._modify_tiles()
-    self.setup_vectors()
+      self._modify_tiles()
+      self.setup_vectors()
     self.setup_regularised_prototile_from_tiles()
     # if self.regularised_prototile is None:
     #   self.setup_regularised_prototile_from_tiles()

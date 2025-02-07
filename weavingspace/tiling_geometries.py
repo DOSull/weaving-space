@@ -488,8 +488,7 @@ def _setup_laves_31212(unit:"TileUnit") -> None:
 
 
 def setup_archimedean(unit:"TileUnit") -> None:
-  """The Archimedean 'regular tilings. 
-  See https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Convex_uniform_tilings_of_the_Euclidean_plane
+  """The Archimedean 'regular tilings. See https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Convex_uniform_tilings_of_the_Euclidean_plane
 
   Many of these are most easily constructed as duals of the Laves tilings.
 
@@ -507,30 +506,26 @@ def setup_archimedean(unit:"TileUnit") -> None:
     return
   if unit.code == "3.3.3.3.6":
     setup_laves(unit)
-    unit = unit.get_dual()
-    # unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    # unit.setup_regularised_prototile_from_tiles()
+    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    unit.setup_regularised_prototile_from_tiles()
     return
   elif unit.code == "3.3.3.4.4":
     print(f"The code [{unit.code}] is unsupported.")
   elif unit.code == "3.3.4.3.4":
     # this is an attractive 6-colourable triangles and squares tiling
     setup_laves(unit)
-    unit = unit.get_dual()
-    # unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    # unit.setup_regularised_prototile_from_tiles()
+    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    unit.setup_regularised_prototile_from_tiles()
     return
   elif unit.code == "3.4.6.4":
     setup_laves(unit)
-    unit = unit.get_dual()
-    # unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    # unit.setup_regularised_prototile_from_tiles()
+    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    unit.setup_regularised_prototile_from_tiles()
     return
   elif unit.code == "3.6.3.6":
     setup_laves(unit)
-    unit = unit.get_dual()
-    # unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    # unit.setup_regularised_prototile_from_tiles()
+    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    unit.setup_regularised_prototile_from_tiles()
     return
   elif unit.code == "3.12.12":
     # nice! we can make dodecagons without having to think too hard
@@ -538,10 +533,9 @@ def setup_archimedean(unit:"TileUnit") -> None:
     # would've been easier to make the dodecagon... other than
     # calculating the scale relative to the hexagon base tile!)
     setup_laves(unit)
-    unit = unit.get_dual()
-    # unit.setup_vectors()
-    # unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    # unit.setup_regularised_prototile_from_tiles()
+    unit.setup_vectors()
+    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    unit.setup_regularised_prototile_from_tiles()
     return
   elif unit.code == "4.4.4.4":
     _setup_base_tile(unit, TileShape.RECTANGLE)
@@ -550,17 +544,15 @@ def setup_archimedean(unit:"TileUnit") -> None:
   elif unit.code == "4.6.12":
     # more dodecagons for free!
     setup_laves(unit)
-    unit = unit.get_dual()
-    # unit.setup_vectors()
-    # unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    # unit.setup_regularised_prototile_from_tiles()
+    unit.setup_vectors()
+    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    unit.setup_regularised_prototile_from_tiles()
     return
   elif unit.code == "4.8.8":
     # this is the octagon and square tiling
     setup_laves(unit)
-    unit = unit.get_dual()
-    # unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    # unit.setup_regularised_prototile_from_tiles()
+    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    unit.setup_regularised_prototile_from_tiles()
     return
   elif unit.code == "6.6.6":
     _setup_base_tile(unit, TileShape.HEXAGON)

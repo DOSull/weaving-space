@@ -7,7 +7,7 @@ find = {}
 
 [project]
 name = "weavingspace"
-version = "0.0.3.3"
+version = "0.0.3.2"
 authors = [
   { name="David O'Sullivan", email="osullivan512@gmail.com" },
   { name="Luke Bergmann" },

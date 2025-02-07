@@ -159,10 +159,10 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    _supported_tilings = ["3.3.3.3.6", "3.3.4.3.4", "3.4.6.4", "3.6.3.6", "3.12.12", "4.6.12", "4.8.8"]
-    tiling_code = mo.ui.dropdown(options=_supported_tilings, value="3.3.4.3.4")
+    supported_tilings = ["3.3.3.3.6", "3.3.4.3.4", "3.4.6.4", "3.6.3.6", "3.12.12", "4.6.12", "4.8.8"]
+    tiling_code = mo.ui.dropdown(options=supported_tilings, value="3.3.4.3.4")
     mo.md(f"#### Tiling code {tiling_code}")
-    return tiling_code,
+    return supported_tilings, tiling_code
 
 
 @app.cell(hide_code=True)
