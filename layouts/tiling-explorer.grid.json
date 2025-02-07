@@ -98,12 +98,6 @@
         ]
       },
       {
-        "position": null
-      },
-      {
-        "position": null
-      },
-      {
         "position": [
           12,
           10,
@@ -134,6 +128,12 @@
           6,
           18
         ]
+      },
+      {
+        "position": null
+      },
+      {
+        "position": null
       }
     ]
   }

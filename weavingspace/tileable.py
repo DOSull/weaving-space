@@ -156,6 +156,9 @@ class Tileable:
     # This simplification seems very crude but fixes all kinds of issues...
     # particularly with the triaxial weave units... where intersection 
     # operations are prone to creating spurious vertices, etc.
+    self.regularised_prototile.loc[0, 'geometry'] = \
+      self.regularised_prototile.loc[0, 'geometry'].simplify(
+        self.spacing * tiling_utils.RESOLUTION)
     # self.regularised_prototile.geometry[0] = \
     #   self.regularised_prototile.geometry[0].simplify(
     #     self.spacing * tiling_utils.RESOLUTION)

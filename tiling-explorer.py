@@ -126,25 +126,6 @@ def _(
 
 
 @app.cell(hide_code=True)
-def _(radius, show_prototile, show_reg_prototile):
-    def plot_tiles(tiles):
-        plot = tiles.plot(r=radius.value, 
-                          show_vectors=False, 
-                          show_prototile=show_prototile.value,
-                          show_reg_prototile=show_reg_prototile.value,
-                          show_ids=False)
-        plot.axis("off")
-        return plot
-    return (plot_tiles,)
-
-
-@app.cell(hide_code=True)
-def _():
-    import marimo as mo
-    return (mo,)
-
-
-@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""## Laves tilings and their Archimedean duals""")
     return
@@ -169,6 +150,25 @@ def _(mo):
 def _(TileUnit, laves_or_arch, p_inset, plot_tiles, t_inset, tiling_code):
     plot_tiles(TileUnit(tiling_type=laves_or_arch.value, code=tiling_code.value).inset_tiles(t_inset.value).inset_prototile(p_inset.value))
     return
+
+
+@app.cell(hide_code=True)
+def _(radius, show_prototile, show_reg_prototile):
+    def plot_tiles(tiles):
+        plot = tiles.plot(r=radius.value, 
+                          show_vectors=False, 
+                          show_prototile=show_prototile.value,
+                          show_reg_prototile=show_reg_prototile.value,
+                          show_ids=False)
+        plot.axis("off")
+        return plot
+    return (plot_tiles,)
+
+
+@app.cell(hide_code=True)
+def _():
+    import marimo as mo
+    return (mo,)
 
 
 if __name__ == "__main__":
