@@ -144,5 +144,32 @@ def _():
     return (mo,)
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""## Laves tilings and their Archimedean duals""")
+    return
+
+
+@app.cell
+def _(mo):
+    laves_or_arch = mo.ui.dropdown(options=["laves", "archimedean"], value="laves")
+    mo.md(f"#### Laves or Archimedean? {laves_or_arch}")
+    return (laves_or_arch,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    supported_tilings = ["3.3.3.3.6", "3.3.4.3.4", "3.4.6.4", "3.6.3.6", "3.12.12", "4.6.12", "4.8.8"]
+    tiling_code = mo.ui.dropdown(options=supported_tilings, value="3.3.4.3.4")
+    mo.md(f"#### Tiling code {tiling_code}")
+    return supported_tilings, tiling_code
+
+
+@app.cell(hide_code=True)
+def _(TileUnit, laves_or_arch, p_inset, plot_tiles, t_inset, tiling_code):
+    plot_tiles(TileUnit(tiling_type=laves_or_arch.value, code=tiling_code.value).inset_tiles(t_inset.value).inset_prototile(p_inset.value))
+    return
+
+
 if __name__ == "__main__":
     app.run()
