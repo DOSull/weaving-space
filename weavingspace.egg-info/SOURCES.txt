@@ -1,8 +1,8 @@
 LICENSE.md
 README.md
 pyproject.toml
-early-python-stuff/main.py
-early-python-stuff/tile.py
+superseded/early-python-stuff/main.py
+superseded/early-python-stuff/tile.py
 weavingspace/__init__.py
 weavingspace/_loom.py
 weavingspace/_weave_grid.py
