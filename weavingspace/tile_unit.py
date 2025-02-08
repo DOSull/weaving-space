@@ -34,9 +34,6 @@ Examples:
   + "square-colouring" one colouring of the regular square tiling, of 5
   colours as specified by the argument `n = 5`.
 
-  See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/all-the-tiles.ipynb) for exact usage, and illustrations of
-  each tiling.
-
   Spacing and coordinate reference of the tile unit are specified by the
   `weavingspace.tileable.Tileable` superclass variables
   `weavingspace.tileable.Tileable.spacing` and

@@ -553,8 +553,9 @@ class TiledMap:
 
       tm.colourmaps = dict(zip(tm.variables.values(), ["Reds", "Blues"]))
 
-    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/example-tiles-cairo.ipynb)
+    See [this notebook](https://github.com/DOSull/weaving-space/blob/main/weavingspace/examples/example-tiles-cairo.ipynb)
     for simple usage.
+
     TODO: This more complicated example shows how categorical maps can be
     created.
   """
