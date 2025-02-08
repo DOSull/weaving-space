@@ -5,7 +5,7 @@ A working version is available in python using `geopandas` and `shapely`. The py
 
 `python3 -m pip install weavingspace`
 
-The API is documented [here](https://dosull.github.io/weaving-space/doc/weavingspace.html), and there are several example notebooks that will give a good idea of how to use the code in the `examples` folder. In particular, have a look at the [Using the library](examples/using-the-library.ipynb) notebook.
+The API is documented [here](https://dosull.github.io/weaving-space/doc/weavingspace/), and there are several example notebooks that will give a good idea of how to use the code in the `examples` folder. In particular, have a look at the [Using the library](examples/using-the-library.ipynb) notebook.
 
 ## What does it do?
 The kind of things we can make are:
