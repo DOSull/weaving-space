@@ -212,6 +212,10 @@ def setup_hex_slice(unit:"TileUnit") -> None:
       steps = [steps[-1] - 1] + steps
       slices = [tiling_utils.get_polygon_sector(hexagon, p1, p2)
                 for p1, p2 in zip(steps[:-1], steps[1:])]
+  else:
+    print(f"a [{unit.n}] hex-slice is not implemented.")
+    _setup_none_tile(unit)
+    return
 
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
@@ -238,6 +242,10 @@ def setup_hex_dissection(unit:"TileUnit") -> None:
     parts = get_7_parts_of_hexagon(unit)
   elif unit.n == 9:
     parts = get_9_parts_of_hexagon(unit)
+  else:
+    print(f"a [{unit.n}] hex-dissection is not implemented.")
+    _setup_none_tile(unit)
+    return
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
@@ -643,6 +651,7 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
     hexes = [affine.rotate(h, rotation, origin = (0, 0))
              for h in hexes]
   else:
+    print(f"{unit.n}-colouring of hexes is not supported.\nTry 2, 3, 4, 6, or 12.")
     _setup_base_tile(unit, TileShape.HEXAGON)
     _setup_none_tile(unit)
     return
@@ -675,6 +684,7 @@ def setup_square_colouring(unit:"TileUnit") -> None:
     squares = [affine.rotate(sq, rotation, origin = (0, 0))
            for sq in squares]
   else:
+    print(f"{unit.n}-colouring of squares is not supported. Try 5.")
     _setup_base_tile(unit, TileShape.RECTANGLE)
     _setup_none_tile(unit)
     return

@@ -17,9 +17,10 @@ from scipy import interpolate
 
 import geopandas as gpd
 import pandas as pd
+import shapely.algorithms.polylabel as polylabel
 import shapely.geometry as geom
 import shapely.affinity as affine
-from shapely.testing import assert_geometries_equal
+# from shapely.testing import assert_geometries_equal
 # import shapely.wkt as wkt
 import shapely.ops
 
@@ -423,18 +424,25 @@ def incentre(shape:geom.Polygon) -> geom.Point:
   """
   if is_regular_polygon(shape):
     return shape.centroid
-  shape = ensure_cw(shape)
-  if is_convex(shape):
-    if is_tangential(shape):  # find the incentre
-      corners = get_corners(shape, repeat_first = False)
-      r = get_apothem_length(shape)
-      e1 = geom.LineString(corners[:2]).parallel_offset(r, side = "right")
-      e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = "right")
-      c = e1.intersection(e2)
-      # is_tangential is unreliable, and sometimes we get to here and do not
-      # get a Point, but a LineString, or even no intersection, so...
-      return c if isinstance(c, geom.Point) else shape.centroid
-  return shape.centroid
+  return polylabel.polylabel(shape)
+  # shape = ensure_cw(shape)
+  # if is_convex(shape):
+  #   if is_tangential(shape):  # find the incentre
+  #     corners = get_corners(shape, repeat_first = False)
+  #     r = get_apothem_length(shape)
+  #     e1 = geom.LineString(corners[:2]).parallel_offset(r, side = "right")
+  #     e2 = geom.LineString(corners[1:3]).parallel_offset(r, side = "right")
+  #     c = e1.intersection(e2)
+  #     # is_tangential is unreliable, and sometimes we get to here and do not
+  #     # get a Point, but a LineString, or even no intersection, so...
+  #     return c if isinstance(c, geom.Point) else shape.centroid
+  # return shape.centroid
+
+
+def in_circle(shape:geom.Polygon) -> geom.Polygon:
+  c = incentre(shape)
+  r = min([c.distance(e) for e in get_sides(shape)])
+  return c.buffer(r)
 
 
 def get_apothem_length(shape:geom.Polygon) -> float:

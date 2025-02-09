@@ -80,12 +80,16 @@ class _TileGrid():
     self.points = tiling_utils.gridify(self.points)
 
 
+  # def _get_area_to_tile(self, to_tile) -> geom.Polygon:
+  #   bb = to_tile.total_bounds
+  #   poly = tiling_utils.gridify(
+  #     geom.Polygon(((bb[0], bb[1]), (bb[2], bb[1]),
+  #                   (bb[2], bb[3]), (bb[0], bb[3]))))
+  #   return gpd.GeoSeries([poly])
+
+
   def _get_area_to_tile(self, to_tile) -> geom.Polygon:
-    bb = to_tile.total_bounds
-    poly = tiling_utils.gridify(
-      geom.Polygon(((bb[0], bb[1]), (bb[2], bb[1]),
-                    (bb[2], bb[3]), (bb[0], bb[3]))))
-    return gpd.GeoSeries([poly])
+    return gpd.GeoSeries(to_tile.unary_union.minimum_rotated_rectangle)
 
 
   def _get_extent(self) -> tuple[gpd.GeoSeries, geom.Point]:
@@ -98,8 +102,10 @@ class _TileGrid():
         centre.
     """
 
-    # TODO: the minimum_rotate_rectangle seems to throw an error?
-    mrr = self.to_tile[0].minimum_rotated_rectangle
+    # TODO: the minimum_rotated_rectangle seems to throw a warning?
+    # see: https://github.com/shapely/shapely/issues/2215
+    # it may make sense to to_tile to BE the MRR anyway (not a bounding box)
+    mrr = self.to_tile[0] # .minimum_rotated_rectangle
     mrr_centre = geom.Point(mrr.centroid.coords[0])
     mrr_corner = geom.Point(mrr.exterior.coords[0])
     radius = mrr_centre.distance(mrr_corner)
@@ -177,6 +183,7 @@ class Tiling:
   region:gpd.GeoDataFrame = None
   """the region to be tiled."""
   region_union: geom.Polygon = None
+  """a single polygon of all the areas in the region to be tiled"""
   grid:_TileGrid = None
   """the grid which will be used to apply the tiling."""
   tiles:gpd.GeoDataFrame = None
@@ -245,9 +252,11 @@ class Tiling:
             A temporary unique index attribute is added and removed when 
             generating the tiled map.""")
     if as_icons:
-      self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
+      self.grid = _TileGrid(self.tile_unit, gpd.GeoSeries(self.region_union), True)
+      # self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
     else:
-      self.grid = _TileGrid(self.tile_unit, self.region.geometry)
+      self.grid = _TileGrid(self.tile_unit, gpd.GeoSeries(self.region_union))
+      # self.grid = _TileGrid(self.tile_unit, self.region.geometry)
     self.tiles, self.prototiles = self.make_tiling()
     self.tiles.sindex
 

@@ -84,7 +84,7 @@ class TileUnit(Tileable):
   """number of dissections or colours in 'hex-dissection', 'hex-slice' and
   'hex-colouring' tilings. Defaults to 3."""
   code:str = "3.3.4.3.4"
-  """tne code for 'laves' or 'archimedean' tiling types."""
+  """the code for 'laves' or 'archimedean' tiling types."""
 
   def __init__(self, **kwargs) -> None:
     super(TileUnit, self).__init__(**kwargs)
@@ -245,6 +245,13 @@ class TileUnit(Tileable):
     result = copy.deepcopy(self)
     result.tiles.geometry = tiling_utils.gridify(
       self.tiles.geometry.scale(sf, sf, origin = (0, 0)))
+    return result
+  
+  
+  def _as_circles(self) -> "TileUnit":
+    result = copy.deepcopy(self)
+    result.tiles.geometry = gpd.GeoSeries([tiling_utils.in_circle(p) 
+                                           for p in self.tiles.geometry])
     return result
 
 

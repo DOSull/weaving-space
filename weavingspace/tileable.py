@@ -358,7 +358,8 @@ class Tileable:
           self.tiles.geometry.apply(affine.translate, xoff = v[0], yoff = v[1]))
     return gpd.GeoDataFrame(
       data = {"tile_id": ids}, crs=self.crs,
-      geometry = tiling_utils.gridify(gpd.GeoSeries(tiles))
+      # gridifying here causes an error in some cases
+      geometry = gpd.GeoSeries(tiles) #tiling_utils.gridify(gpd.GeoSeries(tiles))
     )
 
 
