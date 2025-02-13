@@ -22,16 +22,24 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    radius = mo.ui.slider(0, 4, value = 1)
-    t_inset = mo.ui.slider(0, 20, 1, value = 0)
-    p_inset = mo.ui.slider(0, 50, 5, value = 10)
+    radius = mo.ui.slider(0, 4, value=1)
+    t_inset = mo.ui.slider(0, 20, 1, value=0)
+    p_inset = mo.ui.slider(0, 50, 5, value=10)
     show_prototile = mo.ui.switch(value=False)
     show_reg_prototile = mo.ui.switch(value=False)
+    palette = mo.ui.dropdown(options=["Accent", "Set1", "Set2", "Paired", "tab20"], value="Paired")
 
     mo.md("\n".join(["### General settings",
-                     f"#### Set radius {radius}&nbsp;&nbsp;Tile inset {t_inset}&nbsp;&nbsp;Prototile inset {p_inset}",
-                     f"#### Show base tile {show_prototile}&nbsp;&nbsp;Show repeat unit {show_reg_prototile}"]))
-    return p_inset, radius, show_prototile, show_reg_prototile, t_inset
+      f"#### Set radius {radius}&nbsp;&nbsp;Tile inset {t_inset}&nbsp;&nbsp;Prototile inset {p_inset}",
+      f"#### Show base tile {show_prototile}&nbsp;&nbsp;Show repeat unit {show_reg_prototile}&nbsp;Palette {palette}"]))
+    return (
+        p_inset,
+        palette,
+        radius,
+        show_prototile,
+        show_reg_prototile,
+        t_inset,
+    )
 
 
 @app.cell(hide_code=True)
@@ -69,6 +77,16 @@ def _(TileUnit, hex_or_square, n_cols, p_inset, plot_tiles, t_inset):
     colourings = TileUnit(tiling_type=hex_or_square.value, n = n_cols.value).inset_tiles(t_inset.value).inset_prototile(p_inset.value)
     plot_tiles(colourings)
     return (colourings,)
+
+
+@app.cell
+def _(colourings, hex_or_square, mo, n_cols):
+    _download_button = mo.download(data=colourings.tiles.to_json().encode('utf-8'), 
+                                  filename=f'{hex_or_square.value}-{n_cols.value}_tile_unit.json', 
+                                  mimetype='text/plain', 
+                                  label='Download')
+    mo.md(f'Click to download **colourings** tile unit {_download_button}')
+    return
 
 
 @app.cell(hide_code=True)
@@ -121,7 +139,20 @@ def _(
     slice_or_dissect,
     t_inset,
 ):
-    plot_tiles(TileUnit(tiling_type=slice_or_dissect.value, n=n_pieces.value, offset=1 if offset_cuts.value else 0).inset_tiles(t_inset.value).inset_prototile(p_inset.value))
+    hex = TileUnit(tiling_type=slice_or_dissect.value, 
+                   n=n_pieces.value, offset=1 if offset_cuts.value else 0) \
+          .inset_tiles(t_inset.value) \
+          .inset_prototile(p_inset.value)
+    plot_tiles(hex)
+    return (hex,)
+
+
+@app.cell
+def _(hex, mo, n_pieces, offset_cuts, slice_or_dissect):
+    _download_button = mo.download(data=hex.tiles.to_json().encode('utf-8'), 
+                filename=f'{slice_or_dissect.value}-{n_pieces.value}-{offset_cuts.value}_tile_unit.json', 
+                mimetype='text/plain', label='Download')
+    mo.md(f'Click to download **hex slice/dissection** tile unit {_download_button}')
     return
 
 
@@ -148,18 +179,32 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(TileUnit, laves_or_arch, p_inset, plot_tiles, t_inset, tiling_code):
-    plot_tiles(TileUnit(tiling_type=laves_or_arch.value, code=tiling_code.value).inset_tiles(t_inset.value).inset_prototile(p_inset.value))
+    laves_or_arch_tiles = TileUnit(tiling_type=laves_or_arch.value,
+                             code=tiling_code.value) \
+                    .inset_tiles(t_inset.value) \
+                    .inset_prototile(p_inset.value)
+    plot_tiles(laves_or_arch_tiles)
+    return (laves_or_arch_tiles,)
+
+
+@app.cell
+def _(laves_or_arch, laves_or_arch_tiles, mo, tiling_code):
+    _download_button = mo.download(data=laves_or_arch_tiles.tiles.to_json().encode('utf-8'), 
+                filename=f'{laves_or_arch.value}-{tiling_code.value}_tile_unit.json', 
+                mimetype='text/plain', label='Download')
+    mo.md(f'Click to download **Laves/Archimedean** tile unit {_download_button}')
     return
 
 
 @app.cell(hide_code=True)
-def _(radius, show_prototile, show_reg_prototile):
+def _(palette, radius, show_prototile, show_reg_prototile):
     def plot_tiles(tiles):
         plot = tiles.plot(r=radius.value, 
                           show_vectors=False, 
                           show_prototile=show_prototile.value,
                           show_reg_prototile=show_reg_prototile.value,
-                          show_ids=False)
+                          show_ids=False,
+                          cmap=palette.value)
         plot.axis("off")
         return plot
     return (plot_tiles,)
