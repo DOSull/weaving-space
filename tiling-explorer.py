@@ -27,7 +27,7 @@ def _(mo):
     p_inset = mo.ui.slider(0, 50, 5, value=10)
     show_prototile = mo.ui.switch(value=False)
     show_reg_prototile = mo.ui.switch(value=False)
-    palette = mo.ui.dropdown(options=["Accent", "Set1", "Set2", "Paired", "tab20"], value="Paired")
+    palette = mo.ui.dropdown(options=["tab10", "tab20", "tab20b"], value="tab10")
 
     mo.md("\n".join(["### General settings",
       f"#### Set radius {radius}&nbsp;&nbsp;Tile inset {t_inset}&nbsp;&nbsp;Prototile inset {p_inset}",
@@ -47,7 +47,7 @@ def _(mo):
     mo.md(
         r"""
         ## Regular tiling colourings
-        These are simple regular colourings of hexagonal or square tilings. 3, 4, and 7 colourings of hexagonal tiles are available, but only a 5-colouring of squares. More complex rectangular colourings can be achieved with weave units.
+        Regular colourings of hexagonal or square tilings, with any number from 2 to 9 (inclusive) of colours allowed. Potentially more complex square colourings can be achieved with weave patterns.
         """
     )
     return
@@ -66,7 +66,7 @@ def _(mo):
 def _(list_to_dict, mo):
     n_cols = mo.ui.dropdown(
         options=list_to_dict(range(2, 10)),
-        value="4"
+        value="7"
     )
     mo.md(f"#### Number of colours {n_cols}")
     return (n_cols,)
