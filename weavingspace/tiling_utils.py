@@ -10,7 +10,7 @@ from typing import Iterable, Union
 
 import re
 import string
-import copy
+from collections import namedtuple
 
 import numpy as np
 from scipy import interpolate
@@ -20,8 +20,6 @@ import pandas as pd
 import shapely.algorithms.polylabel as polylabel
 import shapely.geometry as geom
 import shapely.affinity as affine
-# from shapely.testing import assert_geometries_equal
-# import shapely.wkt as wkt
 import shapely.ops
 
 
@@ -1081,4 +1079,54 @@ def as_numpy_matrix(transform:list[float]) -> np.array:
                    [transform[2], transform[3], transform[5]],
                    [           0,            0,            1]])
 
+
+StraightLine = namedtuple("StraightLine", "A B C")
+"""Named tuple to represent equation of a straight line in standard 
+Ax + By + C = 0 form."""
+
+def get_straight_line(p1:geom.Point, p2:geom.Point, 
+                      perpendicular:bool = False) -> StraightLine:
+  if perpendicular:
+    ls = affine.rotate(geom.LineString([p1, p2]), 90)
+    pts = [p for p in ls.coords]
+    x1, y1 = pts[0]
+    x2, y2 = pts[1]
+  else:
+    x1, y1 = p1.x, p1.y
+    x2, y2 = p2.x, p2.y
+  return StraightLine(y1 - y2, x2 - x1, x1 * y2 - x2 * y1)
+
+def get_straight_line(p1:geom.Point, p2:geom.Point, 
+                      perpendicular:bool = False) -> StraightLine:
+  if perpendicular:
+    ls = affine.rotate(geom.LineString([p1, p2]), 90)
+    pts = [p for p in ls.coords]
+    x1, y1 = pts[0]
+    x2, y2 = pts[1]
+  else:
+    x1, y1 = p1.x, p1.y
+    x2, y2 = p2.x, p2.y
+  return StraightLine(y1 - y2, x2 - x1, x1 * y2 - x2 * y1)
+
+def get_intersection(line1:StraightLine, 
+                     line2:StraightLine) -> geom.Point:
+  x_set, y_set = False, False
+  denominator = line1.A * line2.B - line2.A * line1.B
+  if np.isclose(line1.A, 0, atol = 1e-4, rtol = 1e-4):
+    y = -line1.C / line1.B
+    y_set = True
+  elif np.isclose(line2.A, 0, atol = 1e-4, rtol = 1e-4):
+    y = -line2.C / line2.B
+    y_set = True
+  if np.isclose(line1.B, 0, atol = 1e-4, rtol = 1e-4):
+    x = -line1.C / line1.A
+    x_set = True
+  elif np.isclose(line2.B, 0, atol = 1e-4, rtol = 1e-4):
+    x = -line2.C / line2.A
+    x_set = True
+  if np.isclose(denominator, 0, atol = 1e-4, rtol = 1e-4):
+    return None
+  x = x if x_set else (line1.B * line2.C - line2.B * line1.C) / denominator
+  y = y if y_set else (line1.C * line2.A - line2.C * line1.A) / denominator
+  return geom.Point(x, y)
 

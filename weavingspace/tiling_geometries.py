@@ -616,12 +616,13 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
     unit (TileUnit):  the TileUnit to setup.
   """
   hexagon = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 6)
+  w = hexagon.bounds[2] - hexagon.bounds[0]
+  h = hexagon.bounds[3] - hexagon.bounds[1]
   if unit.n == 2:
     # Pair of point up hexes sideways displace by width of a hex
     # Vectors are rectangular
     hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    w = hexagon.bounds[2] - hexagon.bounds[0]
-    h = hexagon.bounds[3] - hexagon.bounds[1]
+    w, h = h, w
     hexes = [affine.translate(hexagon, dx, 0) for dx in [-w / 2, w / 2]]
     _setup_base_tile(unit, TileShape.RECTANGLE)
     unit.prototile.geometry = [geom.Polygon([
@@ -665,8 +666,7 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
     hexes = [hex1, hex2, hex3, hex4]
   elif unit.n == 5:
     hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    w = hexagon.bounds[2] - hexagon.bounds[0]
-    h = hexagon.bounds[3] - hexagon.bounds[1]
+    w, h = h, w
     tr = [(-w, 3 * h / 8), (0, 3 * h / 8), ( w, 3 * h / 8), 
           (-w / 2, -3 * h / 8), (w / 2, -3 * h / 8)]
     hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
@@ -677,8 +677,7 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
     ])]
   elif unit.n == 6:
     hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    w = hexagon.bounds[2] - hexagon.bounds[0]
-    h = hexagon.bounds[3] - hexagon.bounds[1]
+    w, h = h, w
     tr = [(-5 * w / 4,  3 * h / 8), (-w / 4,  3 * h / 8), (3 * w / 4,  3 * h / 8), 
           (-3 * w / 4, -3 * h / 8), ( w / 4, -3 * h / 8), (5 * w / 4, -3 * h / 8)]
     hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
@@ -700,8 +699,7 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
              for h in hexes]
   elif unit.n == 8:
     hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    w = hexagon.bounds[2] - hexagon.bounds[0]
-    h = hexagon.bounds[3] - hexagon.bounds[1]
+    w, h = h, w
     tr = [(-w,  3 * h / 4), (0,  3 * h / 4), ( w,  3 * h / 4), 
                        (-w / 2, 0), ( w / 2, 0),
           (-w, -3 * h / 4), (0, -3 * h / 4), ( w, -3 * h / 4)]
@@ -715,8 +713,6 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
     # Make a hexagon and displace in the direction of its
     # own 6 corners, scaled as needed
     _setup_base_tile(unit, TileShape.HEXAGON)
-    w = hexagon.bounds[2] - hexagon.bounds[0]
-    h = hexagon.bounds[3] - hexagon.bounds[1]
     offsets = [
       (-3 * w / 4, -5 * h / 4), (0, -3 * h / 4), ( 3 * w / 4, -5 * h / 4),
       (-3 * w / 4,     -h / 4), (0,      h / 4), ( 3 * w / 4,     -h / 4),
