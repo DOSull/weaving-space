@@ -63,10 +63,10 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(hex_or_square, mo):
+def _(list_to_dict, mo):
     n_cols = mo.ui.dropdown(
-        options={"3":3, "4":4, "7":7} if hex_or_square.value == "hex-colouring" else {"5":5},
-        value="3" if hex_or_square.value == "hex-colouring" else "5"
+        options=list_to_dict(range(2, 10)),
+        value="4"
     )
     mo.md(f"#### Number of colours {n_cols}")
     return (n_cols,)
@@ -198,6 +198,9 @@ def _(laves_or_arch, laves_or_arch_tiles, mo, tiling_code):
 
 @app.cell(hide_code=True)
 def _(palette, radius, show_prototile, show_reg_prototile):
+    def list_to_dict(lst):
+        return dict(zip([str(v) for v in lst], lst))
+
     def plot_tiles(tiles):
         plot = tiles.plot(r=radius.value, 
                           show_vectors=False, 
@@ -207,7 +210,7 @@ def _(palette, radius, show_prototile, show_reg_prototile):
                           cmap=palette.value)
         plot.axis("off")
         return plot
-    return (plot_tiles,)
+    return list_to_dict, plot_tiles
 
 
 @app.cell(hide_code=True)
