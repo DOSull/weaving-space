@@ -111,6 +111,8 @@ class TileUnit(Tileable):
       tiling_geometries.setup_hex_slice(self)
     elif self.tiling_type == "hex-dissection":
       tiling_geometries.setup_hex_dissection(self)
+    elif self.tiling_type == "square-slice":
+      tiling_geometries.setup_square_slice(self)
     elif self.tiling_type == "laves":
       tiling_geometries.setup_laves(self)
     elif self.tiling_type == "archimedean":
