@@ -1,8 +1,7 @@
 Metadata-Version: 2.2
 Name: weavingspace
-Version: 0.0.3.6
+Version: 0.0.4
 Summary: A package for making tiled mapping layers
-Author: Luke Bergmann
 Author-email: David O'Sullivan <osullivan512@gmail.com>
 Project-URL: Homepage, https://github.com/DOSull/weaving-space
 Project-URL: Repository, https://github.com/DOSull/weaving-space

@@ -127,14 +127,17 @@ def setup_cairo(unit:"TileUnit") -> None:
 
 
 def setup_hex_slice(unit:"TileUnit") -> None:
-  """Tilings from radial slices of a hexagon into 2, 3, 4, 6 or 12 slices.
+  """Arbitrary number of radial slices of a hexagon, with an optional
+  offset starting point.
 
   The supplied unit should have offset and n set.
 
-  self.offset == 1 starts at midpoints, 0 at hexagon corners
-  self.n is the number of slices and should be 2, 3, 4, 6 or 12.
-
-  Again, construction avoids intersection operations where possible.
+  Places unit.n points equally spaced around the perimeter of the hexagon.
+  Slices are formed by connecting some sequence of these points (and any
+  intervening hexagon corners) and the hexagon centre to form a pie slice.
+  unit.offset = 0 starts from corner 0. unit.offset starts half way between
+  corner 0 and corner 1. Other values of unit.offset scale linear between
+  these.
 
   Args:
     unit (TileUnit):  the TileUnit to setup.
@@ -150,14 +153,17 @@ def setup_hex_slice(unit:"TileUnit") -> None:
 
 
 def setup_square_slice(unit:"TileUnit") -> None:
-  """Tilings from radial slices of a square into 2, 4, or 8 slices.
+  """Arbitrary number of radial slices of a square, with an optional
+  offset starting point.
 
   The supplied unit should have offset and n set.
 
-  self.offset == 1 starts at midpoints, 0 at corners
-  self.n is the number of slices and should be 2, 4, or 8.
-
-  Again, construction avoids intersection operations where possible.
+  Places unit.n points equally spaced around the perimeter of the square.
+  Slices are formed by connecting some sequence of these points (and any
+  intervening squares corners) and the square centre to form a pie slice.
+  unit.offset = 0 starts from corner 0. unit.offset starts half way between
+  corner 0 and corner 1. Other values of unit.offset scale linear between
+  these.
 
   Args:
     unit (TileUnit):  the TileUnit to setup.

@@ -113,7 +113,7 @@ def _(mo):
     mo.md(
         r"""
         ## Hexagon and square slices
-        We can slice base hexagon or square tilings into pie segments, with a fractional offset from the base polygon corner.
+        Pie slices of hexagons or squares, with an offset specifying how far along from start to midpoint of the first segment slices should start.
         """
     )
     return
@@ -125,7 +125,7 @@ def _(mo):
         options=["hex-slice", "square-slice"],
         value="hex-slice"
     )
-    mo.md(f"#### Slice or dissection? {hex_or_square_slice}")
+    mo.md(f"#### Hex or square? {hex_or_square_slice}")
     return (hex_or_square_slice,)
 
 
@@ -157,19 +157,19 @@ def _(
     t_inset,
     tile_rotate,
 ):
-    hex = TileUnit(tiling_type=hex_or_square_slice.value, 
+    slices = TileUnit(tiling_type=hex_or_square_slice.value, 
                    n=n_slices.value, offset=offset_slices.value) \
       .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
       .transform_rotate(tile_rotate.value) \
       .inset_tiles(t_inset.value) \
       .inset_prototile(p_inset.value)
-    plot_tiles(hex)
-    return (hex,)
+    plot_tiles(slices)
+    return (slices,)
 
 
 @app.cell
-def _(hex, hex_or_square_slice, mo, n_slices, offset_slices):
-    _download_button = mo.download(data=hex.tiles.to_json().encode('utf-8'), 
+def _(hex_or_square_slice, mo, n_slices, offset_slices, slices):
+    _download_button = mo.download(data=slices.tiles.to_json().encode('utf-8'), 
                 filename=f'{hex_or_square_slice.value}-{n_slices.value}-{offset_slices.value:.3f}_tile_unit.json', 
                 mimetype='text/plain', label='Download')
     mo.md(f'Click to download **square/hex slice** tile unit {_download_button}')
@@ -178,7 +178,71 @@ def _(hex, hex_or_square_slice, mo, n_slices, offset_slices):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""## Laves tilings and their Archimedean duals""")
+    mo.md(
+        """
+        ## Hex dissections
+        4, 7 and 9 dissections of the hexagon in two different varieties.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(list_to_dict, mo):
+    n_pieces = mo.ui.dropdown(
+        options = list_to_dict([4, 7, 9]),
+        value = "7"
+    )
+    mo.md(f"#### Number of pieces&nbsp;&nbsp;{n_pieces}")
+    return (n_pieces,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    dissection_offset = mo.ui.switch(value = True)
+    mo.md(f"#### Start from corners?&nbsp;&nbsp;{dissection_offset}")
+    return (dissection_offset,)
+
+
+@app.cell(hide_code=True)
+def _(
+    TileUnit,
+    aspect,
+    dissection_offset,
+    math,
+    n_pieces,
+    p_inset,
+    plot_tiles,
+    t_inset,
+    tile_rotate,
+):
+    pieces = TileUnit(tiling_type="hex-dissection", 
+                   n=n_pieces.value, offset=0 if dissection_offset.value else 1) \
+      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
+      .transform_rotate(tile_rotate.value) \
+      .inset_tiles(t_inset.value) \
+      .inset_prototile(p_inset.value)
+    plot_tiles(pieces)
+    return (pieces,)
+
+
+@app.cell
+def _(dissection_offset, mo, n_pieces, pieces):
+    _download_button = mo.download(data=pieces.tiles.to_json().encode('utf-8'), 
+                filename=f'hex-dissection-{n_pieces.value}-{dissection_offset.value}_tile_unit.json', 
+                mimetype='text/plain', label='Download')
+    mo.md(f'Click to download **Hex dissection** tile unit {_download_button}')
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## Laves tilings and their Archimedean duals
+        The Laves tilings are monohedral. They are dual to the Archimedean tilings by regular polygons. We support 7 of the 11 possible tilings.
+        """
+    )
     return
 
 
