@@ -27,18 +27,23 @@ def _(mo):
     p_inset = mo.ui.slider(0, 50, 5, value=10)
     show_prototile = mo.ui.switch(value=False)
     show_reg_prototile = mo.ui.switch(value=False)
-    palette = mo.ui.dropdown(options=["tab10", "tab20", "tab20b"], value="tab10")
+    tile_rotate = mo.ui.slider(start=0, stop=90, step=5, value=0)
+    aspect = mo.ui.slider(start=1, stop=4, step=0.1, value=1)
+    palette = mo.ui.dropdown(options=["Spectral", "tab10", "tab20"], value="Spectral")
 
     mo.md("\n".join(["### General settings",
-      f"#### Set radius {radius}&nbsp;&nbsp;Tile inset {t_inset}&nbsp;&nbsp;Prototile inset {p_inset}",
-      f"#### Show base tile {show_prototile}&nbsp;&nbsp;Show repeat unit {show_reg_prototile}&nbsp;Palette {palette}"]))
+      f"#### Rotate tile unit by {tile_rotate}&nbsp;&nbsp;Aspect ratio {aspect}",               
+      f"#### Tile inset {t_inset}&nbsp;&nbsp;Prototile inset {p_inset}",
+      f"#### Set radius {radius}&nbsp;&nbsp;Show base tile {show_prototile}&nbsp;&nbsp;Show repeat unit {show_reg_prototile}&nbsp;Palette {palette}"]))
     return (
+        aspect,
         p_inset,
         palette,
         radius,
         show_prototile,
         show_reg_prototile,
         t_inset,
+        tile_rotate,
     )
 
 
@@ -73,13 +78,27 @@ def _(list_to_dict, mo):
 
 
 @app.cell(hide_code=True)
-def _(TileUnit, hex_or_square, n_cols, p_inset, plot_tiles, t_inset):
-    colourings = TileUnit(tiling_type=hex_or_square.value, n = n_cols.value).inset_tiles(t_inset.value).inset_prototile(p_inset.value)
+def _(
+    TileUnit,
+    aspect,
+    hex_or_square,
+    math,
+    n_cols,
+    p_inset,
+    plot_tiles,
+    t_inset,
+    tile_rotate,
+):
+    colourings = TileUnit(tiling_type=hex_or_square.value, n = n_cols.value) \
+      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
+      .transform_rotate(tile_rotate.value) \
+      .inset_tiles(t_inset.value) \
+      .inset_prototile(p_inset.value)
     plot_tiles(colourings)
     return (colourings,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(colourings, hex_or_square, mo, n_cols):
     _download_button = mo.download(data=colourings.tiles.to_json().encode('utf-8'), 
                                   filename=f'{hex_or_square.value}-{n_cols.value}_tile_unit.json', 
@@ -93,8 +112,8 @@ def _(colourings, hex_or_square, mo, n_cols):
 def _(mo):
     mo.md(
         r"""
-        ## Hexagon slices and dissections
-        We can subdivide hexagons in many different ways. The most easily specified are 'pie slices' which, given the 6 sides of a hexagon yield regular tilings when 2, 3, 4, 6 or 12 slices are made. Dissections are more arbitrary (there are many more possibilities than implemented here).
+        ## Hexagon and square slices
+        We can slice base hexagon or square tilings into pie segments, with a fractional offset from the base polygon corner.
         """
     )
     return
@@ -102,57 +121,58 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    slice_or_dissect = mo.ui.dropdown(
-        options=["hex-slice", "hex-dissection"],
+    hex_or_square_slice = mo.ui.dropdown(
+        options=["hex-slice", "square-slice"],
         value="hex-slice"
     )
-    mo.md(f"#### Slice or dissection? {slice_or_dissect}")
-    return (slice_or_dissect,)
-
-
-@app.cell(hide_code=True)
-def _(mo, slice_or_dissect):
-    n_pieces = mo.ui.dropdown(
-        options=({"2": 2, "3": 3, "4": 4, "6": 6, "12": 12}
-                 if slice_or_dissect.value == "hex-slice"
-                 else {"4": 4, "7": 7, "9": 9}),
-        value="6" if slice_or_dissect.value == "hex-slice" else "7"
-    )
-    mo.md(f"#### Choose number of pieces {n_pieces}")
-    return (n_pieces,)
+    mo.md(f"#### Slice or dissection? {hex_or_square_slice}")
+    return (hex_or_square_slice,)
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    offset_cuts = mo.ui.switch(value=True)
-    mo.md(f"#### Centre cuts on edges {offset_cuts}")
-    return (offset_cuts,)
+    n_slices = mo.ui.slider(start=2, stop=24, step=1, value=6)
+    mo.md(f"#### Set number of slices {n_slices}")
+    return (n_slices,)
+
+
+@app.cell
+def _(mo):
+    offset_slices = mo.ui.slider(steps=[0, 1/4, 1/3, 1/2, 2/3, 3/4, 1], 
+                                 value=0, show_value=True)
+    mo.md(f"#### Slice offset {offset_slices}")
+    return (offset_slices,)
 
 
 @app.cell
 def _(
     TileUnit,
-    n_pieces,
-    offset_cuts,
+    aspect,
+    hex_or_square_slice,
+    math,
+    n_slices,
+    offset_slices,
     p_inset,
     plot_tiles,
-    slice_or_dissect,
     t_inset,
+    tile_rotate,
 ):
-    hex = TileUnit(tiling_type=slice_or_dissect.value, 
-                   n=n_pieces.value, offset=1 if offset_cuts.value else 0) \
-          .inset_tiles(t_inset.value) \
-          .inset_prototile(p_inset.value)
+    hex = TileUnit(tiling_type=hex_or_square_slice.value, 
+                   n=n_slices.value, offset=offset_slices.value) \
+      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
+      .transform_rotate(tile_rotate.value) \
+      .inset_tiles(t_inset.value) \
+      .inset_prototile(p_inset.value)
     plot_tiles(hex)
     return (hex,)
 
 
 @app.cell
-def _(hex, mo, n_pieces, offset_cuts, slice_or_dissect):
+def _(hex, hex_or_square_slice, mo, n_slices, offset_slices):
     _download_button = mo.download(data=hex.tiles.to_json().encode('utf-8'), 
-                filename=f'{slice_or_dissect.value}-{n_pieces.value}-{offset_cuts.value}_tile_unit.json', 
+                filename=f'{hex_or_square_slice.value}-{n_slices.value}-{offset_slices.value:.3f}_tile_unit.json', 
                 mimetype='text/plain', label='Download')
-    mo.md(f'Click to download **hex slice/dissection** tile unit {_download_button}')
+    mo.md(f'Click to download **square/hex slice** tile unit {_download_button}')
     return
 
 
@@ -178,11 +198,23 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(TileUnit, laves_or_arch, p_inset, plot_tiles, t_inset, tiling_code):
+def _(
+    TileUnit,
+    aspect,
+    laves_or_arch,
+    math,
+    p_inset,
+    plot_tiles,
+    t_inset,
+    tile_rotate,
+    tiling_code,
+):
     laves_or_arch_tiles = TileUnit(tiling_type=laves_or_arch.value,
                              code=tiling_code.value) \
-                    .inset_tiles(t_inset.value) \
-                    .inset_prototile(p_inset.value)
+      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
+      .transform_rotate(tile_rotate.value) \
+      .inset_tiles(t_inset.value) \
+      .inset_prototile(p_inset.value)
     plot_tiles(laves_or_arch_tiles)
     return (laves_or_arch_tiles,)
 
@@ -211,6 +243,12 @@ def _(palette, radius, show_prototile, show_reg_prototile):
         plot.axis("off")
         return plot
     return list_to_dict, plot_tiles
+
+
+@app.cell(hide_code=True)
+def _():
+    import math
+    return (math,)
 
 
 @app.cell(hide_code=True)

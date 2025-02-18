@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING
 import copy
 import itertools
 import string
+import math
 
 import geopandas as gpd
 import numpy as np
@@ -140,86 +141,61 @@ def setup_hex_slice(unit:"TileUnit") -> None:
   """
   _setup_base_tile(unit, TileShape.HEXAGON)
   hexagon = tiling_utils.get_regular_polygon(unit.spacing, 6)
-  # note that shapely coords includes the first point at beginning
-  # and end - very convenient!
-  v = list(hexagon.exterior.coords)
-  # midpoints
-  m = [((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
-          for p1, p2 in zip(v[:-1], v[1:])]
-  # chain into a list of corner, midpoint, corner, midpoint..., i.e.
-  #
-  #           6  5  4
-  #          7       3
-  #         8         2
-  #          9       1
-  #           10 11 0
-  #
-  # then depending on number of slices and offset pick out points.
-  # Do this explicitly not by rotation to avoid gaps.
-  p = list(itertools.chain(*zip(v[:-1], m)))
-  if unit.n == 2:
-    slices = (
-      [geom.Polygon([p[0], p[2], p[4], p[6]]),
-       geom.Polygon([p[6], p[8], p[10], p[0]])]
-      if unit.offset == 0 else
-      [geom.Polygon([p[1], p[2], p[4], p[6], p[7]]),
-       geom.Polygon([p[7], p[8], p[10], p[0], p[1]])])
-  elif unit.n == 3:
-    slices = (
-      [geom.Polygon([p[0], p[2], p[4], (0, 0)]),
-       geom.Polygon([p[4], p[6], p[8], (0, 0)]),
-       geom.Polygon([p[8], p[10], p[0], (0, 0)])]
-      if unit.offset == 0 else
-      [geom.Polygon([p[1], p[2], p[4], p[5], (0, 0)]),
-       geom.Polygon([p[5], p[6], p[8], p[9], (0, 0)]),
-       geom.Polygon([p[9], p[10], p[0], p[1], (0, 0)])])
-  elif unit.n == 4:
-    slices = (
-      [geom.Polygon([p[0], p[2], p[3], (0, 0)]),
-       geom.Polygon([p[3], p[4], p[6], (0, 0)]),
-       geom.Polygon([p[6], p[8], p[9], (0, 0)]),
-       geom.Polygon([p[9], p[10], p[0], (0, 0)])]
-      if unit.offset == 0 else
-      [geom.Polygon([p[1], p[2], p[4], (0, 0)]),
-       geom.Polygon([p[4], p[6], p[7], (0, 0)]),
-       geom.Polygon([p[7], p[8], p[10], (0, 0)]),
-       geom.Polygon([p[10], p[0], p[1], (0, 0)])])
-  elif unit.n == 6:
-    slices = (
-      [geom.Polygon([p[0], p[2], (0, 0)]),
-       geom.Polygon([p[2], p[4], (0, 0)]),
-       geom.Polygon([p[4], p[6], (0, 0)]),
-       geom.Polygon([p[6], p[8], (0, 0)]),
-       geom.Polygon([p[8], p[10], (0, 0)]),
-       geom.Polygon([p[10], p[0], (0, 0)])]
-      if unit.offset == 0 else
-      [geom.Polygon([p[1], p[2], p[3], (0, 0)]),
-       geom.Polygon([p[3], p[4], p[5], (0, 0)]),
-       geom.Polygon([p[5], p[6], p[7], (0, 0)]),
-       geom.Polygon([p[7], p[8], p[9], (0, 0)]),
-       geom.Polygon([p[9], p[10], p[11], (0, 0)]),
-       geom.Polygon([p[11], p[0], p[1], (0, 0)])])
-  elif unit.n == 12:
-    boundary = geom.LineString(hexagon.exterior.coords)
-    along = np.linspace(-1/24, 1, 26)
-    points = [line_interpolate_point(boundary, a, normalized = True) for a in along]
-    if unit.offset == 0:
-      slices = [geom.Polygon([(0, 0), points[i], points[i+2]])
-                for i in range(1, 24, 2)]
-    else:
-      slices = [geom.Polygon([(0, 0), points[i], points[i+1], points[i+2]]) if i % 2 == 0
-                else geom.Polygon([(0, 0), points[i], points[i+2]])
-                for i in range(0, 24, 2)]
-  else:
-    print(f"a [{unit.n}] hex-slice is not implemented.")
-    _setup_none_tile(unit)
-    return
-
+  slices = _get_radially_sliced_polygon(hexagon, 6, unit.n, unit.offset)
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(slices))
   unit.regularised_prototile = copy.deepcopy(unit.prototile)
+
+
+def setup_square_slice(unit:"TileUnit") -> None:
+  """Tilings from radial slices of a square into 2, 4, or 8 slices.
+
+  The supplied unit should have offset and n set.
+
+  self.offset == 1 starts at midpoints, 0 at corners
+  self.n is the number of slices and should be 2, 4, or 8.
+
+  Again, construction avoids intersection operations where possible.
+
+  Args:
+    unit (TileUnit):  the TileUnit to setup.
+  """
+  _setup_base_tile(unit, TileShape.RECTANGLE)
+  square = tiling_utils.get_regular_polygon(unit.spacing, 4)
+  slices = _get_radially_sliced_polygon(square, 4, unit.n, unit.offset)
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:unit.n]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(slices))
+  unit.regularised_prototile = copy.deepcopy(unit.prototile)
+
+
+def _get_radially_sliced_polygon(shape:geom.Polygon, n_sides:int,
+                                 n_slices:int, offset:float):
+  boundary = geom.LineString(shape.exterior.coords)
+  print(f'{n_sides=} {n_slices=} {offset=}')
+  offset = (offset % 1 
+            if offset < 0 or offset > 1 
+            else offset)
+  offset = (offset * n_sides / n_slices / 2 
+            if n_slices >= n_sides
+            else offset / 2)
+  along = [n_sides * _ / n_slices + offset for _ in range(n_slices)]
+  along = along + [n_sides + along[0]]
+  points = [line_interpolate_point(boundary, (a % n_sides) / n_sides, 
+                                    normalized = True) for a in along]
+  corners = [line_interpolate_point(boundary, i / n_sides, normalized = True) 
+              for i in range(n_sides + 1)]  
+  slices = []
+  for a1, a2, p1, p2 in zip(along[:-1], along[1:], points[:-1], points[1:]):
+    if math.floor(a1) == math.floor(a2):
+      slices.append(geom.Polygon([p1, p2, (0, 0)]))
+    else:
+      missed_corners = corners[math.ceil(a1):math.ceil(a2)]
+      slices.append(geom.Polygon([p1] + missed_corners + [p2, (0, 0)]))
+  return gpd.GeoSeries(slices)
 
 
 def setup_hex_dissection(unit:"TileUnit") -> None:
@@ -350,85 +326,6 @@ def get_9_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
       geom.Polygon([inner[5], inner[4], outer[4], outer[5]]),
       geom.Polygon([inner[0], inner[5], outer[5], outer[0]])
     ]
-
-
-def setup_square_slice(unit:"TileUnit") -> None:
-  """Tilings from radial slices of a square into 2, 4, or 8 slices.
-
-  The supplied unit should have offset and n set.
-
-  self.offset == 1 starts at midpoints, 0 at corners
-  self.n is the number of slices and should be 2, 4, or 8.
-
-  Again, construction avoids intersection operations where possible.
-
-  Args:
-    unit (TileUnit):  the TileUnit to setup.
-  """
-  _setup_base_tile(unit, TileShape.RECTANGLE)
-  square = tiling_utils.get_regular_polygon(unit.spacing, 4)
-  # note that shapely coords includes the first point at beginning
-  # and end - very convenient!
-  v = list(square.exterior.coords)
-  # midpoints
-  m = [((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
-          for p1, p2 in zip(v[:-1], v[1:])]
-  # chain into a list of corner, midpoint, corner, midpoint..., i.e.
-  #
-  #    4  3  2
-  #    5     1
-  #    6  7  0 
-  #
-  # then depending on number of slices and offset pick out points.
-  # Do this explicitly not by rotation to avoid gaps.
-  p = list(itertools.chain(*zip(v[:-1], m)))
-  if unit.n == 2:
-    slices = (
-      [geom.Polygon([p[0], p[2], p[4]]),
-       geom.Polygon([p[4], p[6], p[0]])]
-      if unit.offset == 0 else
-      [geom.Polygon([p[1], p[2], p[4], p[5]]),
-       geom.Polygon([p[5], p[6], p[0], p[1]])])
-  elif unit.n == 4:
-    slices = (
-      [geom.Polygon([p[2], p[0], (0, 0)]),
-       geom.Polygon([p[4], p[2], (0, 0)]),
-       geom.Polygon([p[6], p[4], (0, 0)]),
-       geom.Polygon([p[0], p[6], (0, 0)])]
-      if unit.offset == 0 else
-      [geom.Polygon([p[3], p[2], p[1], (0, 0)]),
-       geom.Polygon([p[5], p[4], p[3], (0, 0)]),
-       geom.Polygon([p[7], p[6], p[5], (0, 0)]),
-       geom.Polygon([p[1], p[0], p[7], (0, 0)])])
-  elif unit.n == 8:
-    # need corners and points at 1/4, 1/2, 3/4 along each side of base polygon
-    boundary = geom.LineString(square.exterior.coords)
-    along = np.linspace(-1/16, 1, 18)
-    # get the points
-    points = [line_interpolate_point(boundary, a, normalized = True) 
-              for a in along]
-    if unit.offset == 0:
-      # start at corner i.e., item 1 in the points list) and step through
-      # in steps of 2, skipping the point in between (which is colinear)
-      slices = [geom.Polygon([(0, 0), points[i], points[i+2]])
-                for i in range(1, 16, 2)]
-    else:
-      # start at item 0, the one before the first corner, and this time half
-      # the slices include the middle point, which is a corner of the square
-      slices = [
-        geom.Polygon([(0, 0), points[i], points[i+1], points[i+2]])
-        if i % 2 == 0 else geom.Polygon([(0, 0), points[i], points[i+2]])
-        for i in range(0, 16, 2)]
-  else:
-    print(f"a [{unit.n}] square-slice is not implemented.")
-    _setup_none_tile(unit)
-    return
-
-  unit.tiles = gpd.GeoDataFrame(
-    data = {"tile_id": list(string.ascii_letters)[:unit.n]},
-    crs = unit.crs,
-    geometry = gpd.GeoSeries(slices))
-  unit.regularised_prototile = copy.deepcopy(unit.prototile)
 
 
 def setup_laves(unit:"TileUnit") -> None:

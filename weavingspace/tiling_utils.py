@@ -1129,4 +1129,3 @@ def get_intersection(line1:StraightLine,
   x = x if x_set else (line1.B * line2.C - line2.B * line1.C) / denominator
   y = y if y_set else (line1.C * line2.A - line2.C * line1.A) / denominator
   return geom.Point(x, y)
-

@@ -18,3 +18,5 @@ An overview of the concepts assembled from early proof-of-concept _R_ code is on
 
 ## Other explanatory stuff
 Any of the notebooks in the `examples` folder may be of interest. Some background material and thinking about tiling is in [these notes](https://dosull.github.io/weaving-space/notes/notes-on-tiling.html) and these reflections on the [state of the code](https://dosull.github.io/weaving-space/notes/state-of-the-code.html).
+
+[Try this](https://dosull.github.io/weaving-space/tiling-explorer/)
