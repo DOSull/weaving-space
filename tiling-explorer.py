@@ -28,11 +28,11 @@ def _(mo):
     show_prototile = mo.ui.switch(value=False)
     show_reg_prototile = mo.ui.switch(value=False)
     tile_rotate = mo.ui.slider(start=0, stop=90, step=5, value=0)
-    aspect = mo.ui.slider(start=1, stop=4, step=0.1, value=1)
+    aspect = mo.ui.slider(start=0.3, stop=3, step=0.01, value=1)
     palette = mo.ui.dropdown(options=["Spectral", "tab10", "tab20"], value="Spectral")
 
     mo.md("\n".join(["### General settings",
-      f"#### Rotate tile unit by {tile_rotate}&nbsp;&nbsp;Aspect ratio {aspect}",               
+      f"#### Rotate tile unit by {tile_rotate}&nbsp;&nbsp;Width/height {aspect}",               
       f"#### Tile inset {t_inset}&nbsp;&nbsp;Prototile inset {p_inset}",
       f"#### Set radius {radius}&nbsp;&nbsp;Show base tile {show_prototile}&nbsp;&nbsp;Show repeat unit {show_reg_prototile}&nbsp;Palette {palette}"]))
     return (
@@ -90,8 +90,8 @@ def _(
     tile_rotate,
 ):
     colourings = TileUnit(tiling_type=hex_or_square.value, n = n_cols.value) \
-      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
       .transform_rotate(tile_rotate.value) \
+      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
       .inset_tiles(t_inset.value) \
       .inset_prototile(p_inset.value)
     plot_tiles(colourings)
@@ -159,8 +159,8 @@ def _(
 ):
     slices = TileUnit(tiling_type=hex_or_square_slice.value, 
                    n=n_slices.value, offset=offset_slices.value) \
-      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
       .transform_rotate(tile_rotate.value) \
+      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
       .inset_tiles(t_inset.value) \
       .inset_prototile(p_inset.value)
     plot_tiles(slices)
@@ -218,8 +218,8 @@ def _(
 ):
     pieces = TileUnit(tiling_type="hex-dissection", 
                    n=n_pieces.value, offset=0 if dissection_offset.value else 1) \
-      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
       .transform_rotate(tile_rotate.value) \
+      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
       .inset_tiles(t_inset.value) \
       .inset_prototile(p_inset.value)
     plot_tiles(pieces)
@@ -275,8 +275,8 @@ def _(
 ):
     laves_or_arch_tiles = TileUnit(tiling_type=laves_or_arch.value,
                              code=tiling_code.value) \
-      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
       .transform_rotate(tile_rotate.value) \
+      .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
       .inset_tiles(t_inset.value) \
       .inset_prototile(p_inset.value)
     plot_tiles(laves_or_arch_tiles)
