@@ -1129,3 +1129,46 @@ def get_intersection(line1:StraightLine,
   x = x if x_set else (line1.B * line2.C - line2.B * line1.C) / denominator
   y = y if y_set else (line1.C * line2.A - line2.C * line1.A) / denominator
   return geom.Point(x, y)
+
+def get_prototiles_from_vectors(v1:tuple[float], v2:tuple[float]):
+  # parallelogram exists regardless
+  parallelogram = geom.Polygon([
+    geom.Point(0, 0), v1, (v1[0]+v2[0], v1[1]+v2[1]), v2])
+  # pc = parallelogram.centroid
+  # parallelogram = affine.translate(geom.Polygon, xoff=-pc.x, yoff=-pc.y)
+  triangle1 = ensure_cw(geom.Polygon([(0, 0), v1, v2]))
+  triangle2 = ensure_cw(geom.Polygon([(0, 0), v1, (-v2[0], -v2[1])]))
+  angles1 = get_interior_angles(triangle1)
+  angles2 = get_interior_angles(triangle2)
+  triangle = triangle1 if max(angles1) <= max(angles2) else triangle2
+  c = incentre(triangle)
+  # c = triangle.centroid
+  t_corners = [geom.Point(p[0] - c.x, p[1] - c.y) 
+               for p in triangle.exterior.coords]
+  e_corners = [geom.Point(p.x + q.x, p.y + q.y) 
+               for p, q in zip(t_corners[:-1], t_corners[1:])]
+  hex_corners = []
+  for i in range(3):
+    hex_corners.extend([t_corners[i], e_corners[i]])
+  hex = geom.Polygon(hex_corners)
+  hex = affine.translate(hex, -hex.centroid.x, -hex.centroid.y)
+  return parallelogram, hex
+  
+  # p = [p for p in triangle.exterior.coords]
+  # e = [geom.Point(p2[0] - p1[0], p2[1] - p1[1]) 
+  #       for p1, p2 in zip(p[:-1], p[1:])]
+  # e = [e[0], geom.Point(-e[1].x, -e[1].y), e[2]]
+
+  # # L1 = get_straight_line(geom.Point(0, 0), e[0], True)
+  # # L2 = get_straight_line(geom.Point(0, 0), e[1], True)
+  # # L3 = get_straight_line(geom.Point(0, 0), e[2], True)
+  # # L4 = get_straight_line(geom.Point(0, 0), 
+  # #                         geom.Point(-e[0].x, -e[0].y), True)
+  # # c1 = get_intersection(L1, L2)
+  # # c2 = get_intersection(L2, L3)
+  # # c3 = get_intersection(L3, L4)
+  # # print(f'{c1=} {c2=} {c3=}')
+  # # hex = geom.Polygon([c1, c2, c3, geom.Point(-c1.x, -c1.y), 
+  # #                     geom.Point(-c2.x, -c2.y), geom.Point(-c3.x, -c3.y)])
+  # return parallelogram, hex
+  

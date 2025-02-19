@@ -331,7 +331,8 @@ class Tileable:
     if not include_0:  # throw away the identity vector
       vecs.pop((0, 0, 0) if self.base_shape in (TileShape.HEXAGON,) else (0, 0))
     ids, tiles = [], []
-    # we need to add the translated prototiles in order of their distance from # tile 0, esp. in the square case, i.e. something like this:
+    # we need to add the translated prototiles in order of their distance from 
+    # tile 0, esp. in the square case, i.e. something like this:
     #
     #      5 4 3 4 5
     #      4 2 1 2 4
