@@ -11,6 +11,7 @@ from typing import Iterable, Union
 import re
 import string
 from collections import namedtuple
+from itertools import chain
 
 import numpy as np
 from scipy import interpolate
@@ -1130,45 +1131,51 @@ def get_intersection(line1:StraightLine,
   y = y if y_set else (line1.C * line2.A - line2.C * line1.A) / denominator
   return geom.Point(x, y)
 
-def get_prototiles_from_vectors(v1:tuple[float], v2:tuple[float]):
-  # parallelogram exists regardless
-  parallelogram = geom.Polygon([
-    geom.Point(0, 0), v1, (v1[0]+v2[0], v1[1]+v2[1]), v2])
-  # pc = parallelogram.centroid
-  # parallelogram = affine.translate(geom.Polygon, xoff=-pc.x, yoff=-pc.y)
-  triangle1 = ensure_cw(geom.Polygon([(0, 0), v1, v2]))
-  triangle2 = ensure_cw(geom.Polygon([(0, 0), v1, (-v2[0], -v2[1])]))
-  angles1 = get_interior_angles(triangle1)
-  angles2 = get_interior_angles(triangle2)
-  triangle = triangle1 if max(angles1) <= max(angles2) else triangle2
-  c = incentre(triangle)
-  # c = triangle.centroid
-  t_corners = [geom.Point(p[0] - c.x, p[1] - c.y) 
-               for p in triangle.exterior.coords]
-  e_corners = [geom.Point(p.x + q.x, p.y + q.y) 
-               for p, q in zip(t_corners[:-1], t_corners[1:])]
-  hex_corners = []
-  for i in range(3):
-    hex_corners.extend([t_corners[i], e_corners[i]])
-  hex = geom.Polygon(hex_corners)
-  hex = affine.translate(hex, -hex.centroid.x, -hex.centroid.y)
-  return parallelogram, hex
-  
-  # p = [p for p in triangle.exterior.coords]
-  # e = [geom.Point(p2[0] - p1[0], p2[1] - p1[1]) 
-  #       for p1, p2 in zip(p[:-1], p[1:])]
-  # e = [e[0], geom.Point(-e[1].x, -e[1].y), e[2]]
+def get_prototile(t:"TileUnit") -> geom.Polygon:
+  return _get_prototile_2(t)
 
-  # # L1 = get_straight_line(geom.Point(0, 0), e[0], True)
-  # # L2 = get_straight_line(geom.Point(0, 0), e[1], True)
-  # # L3 = get_straight_line(geom.Point(0, 0), e[2], True)
-  # # L4 = get_straight_line(geom.Point(0, 0), 
-  # #                         geom.Point(-e[0].x, -e[0].y), True)
-  # # c1 = get_intersection(L1, L2)
-  # # c2 = get_intersection(L2, L3)
-  # # c3 = get_intersection(L3, L4)
-  # # print(f'{c1=} {c2=} {c3=}')
-  # # hex = geom.Polygon([c1, c2, c3, geom.Point(-c1.x, -c1.y), 
-  # #                     geom.Point(-c2.x, -c2.y), geom.Point(-c3.x, -c3.y)])
-  # return parallelogram, hex
+def _get_prototile_1(t:"TileUnit"):
+  vecs = t.get_vectors()
+  if len(vecs) < 6:
+    v1, v2 = vecs[:2]
+    pll = geom.Polygon([geom.Point(0, 0), v1, (v1[0]+v2[0], v1[1]+v2[1]), v2])
+    return affine.translate(pll, xoff = -pll.centroid.x, yoff = -pll.centroid.y)
+  else:
+    q1 = geom.Polygon([vecs[0], vecs[1], vecs[3], vecs[4]])
+    q2 = geom.Polygon([vecs[1], vecs[2], vecs[4], vecs[5]])
+    q3 = geom.Polygon([vecs[2], vecs[3], vecs[5], vecs[0]])
+    return q1.intersection(q2).intersection(q3).simplify(1)
+    # v1, v2, v3 = vecs[:3]
+    # # pc = parallelogram.centroid
+    # # parallelogram = affine.translate(geom.Polygon, xoff=-pc.x, yoff=-pc.y)
+    # triangle1 = ensure_cw(geom.Polygon([(0, 0), v1, v2]))
+    # triangle2 = ensure_cw(geom.Polygon([(0, 0), v1, (-v2[0], -v2[1])]))
+    # angles1 = get_interior_angles(triangle1)
+    # angles2 = get_interior_angles(triangle2)
+    # triangle = triangle1 if max(angles1) <= max(angles2) else triangle2
+    # c = triangle.centroid
+    # t_corners = [geom.Point(p[0] - c.x, p[1] - c.y) 
+    #             for p in triangle.exterior.coords]
+    # e_corners = [geom.Point(p.x + q.x, p.y + q.y) 
+    #             for p, q in zip(t_corners[:-1], t_corners[1:])]
+    # return geom.Polygon([c for c in chain(*zip(t_corners, e_corners))])
   
+def _get_prototile_2(t:"TileUnit"):
+  starter_shape = safe_union(t.tiles.geometry, as_polygon = True)
+  corners = [geom.Point(p) for p in starter_shape.exterior.coords]
+  corners = [p1 for p1, p2 in zip(corners[:-1], corners[1:])
+             if p1.distance(p2) > 1]
+  angles = get_interior_angles(geom.Polygon(corners))
+  corners = [c for c, a in zip(corners, angles) if a <= 180]
+  vecs = t.get_vectors()
+  matches = []
+  for i, ci in enumerate(corners):
+    for j, cj in enumerate(corners):
+      if j > i:
+        v = (cj.x - ci.x, cj.y - ci.y)
+        if any([np.isclose(v[0], vec[0], 1e-3) and 
+                np.isclose(v[1], vec[1], 1e-3) for vec in vecs]):
+          matches.append((i, j))
+  keepers = sorted(list(set([i for i in chain(*matches)])))
+  return geom.Polygon([
+    c for i, c in enumerate(corners) if i in keepers]).simplify(1)
