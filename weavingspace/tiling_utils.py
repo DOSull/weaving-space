@@ -3,6 +3,7 @@
 
 # don't understand it but this allows import of TileUnit for type hinting only
 from __future__ import annotations
+from copy import deepcopy
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
   from weavingspace import TileUnit
@@ -11,6 +12,8 @@ from typing import Iterable, Union
 import re
 import string
 from collections import namedtuple
+from collections import defaultdict
+from itertools import combinations
 from itertools import chain
 
 import numpy as np
@@ -1085,17 +1088,6 @@ StraightLine = namedtuple("StraightLine", "A B C")
 """Named tuple to represent equation of a straight line in standard 
 Ax + By + C = 0 form."""
 
-def get_straight_line(p1:geom.Point, p2:geom.Point, 
-                      perpendicular:bool = False) -> StraightLine:
-  if perpendicular:
-    ls = affine.rotate(geom.LineString([p1, p2]), 90)
-    pts = [p for p in ls.coords]
-    x1, y1 = pts[0]
-    x2, y2 = pts[1]
-  else:
-    x1, y1 = p1.x, p1.y
-    x2, y2 = p2.x, p2.y
-  return StraightLine(y1 - y2, x2 - x1, x1 * y2 - x2 * y1)
 
 def get_straight_line(p1:geom.Point, p2:geom.Point, 
                       perpendicular:bool = False) -> StraightLine:
@@ -1108,6 +1100,20 @@ def get_straight_line(p1:geom.Point, p2:geom.Point,
     x1, y1 = p1.x, p1.y
     x2, y2 = p2.x, p2.y
   return StraightLine(y1 - y2, x2 - x1, x1 * y2 - x2 * y1)
+
+
+def get_straight_line(p1:geom.Point, p2:geom.Point, 
+                      perpendicular:bool = False) -> StraightLine:
+  if perpendicular:
+    ls = affine.rotate(geom.LineString([p1, p2]), 90)
+    pts = [p for p in ls.coords]
+    x1, y1 = pts[0]
+    x2, y2 = pts[1]
+  else:
+    x1, y1 = p1.x, p1.y
+    x2, y2 = p2.x, p2.y
+  return StraightLine(y1 - y2, x2 - x1, x1 * y2 - x2 * y1)
+
 
 def get_intersection(line1:StraightLine, 
                      line2:StraightLine) -> geom.Point:
@@ -1131,51 +1137,19 @@ def get_intersection(line1:StraightLine,
   y = y if y_set else (line1.C * line2.A - line2.C * line1.A) / denominator
   return geom.Point(x, y)
 
-def get_prototile(t:"TileUnit") -> geom.Polygon:
-  return _get_prototile_2(t)
 
-def _get_prototile_1(t:"TileUnit"):
-  vecs = t.get_vectors()
-  if len(vecs) < 6:
-    v1, v2 = vecs[:2]
-    pll = geom.Polygon([geom.Point(0, 0), v1, (v1[0]+v2[0], v1[1]+v2[1]), v2])
-    return affine.translate(pll, xoff = -pll.centroid.x, yoff = -pll.centroid.y)
+def get_prototile_from_vectors(vecs:list[tuple[float]]):
+  if len(vecs) == 2:
+    v1, v2 = vecs
+    v3 = [-_ for _ in v1]
+    v4 = [-_ for _ in v2]
+    return geom.Polygon([v1, v2, v3, v4])
   else:
-    q1 = geom.Polygon([vecs[0], vecs[1], vecs[3], vecs[4]])
-    q2 = geom.Polygon([vecs[1], vecs[2], vecs[4], vecs[5]])
-    q3 = geom.Polygon([vecs[2], vecs[3], vecs[5], vecs[0]])
-    return q1.intersection(q2).intersection(q3).simplify(1)
-    # v1, v2, v3 = vecs[:3]
-    # # pc = parallelogram.centroid
-    # # parallelogram = affine.translate(geom.Polygon, xoff=-pc.x, yoff=-pc.y)
-    # triangle1 = ensure_cw(geom.Polygon([(0, 0), v1, v2]))
-    # triangle2 = ensure_cw(geom.Polygon([(0, 0), v1, (-v2[0], -v2[1])]))
-    # angles1 = get_interior_angles(triangle1)
-    # angles2 = get_interior_angles(triangle2)
-    # triangle = triangle1 if max(angles1) <= max(angles2) else triangle2
-    # c = triangle.centroid
-    # t_corners = [geom.Point(p[0] - c.x, p[1] - c.y) 
-    #             for p in triangle.exterior.coords]
-    # e_corners = [geom.Point(p.x + q.x, p.y + q.y) 
-    #             for p, q in zip(t_corners[:-1], t_corners[1:])]
-    # return geom.Polygon([c for c in chain(*zip(t_corners, e_corners))])
-  
-def _get_prototile_2(t:"TileUnit"):
-  starter_shape = safe_union(t.tiles.geometry, as_polygon = True)
-  corners = [geom.Point(p) for p in starter_shape.exterior.coords]
-  corners = [p1 for p1, p2 in zip(corners[:-1], corners[1:])
-             if p1.distance(p2) > 1]
-  angles = get_interior_angles(geom.Polygon(corners))
-  corners = [c for c, a in zip(corners, angles) if a <= 180]
-  vecs = t.get_vectors()
-  matches = []
-  for i, ci in enumerate(corners):
-    for j, cj in enumerate(corners):
-      if j > i:
-        v = (cj.x - ci.x, cj.y - ci.y)
-        if any([np.isclose(v[0], vec[0], 1e-3) and 
-                np.isclose(v[1], vec[1], 1e-3) for vec in vecs]):
-          matches.append((i, j))
-  keepers = sorted(list(set([i for i in chain(*matches)])))
-  return geom.Polygon([
-    c for i, c in enumerate(corners) if i in keepers]).simplify(1)
+    v1, v2, v3 = vecs
+    v4 = [-_ for _ in v1]
+    v5 = [-_ for _ in v2]
+    v6 = [-_ for _ in v3]
+    q1 = geom.Polygon([v1, v2, v4, v5]) 
+    q2 = geom.Polygon([v2, v3, v5, v6]) 
+    q3 = geom.Polygon([v3, v4, v6, v1])
+    return gridify(q3.intersection(q2).intersection(q1))

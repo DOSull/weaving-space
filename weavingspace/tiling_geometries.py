@@ -96,7 +96,7 @@ def setup_cairo(unit:"TileUnit") -> None:
   """
   _setup_base_tile(unit, TileShape.RECTANGLE)  # a square
   d = unit.spacing
-  x = d / 2 / (np.cos(np.radians(15)) + np.cos(np.radians(75)))
+  x = d/2 / (np.cos(np.radians(15)) + np.cos(np.radians(75)))
   # the following is just the geometry, it is what it is...
   # points are (more or less)
   #
@@ -107,7 +107,7 @@ def setup_cairo(unit:"TileUnit") -> None:
   #
   # then rotate -15 and make 4 copies at 90 degree rotations
   p1 = geom.Polygon([(x, 0), (0, 0), (0, x),
-             (x * np.sqrt(3) / 2, x + x / 2),
+             (x * np.sqrt(3) / 2, x + x/2),
              (x * (1 + np.sqrt(3)) / 2, x * (3 - np.sqrt(3)) / 2)])
   p1 = affine.rotate(p1, -15, (0, 0))
   p2 = affine.rotate(p1, 90, (0, 0))
@@ -332,6 +332,65 @@ def get_9_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
       geom.Polygon([inner[5], inner[4], outer[4], outer[5]]),
       geom.Polygon([inner[0], inner[5], outer[5], outer[0]])
     ]
+
+
+def setup_crosses(unit:"TileUnit") -> None:
+  """Tilings from dissection of a square into parts.
+
+  The supplied unit should have n set.
+
+  Args:
+    unit (TileUnit):  the TileUnit to setup.
+  """
+  _setup_base_tile(unit, TileShape.RECTANGLE)
+  square = tiling_utils.get_regular_polygon(unit.spacing, 4)
+  x = unit.spacing / unit.n
+  cross = geom.Polygon([
+      (-x/2, -x/2), (-3 * x/2, -x/2), (-3 * x/2,  x/2), 
+      (-x/2,  x/2), (-x/2,  3 * x/2), ( x/2,  3 * x/2), 
+      ( x/2,  x/2), ( 3 * x/2,  x/2), ( 3 * x/2, -x/2), 
+      ( x/2, -x/2), ( x/2, -3 * x/2), (-x/2, -3 * x/2)])
+  if unit.n == 2:
+    tr = [(-x/2, -x), (x/2, x)]
+    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-3 * x, -x), (-x, 3 * x)])]
+  elif unit.n == 3:
+    tr = [(-3 * x/2, -x), (-x/2, x), (3 * x/2, 0)]
+    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-4 * x, -3 * x), (-5 * x, 0), (-x,  3 * x)])]
+  elif unit.n == 4:
+    tr = [(3 * x/2, x/2), (x/2, -3 * x/2), (-3 * x/2, -x/2), (-x/2, 3 * x/2)]
+    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-4 * x, -3 * x), (-4 * x,  2 * x), (0,  5 * x)])]
+  elif unit.n == 5:
+    tr = [(0, 0), (x, 2 * x), (2 * x, -x), (-x, -2 * x), (-2 * x, x)]
+    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-4 * x, -3 * x), (-3 * x,  4 * x)])]
+  elif unit.n == 6:
+    tr = [(-2 * x, -3 * x/2), (-x,  x/2), (0,  5 * x/2), 
+          ( 2 * x,  3 * x/2), ( x, -x/2), (0, -5 * x/2)]
+    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-3 * x, -6 * x), (-5 * x, 0), (-2 * x,  6 * x)])]
+  elif unit.n == 7:
+    tr = [(0, 0), (-x, -2 * x), (-2 * x,  x), (-x,  3 * x), 
+                  ( x,  2 * x), ( 2 * x, -x), ( x, -3 * x)]
+    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-4 * x, -3 * x), (-5 * x,  5 * x), (-x,  8 * x)])]
+  else:
+    print(f"a [{unit.n}] square-dissection is not implemented.")
+    _setup_none_tile(unit)
+    return
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:unit.n]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(parts))
+  unit.regularised_prototile = copy.deepcopy(unit.prototile)
 
 
 def setup_laves(unit:"TileUnit") -> None:
@@ -603,11 +662,11 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
     # Vectors are rectangular
     hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
     w, h = h, w
-    hexes = [affine.translate(hexagon, dx, 0) for dx in [-w / 2, w / 2]]
+    hexes = [affine.translate(hexagon, dx, 0) for dx in [-w/2, w/2]]
     _setup_base_tile(unit, TileShape.RECTANGLE)
     unit.prototile.geometry = [geom.Polygon([
-      (-5 * w / 4, -3 * h / 8), (-3 * w / 4,  3 * h / 8), 
-      ( 5 * w / 4,  3 * h / 8), ( 3 * w / 4, -3 * h / 8)
+      (-5 * w/4, -3 * h/8), (-3 * w/4,  3 * h/8), 
+      ( 5 * w/4,  3 * h/8), ( 3 * w/4, -3 * h/8)
     ])]
   elif unit.n == 3:
     # Point up hex at '*' displaced to 3 positions:
@@ -647,25 +706,21 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
   elif unit.n == 5:
     hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
     w, h = h, w
-    tr = [(-w, h / 4), (0, h / 4), ( w, h / 4), 
-          (-w / 2, -h / 2), (w / 2, -h / 2)]
+    tr = [(-w, h/4), (0, h/4), ( w, h/4), 
+          (-w/2, -h/2), (w/2, -h/2)]
     hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
     _setup_base_tile(unit, TileShape.HEXAGON)
-    unit.prototile.geometry = [geom.Polygon([
-      (-w, -3 * h / 4), (-3 * w / 2,  0), (-w,  3 * h / 4), 
-      ( w,  3 * h / 4), ( 3 * w / 2,  0), ( w, -3 * h / 4) 
-    ])]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(0,  3 *  h/2), ( 5 * w/2,  3 * h/4), ( 5 * w/2, -3 * h/4)])]
   elif unit.n == 6:
     hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
     w, h = h, w
-    tr = [(-5 * w / 4,  3 * h / 8), (-w / 4,  3 * h / 8), (3 * w / 4,  3 * h / 8), 
-          (-3 * w / 4, -3 * h / 8), ( w / 4, -3 * h / 8), (5 * w / 4, -3 * h / 8)]
+    tr = [(-5 * w/4,  3 * h/8), (-w/4,  3 * h/8), (3 * w/4,  3 * h/8), 
+          (-3 * w/4, -3 * h/8), ( w/4, -3 * h/8), (5 * w/4, -3 * h/8)]
     hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
     _setup_base_tile(unit, TileShape.RECTANGLE)
-    unit.prototile.geometry = [geom.Polygon([
-      (-3 * w / 2, -3 * h / 4), (-3 * w / 2,  3 * h / 4), 
-      ( 3 * w / 2,  3 * h / 4), ( 3 * w / 2, -3 * h / 4) 
-    ])]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-3 * w,  0), (0, -3 * h/2)])]
   elif unit.n == 7:  # the 'H3' tile
     # Make a hexagon and displace in the direction of its
     # own 6 corners, scaled as needed
@@ -680,21 +735,19 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
   elif unit.n == 8:
     hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
     w, h = h, w
-    tr = [(-w,  3 * h / 4), (0,  3 * h / 4), ( w,  3 * h / 4), 
-                       (-w / 2, 0), ( w / 2, 0),
-          (-w, -3 * h / 4), (0, -3 * h / 4), ( w, -3 * h / 4)]
+    tr = [(-w,  3 * h/4), (0,  3 * h/4), ( w,  3 * h/4), 
+                       (-w/2, 0), ( w/2, 0),
+          (-w, -3 * h/4), (0, -3 * h/4), ( w, -3 * h/4)]
     hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
     _setup_base_tile(unit, TileShape.HEXAGON)
-    unit.prototile.geometry = [geom.Polygon([
-      (-3 * w / 2, -h), (-3 * w / 2, -h / 2), (-w,  5 * h / 4), 
-      ( 3 * w / 2,  h), ( 3 * w / 2,  h / 2), ( w, -5 * h / 4) 
-    ])]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-w/2, -9 *  h/4), (-3 * w, -3 * h/2), (-5 * w/2,  3 * h/4)])]
   elif unit.n == 9:
     _setup_base_tile(unit, TileShape.HEXAGON)
     offsets = [
-      (-3 * w / 4, -5 * h / 4), (0, -3 * h / 4), ( 3 * w / 4, -5 * h / 4),
-      (-3 * w / 4,     -h / 4), (0,      h / 4), ( 3 * w / 4,     -h / 4),
-      (-3 * w / 4,  3 * h / 4), (0,  5 * h / 4), ( 3 * w / 4,  3 * h / 4)
+      (-3 * w/4, -5 * h/4), (0, -3 * h/4), ( 3 * w/4, -5 * h/4),
+      (-3 * w/4,     -h/4), (0,      h/4), ( 3 * w/4,     -h/4),
+      (-3 * w/4,  3 * h/4), (0,  5 * h/4), ( 3 * w/4,  3 * h/4)
     ]
     hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
   else:
@@ -720,33 +773,26 @@ def setup_square_colouring(unit:"TileUnit") -> None:
   s = sq.bounds[2] - sq.bounds[0]
   if unit.n == 2:
     # Copy and translate square
-    tr = [(-s / 2, 0), (s / 2, 0)]
+    tr = [(-s/2, 0), (s/2, 0)]
     squares = [affine.translate(sq, v[0], v[1]) for v in tr]
     _setup_base_tile(unit, TileShape.RECTANGLE)
-    unit.prototile.geometry = [geom.Polygon([
-      (-s, -s / 2), (-s,  s / 2), 
-      ( s,  s / 2), ( s, -s / 2)   
-    ])]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-2 * s, 0), (0, -s)])]
   elif unit.n == 3:
     # Copy and translate square
-    tr = [(-s / 2, -s / 2), (s / 2, -s / 2), (-s / 2, s / 2)]
+    tr = [(-s/2, -s/2), (s/2, -s/2), (-s/2, s/2)]
     squares = [affine.translate(sq, v[0], v[1]) for v in tr]
     squares = [affine.rotate(sq, 45, (0, 0)) for sq in squares]
     _setup_base_tile(unit, TileShape.HEXAGON)
     x = s * np.sqrt(2)
-    unit.prototile.geometry = [geom.Polygon([
-      (-x / 2, -x / 2), (-x, 0), (-x / 2,  x / 2), 
-      ( x / 2,  x / 2), ( x, 0), ( x / 2, -x / 2), 
-    ])]
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(0, -x), (-3 * x/2, -x/2), (-3 * x/2,  x/2)])]
   elif unit.n == 4:
     # Copy and translate square
-    tr = [(-s / 2, -s / 2), (-s / 2,  s / 2), 
-          ( s / 2,  s / 2), ( s / 2, -s / 2)]
+    tr = [(-s/2, -s/2), (-s/2,  s/2), 
+          ( s/2,  s/2), ( s/2, -s/2)]
     squares = [affine.translate(sq, v[0], v[1]) for v in tr]
     _setup_base_tile(unit, TileShape.RECTANGLE)
-    unit.prototile.geometry = [geom.Polygon([
-      (-s, -s), (-s, s), (s, s), (s, -s)
-    ])]
   elif unit.n == 5:
     _setup_base_tile(unit, TileShape.RECTANGLE)
     # Copy and translate square
@@ -757,6 +803,10 @@ def setup_square_colouring(unit:"TileUnit") -> None:
     rotation = np.degrees(np.arctan2(1, 2))
     squares = [affine.rotate(sq, rotation, origin = (0, 0))
            for sq in squares]
+    _setup_base_tile(unit, TileShape.RECTANGLE)
+    unit.prototile.geometry = [affine.rotate(
+      tiling_utils.get_prototile_from_vectors(
+      [(-s, -2 * s), (-2 * s,  s)]), rotation)]
   elif unit.n == 6:
     # Copy and translate square
     tr = [(-s, -s), (0, -s),
@@ -765,11 +815,9 @@ def setup_square_colouring(unit:"TileUnit") -> None:
     squares = [affine.translate(sq, v[0], v[1]) for v in tr]
     squares = [affine.rotate(sq, -45, origin = (0, 0)) for sq in squares]
     x  = s * np.sqrt(2)
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    unit.prototile.geometry = [geom.Polygon([
-      (-3 * x / 4, -3 * x / 4), (-5 * x / 4,  3 * x / 4),
-      ( 3 * x / 4,  3 * x / 4), ( 5 * x / 4, -3 * x / 4)
-    ])]
+    _setup_base_tile(unit, TileShape.HEXAGON)
+    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
+      [(-3 * x/2, -3 * x/2), (-2 * x, 0), (-x/2, 3 * x/2)])]
   elif unit.n == 7:
     # Copy and translate square
     tr = [(-s, -s), (0, -s),
@@ -779,9 +827,10 @@ def setup_square_colouring(unit:"TileUnit") -> None:
     squares = [affine.rotate(sq, -45, (0, 0)) for sq in squares]
     _setup_base_tile(unit, TileShape.HEXAGON)
     x = s * np.sqrt(2)
+    # this is a nicer prototile than the one generated by tiling_utils
     unit.prototile.geometry = [geom.Polygon([
-      (-x, -x / 2), (-3 * x / 2, 0), (-x / 2,  x),
-      ( x,  x / 2), ( 3 * x / 2, 0), ( x / 2, -x)
+      (-x, -x/2), (-3 * x/2, 0), (-x/2,  x),
+      ( x,  x/2), ( 3 * x/2, 0), ( x/2, -x)
     ])]
   elif unit.n == 8:
     # Copy and translate square
@@ -792,9 +841,10 @@ def setup_square_colouring(unit:"TileUnit") -> None:
     squares = [affine.rotate(sq, 45, origin = (0, 0)) for sq in squares]
     _setup_base_tile(unit, TileShape.HEXAGON)
     x  = s * np.sqrt(2)
+    # this is a nicer prototile than the one generated by tiling_utils
     unit.prototile.geometry = [geom.Polygon([
-      (-x / 2, -x), ( x / 2, -x), ( 3 * x / 2, 0),
-      ( x / 2,  x), (-x / 2,  x), (-3 * x / 2, 0)
+      (-x/2, -x), ( x/2, -x), ( 3 * x/2, 0),
+      ( x/2,  x), (-x/2,  x), (-3 * x/2, 0)
     ])]
   elif unit.n == 9:
     # Copy and translate square
@@ -804,8 +854,8 @@ def setup_square_colouring(unit:"TileUnit") -> None:
     squares = [affine.translate(sq, v[0], v[1]) for v in tr]
     _setup_base_tile(unit, TileShape.RECTANGLE)
     unit.prototile.geometry = [geom.Polygon([
-      (-3 * s / 2, -3 * s / 2), (-3 * s / 2,  3 * s / 2), 
-      ( 3 * s / 2,  3 * s / 2), ( 3 * s / 2, -3 * s / 2)
+      (-3 * s/2, -3 * s/2), (-3 * s/2,  3 * s/2), 
+      ( 3 * s/2,  3 * s/2), ( 3 * s/2, -3 * s/2)
     ])]
   else:
     print(f"{unit.n}-colouring of squares is not supported. Try 2, 3, 4, 5, 7, or 9")

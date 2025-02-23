@@ -8,11 +8,12 @@ Examples:
   Explain usage here...
 """
 
-import logging
 import itertools
+from copy import deepcopy
+import logging
 from dataclasses import dataclass
-from typing import Iterable, Union
 from collections import defaultdict
+from typing import Iterable, Union
 
 import pandas as pd
 import geopandas as gpd
@@ -66,8 +67,11 @@ class WeaveUnit(Tileable):
     self._parameter_info()
 
     if self.weave_type in ("hex", "cube"):
+      print(f"YO {self.weave_type=}")
       self.base_shape = TileShape.HEXAGON
       self._setup_triaxial_weave_unit()
+      # this is experimental for now:
+      self._minimise_triaxial_weave_unit()
     else:
       self.base_shape = TileShape.RECTANGLE
       self._setup_biaxial_weave_unit()
@@ -184,6 +188,39 @@ class WeaveUnit(Tileable):
 
     self._make_shapes_from_coded_weave_matrix(
       loom, strand_labels = [strands_1, strands_2, strands_3])
+
+
+  def _minimise_triaxial_weave_unit(self) -> None:
+    n = self.tiles.shape[0]
+    tiles_ids = [x for x in zip(range(n), self.tiles.tile_id, 
+                                list(self.tiles.geometry))]
+    v_ij = defaultdict(list)
+    for i, id_i, tile_i in tiles_ids:
+      for j, id_j, tile_j in tiles_ids:
+        if i != j and id_i == id_j:
+          v = (tile_j.centroid.x - tile_i.centroid.x, 
+              tile_j.centroid.y - tile_i.centroid.y)
+          if tiling_utils.geometry_matches(tile_j, affine.translate(tile_i, v[0], v[1])):
+            v_ij[v].append((i, j))
+    v_ij = dict(sorted(v_ij.items(), key = lambda x: len(x[1]), reverse = True))
+    v_ij = [k for k, v in v_ij.items()][:12]
+    combos = itertools.combinations(v_ij, 3)
+    result = [c for c in combos 
+              if np.isclose(sum([x for x, y in c]), 0)
+            and np.isclose(sum([y for x, y in c]), 0)]
+    result = sorted(result, 
+                    key = lambda vecs: sum([dx**2 + dy**2 for dx, dy in vecs]))
+    poly = tiling_utils.get_prototile_from_vectors(result[0][:3])
+    self.prototile.geometry = [poly]
+    self.setup_vectors()
+    new_tiles = [(id, t.intersection(poly)) for id, t in 
+                 zip(self.tiles.tile_id, self.tiles.geometry) 
+                 if t.intersection(poly).area > 0]
+    self.tiles = gpd.GeoDataFrame({
+      'geometry': gpd.GeoSeries([x[1] for x in new_tiles]),
+      'tile_id': [x[0] for x in new_tiles]})
+    # self.regularise_tiles()
+    return None
 
 
   def _make_shapes_from_coded_weave_matrix(

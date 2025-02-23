@@ -111,6 +111,8 @@ class TileUnit(Tileable):
       tiling_geometries.setup_hex_slice(self)
     elif self.tiling_type == "hex-dissection":
       tiling_geometries.setup_hex_dissection(self)
+    elif "cross" in self.tiling_type:
+      tiling_geometries.setup_crosses(self)
     elif self.tiling_type == "square-slice":
       tiling_geometries.setup_square_slice(self)
     elif self.tiling_type == "laves":
