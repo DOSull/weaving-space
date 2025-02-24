@@ -1141,9 +1141,12 @@ def get_intersection(line1:StraightLine,
 def get_prototile_from_vectors(vecs:list[tuple[float]]):
   if len(vecs) == 2:
     v1, v2 = vecs
-    v3 = [-_ for _ in v1]
-    v4 = [-_ for _ in v2]
-    return geom.Polygon([v1, v2, v3, v4])
+    v1 = [_ / 2 for _ in v1]
+    v2 = [_ / 2 for _ in v2]
+    return geom.Polygon([( v1[0] + v2[0],  v1[1] + v2[1]),
+                         ( v2[0] - v1[0],  v2[1] - v1[1]),
+                         (-v1[0] - v2[0], -v1[1] - v2[1]),
+                         (-v2[0] + v1[0], -v2[1] + v1[1])])
   else:
     v1, v2, v3 = vecs
     v4 = [-_ for _ in v1]

@@ -335,7 +335,7 @@ def get_9_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
 
 
 def setup_crosses(unit:"TileUnit") -> None:
-  """Tilings from dissection of a square into parts.
+  """Tilings by varying numbers of crosses.
 
   The supplied unit should have n set.
 
@@ -369,7 +369,7 @@ def setup_crosses(unit:"TileUnit") -> None:
     tr = [(0, 0), (x, 2 * x), (2 * x, -x), (-x, -2 * x), (-2 * x, x)]
     parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
     unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-4 * x, -3 * x), (-3 * x,  4 * x)])]
+      [(-5 * x, 0), (0,  5 * x)])]
   elif unit.n == 6:
     tr = [(-2 * x, -3 * x/2), (-x,  x/2), (0,  5 * x/2), 
           ( 2 * x,  3 * x/2), ( x, -x/2), (0, -5 * x/2)]
