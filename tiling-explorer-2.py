@@ -22,9 +22,11 @@ def _():
 @app.cell(hide_code=True)
 def _():
     import geopandas as gpd
-    from weavingspace.tile_unit import TileUnit
-    from weavingspace.tile_map import Tiling
-    return TileUnit, Tiling, gpd
+    import weavingspace.tile_unit as tu
+    import weavingspace.tile_map as tm
+    # from weavingspace.tile_unit import TileUnit
+    # from weavingspace.tile_map import Tiling
+    return (gpd,) #TileUnit, Tiling, gpd
 
 
 @app.cell(hide_code=True)
@@ -35,7 +37,7 @@ def _(gpd):
 
 @app.cell(hide_code=True)
 def _(Tiling, gdf, tile):
-    tiled_map = Tiling(tile, gdf).get_tiled_map()
+    tiled_map = tm.Tiling(tile, gdf).get_tiled_map()
     return (tiled_map,)
 
 
@@ -155,7 +157,7 @@ def _(
     tile_rotate,
     tiling_type,
 ):
-    tile = TileUnit(tiling_type=tiling_type.value, n = n.value, code = code.value, offset = offset.value,
+    tile = tu.TileUnit(tiling_type=tiling_type.value, n = n.value, code = code.value, offset = offset.value,
                    spacing=spacing.value, crs=crs.value) \
           .transform_rotate(tile_rotate.value) \
           .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
