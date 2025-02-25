@@ -8,6 +8,26 @@ app = marimo.App(
 
 
 @app.cell(hide_code=True)
+def _():
+    import marimo as mo
+    return (mo,)
+
+
+@app.cell(hide_code=True)
+def _():
+    import math
+    return (math,)
+
+
+@app.cell(hide_code=True)
+def _():
+    import geopandas as gpd
+    from weavingspace.tile_unit import TileUnit
+    from weavingspace.tile_map import Tiling
+    return TileUnit, Tiling, gpd
+
+
+@app.cell(hide_code=True)
 def _(gpd):
     # gdf = gpd.read_file("./examples/data/dummy-data.gpkg")
     gdf = gpd.read_file("https://dosull.github.io/weaving-space/tiling-explorer/examples/data/dummy-data.gpkg")
@@ -18,14 +38,6 @@ def _(gpd):
 def _(Tiling, gdf, tile):
     tiled_map = Tiling(tile, gdf).get_tiled_map()
     return (tiled_map,)
-
-
-@app.cell(hide_code=True)
-def _(pals, tile, tiled_map, vars):
-    tiled_map.variables = {k: v for k, v in zip(tile.tiles.tile_id, vars.value)}
-    tiled_map.colourmaps = {k: v for k, v in zip(vars.value, pals.value)}
-    tiled_map.render(legend=False)
-    return
 
 
 @app.cell(hide_code=True)
@@ -44,10 +56,18 @@ def _(gdf, mo, tile):
 
 
 @app.cell(hide_code=True)
+def _(pals, tile, tiled_map, vars):
+    tiled_map.variables = {k: v for k, v in zip(tile.tiles.tile_id, vars.value)}
+    tiled_map.colourmaps = {k: v for k, v in zip(vars.value, pals.value)}
+    tiled_map.render(legend=False)
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo):
     t_inset = mo.ui.slider(steps=[0,1,2,3,5,10,20,30,50], value=0, show_value=True)
     p_inset = mo.ui.slider(steps=[0,1,2,3,5,10,20,30,50,100,250,500], value=0, show_value=True)
-    tile_rotate = mo.ui.slider(steps = [x for x in range(-90, 91)], value=0, show_value=True, debounce=True)
+    tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True)
     aspect = mo.ui.slider(start=0.3, stop=3, step=0.01, value=1, show_value=True)
     crs = mo.ui.dropdown(options={"3857":3857, "4326":4326, "2193":2193}, value="3857")
     spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750)
@@ -131,7 +151,6 @@ def _(
     n,
     offset,
     p_inset,
-    plot_tiles,
     spacing,
     t_inset,
     tile_rotate,
@@ -143,8 +162,13 @@ def _(
           .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
           .inset_tiles(t_inset.value) \
           .inset_prototile(p_inset.value)
-    plot_tiles(tile)
     return (tile,)
+
+
+@app.cell
+def _(plot_tiles, tile):
+    plot_tiles(tile)
+    return
 
 
 @app.cell(hide_code=True)
@@ -229,26 +253,6 @@ def _(
         plot.axis("off")
         return plot
     return (plot_tiles,)
-
-
-@app.cell(hide_code=True)
-def _():
-    import math
-    return (math,)
-
-
-@app.cell(hide_code=True)
-def _():
-    import marimo as mo
-    return (mo,)
-
-
-@app.cell(hide_code=True)
-def _():
-    import geopandas as gpd
-    from weavingspace.tile_unit import TileUnit
-    from weavingspace.tile_map import Tiling
-    return TileUnit, Tiling, gpd
 
 
 if __name__ == "__main__":
