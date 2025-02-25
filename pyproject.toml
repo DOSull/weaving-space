@@ -8,7 +8,7 @@ exclude = ["superseded"]
 
 [project]
 name = "weavingspace"
-version = "0.0.4.6"
+version = "0.0.5"
 authors = [
   { name="David O'Sullivan", email="osullivan512@gmail.com" },
 ]
@@ -23,6 +23,7 @@ license = {file = "LICENSE"}
 dependencies = [
     "requests",
     'importlib-metadata; python_version>="3.12"',
+    "fiona",
     "geopandas",
     "mapclassify",
     "pandas",
