@@ -65,18 +65,24 @@ import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
-from weavingspace.tileable import Tileable
-from weavingspace.tileable import TileShape
+# from weavingspace.tileable import Tileable
+# from weavingspace.tileable import TileShape
 
-import weavingspace.tiling_utils as tiling_utils
-import weavingspace.tiling_geometries as tiling_geometries
+# import weavingspace.tiling_utils as tiling_utils
+# import weavingspace.tiling_geometries as tiling_geometries
+
+from weavingspace import Tileable
+from weavingspace import TileShape
+
+from weavingspace import tiling_utils
+from weavingspace import tiling_geometries
 
 
 @dataclass
 class TileUnit(Tileable):
   """Class to represent the tiles of a 'conventional' tiling.
   """
-  tiling_type:str = None
+  tiling_type:str = ""
   """tiling type as detailed in the class documentation preamble."""
   offset:int = 1
   """offset for 'hex-dissection' and 'hex-slice tilings. Defaults to 1."""

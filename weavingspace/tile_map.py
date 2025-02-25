@@ -24,9 +24,15 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.ops
 
-from weavingspace.tileable import Tileable
-from weavingspace.tileable import TileShape
-from weavingspace.tile_unit import TileUnit
+# from weavingspace.tileable import Tileable
+# from weavingspace.tileable import TileShape
+# from weavingspace.tile_unit import TileUnit
+
+# from weavingspace import tiling_utils
+
+from weavingspace import Tileable
+from weavingspace import TileShape
+from weavingspace import TileUnit
 
 from weavingspace import tiling_utils
 

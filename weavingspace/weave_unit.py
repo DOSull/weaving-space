@@ -22,14 +22,23 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.ops
 
-import weavingspace.weave_matrices as weave_matrices
-import weavingspace.tiling_utils as tiling_utils
+# import weavingspace.weave_matrices as weave_matrices
+# import weavingspace.tiling_utils as tiling_utils
 
-from weavingspace._loom import Loom
-from weavingspace._weave_grid import WeaveGrid
+# from weavingspace._loom import Loom
+# from weavingspace._weave_grid import WeaveGrid
 
-from weavingspace.tileable import TileShape
-from weavingspace.tileable import Tileable
+# from weavingspace.tileable import TileShape
+# from weavingspace.tileable import Tileable
+
+from weavingspace import weave_matrices
+from weavingspace import tiling_utils
+
+from weavingspace import Loom
+from weavingspace import WeaveGrid
+
+from weavingspace import TileShape
+from weavingspace import Tileable
 
 
 @dataclass

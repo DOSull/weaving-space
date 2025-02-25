@@ -37,9 +37,11 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 from shapely import line_interpolate_point
 
-from weavingspace.tileable import TileShape
-# from weavingspace.tile_unit import TileUnit
-import weavingspace.tiling_utils as tiling_utils
+# from weavingspace.tileable import TileShape
+# import weavingspace.tiling_utils as tiling_utils
+
+from weavingspace import TileShape
+from weavingspace import tiling_utils
 
 def _setup_none_tile(unit:"TileUnit") -> None:
   """Setups a 'null' tile unit with one tile and one tile_id.

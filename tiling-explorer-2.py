@@ -22,8 +22,8 @@ def _():
 @app.cell(hide_code=True)
 def _():
     import geopandas as gpd
-    from weavingspace.tile_unit import TileUnit
-    from weavingspace.tile_map import Tiling
+    from weavingspace import TileUnit
+    from weavingspace import Tiling
     return (gpd,) #TileUnit, Tiling, gpd
 
 

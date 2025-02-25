@@ -19,7 +19,8 @@ import shapely.affinity as affine
 import shapely.ops
 import geopandas as gpd
 
-import weavingspace.tiling_utils as tiling_utils
+# import weavingspace.tiling_utils as tiling_utils
+from weavingspace import tiling_utils
 
 
 class KMP_Matcher:

@@ -11,7 +11,8 @@ import shapely.geometry as geom
 import shapely.ops
 import shapely.wkt as wkt
 
-import weavingspace.tiling_utils as tiling_utils
+# import weavingspace.tiling_utils as tiling_utils
+from weavingspace import tiling_utils
 
 @dataclass
 class WeaveGrid:

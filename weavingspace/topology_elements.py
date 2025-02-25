@@ -2,7 +2,8 @@
 # coding: utf-8
 
 import shapely.geometry as geom
-import weavingspace.tiling_utils as tiling_utils
+# import weavingspace.tiling_utils as tiling_utils
+from weavingspace import tiling_utils
 
 class Tile(object):
   """Class to capture and manipulate essential features of polygons in a tiling.

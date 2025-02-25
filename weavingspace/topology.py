@@ -41,13 +41,21 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import matplotlib.pyplot as pyplot
 
-from weavingspace.tileable import Tileable
-from weavingspace.symmetry import Symmetries
-from weavingspace.symmetry import Shape_Matcher
-from weavingspace.topology_elements import Tile
-from weavingspace.topology_elements import Vertex
-from weavingspace.topology_elements import Edge
-import weavingspace.tiling_utils as tiling_utils
+# from weavingspace.tileable import Tileable
+# from weavingspace.symmetry import Symmetries
+# from weavingspace.symmetry import Shape_Matcher
+# from weavingspace.topology_elements import Tile
+# from weavingspace.topology_elements import Vertex
+# from weavingspace.topology_elements import Edge
+# import weavingspace.tiling_utils as tiling_utils
+
+from weavingspace import Tileable
+from weavingspace import Symmetries
+from weavingspace import Shape_Matcher
+from weavingspace import Tile
+from weavingspace import Vertex
+from weavingspace import Edge
+from weavingspace import tiling_utils
 
 ALPHABET = string.ascii_letters.upper()
 alphabet = string.ascii_letters.lower()
