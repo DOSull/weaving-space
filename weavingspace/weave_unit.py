@@ -67,7 +67,6 @@ class WeaveUnit(Tileable):
     self._parameter_info()
 
     if self.weave_type in ("hex", "cube"):
-      print(f"YO {self.weave_type=}")
       self.base_shape = TileShape.HEXAGON
       self._setup_triaxial_weave_unit()
       # this is experimental for now:
@@ -200,8 +199,9 @@ class WeaveUnit(Tileable):
         if i != j and id_i == id_j:
           v = (tile_j.centroid.x - tile_i.centroid.x, 
               tile_j.centroid.y - tile_i.centroid.y)
-          if tiling_utils.geometry_matches(tile_j, affine.translate(tile_i, v[0], v[1])):
-            v_ij[v].append((i, j))
+          if tiling_utils.geometry_matches(
+            tile_j, affine.translate(tile_i, v[0], v[1])):
+              v_ij[v].append((i, j))
     v_ij = dict(sorted(v_ij.items(), key = lambda x: len(x[1]), reverse = True))
     v_ij = [k for k, v in v_ij.items()][:12]
     combos = itertools.combinations(v_ij, 3)
