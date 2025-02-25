@@ -19,7 +19,7 @@ def _():
     return (math,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     import geopandas as gpd
     from weavingspace.tile_unit import TileUnit
@@ -30,7 +30,7 @@ def _():
 @app.cell(hide_code=True)
 def _(gpd):
     # gdf = gpd.read_file("./examples/data/dummy-data.gpkg")
-    gdf = gpd.read_file("https://dosull.github.io/weaving-space/tiling-explorer-2/examples/data/dummy-data.gpkg", engine="fiona")
+    gdf = gpd.read_file("https://dosull.github.io/weaving-space/tiling-explorer-2/examples/data/dummy-data.gpkg", driver="GPKG")
     return (gdf,)
 
 
