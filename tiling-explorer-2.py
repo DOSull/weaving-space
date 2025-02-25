@@ -29,7 +29,7 @@ def _():
 
 @app.cell(hide_code=True)
 def _(gpd):
-    gdf = gpd.read_file("https://dosull.github.io/weaving-space/examples/data/dummy-data.json", engine="fiona")
+    gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json", engine="fiona")
     return (gdf,)
 
 
