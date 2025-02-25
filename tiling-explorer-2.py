@@ -9,7 +9,8 @@ app = marimo.App(
 
 @app.cell(hide_code=True)
 def _(gpd):
-    gdf = gpd.read_file("./examples/data/dummy-data.gpkg")
+    # gdf = gpd.read_file("./examples/data/dummy-data.gpkg")
+    gdf = gpd.read_file("https://dosull.github.io/weaving-space/tiling-explorer/examples/data/dummy-data.gpkg")
     return (gdf,)
 
 
@@ -230,13 +231,13 @@ def _(
     return (plot_tiles,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     import math
     return (math,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     import marimo as mo
     return (mo,)
