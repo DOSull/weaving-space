@@ -9,8 +9,7 @@ app = marimo.App(
 
 @app.cell(hide_code=True)
 def _(gpd):
-    # gdf = gpd.read_file("./examples/data/dummy-data.gpkg")
-    gdf = gpd.read_file("https://github.com/DOSull/weaving-space/blob/main/examples/data/dummy-data.gpkg?raw=true")
+    gdf = gpd.read_file("./examples/data/dummy-data.gpkg")
     return (gdf,)
 
 
