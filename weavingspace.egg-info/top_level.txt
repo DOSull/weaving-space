@@ -1,12 +1,1 @@
-dist
-doc
-examples
-images
-layouts
-notes
-odds-and-ends
-presentations
-superseded
-tiling-explorer
-tiling-explorer-2
 weavingspace

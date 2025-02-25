@@ -21,23 +21,15 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
-    import requests
     import geopandas as gpd
     from weavingspace.tile_unit import TileUnit
     from weavingspace.tile_map import Tiling
-    return TileUnit, Tiling, gpd, requests
+    return TileUnit, Tiling, gpd
 
 
 @app.cell(hide_code=True)
 def _(gpd):
-    # gdf = gpd.read_file("./examples/data/dummy-data.gpkg")
-    # gdf = gpd.read_file("https://dosull.github.io/weaving-space/tiling-explorer-2/examples/data/dummy-data.json")
-    _url = "https://dosull.github.io/weaving-space/tiling-explorer-2/examples/data/dummy-data.json"
-    # _response = requests.get(_url, stream=True)
-    # _response.raw.decode_content = True
-    # gdf = gpd.read_file(_response.content, driver="GPKG")
-    # _response = requests.get(_url)
-    gdf = gpd.read_file(_url)
+    gdf = gpd.read_file("https://dosull.github.io/weaving-space/examples/data/dummy-data.json", engine="fiona")
     return (gdf,)
 
 

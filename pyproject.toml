@@ -2,12 +2,13 @@
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools.packages.find]
+include = ["weavingspace"]
+exclude = ["superseded"]
 
 [project]
 name = "weavingspace"
-version = "0.0.4.2"
+version = "0.0.4.6"
 authors = [
   { name="David O'Sullivan", email="osullivan512@gmail.com" },
 ]
