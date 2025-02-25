@@ -7,7 +7,7 @@ find = {}
 
 [project]
 name = "weavingspace"
-version = "0.0.4.1"
+version = "0.0.4.2"
 authors = [
   { name="David O'Sullivan", email="osullivan512@gmail.com" },
 ]
@@ -23,6 +23,7 @@ dependencies = [
     "requests",
     'importlib-metadata; python_version>="3.12"',
     "geopandas",
+    "mapclassify",
     "pandas",
     "numpy",
     "scipy",

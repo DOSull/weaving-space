@@ -1,6 +1,6 @@
 Metadata-Version: 2.2
 Name: weavingspace
-Version: 0.0.4.1
+Version: 0.0.4.2
 Summary: A package for making tiled mapping layers
 Author-email: David O'Sullivan <osullivan512@gmail.com>
 Project-URL: Homepage, https://github.com/DOSull/weaving-space
@@ -13,6 +13,7 @@ License-File: LICENSE.md
 Requires-Dist: requests
 Requires-Dist: importlib-metadata; python_version >= "3.12"
 Requires-Dist: geopandas
+Requires-Dist: mapclassify
 Requires-Dist: pandas
 Requires-Dist: numpy
 Requires-Dist: scipy
