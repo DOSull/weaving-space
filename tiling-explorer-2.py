@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.0"
+__generated_with = "0.11.9"
 app = marimo.App(
     width="medium",
     layout_file="layouts/tiling-explorer-2.grid.json",
@@ -21,15 +21,17 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
     import geopandas as gpd
     from weavingspace import TileUnit
     from weavingspace import Tiling
-    return (gpd,) #TileUnit, Tiling, gpd
+    return TileUnit, Tiling, gpd, mpl, plt
 
 
 @app.cell(hide_code=True)
 def _(gpd):
-    gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json", engine="fiona")
+    gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.gpkg", engine="fiona")
     return (gdf,)
 
 
@@ -43,16 +45,29 @@ def _(Tiling, gdf, tile):
 @app.cell(hide_code=True)
 def _(gdf, mo, tile):
     _vars = [_ for _ in gdf.columns if not "geom" in _]
-    _pals = ['viridis', 'magma', 'Greys', 'Purples', 'Blues', 
-             'Greens', 'Oranges', 'Reds', 'YlOrBr', 'YlOrRd', 
-             'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu', 
-             'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']
+    _pals = ['Reds', 'summer_r', 'Oranges', 'viridis_r',
+             'spring_r', 'Greens', 'YlGnBu', 'Blues',
+             'winter_r', 'Purples', 'RdPu', 'Greys']
     vars = mo.ui.array([mo.ui.dropdown(options=_vars, value=_vars[i], label=f"Tiles '{id}'") 
                         for i, id in enumerate(tile.tiles.tile_id)], label="Variables") 
-    pals = mo.ui.array([mo.ui.dropdown(options=_pals, value="Reds") for i, id in enumerate(tile.tiles.tile_id)], 
+    pals = mo.ui.array([mo.ui.dropdown(options=_pals, value=_pals[i]) for i, id in enumerate(tile.tiles.tile_id)], 
                       label="Palettes")
-    mo.md(f"#### {mo.hstack([vars, pals])}")
+    mo.md(f"#### {mo.hstack([vars, pals], align="center")}")
     return pals, vars
+
+
+@app.cell
+def _(mpl, pals, plt):
+    _n = len(pals)
+    _fig, _axs = plt.subplots(nrows = _n + 1, figsize=(2, 0.36 * (_n + 1)))
+    # _axs[0].set_title("   ")
+    for ax, cm in zip(_axs[1:], pals.value):
+        _xy = [[x / 256 for x in range(257)], [x / 256 for x in range(257)]]
+        ax.imshow(_xy, aspect='auto', cmap=mpl.colormaps.get(cm))
+    for ax in _axs:
+        ax.set_axis_off()
+    ax
+    return ax, cm
 
 
 @app.cell(hide_code=True)
@@ -73,9 +88,12 @@ def _(mo):
     spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750)
 
     mo.md("\n".join(["### Tiling settings",
-      f"#### Spacing {spacing}&nbsp;&nbsp;CRS {crs}",               
-      f"#### Rotate by {tile_rotate}&nbsp;&nbsp;Width/height {aspect}",               
-      f"#### Tile inset {t_inset}&nbsp;&nbsp;Prototile inset {p_inset}"]))
+      f"#### Spacing {spacing}",
+      f"#### CRS {crs}",               
+      f"#### Rotate by {tile_rotate}",
+      f"#### Width/height {aspect}",               
+      f"#### Tile inset {t_inset}",
+      f"#### Prototile inset {p_inset}"]))
     return aspect, crs, p_inset, spacing, t_inset, tile_rotate
 
 
@@ -93,7 +111,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo, tiling_type):
     if "slice" in tiling_type.value:
-        _n = [x for x in range(2, 21)]
+        _n = [x for x in range(2, 13)]
         _v = 6
         _prefix = "Number of slices: "
     elif tiling_type.value == "hex-dissection":
@@ -236,7 +254,8 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(
-    palette,
+    mpl,
+    pals,
     radius,
     show_ids,
     show_prototile,
@@ -244,12 +263,13 @@ def _(
     show_vectors,
 ):
     def plot_tiles(tiles):
+        cm = mpl.colors.ListedColormap([mpl.colormaps.get(p)(0.75) for p in pals.value])
         plot = tiles.plot(r=radius.value, 
                           show_vectors=show_vectors.value, 
                           show_prototile=show_prototile.value,
                           show_reg_prototile=show_reg_prototile.value,
                           show_ids=show_ids.value,
-                          cmap=palette.value)
+                          cmap=cm)
         plot.axis("off")
         return plot
     return (plot_tiles,)

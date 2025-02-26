@@ -4,7 +4,7 @@
     "columns": 24,
     "rowHeight": 20,
     "maxWidth": 1400,
-    "bordered": true,
+    "bordered": false,
     "cells": [
       {
         "position": null
@@ -23,10 +23,18 @@
       },
       {
         "position": [
-          10,
+          5,
           35,
           7,
-          27
+          20
+        ]
+      },
+      {
+        "position": [
+          12,
+          35,
+          5,
+          20
         ]
       },
       {
@@ -41,7 +49,7 @@
         "position": [
           0,
           35,
-          10,
+          5,
           12
         ]
       },
@@ -68,8 +76,8 @@
         "position": [
           17,
           5,
-          6,
-          23
+          7,
+          25
         ]
       },
       {
@@ -78,8 +86,8 @@
       {
         "position": [
           17,
-          28,
-          6,
+          30,
+          7,
           12
         ]
       },
