@@ -77,7 +77,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo, pals, tile, tile_map_button, tiled_map, vars):
-    mo.stop(not tile_map_button.value, mo.md("### Click the **Tile map!** button below to continue"))
+    mo.stop(not tile_map_button.value, mo.md("### Click the **Tile map!** button to continue and to refresh the map after any design changes"))
     tiled_map.variables = {k: v for k, v in zip(tile.tiles.tile_id, vars.value)}
     tiled_map.colourmaps = {k: v for k, v in zip(vars.value, pals.value)}
     tiled_map.render(legend=False)
