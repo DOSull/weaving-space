@@ -44,9 +44,9 @@ def _(Tiling, gdf, tile):
 @app.cell(hide_code=True)
 def _(gdf, mo, tile):
     _vars = [_ for _ in gdf.columns if not "geom" in _]
-    _pals = ['Reds', 'summer_r', 'Oranges', 'viridis_r',
-             'spring_r', 'Greens', 'YlGnBu', 'Blues',
-             'winter_r', 'Purples', 'RdPu', 'Greys']
+    _pals = ['Reds', 'summer', 'Oranges', 'viridis',
+             'spring', 'Greens', 'YlGnBu', 'Blues',
+             'winter', 'Purples', 'RdPu', 'Greys']
     vars = mo.ui.array([mo.ui.dropdown(options=_vars, value=_vars[i], label=f"Tiles '{id}'") 
                         for i, id in enumerate(tile.tiles.tile_id)], label="Variables") 
     pals = mo.ui.array([mo.ui.dropdown(options=_pals, value=_pals[i]) for i, id in enumerate(tile.tiles.tile_id)], 
@@ -68,8 +68,16 @@ def _(mpl, pals):
     return ax, cm
 
 
+@app.cell
+def _(mo):
+    tile_map_button = mo.ui.run_button(label="Tile map!")
+    tile_map_button
+    return (tile_map_button,)
+
+
 @app.cell(hide_code=True)
-def _(pals, tile, tiled_map, vars):
+def _(mo, pals, tile, tile_map_button, tiled_map, vars):
+    mo.stop(not tile_map_button.value, mo.md("### Click the **Tile map!** button below to continue"))
     tiled_map.variables = {k: v for k, v in zip(tile.tiles.tile_id, vars.value)}
     tiled_map.colourmaps = {k: v for k, v in zip(vars.value, pals.value)}
     tiled_map.render(legend=False)
