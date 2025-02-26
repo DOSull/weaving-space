@@ -104,21 +104,33 @@ async def _(asyncio, mo, pals, tile, tile_map_button, tiled_map, vars):
 
 @app.cell(hide_code=True)
 def _(mo):
-    t_inset = mo.ui.slider(steps=[0,1,2,3,5,10,20,30,50], value=0, show_value=True)
-    p_inset = mo.ui.slider(steps=[0,1,2,3,5,10,20,30,50,100,250,500], value=0, show_value=True)
-    tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True)
-    aspect = mo.ui.slider(start=0.3, stop=3, step=0.01, value=1, show_value=True)
-    # crs = mo.ui.dropdown(options={"3857":3857, "4326":4326, "2193":2193}, value="3857")
-    spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750)
+    tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True, debounce=True)
+    spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750, debounce=True)
 
-    mo.md("\n".join(["### Tiling settings",
-      f"#### Spacing {spacing}",
-      # f"#### CRS {crs}",               
-      f"#### Rotate by {tile_rotate}",
-      f"#### Width/height {aspect}",               
-      f"#### Tile inset {t_inset}",
-      f"#### Prototile inset {p_inset}"]))
-    return aspect, p_inset, spacing, t_inset, tile_rotate
+    mo.md("\n".join([
+        "### Tiling settings",
+        f"#### Spacing {spacing}",
+        f"#### Rotate by {tile_rotate}"
+    ]))
+    return spacing, tile_rotate
+
+
+@app.cell
+def _(mo, spacing):
+    _max_prototile_spacing = spacing.value // 6
+    p_inset = mo.ui.slider(start=0, stop=_max_prototile_spacing, step = 1, 
+                           value=0, show_value=True, debounce=True)
+    mo.md(f"#### Prototile inset {p_inset}")
+    return (p_inset,)
+
+
+@app.cell
+def _(mo, p_inset):
+    _max_tile_spacing = p_inset.value // 5
+    t_inset = mo.ui.slider(start=0, stop=_max_tile_spacing, step = 1, 
+                           value=0, show_value=True, debounce=True)
+    mo.md(f"#### Tile inset {t_inset}")
+    return (t_inset,)
 
 
 @app.cell(hide_code=True)
@@ -186,10 +198,8 @@ def _(mo, tiling_type):
 @app.cell(hide_code=True)
 def _(
     TileUnit,
-    aspect,
     code,
     gdf,
-    math,
     n,
     offset,
     p_inset,
@@ -201,7 +211,6 @@ def _(
     tile = TileUnit(tiling_type=tiling_type.value, n = n.value, code = code.value, offset = offset.value,
                    spacing=spacing.value, crs=gdf.crs) \
           .transform_rotate(tile_rotate.value) \
-          .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
           .inset_tiles(t_inset.value) \
           .inset_prototile(p_inset.value)
     return (tile,)
@@ -215,10 +224,8 @@ def _(plot_tiles, tile):
 
 @app.cell(hide_code=True)
 def _(
-    aspect,
     code,
     gdf,
-    math,
     mo,
     n,
     offset,
@@ -238,8 +245,6 @@ def _(
     _str = _str + f', spacing={spacing.value}, crs={gdf.crs})'
     if tile_rotate.value != 0:
         _str = _str + f'.transform_rotate({tile_rotate.value})'
-    if aspect.value != 1:
-        _str = _str + f'.transform_scale({math.sqrt(aspect.value):.3f}, {1/math.sqrt(aspect.value):.3f})'
     if t_inset.value != 0:
         _str = _str + f'.inset_tiles({t_inset.value})'
     if p_inset.value != 0:
