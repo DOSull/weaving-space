@@ -44,15 +44,15 @@ def _(Tiling, gdf, tile):
 
 @app.cell(hide_code=True)
 def _(gdf, mo, tile):
-    _tile_ids = list(set(tile.tiles.tile_id))
+    _tile_ids = sorted(list(set(tile.tiles.tile_id)))
     _vars = [_ for _ in gdf.columns if not "geom" in _]
-    _pals = ['Reds', 'summer', 'Oranges', 'viridis',
-             'spring', 'Greens', 'YlGnBu', 'Blues',
-             'winter', 'Purples', 'RdPu', 'Greys']
+    _pals = ['Reds', 'Greens', 'Greys', 'Blues', 
+             'Oranges', 'Purples', 'YlGnBu', 'RdPu',
+             'viridis', 'summer', 'spring', 'winter']
     vars = mo.ui.array([mo.ui.dropdown(options=_vars, value=_vars[i], label=f"Tiles '{id}'") 
                         for i, id in enumerate(_tile_ids)], label="Variables") 
     pals = mo.ui.array([mo.ui.dropdown(options=_pals, value=_pals[i]) 
-                        for i, id in enumerate(_tile_ids)], label="Palettes")
+                        for i in range(len(_tile_ids))], label="Palettes")
     mo.md(f"#### {mo.hstack([vars, pals], align="center")}")
     return pals, vars
 
@@ -111,7 +111,7 @@ def _(mo, tile_or_weave):
         spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750, show_value=True, debounce=True)
     else:
         spacing = mo.ui.slider(start=100, stop=1000, step=10, value=250, show_value=True, debounce=True)
-    
+
     mo.md("\n".join([
         "### Tiling settings",
         f"#### Spacing {spacing}",
@@ -132,7 +132,7 @@ def _(mo, spacing, tile_or_weave):
 
 @app.cell
 def _(mo, p_inset, tile_or_weave):
-    _max_tile_spacing = p_inset.value // 5 if tile_or_weave.value == "tiles" else 10
+    _max_tile_spacing = p_inset.value // 3 if tile_or_weave.value == "tiles" else 10
     t_inset = mo.ui.slider(start=0, stop=_max_tile_spacing, step = 1, 
                            value=0, show_value=True, debounce=True)
     mo.md(f"#### Tile inset {t_inset}")
@@ -187,7 +187,7 @@ def _(mo, tile_or_weave, type):
         _prefix = "NA"
         _v = 0
 
-    n = mo.ui.slider(steps = _n, value = _v, show_value=True)
+    n = mo.ui.slider(steps = _n, value = _v, show_value=True, debounce=True)
 
     if "slice" in type.value:
         _offset = [x / 100 for x in range(101)]
@@ -240,31 +240,33 @@ def _(
     gdf,
     n,
     offset,
-    p_inset,
     spacing,
     strands,
-    t_inset,
     tile_or_weave,
-    tile_rotate,
     type,
 ):
     if tile_or_weave.value == "tiles":
         tile = TileUnit(tiling_type=type.value, n = n.value, code = code.value, offset = offset.value,
-                       spacing=spacing.value, crs=gdf.crs) \
-              .transform_rotate(tile_rotate.value) \
-              .inset_tiles(t_inset.value) \
-              .inset_prototile(p_inset.value)
+                       spacing=spacing.value, crs=gdf.crs)
     else:
         tile = WeaveUnit(weave_type=type.value, strands=strands.value, 
-                         spacing=spacing.value, aspect=aspect.value, crs=gdf.crs) \
-              .transform_rotate(tile_rotate.value) \
-              .inset_tiles(t_inset.value)
+                         spacing=spacing.value, aspect=aspect.value, crs=gdf.crs)
     return (tile,)
 
 
 @app.cell
-def _(plot_tiles, tile):
-    plot_tiles(tile)
+def _(p_inset, plot_tiles, t_inset, tile, tile_or_weave, tile_rotate):
+    if tile_or_weave.value == "tiles":
+        _plot_tile = tile \
+           .transform_rotate(tile_rotate.value) \
+           .inset_tiles(t_inset.value) \
+           .inset_prototile(p_inset.value)
+    else:
+        _plot_tile = tile \
+           .transform_rotate(tile_rotate.value) \
+           .inset_tiles(t_inset.value)
+
+    plot_tiles(_plot_tile)
     return
 
 
@@ -292,6 +294,13 @@ def _(mo):
         show_reg_prototile,
         show_vectors,
     )
+
+
+@app.cell
+def _(tile):
+    def get_number_of_elements():
+        return len(set(tile.tiles.tile_id))
+    return (get_number_of_elements,)
 
 
 @app.cell(hide_code=True)
