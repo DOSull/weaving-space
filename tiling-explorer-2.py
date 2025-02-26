@@ -90,17 +90,17 @@ def _(mo):
     p_inset = mo.ui.slider(steps=[0,1,2,3,5,10,20,30,50,100,250,500], value=0, show_value=True)
     tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True)
     aspect = mo.ui.slider(start=0.3, stop=3, step=0.01, value=1, show_value=True)
-    crs = mo.ui.dropdown(options={"3857":3857, "4326":4326, "2193":2193}, value="3857")
+    # crs = mo.ui.dropdown(options={"3857":3857, "4326":4326, "2193":2193}, value="3857")
     spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750)
 
     mo.md("\n".join(["### Tiling settings",
       f"#### Spacing {spacing}",
-      f"#### CRS {crs}",               
+      # f"#### CRS {crs}",               
       f"#### Rotate by {tile_rotate}",
       f"#### Width/height {aspect}",               
       f"#### Tile inset {t_inset}",
       f"#### Prototile inset {p_inset}"]))
-    return aspect, crs, p_inset, spacing, t_inset, tile_rotate
+    return aspect, p_inset, spacing, t_inset, tile_rotate
 
 
 @app.cell(hide_code=True)
@@ -170,7 +170,7 @@ def _(
     TileUnit,
     aspect,
     code,
-    crs,
+    gdf,
     math,
     n,
     offset,
@@ -181,7 +181,7 @@ def _(
     tiling_type,
 ):
     tile = TileUnit(tiling_type=tiling_type.value, n = n.value, code = code.value, offset = offset.value,
-                   spacing=spacing.value, crs=crs.value) \
+                   spacing=spacing.value, crs=gdf.crs) \
           .transform_rotate(tile_rotate.value) \
           .transform_scale(math.sqrt(aspect.value), 1/math.sqrt(aspect.value)) \
           .inset_tiles(t_inset.value) \
@@ -199,7 +199,7 @@ def _(plot_tiles, tile):
 def _(
     aspect,
     code,
-    crs,
+    gdf,
     math,
     mo,
     n,
@@ -217,7 +217,7 @@ def _(
         _str = _str + f', n={n.value}'
         if tiling_type.value in ["hex-slice", "square-slice", "hex-dissection"]:
             _str = _str + f', offset={offset.value}'
-    _str = _str + f', spacing={spacing.value}, crs={crs.value})'
+    _str = _str + f', spacing={spacing.value}, crs={gdf.crs})'
     if tile_rotate.value != 0:
         _str = _str + f'.transform_rotate({tile_rotate.value})'
     if aspect.value != 1:
