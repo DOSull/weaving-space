@@ -25,8 +25,9 @@ def _():
     import matplotlib as mpl
     import geopandas as gpd
     from weavingspace import TileUnit
+    from weavingspace import WeaveUnit
     from weavingspace import Tiling
-    return TileUnit, Tiling, gpd, mpl
+    return TileUnit, Tiling, WeaveUnit, gpd, mpl
 
 
 @app.cell(hide_code=True)
@@ -43,14 +44,15 @@ def _(Tiling, gdf, tile):
 
 @app.cell(hide_code=True)
 def _(gdf, mo, tile):
+    _tile_ids = list(set(tile.tiles.tile_id))
     _vars = [_ for _ in gdf.columns if not "geom" in _]
     _pals = ['Reds', 'summer', 'Oranges', 'viridis',
              'spring', 'Greens', 'YlGnBu', 'Blues',
              'winter', 'Purples', 'RdPu', 'Greys']
     vars = mo.ui.array([mo.ui.dropdown(options=_vars, value=_vars[i], label=f"Tiles '{id}'") 
-                        for i, id in enumerate(tile.tiles.tile_id)], label="Variables") 
-    pals = mo.ui.array([mo.ui.dropdown(options=_pals, value=_pals[i]) for i, id in enumerate(tile.tiles.tile_id)], 
-                      label="Palettes")
+                        for i, id in enumerate(_tile_ids)], label="Variables") 
+    pals = mo.ui.array([mo.ui.dropdown(options=_pals, value=_pals[i]) 
+                        for i, id in enumerate(_tile_ids)], label="Palettes")
     mo.md(f"#### {mo.hstack([vars, pals], align="center")}")
     return pals, vars
 
@@ -96,17 +98,20 @@ async def _(asyncio, mo, pals, tile, tile_map_button, tiled_map, vars):
         "## after design changes",
     ])
     mo.stop(not tile_map_button.value, mo.md(_msg).style(_centred))
-    tiled_map.variables = {k: v for k, v in zip(tile.tiles.tile_id, vars.value)}
+    tiled_map.variables = {k: v for k, v in zip(list(set(tile.tiles.tile_id)), vars.value)}
     tiled_map.colourmaps = {k: v for k, v in zip(vars.value, pals.value)}
     tiled_map.render(legend=False)
     return
 
 
 @app.cell(hide_code=True)
-def _(mo):
+def _(mo, tile_or_weave):
     tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True, debounce=True)
-    spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750, debounce=True)
-
+    if tile_or_weave.value == "tiles":
+        spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750, show_value=True, debounce=True)
+    else:
+        spacing = mo.ui.slider(start=100, stop=1000, step=10, value=250, show_value=True, debounce=True)
+    
     mo.md("\n".join([
         "### Tiling settings",
         f"#### Spacing {spacing}",
@@ -116,49 +121,64 @@ def _(mo):
 
 
 @app.cell
-def _(mo, spacing):
+def _(mo, spacing, tile_or_weave):
     _max_prototile_spacing = spacing.value // 6
     p_inset = mo.ui.slider(start=0, stop=_max_prototile_spacing, step = 1, 
                            value=0, show_value=True, debounce=True)
-    mo.md(f"#### Prototile inset {p_inset}")
+    _str = f"#### Prototile inset {p_inset}" if tile_or_weave.value == "tiles" else ""
+    mo.md(_str)
     return (p_inset,)
 
 
 @app.cell
-def _(mo, p_inset):
-    _max_tile_spacing = p_inset.value // 5
+def _(mo, p_inset, tile_or_weave):
+    _max_tile_spacing = p_inset.value // 5 if tile_or_weave.value == "tiles" else 10
     t_inset = mo.ui.slider(start=0, stop=_max_tile_spacing, step = 1, 
                            value=0, show_value=True, debounce=True)
     mo.md(f"#### Tile inset {t_inset}")
     return (t_inset,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(mo):
-    tiling_type = mo.ui.dropdown(
-        options = ["hex-slice", "square-slice", "hex-dissection", "cross",
-                   "laves", "archimedean", "square-colouring", "hex-colouring"],
-        value = "laves"
-    )
-    mo.md(f"#### Type (`tiling_type`): {tiling_type}")
-    return (tiling_type,)
+    tile_or_weave = mo.ui.dropdown(options=["tiles", "weave"], value="tiles")
+    mo.md(f"#### Pick tile or weave {tile_or_weave}")
+    return (tile_or_weave,)
 
 
 @app.cell(hide_code=True)
-def _(mo, tiling_type):
-    if "slice" in tiling_type.value:
+def _(mo, tile_or_weave):
+    if tile_or_weave.value == "tiles":
+        type = mo.ui.dropdown(
+            options = ["hex-slice", "square-slice", "hex-dissection", "cross",
+                       "laves", "archimedean", "square-colouring", "hex-colouring"], 
+            value = "laves") 
+        _str = "Tiling type"
+    else:
+        type = mo.ui.dropdown(
+            options = ["plain", "twill", "basket", "cube"], 
+            value = "plain")
+        _str = "Weave type"
+
+    mo.md(f"#### {_str} {type}")
+    return (type,)
+
+
+@app.cell(hide_code=True)
+def _(mo, tile_or_weave, type):
+    if "slice" in type.value:
         _n = [x for x in range(2, 13)]
         _v = 6
         _prefix = "Number of slices: "
-    elif tiling_type.value == "hex-dissection":
+    elif type.value == "hex-dissection":
         _n = [4, 7, 9]
         _v = 7
         _prefix = "Number of pieces: "
-    elif tiling_type.value == "cross":
+    elif type.value == "cross":
         _n = [x for x in range(2, 8)]
         _v = 5
         _prefix = "Number of crosses: "
-    elif "colour" in tiling_type.value:
+    elif "colour" in type.value:
         _n = [x for x in range(2, 10)]
         _v = 7
         _prefix = "Number of colours: "
@@ -169,7 +189,7 @@ def _(mo, tiling_type):
 
     n = mo.ui.slider(steps = _n, value = _v, show_value=True)
 
-    if "slice" in tiling_type.value:
+    if "slice" in type.value:
         _offset = [x / 100 for x in range(101)]
         _v_offset = 0
     else:
@@ -184,35 +204,61 @@ def _(mo, tiling_type):
         value = "3.3.4.3.4"     
     )
 
-    if tiling_type.value in ["laves", "archimedean"]:
-        _str = f"#### Code (`code`): {code}"
+    if type.value == "twill" or type.value == "basket":
+        _strands = "ab|cd"
+    elif type.value == "plain":
+        _strands = "a|b"
     else:
-        _str = f"#### {_prefix} (`n`) {n}"
-        if "slice" in tiling_type.value or tiling_type.value == "hex-dissection":
-            _str = "\n".join([_str, f"#### Offset (`offset`): {offset}"])
+        _strands = "abc|def|ghi"
+
+    strands = mo.ui.text(value=_strands)
+    aspect = mo.ui.slider(steps=[1/3,0.4,0.5,2/3,3/4,4/5,9/10,1], value=3/4, show_value=True)
+
+    if tile_or_weave.value == "tiles":
+        if type.value in ["laves", "archimedean"]:
+            _str = f"#### Code: {code}"
+        else:
+            _str = f"#### {_prefix} (`n`) {n}"
+            if "slice" in type.value or type.value == "hex-dissection":
+                _str = "\n".join([_str, f"#### Offset: {offset}"])
+    else:
+        _str = "\n".join([
+            f"#### Strands spec: {strands}",
+            f"#### Aspect: {aspect}"
+        ])
 
     mo.md(_str)
-    return code, n, offset
+    return aspect, code, n, offset, strands
 
 
 @app.cell(hide_code=True)
 def _(
     TileUnit,
+    WeaveUnit,
+    aspect,
     code,
     gdf,
     n,
     offset,
     p_inset,
     spacing,
+    strands,
     t_inset,
+    tile_or_weave,
     tile_rotate,
-    tiling_type,
+    type,
 ):
-    tile = TileUnit(tiling_type=tiling_type.value, n = n.value, code = code.value, offset = offset.value,
-                   spacing=spacing.value, crs=gdf.crs) \
-          .transform_rotate(tile_rotate.value) \
-          .inset_tiles(t_inset.value) \
-          .inset_prototile(p_inset.value)
+    if tile_or_weave.value == "tiles":
+        tile = TileUnit(tiling_type=type.value, n = n.value, code = code.value, offset = offset.value,
+                       spacing=spacing.value, crs=gdf.crs) \
+              .transform_rotate(tile_rotate.value) \
+              .inset_tiles(t_inset.value) \
+              .inset_prototile(p_inset.value)
+    else:
+        tile = WeaveUnit(weave_type=type.value, strands=strands.value, 
+                         spacing=spacing.value, aspect=aspect.value, crs=gdf.crs) \
+              .transform_rotate(tile_rotate.value) \
+              .inset_tiles(t_inset.value)
     return (tile,)
 
 
@@ -222,40 +268,7 @@ def _(plot_tiles, tile):
     return
 
 
-@app.cell(hide_code=True)
-def _(
-    code,
-    gdf,
-    mo,
-    n,
-    offset,
-    p_inset,
-    spacing,
-    t_inset,
-    tile_rotate,
-    tiling_type,
-):
-    _str = f'### `TileUnit(tiling_type="{tiling_type.value}"'
-    if tiling_type.value in ["laves", "archimedean"]:
-        _str = _str + f', code="{code.value}"'
-    else:
-        _str = _str + f', n={n.value}'
-        if tiling_type.value in ["hex-slice", "square-slice", "hex-dissection"]:
-            _str = _str + f', offset={offset.value}'
-    _str = _str + f', spacing={spacing.value}, crs={gdf.crs})'
-    if tile_rotate.value != 0:
-        _str = _str + f'.transform_rotate({tile_rotate.value})'
-    if t_inset.value != 0:
-        _str = _str + f'.inset_tiles({t_inset.value})'
-    if p_inset.value != 0:
-        _str = _str + f'.inset_prototile({p_inset.value})'
-    _str = _str + f'`'
-
-    mo.md(_str)
-    return
-
-
-@app.cell(hide_code=True)
+@app.cell
 def _(mo):
     radius = mo.ui.slider(0, 4, value=1, show_value=True)
     show_prototile = mo.ui.switch(value=False)
