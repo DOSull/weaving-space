@@ -45,23 +45,29 @@ def _(Tiling, gdf, tile):
 @app.cell(hide_code=True)
 def _(gdf, mo, tile):
     _tile_ids = sorted(list(set(tile.tiles.tile_id)))
-    _vars = [_ for _ in gdf.columns if not "geom" in _]
-    _pals = ['Reds', 'Greens', 'Greys', 'Blues', 
-             'Oranges', 'Purples', 'YlGnBu', 'RdPu',
-             'viridis', 'summer', 'spring', 'winter']
-    vars = mo.ui.array([mo.ui.dropdown(options=_vars, value=_vars[i], label=f"Tiles '{id}'") 
+    _var_names = [_ for _ in gdf.columns if not "geom" in _]
+    _pal_names = ['Reds', 'Greens', 'Greys', 'Blues', 'Oranges', 'Purples', 
+                  'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
+    vars = mo.ui.array([mo.ui.dropdown(options=_var_names, value=_var_names[i]) 
                         for i, id in enumerate(_tile_ids)], label="Variables") 
-    pals = mo.ui.array([mo.ui.dropdown(options=_pals, value=_pals[i]) 
+    pals = mo.ui.array([mo.ui.dropdown(options=_pal_names, value=_pal_names[i]) 
                         for i in range(len(_tile_ids))], label="Palettes")
-    mo.md(f"#### {mo.hstack([vars, pals], align="center")}")
     return pals, vars
+
+
+@app.cell(hide_code=True)
+def _(mo, pals, tile, vars):
+    mo.md("\n".join([f"### Variable to palette mapping"] +
+        [f"#### Tiles `{t_id}` {v} &rarr; {p}"
+         for t_id, v, p in zip(sorted(list(set((tile.tiles.tile_id)))), vars, pals)]))
+    return
 
 
 @app.cell(hide_code=True)
 def _(mpl, pals):
     _n = len(pals)
-    _fig, _axs = mpl.pyplot.subplots(nrows = _n, figsize=(2, 0.2 + 0.34 * _n))
-    for ax, cm in zip(_axs, pals.value):
+    _fig, _axs = mpl.pyplot.subplots(nrows = _n + 1, figsize=(2, 0.55 + 0.39 * _n))
+    for ax, cm in zip(_axs[1:], pals.value):
         _xy = [[x / 256 for x in range(257)], [x / 256 for x in range(257)]]
         ax.imshow(_xy, aspect='auto', cmap=mpl.colormaps.get(cm))
     for ax in _axs:
@@ -70,7 +76,7 @@ def _(mpl, pals):
     return ax, cm
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     tile_map_button = mo.ui.run_button(label="Tile map!")
     tile_map_button
@@ -106,23 +112,31 @@ async def _(asyncio, mo, pals, tile, tile_map_button, tiled_map, vars):
 
 @app.cell(hide_code=True)
 def _(mo, tile_or_weave):
-    tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True, debounce=True)
+    _tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True, debounce=True)
     if tile_or_weave.value == "tiles":
-        spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750, show_value=True, debounce=True)
+        _spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750, show_value=True, debounce=True)
     else:
-        spacing = mo.ui.slider(start=100, stop=1000, step=10, value=250, show_value=True, debounce=True)
+        _spacing = mo.ui.slider(start=100, stop=1000, step=10, value=250, show_value=True, debounce=True)
+    spacing_rotation = mo.ui.dictionary({
+      "tile_rotate": _tile_rotate,
+      "spacing": _spacing
+    })
+    return (spacing_rotation,)
 
+
+@app.cell(hide_code=True)
+def _(mo, spacing_rotation):
     mo.md("\n".join([
-        "### Tiling settings",
-        f"#### Spacing {spacing}",
-        f"#### Rotate by {tile_rotate}"
+        f"### Tiling settings",
+        f"#### Spacing {spacing_rotation["spacing"]}",
+        f"#### Rotate by {spacing_rotation["tile_rotate"]}"
     ]))
-    return spacing, tile_rotate
+    return
 
 
-@app.cell
-def _(mo, spacing, tile_or_weave):
-    _max_prototile_spacing = spacing.value // 6
+@app.cell(hide_code=True)
+def _(mo, spacing_rotation, tile_or_weave):
+    _max_prototile_spacing = spacing_rotation["spacing"].value // 6
     p_inset = mo.ui.slider(start=0, stop=_max_prototile_spacing, step = 1, 
                            value=0, show_value=True, debounce=True)
     _str = f"#### Prototile inset {p_inset}" if tile_or_weave.value == "tiles" else ""
@@ -130,7 +144,7 @@ def _(mo, spacing, tile_or_weave):
     return (p_inset,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, p_inset, tile_or_weave):
     _max_tile_spacing = p_inset.value // 3 if tile_or_weave.value == "tiles" else 10
     t_inset = mo.ui.slider(start=0, stop=_max_tile_spacing, step = 1, 
@@ -139,7 +153,7 @@ def _(mo, p_inset, tile_or_weave):
     return (t_inset,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     tile_or_weave = mo.ui.dropdown(options=["tiles", "weave"], value="tiles")
     mo.md(f"#### Pick tile or weave {tile_or_weave}")
@@ -240,86 +254,81 @@ def _(
     gdf,
     n,
     offset,
-    spacing,
+    spacing_rotation,
     strands,
     tile_or_weave,
     type,
 ):
     if tile_or_weave.value == "tiles":
-        tile = TileUnit(tiling_type=type.value, n = n.value, code = code.value, offset = offset.value,
-                       spacing=spacing.value, crs=gdf.crs)
+        tile = TileUnit(tiling_type=type.value, 
+                        n = n.value, 
+                        code = code.value, 
+                        offset = offset.value,
+                        spacing=spacing_rotation["spacing"].value, 
+                        crs=gdf.crs)
     else:
-        tile = WeaveUnit(weave_type=type.value, strands=strands.value, 
-                         spacing=spacing.value, aspect=aspect.value, crs=gdf.crs)
+        tile = WeaveUnit(weave_type=type.value, 
+                         strands=strands.value, 
+                         spacing=spacing_rotation["spacing"].value, 
+                         aspect=aspect.value, 
+                         crs=gdf.crs)
     return (tile,)
 
 
-@app.cell
-def _(p_inset, plot_tiles, t_inset, tile, tile_or_weave, tile_rotate):
+@app.cell(hide_code=True)
+def _(p_inset, plot_tiles, spacing_rotation, t_inset, tile, tile_or_weave):
     if tile_or_weave.value == "tiles":
         _plot_tile = tile \
-           .transform_rotate(tile_rotate.value) \
+           .transform_rotate(spacing_rotation["tile_rotate"].value) \
            .inset_tiles(t_inset.value) \
            .inset_prototile(p_inset.value)
     else:
         _plot_tile = tile \
-           .transform_rotate(tile_rotate.value) \
+           .transform_rotate(spacing_rotation["tile_rotate"].value) \
            .inset_tiles(t_inset.value)
 
     plot_tiles(_plot_tile)
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
-    radius = mo.ui.slider(0, 4, value=1, show_value=True)
-    show_prototile = mo.ui.switch(value=False)
-    show_reg_prototile = mo.ui.switch(value=False)
-    show_vectors = mo.ui.switch(value=False)
-    show_ids = mo.ui.switch(value=True)
-    palette = mo.ui.dropdown(options=["Spectral", "tab10", "tab20"], value="Spectral")
+    _radius = mo.ui.slider(0, 4, value=1, show_value=True)
+    _show_prototile = mo.ui.switch(value=False)
+    _show_reg_prototile = mo.ui.switch(value=False)
+    _show_vectors = mo.ui.switch(value=False)
+    _show_ids = mo.ui.switch(value=True)
 
-    mo.md("\n".join(["### Tile design view settings",
-      f"#### Set radius {radius}",
-      f"#### Show vectors {show_vectors}",
-      f"#### Show base tile {show_prototile}",
-      f"#### Show prototile {show_reg_prototile}",
-      f"#### Show tile IDs {show_ids}",
-      f"#### Palette {palette}"]))
-    return (
-        palette,
-        radius,
-        show_ids,
-        show_prototile,
-        show_reg_prototile,
-        show_vectors,
-    )
-
-
-@app.cell
-def _(tile):
-    def get_number_of_elements():
-        return len(set(tile.tiles.tile_id))
-    return (get_number_of_elements,)
+    view_settings = mo.ui.dictionary({
+        "radius": _radius,
+        "show_prototile": _show_prototile,
+        "show_reg_prototile": _show_reg_prototile,
+        "show_vectors": _show_vectors,
+        "show_ids": _show_ids
+    })
+    return (view_settings,)
 
 
 @app.cell(hide_code=True)
-def _(
-    mpl,
-    pals,
-    radius,
-    show_ids,
-    show_prototile,
-    show_reg_prototile,
-    show_vectors,
-):
+def _(mo, view_settings):
+    mo.md("\n".join(["### Tile design view settings",
+      f"#### Set radius {view_settings["radius"]}",
+      f"#### Show vectors {view_settings["show_vectors"]}",
+      f"#### Show base tile {view_settings["show_prototile"]}",
+      f"#### Show prototile {view_settings["show_reg_prototile"]}",
+      f"#### Show tile IDs {view_settings["show_ids"]}"]))
+    return
+
+
+@app.cell(hide_code=True)
+def _(mpl, pals, view_settings):
     def plot_tiles(tiles):
         cm = mpl.colors.ListedColormap([mpl.colormaps.get(p)(0.75) for p in pals.value])
-        plot = tiles.plot(r=radius.value, 
-                          show_vectors=show_vectors.value, 
-                          show_prototile=show_prototile.value,
-                          show_reg_prototile=show_reg_prototile.value,
-                          show_ids=show_ids.value,
+        plot = tiles.plot(r=view_settings["radius"].value, 
+                          show_vectors=view_settings["show_vectors"].value, 
+                          show_prototile=view_settings["show_prototile"].value,
+                          show_reg_prototile=view_settings["show_reg_prototile"].value,
+                          show_ids=view_settings["show_ids"].value,
                           cmap=cm)
         plot.axis("off")
         return plot
