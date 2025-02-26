@@ -22,16 +22,15 @@ def _():
 @app.cell(hide_code=True)
 def _():
     import matplotlib as mpl
-    import matplotlib.pyplot as plt
     import geopandas as gpd
     from weavingspace import TileUnit
     from weavingspace import Tiling
-    return TileUnit, Tiling, gpd, mpl, plt
+    return TileUnit, Tiling, gpd, mpl
 
 
 @app.cell(hide_code=True)
 def _(gpd):
-    gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.gpkg", engine="fiona")
+    gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json", engine="fiona")
     return (gdf,)
 
 
@@ -56,12 +55,11 @@ def _(gdf, mo, tile):
     return pals, vars
 
 
-@app.cell
-def _(mpl, pals, plt):
+@app.cell(hide_code=True)
+def _(mpl, pals):
     _n = len(pals)
-    _fig, _axs = plt.subplots(nrows = _n + 1, figsize=(2, 0.36 * (_n + 1)))
-    # _axs[0].set_title("   ")
-    for ax, cm in zip(_axs[1:], pals.value):
+    _fig, _axs = mpl.pyplot.subplots(nrows = _n, figsize=(2, 0.2 + 0.34 * _n))
+    for ax, cm in zip(_axs, pals.value):
         _xy = [[x / 256 for x in range(257)], [x / 256 for x in range(257)]]
         ax.imshow(_xy, aspect='auto', cmap=mpl.colormaps.get(cm))
     for ax in _axs:
