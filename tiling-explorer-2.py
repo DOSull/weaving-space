@@ -15,8 +15,9 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
+    import asyncio
     import math
-    return (math,)
+    return asyncio, math
 
 
 @app.cell(hide_code=True)
@@ -36,7 +37,6 @@ def _(gpd):
 
 @app.cell(hide_code=True)
 def _(Tiling, gdf, tile):
-    gdf.plot()
     tiled_map = Tiling(tile, gdf).get_tiled_map()
     return (tiled_map,)
 
@@ -76,17 +76,26 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, pals, tile, tile_map_button, tiled_map, vars):
+async def _(asyncio, mo, pals, tile, tile_map_button, tiled_map, vars):
+    _centred = {"display": "flex", "height": "500px", 
+                "justify-content": "center", "align-items": "center", 
+                "text-align": "center"}
+
+    mo.output.replace(
+        mo.vstack([
+            mo.md("## Making tiled map..."),
+            mo.md("### This might take a while"),
+            mo.status.spinner()
+        ]).style(_centred)
+    )
+    await asyncio.sleep(1)
+
     _msg = "\n".join([
         "## Click the **Tile map!** button to start", 
         "## or to refresh the map",
         "## after design changes",
     ])
-    mo.stop(not tile_map_button.value, 
-            mo.md(_msg).style({"display": "flex", "height": "500px",
-                               "justify-content": "center",
-                               "align-items": "center",
-                               "text-align": "center"}))
+    mo.stop(not tile_map_button.value, mo.md(_msg).style(_centred))
     tiled_map.variables = {k: v for k, v in zip(tile.tiles.tile_id, vars.value)}
     tiled_map.colourmaps = {k: v for k, v in zip(vars.value, pals.value)}
     tiled_map.render(legend=False)
