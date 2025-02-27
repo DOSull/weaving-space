@@ -141,7 +141,7 @@ def _(mo, p_inset, t_inset, tile_or_weave, tile_rotate):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     tile_or_weave = mo.ui.dropdown(options=["tiles", "weave"], value="tiles", label="#### Pick tile or weave")
     mo.md("\n".join([
@@ -151,7 +151,7 @@ def _(mo):
     return (tile_or_weave,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, tile_or_weave):
     if tile_or_weave.value == "tiles":
         family = mo.ui.dropdown(
@@ -167,7 +167,7 @@ def _(mo, tile_or_weave):
     return (family,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, tile_or_weave):
     if tile_or_weave.value == "tiles":
         spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750,
@@ -230,6 +230,8 @@ def _(family, mo, tile_or_weave):
     _aspect = mo.ui.slider(steps=[x / 6 for x in range(1,7)], value=5/6, label="#### Strand width",
                            show_value=True, debounce=True)
 
+    _over_under = mo.ui.text(value="2,2", label="#### Over-under pattern")
+
     if tile_or_weave.value == "tiles":
         if family.value in ["laves", "archimedean"]:
             tile_spec = mo.ui.dictionary({
@@ -245,34 +247,59 @@ def _(family, mo, tile_or_weave):
                 "n": _n_parts,
             })
     else:
-        tile_spec = mo.ui.dictionary({
-            "strands": _strands,
-            "aspect": _aspect,
-        })
+        if family.value == "plain":
+            tile_spec = mo.ui.dictionary({
+                "strands": _strands,
+                "aspect": _aspect,
+            })
+        else:
+            tile_spec = mo.ui.dictionary({
+                "strands": _strands,
+                "aspect": _aspect,
+                "over_under": _over_under,
+            })
     return (tile_spec,)
 
 
 @app.cell(hide_code=True)
 def _(mo, tile_spec):
-    mo.md("\n".join([f"#### {v}" for k, v in tile_spec.items()]))
+    mo.md("\n".join([
+        f"#### {v}" for k, v in tile_spec.items()
+    ]))
     return
 
 
 @app.cell(hide_code=True)
-def _(family, gdf, spacing, tile_or_weave, tile_spec, wsp):
+def _():
+    def get_over_under(pattern):
+        if any([not c in "0123456789," for c in pattern]): return (2, 2)
+        numbers = [int(s) for s in pattern.split(",")]
+        length = 2 * len(numbers) // 2
+        if length == 0:
+            return (2, 2)
+        else:
+            return tuple(numbers[:length])
+    return (get_over_under,)
+
+
+@app.cell(hide_code=True)
+def _(family, gdf, get_over_under, spacing, tile_or_weave, tile_spec, wsp):
     if tile_or_weave.value == "tiles":
-        tile = wsp.TileUnit(tiling_type=family.value,
-                            spacing=spacing.value, 
-                            n=tile_spec["n"].value if "n" in tile_spec else None, 
-                            code=tile_spec["code"].value if "code" in tile_spec else None, 
-                            offset=tile_spec["offset"].value if "offset" in tile_spec else None,
-                            crs=3857 if gdf is None else gdf.crs)
+        tile = wsp.TileUnit(
+            tiling_type=family.value,
+            spacing=spacing.value,
+            n=tile_spec["n"].value if "n" in tile_spec else None,
+            code=tile_spec["code"].value if "code" in tile_spec else None,
+            offset=tile_spec["offset"].value if "offset" in tile_spec else None,
+            crs=3857 if gdf is None else gdf.crs)
     else:
-        tile = wsp.WeaveUnit(weave_type=family.value, 
-                             spacing=spacing.value, 
-                             strands=tile_spec["strands"].value, 
-                             aspect=tile_spec["aspect"].value, 
-                             crs=3857 if gdf is None else gdf.crs)
+        tile = wsp.WeaveUnit(
+            weave_type=family.value,
+            spacing=spacing.value,
+            strands=tile_spec["strands"].value,
+            n=1 if family.value == "plain" else get_over_under(tile_spec["over_under"].value),
+            aspect=tile_spec["aspect"].value,
+            crs=3857 if gdf is None else gdf.crs)
     return (tile,)
 
 
@@ -298,11 +325,11 @@ def _(final_tile, plot_tiles):
 
 @app.cell(hide_code=True)
 def _(mo):
-    _radius = mo.ui.slider(0, 4, value=1, show_value=True)
+    _radius = mo.ui.slider(0, 4, value=0, show_value=True)
     _show_prototile = mo.ui.switch(value=False)
-    _show_reg_prototile = mo.ui.switch(value=False)
+    _show_reg_prototile = mo.ui.switch(value=True)
     _show_vectors = mo.ui.switch(value=False)
-    _show_ids = mo.ui.switch(value=True)
+    _show_ids = mo.ui.switch(value=False)
 
     view_settings = mo.ui.dictionary({
         "radius": _radius,
@@ -316,12 +343,14 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo, view_settings):
-    mo.md("\n".join(["### Tile design view settings",
-      f"#### Set radius {view_settings["radius"]}",
-      f"#### Show vectors {view_settings["show_vectors"]}",
-      f"#### Show base tile {view_settings["show_prototile"]}",
-      f"#### Show prototile {view_settings["show_reg_prototile"]}",
-      f"#### Show tile IDs {view_settings["show_ids"]}"]))
+    mo.md("\n".join([
+       f"### Tile design view settings",
+       f"#### Repeats to show {view_settings["radius"]}",
+       f"#### Show tile IDs {view_settings["show_ids"]}",
+       f"#### Show 'jigsaw piece' {view_settings["show_reg_prototile"]}",
+       f"#### Show vectors {view_settings["show_vectors"]}",
+       f"#### Show base tile {view_settings["show_prototile"]}",
+    ]))
     return
 
 
