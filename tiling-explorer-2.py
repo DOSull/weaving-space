@@ -13,7 +13,7 @@ def _():
     return (mo,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(f"# Tiled and woven maps of multivariate data")
     return
@@ -103,13 +103,13 @@ def _(final_tile, gdf, mo, pals, tile, tile_map_button, vars, wsp):
     return (tiled_map,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True, debounce=True)
     return (tile_rotate,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, tile):
     _max_p_inset = tile.spacing // 6
     p_inset = mo.ui.slider(start=0, stop=_max_p_inset, step = 1, 
@@ -117,7 +117,7 @@ def _(mo, tile):
     return (p_inset,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, p_inset, tile, tile_or_weave):
     _max_t_inset = p_inset.value // 3 if tile_or_weave.value == "tiles" else tile.spacing // 10
     _value_t_inset = _max_t_inset if tile_or_weave.value == "tiles" else 0
@@ -230,7 +230,8 @@ def _(family, mo, tile_or_weave):
     _aspect = mo.ui.slider(steps=[x / 6 for x in range(1,7)], value=5/6, label="#### Strand width",
                            show_value=True, debounce=True)
 
-    _over_under = mo.ui.text(value="2,2", label="#### Over-under pattern")
+    _over_under = mo.ui.text(value="2,2" if family.value == "twill" else "2", 
+                             label="#### Over-under pattern")
 
     if tile_or_weave.value == "tiles":
         if family.value in ["laves", "archimedean"]:
