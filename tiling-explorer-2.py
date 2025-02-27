@@ -47,18 +47,24 @@ def _(gdf, mo, tile):
 
 
 @app.cell(hide_code=True)
+def _(mo):
+    mo.md("""### Variable to palette mapping""")
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo, pals, tile, vars):
     _tile_ids = sorted(list(set((tile.tiles.tile_id))))
-    mo.md("\n".join([f"### Variable to palette mapping"] +
-        [f"#### Tiles `{t_id}` {v} &rarr; {p}"
-         for t_id, v, p in zip(_tile_ids, vars, pals)]))
+    mo.md("\n".join([
+        f"#### Tiles `{t_id}` {v} &rarr; {p}" for t_id, v, p in zip(_tile_ids, vars, pals)
+    ]))
     return
 
 
 @app.cell(hide_code=True)
 def _(mpl, pals):
     _n = len(pals)
-    _fig, _axs = mpl.pyplot.subplots(nrows = _n + 1, figsize=(2, 0.55 + 0.39 * _n))
+    _fig, _axs = mpl.pyplot.subplots(nrows = _n + 1, figsize=(2, 0.5 + 0.4 * _n))
     for ax, cm in zip(_axs[1:], pals.value):
         _xy = [[x / 256 for x in range(257)], [x / 256 for x in range(257)]]
         ax.imshow(_xy, aspect='auto', cmap=mpl.colormaps.get(cm))
@@ -77,8 +83,10 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(final_tile, gdf, mo, pals, tile, tile_map_button, vars, wsp):
-    _centred = {"display": "flex", "height": "500px", 
-                "justify-content": "center", "align-items": "center", 
+    _centred = {"display": "flex", 
+                "height": "500px", 
+                "justify-content": "center", 
+                "align-items": "center", 
                 "text-align": "center"}
 
     mo.output.replace(
@@ -89,10 +97,13 @@ def _(final_tile, gdf, mo, pals, tile, tile_map_button, vars, wsp):
         ]).style(_centred)
     )
 
+    _btn_text = f"Tile map!"
+    _btn = f"<span style='background-color:#efefef;font-family:monospace;padding:3px;box-shadow:3px 3px #888;'>{_btn_text}</span>"
+
     _msg = "\n".join([
-        "## Click the **Tile map!** button to start", 
-        "## or to refresh the map",
-        "## after design changes",
+        f"## Click {_btn} above left", 
+        f"## to start, and also to remake the", 
+        f"## map after design changes",
     ])
     mo.stop(not tile_map_button.value, mo.md(_msg).style(_centred))
     _tile_ids = sorted(list(set((tile.tiles.tile_id))))
@@ -127,15 +138,19 @@ def _(mo, p_inset, tile, tile_or_weave):
 
 
 @app.cell(hide_code=True)
+def _(mo):
+    mo.md("""### Tiling modifiers""")
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo, p_inset, t_inset, tile_or_weave, tile_rotate):
     if tile_or_weave.value == "tiles":
-        _str = "\n".join([f"### Tiling modifiers",
-                          f"#### Rotate by {tile_rotate}",
+        _str = "\n".join([f"#### Rotate by {tile_rotate}",
                           f"#### Prototile inset {p_inset}",
                           f"#### Tile inset {t_inset}"])
     else:
-        _str = "\n".join([f"### Tiling modifiers",
-                          f"#### Rotate by {tile_rotate}",
+        _str = "\n".join([f"#### Rotate by {tile_rotate}",
                           f"#### Tile inset {t_inset}"])
     mo.md(_str)
     return
@@ -143,11 +158,14 @@ def _(mo, p_inset, t_inset, tile_or_weave, tile_rotate):
 
 @app.cell(hide_code=True)
 def _(mo):
+    mo.md(f"### General specification")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     tile_or_weave = mo.ui.dropdown(options=["tiles", "weave"], value="tiles", label="#### Pick tile or weave")
-    mo.md("\n".join([
-        f"### General specification",
-        f"{tile_or_weave}",
-    ]))
+    mo.md(f"{tile_or_weave}")
     return (tile_or_weave,)
 
 
@@ -343,9 +361,14 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
+def _(mo):
+    mo.md(f"### Tile design view settings")
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo, view_settings):
     mo.md("\n".join([
-       f"### Tile design view settings",
        f"#### Repeats to show {view_settings["radius"]}",
        f"#### Show tile IDs {view_settings["show_ids"]}",
        f"#### Show 'jigsaw piece' {view_settings["show_reg_prototile"]}",
