@@ -118,6 +118,12 @@ def _(final_tile, gdf, get_palettes, mo, tile, tile_map_button, vars, wsp):
 
 @app.cell(hide_code=True)
 def _(mo):
+    mo.md("""### Tiling modifiers""")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True, debounce=True)
     return (tile_rotate,)
 
@@ -133,16 +139,10 @@ def _(mo, tile):
 @app.cell(hide_code=True)
 def _(mo, p_inset, tile, tile_or_weave):
     _max_t_inset = p_inset.value // 3 if tile_or_weave.value == "tiles" else tile.spacing // 10
-    _value_t_inset = _max_t_inset if tile_or_weave.value == "tiles" else 0
+    _value_t_inset = _max_t_inset // 3 if tile_or_weave.value == "tiles" else 0
     t_inset = mo.ui.slider(start=0, stop=_max_t_inset, step = 1, 
                            value=_value_t_inset, show_value=True, debounce=True)
     return (t_inset,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md("""### Tiling modifiers""")
-    return
 
 
 @app.cell(hide_code=True)
@@ -346,6 +346,12 @@ def _(final_tile, plot_tiles):
 
 @app.cell(hide_code=True)
 def _(mo):
+    mo.md(f"### Tile design view settings")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     _radius = mo.ui.slider(0, 4, value=0, show_value=True)
     _show_prototile = mo.ui.switch(value=False)
     _show_reg_prototile = mo.ui.switch(value=True)
@@ -360,12 +366,6 @@ def _(mo):
         "show_ids": _show_ids
     })
     return (view_settings,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(f"### Tile design view settings")
-    return
 
 
 @app.cell(hide_code=True)
