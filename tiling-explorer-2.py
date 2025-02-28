@@ -39,11 +39,13 @@ def _(gdf, mo, tile):
     _var_names = [_ for _ in gdf.columns if not "geom" in _]
     _pal_names = ['Reds', 'Greens', 'Greys', 'Blues', 'Oranges', 'Purples', 
                   'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
+
     vars = mo.ui.array([mo.ui.dropdown(options=_var_names, value=_var_names[i]) 
                         for i, id in enumerate(_tile_ids)], label="Variables") 
     pals = mo.ui.array([mo.ui.dropdown(options=_pal_names, value=_pal_names[i]) 
                         for i in range(len(_tile_ids))], label="Palettes")
-    return pals, vars
+    rev_pals = mo.ui.array([mo.ui.switch(False, label="Reverse") for i in range(len(_tile_ids))])
+    return pals, rev_pals, vars
 
 
 @app.cell(hide_code=True)
@@ -53,19 +55,19 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, pals, tile, vars):
+def _(mo, pals, rev_pals, tile, vars):
     _tile_ids = sorted(list(set((tile.tiles.tile_id))))
     mo.md("\n".join([
-        f"#### Tiles `{t_id}` {v} &rarr; {p}" for t_id, v, p in zip(_tile_ids, vars, pals)
+        f"#### Tiles `{t_id}` {v} &rarr; {p} {r}" for t_id, v, p, r in zip(_tile_ids, vars, pals, rev_pals)
     ]))
     return
 
 
 @app.cell(hide_code=True)
-def _(mpl, pals):
+def _(get_palettes, mpl, pals):
     _n = len(pals)
-    _fig, _axs = mpl.pyplot.subplots(nrows = _n + 1, figsize=(2, 0.5 + 0.4 * _n))
-    for ax, cm in zip(_axs[1:], pals.value):
+    _fig, _axs = mpl.pyplot.subplots(nrows = _n + 1, figsize=(1.5, 0.25 + 0.5 * _n))
+    for ax, cm, in zip(_axs[1:], get_palettes()):
         _xy = [[x / 256 for x in range(257)], [x / 256 for x in range(257)]]
         ax.imshow(_xy, aspect='auto', cmap=mpl.colormaps.get(cm))
     for ax in _axs:
@@ -82,7 +84,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(final_tile, gdf, mo, pals, tile, tile_map_button, vars, wsp):
+def _(final_tile, gdf, get_palettes, mo, tile, tile_map_button, vars, wsp):
     _centred = {"display": "flex", 
                 "height": "500px", 
                 "justify-content": "center", 
@@ -109,7 +111,7 @@ def _(final_tile, gdf, mo, pals, tile, tile_map_button, vars, wsp):
     _tile_ids = sorted(list(set((tile.tiles.tile_id))))
     tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
     tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
-    tiled_map.colourmaps = {k: v for k, v in zip(vars.value, pals.value)}
+    tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
     tiled_map.render(legend=False)
     return (tiled_map,)
 
@@ -379,9 +381,9 @@ def _(mo, view_settings):
 
 
 @app.cell(hide_code=True)
-def _(mpl, pals, view_settings):
+def _(get_palettes, mpl, view_settings):
     def plot_tiles(tiles):
-        cm = mpl.colors.ListedColormap([mpl.colormaps.get(p)(0.75) for p in pals.value])
+        cm = mpl.colors.ListedColormap([mpl.colormaps.get(p)(2/3) for p in get_palettes()])
         plot = tiles.plot(r=view_settings["radius"].value, 
                           show_vectors=view_settings["show_vectors"].value, 
                           show_prototile=view_settings["show_prototile"].value,
@@ -391,6 +393,13 @@ def _(mpl, pals, view_settings):
         plot.axis("off")
         return plot
     return (plot_tiles,)
+
+
+@app.cell
+def _(pals, rev_pals):
+    def get_palettes():
+        return [(p if not r else p + "_r") for p, r in zip(pals.value, rev_pals.value)]
+    return (get_palettes,)
 
 
 if __name__ == "__main__":
