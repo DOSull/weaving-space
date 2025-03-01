@@ -85,37 +85,37 @@ def _(get_palettes, mpl, pals):
 
 
 @app.cell(hide_code=True)
-def _(mo, tool_tip):
-    tile_map_button = mo.ui.run_button(label="Tile map!")
-    mo.md(f"{tool_tip(tile_map_button, "Click to tile the map data")}").center().style({"padding": "5px"})
-    return (tile_map_button,)
+def _():
+    # tile_map_button = mo.ui.run_button(label="Tile map!")
+    # mo.md(f"{tool_tip(tile_map_button, "Click to tile the map data")}").center().style({"padding": "5px"})
+    return
 
 
 @app.cell(hide_code=True)
-def _(final_tile, gdf, get_palettes, mo, tile, tile_map_button, vars, wsp):
-    _centred = {"display": "flex", 
-                "height": "500px", 
-                "justify-content": "center", 
-                "align-items": "center", 
-                "text-align": "center"}
+def _(final_tile, gdf, get_palettes, tile, vars, wsp):
+    # _centred = {"display": "flex", 
+    #             "height": "500px", 
+    #             "justify-content": "center", 
+    #             "align-items": "center", 
+    #             "text-align": "center"}
 
-    mo.output.replace(
-        mo.vstack([
-            mo.md("## Making tiled map..."),
-            mo.md("### This might take a while"),
-            mo.status.spinner()
-        ]).style(_centred)
-    )
+    # mo.output.replace(
+    #     mo.vstack([
+    #         mo.md("## Making tiled map..."),
+    #         mo.md("### This might take a while"),
+    #         mo.status.spinner()
+    #     ]).style(_centred)
+    # )
 
-    _btn_text = f"Tile map!"
-    _btn = f"<span style='background-color:#efefef;font-family:monospace;padding:3px;box-shadow:3px 3px #888;'>{_btn_text}</span>"
+    # _btn_text = f"Tile map!"
+    # _btn = f"<span style='background-color:#efefef;font-family:monospace;padding:3px;box-shadow:3px 3px #888;'>{_btn_text}</span>"
 
-    _msg = "\n".join([
-        f"## Click {_btn} above left", 
-        f"## to start, and also to remake the", 
-        f"## map after design changes",
-    ])
-    mo.stop(not tile_map_button.value, mo.md(_msg).style(_centred))
+    # _msg = "\n".join([
+    #     f"## Click {_btn} above left", 
+    #     f"## to start, and also to remake the", 
+    #     f"## map after design changes",
+    # ])
+    # mo.stop(not tile_map_button.value, mo.md(_msg).style(_centred))
     _tile_ids = sorted(list(set((tile.tiles.tile_id))))
     tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
     tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}

@@ -893,6 +893,8 @@ def repair_polygon(
     return gpd.GeoSeries([repair_polygon(p, shrink_then_grow) 
                           for p in polygon]).set_crs(polygon.crs)
   else:
+    if polygon is None:
+      return None
     if shrink_then_grow:
       return polygon.buffer(
         -RESOLUTION * 10, join_style = 2, cap_style = 3).buffer(
