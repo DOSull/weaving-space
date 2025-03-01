@@ -33,7 +33,7 @@ def _(gpd):
     return (gdf,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     def tool_tip(ele:str, tip:str):
         return f'<span title="{tip}">{ele}</span>'
@@ -62,10 +62,14 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, pals, rev_pals, tile, tool_tip, vars):
+def _(mo, pals, rev_pals, tile, tiling_map, tool_tip, vars):
+    mo.stop(tiling_map)
     _tile_ids = sorted(list(set((tile.tiles.tile_id))))
     mo.md("\n".join([
-        f"#### Tiles `{t_id}` {tool_tip(v, f"Variable for tiles with id {t_id}")} &rarr; {tool_tip(p, f"Palette for variable {v.value}")} {tool_tip(r, "Reverse ramp")}" 
+        f"#### Tiles `{t_id}` \
+        {tool_tip(v, f"Variable for tiles with id {t_id}")} &rarr; \
+        {tool_tip(p, f"Palette for variable {v.value}")} \
+        {tool_tip(r, "Reverse ramp")}" 
         for t_id, v, p, r in zip(_tile_ids, vars, pals, rev_pals)
     ]))
     return
@@ -92,20 +96,20 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(final_tile, gdf, get_palettes, tile, vars, wsp):
-    # _centred = {"display": "flex", 
-    #             "height": "500px", 
-    #             "justify-content": "center", 
-    #             "align-items": "center", 
-    #             "text-align": "center"}
+def _(final_tile, gdf, get_palettes, mo, tile, vars, wsp):
+    _centred = {"display": "flex", 
+                "height": "500px", 
+                "justify-content": "center", 
+                "align-items": "center", 
+                "text-align": "center"}
 
-    # mo.output.replace(
-    #     mo.vstack([
-    #         mo.md("## Making tiled map..."),
-    #         mo.md("### This might take a while"),
-    #         mo.status.spinner()
-    #     ]).style(_centred)
-    # )
+    mo.output.replace(
+        mo.vstack([
+            mo.md("## Making tiled map..."),
+            mo.md("### This might take a while"),
+            mo.status.spinner()
+        ]).style(_centred)
+    )
 
     # _btn_text = f"Tile map!"
     # _btn = f"<span style='background-color:#efefef;font-family:monospace;padding:3px;box-shadow:3px 3px #888;'>{_btn_text}</span>"
@@ -116,12 +120,21 @@ def _(final_tile, gdf, get_palettes, tile, vars, wsp):
     #     f"## map after design changes",
     # ])
     # mo.stop(not tile_map_button.value, mo.md(_msg).style(_centred))
+
+    # _tile_ids = sorted(list(set((tile.tiles.tile_id))))
+    # tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
+    # tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
+    # tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
+    # tiled_map.render(legend=False)_tile_ids = sorted(list(set((tile.tiles.tile_id))))
+
+    tiling_map = True
     _tile_ids = sorted(list(set((tile.tiles.tile_id))))
-    tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
-    tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
-    tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
-    tiled_map.render(legend=False)
-    return (tiled_map,)
+    _tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
+    _tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
+    _tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
+    tiling_map = False
+    _tiled_map.render(legend=False)
+    return (tiling_map,)
 
 
 @app.cell(hide_code=True)
@@ -153,7 +166,8 @@ def _(mo, p_inset, tile, tile_or_weave):
 
 
 @app.cell(hide_code=True)
-def _(mo, p_inset, t_inset, tile_or_weave, tile_rotate, tool_tip):
+def _(mo, p_inset, t_inset, tile_or_weave, tile_rotate, tiling_map, tool_tip):
+    mo.stop(tiling_map)
     if tile_or_weave.value == "tiles":
         _str = "\n".join([f"#### Rotate by {tool_tip(tile_rotate, "Rotate tile unit (degrees)")}",
                           f"#### Prototile inset {tool_tip(p_inset, "Inset group of tiles (% spacing)")}",
@@ -167,7 +181,7 @@ def _(mo, p_inset, t_inset, tile_or_weave, tile_rotate, tool_tip):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(f"### General specification")
+    mo.md(f"### General tiling specification")
     return
 
 
@@ -295,7 +309,8 @@ def _(family, mo, tile_or_weave):
 
 
 @app.cell(hide_code=True)
-def _(mo, tile_spec, tool_tip, tooltips):
+def _(mo, tile_spec, tiling_map, tool_tip, tooltips):
+    mo.stop(tiling_map)
     mo.md("\n".join([
         f"#### {tool_tip(v, tt)}" for (k, v), tt in zip(tile_spec.items(), tooltips)
     ]))
