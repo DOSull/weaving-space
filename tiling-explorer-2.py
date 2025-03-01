@@ -15,7 +15,7 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(f"# MapWeaver&trade; tiled maps of multivariate data")
+    mo.md(f"# MapWeaver ~ tiled maps of multivariate data")
     return
 
 
