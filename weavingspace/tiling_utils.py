@@ -612,7 +612,7 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
   # TODO: Check  the logic of this - it seems like dumb luck that it works...
   dual_faces = [(f, id) for f, id in dual_faces
                 if affine.translate(
-                  unit.prototile.geometry[0], RESOLUTION * 10, 
+                  unit.prototile.loc[0, "geometry"], RESOLUTION * 10, 
                   RESOLUTION * 10).contains(f.centroid)]
   gdf = gpd.GeoDataFrame(
     data = {"tile_id": [f[1] for f in dual_faces]}, crs = unit.crs,
@@ -889,14 +889,18 @@ def repair_polygon(
   Returns:
     Union[geom.Polygon, gpd.GeoSeries]: the cleaned Polygon or GeoSeries.
   """
-  if shrink_then_grow:
-    return polygon.buffer(
-      -RESOLUTION * 10, join_style = 2, cap_style = 3).buffer(
-      RESOLUTION * 10, join_style = 2, cap_style = 3)
+  if type(polygon) is gpd.GeoSeries:
+    return gpd.GeoSeries([repair_polygon(p, shrink_then_grow) 
+                          for p in polygon]).set_crs(polygon.crs)
   else:
-    return polygon.buffer(
-      RESOLUTION * 10, join_style = 2, cap_style = 3).buffer(
-      -RESOLUTION * 10, join_style = 2, cap_style = 3)
+    if shrink_then_grow:
+      return polygon.buffer(
+        -RESOLUTION * 10, join_style = 2, cap_style = 3).buffer(
+        RESOLUTION * 10, join_style = 2, cap_style = 3)
+    else:
+      return polygon.buffer(
+        RESOLUTION * 10, join_style = 2, cap_style = 3).buffer(
+        -RESOLUTION * 10, join_style = 2, cap_style = 3)
 
 
 def safe_union(gs:gpd.GeoSeries,
@@ -920,8 +924,10 @@ def safe_union(gs:gpd.GeoSeries,
     Union[gpd.GeoSeries, geom.Polygon]: the resulting union of supplied
       polygons.
   """
-  union = gs.buffer(RESOLUTION * 10, join_style = 2, cap_style = 3) \
-    .unary_union.buffer(-RESOLUTION * 10, join_style = 2, cap_style = 3)
+  union = gpd.GeoSeries(
+    [p.buffer(RESOLUTION * 10, join_style = 2, cap_style = 3) 
+     for p in gs], crs = gs.crs) \
+      .unary_union.buffer(-RESOLUTION * 10, join_style = 2, cap_style = 3)
   if as_polygon:
     return gridify(union)
   else:

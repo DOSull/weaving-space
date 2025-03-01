@@ -494,7 +494,7 @@ class Topology:
     """
     self.tile_matching_transforms = {}
     n_symmetries = 0
-    pt = self.tileable.prototile.geometry[0]
+    pt = self.tileable.prototile.loc[0, "geometry"]
     for tr in Shape_Matcher(pt).get_polygon_matches(pt):
       if not tr.transform_type in ["identity", "translation"]:
         self.tile_matching_transforms[n_symmetries] = tr

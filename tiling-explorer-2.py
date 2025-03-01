@@ -33,6 +33,13 @@ def _(gpd):
     return (gdf,)
 
 
+@app.cell
+def _():
+    def tool_tip(ele:str, tip:str):
+        return f'<span title="{tip}">{ele}</span>'
+    return (tool_tip,)
+
+
 @app.cell(hide_code=True)
 def _(gdf, mo, tile):
     _tile_ids = sorted(list(set(tile.tiles.tile_id)))
@@ -44,7 +51,7 @@ def _(gdf, mo, tile):
                         for i, id in enumerate(_tile_ids)], label="Variables") 
     pals = mo.ui.array([mo.ui.dropdown(options=_pal_names, value=_pal_names[i]) 
                         for i in range(len(_tile_ids))], label="Palettes")
-    rev_pals = mo.ui.array([mo.ui.switch(False, label="Reverse") for i in range(len(_tile_ids))])
+    rev_pals = mo.ui.array([mo.ui.switch(False) for i in range(len(_tile_ids))])
     return pals, rev_pals, vars
 
 
@@ -55,10 +62,11 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, pals, rev_pals, tile, vars):
+def _(mo, pals, rev_pals, tile, tool_tip, vars):
     _tile_ids = sorted(list(set((tile.tiles.tile_id))))
     mo.md("\n".join([
-        f"#### Tiles `{t_id}` {v} &rarr; {p} {r}" for t_id, v, p, r in zip(_tile_ids, vars, pals, rev_pals)
+        f"#### Tiles `{t_id}` {tool_tip(v, "Choose variable")} &rarr; {tool_tip(p, "Choose named palette")} {tool_tip(r, "click to reverse ramp")}" 
+        for t_id, v, p, r in zip(_tile_ids, vars, pals, rev_pals)
     ]))
     return
 
@@ -77,9 +85,9 @@ def _(get_palettes, mpl, pals):
 
 
 @app.cell(hide_code=True)
-def _(mo):
+def _(mo, tool_tip):
     tile_map_button = mo.ui.run_button(label="Tile map!")
-    tile_map_button.center()
+    mo.md(f"{tool_tip(tile_map_button, "Click to tile the map data")}").center().style({"padding": "5px"})
     return (tile_map_button,)
 
 
@@ -129,31 +137,30 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, tile):
-    _max_p_inset = tile.spacing // 6
-    p_inset = mo.ui.slider(start=0, stop=_max_p_inset, step = 1, 
+def _(mo):
+    p_inset = mo.ui.slider(start=0, stop=10, step = 0.1, 
                            value=0, show_value=True, debounce=True)
     return (p_inset,)
 
 
 @app.cell(hide_code=True)
 def _(mo, p_inset, tile, tile_or_weave):
-    _max_t_inset = p_inset.value // 3 if tile_or_weave.value == "tiles" else tile.spacing // 10
-    _value_t_inset = _max_t_inset // 3 if tile_or_weave.value == "tiles" else 0
-    t_inset = mo.ui.slider(start=0, stop=_max_t_inset, step = 1, 
+    _max_t_inset = p_inset.value / 3 if tile_or_weave.value == "tiles" else tile.spacing / 10
+    _value_t_inset = _max_t_inset / 3 if tile_or_weave.value == "tiles" else 0
+    t_inset = mo.ui.slider(start=0, stop=2.5, step = 0.1, 
                            value=_value_t_inset, show_value=True, debounce=True)
     return (t_inset,)
 
 
 @app.cell(hide_code=True)
-def _(mo, p_inset, t_inset, tile_or_weave, tile_rotate):
+def _(mo, p_inset, t_inset, tile_or_weave, tile_rotate, tool_tip):
     if tile_or_weave.value == "tiles":
-        _str = "\n".join([f"#### Rotate by {tile_rotate}",
-                          f"#### Prototile inset {p_inset}",
-                          f"#### Tile inset {t_inset}"])
+        _str = "\n".join([f"#### Rotate by {tool_tip(tile_rotate, "Rotate tile unit (degrees)")}",
+                          f"#### Prototile inset {tool_tip(p_inset, "Inset group of tiles (% spacing)")}",
+                          f"#### Tile inset {tool_tip(t_inset, "Inset tiles (% spacing)")}"])
     else:
-        _str = "\n".join([f"#### Rotate by {tile_rotate}",
-                          f"#### Tile inset {t_inset}"])
+        _str = "\n".join([f"#### Rotate by {tool_tip(tile_rotate, "Rotate tile unit (degrees)")}",
+                          f"#### Tile inset {tool_tip(t_inset, "Inset tiles (% spacing)")}"])
     mo.md(_str)
     return
 
@@ -165,14 +172,14 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo):
+def _(mo, tool_tip):
     tile_or_weave = mo.ui.dropdown(options=["tiles", "weave"], value="tiles", label="#### Pick tile or weave")
-    mo.md(f"{tile_or_weave}")
+    mo.md(f"{tool_tip(tile_or_weave, "Choose tiles or a weave tiling")}")
     return (tile_or_weave,)
 
 
 @app.cell(hide_code=True)
-def _(mo, tile_or_weave):
+def _(mo, tile_or_weave, tool_tip):
     if tile_or_weave.value == "tiles":
         family = mo.ui.dropdown(
             options = ["hex-slice", "square-slice", "hex-dissection", "cross",
@@ -183,12 +190,12 @@ def _(mo, tile_or_weave):
             options = ["plain", "twill", "basket"], #, "cube"], 
             value = "plain", label = "#### Weave type")
 
-    mo.md(f"{family}")
+    mo.md(f"{tool_tip(family, "Choose tiling family")}")
     return (family,)
 
 
 @app.cell(hide_code=True)
-def _(mo, tile_or_weave):
+def _(mo, tile_or_weave, tool_tip):
     if tile_or_weave.value == "tiles":
         spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750,
                                show_value=True, debounce=True)
@@ -196,7 +203,7 @@ def _(mo, tile_or_weave):
         spacing = mo.ui.slider(start=100, stop=1000, step=10, value=250,
                                show_value=True, debounce=True)
 
-    mo.md(f"#### Spacing {spacing}")
+    mo.md(f"#### Spacing {tool_tip(spacing, 'In units of the map CRS. For tiles, size of the repeat unit; for weaves, width of the ribbons.')}")
     return (spacing,)
 
 
@@ -237,7 +244,7 @@ def _(family, mo, tile_or_weave):
         options = ["3.3.3.3.6", "3.3.4.3.4", "3.4.6.4", "3.6.3.6", 
                   "3.12.12", "4.6.12", "4.8.8"],
         value = "3.3.4.3.4",
-        label = "Code"
+        label = "Code",
     )
 
     if family.value == "twill" or family.value == "basket":
@@ -258,34 +265,39 @@ def _(family, mo, tile_or_weave):
             tile_spec = mo.ui.dictionary({
                 "code": _code,
             })
+            tooltips = ["The sequence of vertex degrees around each polygon in the tiling (Laves), or the number of sides of each polygon around each vertex (Archimedean)."]
         elif "slice" in family.value or family.value == "hex-dissection":
             tile_spec = mo.ui.dictionary({
                 "n": _n_parts,
                 "offset": _offset,
             })
+            tooltips = ["The number of pie-slices of the base tile.", "0 starts at the base tile corners, 1 at the mid-point along segments equally dividing the base tile perimeter."]
         else:
             tile_spec = mo.ui.dictionary({
                 "n": _n_parts,
             })
+            tooltips = ["How many parts to dissect the hexagon into."]
     else:
         if family.value == "plain":
             tile_spec = mo.ui.dictionary({
                 "strands": _strands,
                 "aspect": _aspect,
             })
+            tooltips = ["A code expressing the sequence of distinct weave elements as a series of letters in the warp and weft directions, separated by a pipe | symbol.", "The width of the weave ribbons relative to spacing."]
         else:
             tile_spec = mo.ui.dictionary({
                 "strands": _strands,
                 "aspect": _aspect,
                 "over_under": _over_under,
             })
-    return (tile_spec,)
+            tooltips = ["A code expressing the sequence of distinct weave elements as a series of letters in the warp and weft directions, separated by a pipe | symbol.", "The width of the weave ribbons relative to spacing.", "A comma-separated sequence of how many strands in the other direction each ribbon should go over, then under."]
+    return tile_spec, tooltips
 
 
 @app.cell(hide_code=True)
-def _(mo, tile_spec):
+def _(mo, tile_spec, tool_tip, tooltips):
     mo.md("\n".join([
-        f"#### {v}" for k, v in tile_spec.items()
+        f"#### {tool_tip(v, tt)}" for (k, v), tt in zip(tile_spec.items(), tooltips)
     ]))
     return
 
@@ -325,16 +337,16 @@ def _(family, gdf, get_over_under, spacing, tile_or_weave, tile_spec, wsp):
 
 
 @app.cell(hide_code=True)
-def _(p_inset, t_inset, tile, tile_or_weave, tile_rotate):
+def _(p_inset, spacing, t_inset, tile, tile_or_weave, tile_rotate):
     if tile_or_weave.value == "tiles":
         final_tile = tile \
            .transform_rotate(tile_rotate.value) \
-           .inset_tiles(t_inset.value) \
-           .inset_prototile(p_inset.value)
+           .inset_tiles(t_inset.value * spacing.value / 100) \
+           .inset_prototile(p_inset.value * spacing.value / 100)
     else:
         final_tile = tile \
            .transform_rotate(tile_rotate.value) \
-           .inset_tiles(t_inset.value)
+           .inset_tiles(t_inset.value * spacing.value / 100)
     return (final_tile,)
 
 
@@ -369,13 +381,13 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, view_settings):
+def _(mo, tool_tip, view_settings):
     mo.md("\n".join([
-       f"#### Repeats to show {view_settings["radius"]}",
-       f"#### Show tile IDs {view_settings["show_ids"]}",
-       f"#### Show 'jigsaw piece' {view_settings["show_reg_prototile"]}",
-       f"#### Show vectors {view_settings["show_vectors"]}",
-       f"#### Show base tile {view_settings["show_prototile"]}",
+       f"#### Repeats to show {tool_tip(view_settings['radius'], 'The number of &lsquo;shells&rsquo; of the tiling to show away from the base tile unit.')}",
+       f"#### Show tile IDs {tool_tip(view_settings['show_ids'], 'Show the tile labels used to match tiling elements to variables in the map data.')}",
+       f"#### Show &lsquo;jigsaw piece&rsquo; {tool_tip(view_settings['show_reg_prototile'], 'Show in a red outline the repeating set of tiles that piece together jigsaw-like to form the pattern.')}",
+       f"#### Show vectors {tool_tip(view_settings['show_vectors'], 'Show the translations that map repeating tiles in the pattern onto one another.')}",
+       f"#### Show base tile {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the repeating base tile (usually a square or hexagon) which forms the basis of the pattern.')}",
     ]))
     return
 

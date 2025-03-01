@@ -105,7 +105,7 @@ class Tileable:
     For a tileable of type `TileShape.HEXAGON`, the indexing tuples
     have three components. See https://www.redblobgames.com/grids/hexagons/
     """
-    t = self.prototile.geometry[0]
+    t = self.prototile.loc[0, "geometry"]
     pts = [p for p in t.exterior.coords][:-1]
     n_pts = len(pts)
     vec_dict = {}
@@ -185,8 +185,8 @@ class Tileable:
     if len(fragments) == 1:
       return [f for f in fragments if not f.is_empty]
     fragments = [f for f in fragments if not f.is_empty]
-    prototile = self.prototile.geometry[0]
-    reg_prototile = copy.deepcopy(self.regularised_prototile.geometry[0])
+    prototile = self.prototile.loc[0, "geometry"]
+    reg_prototile = copy.deepcopy(self.regularised_prototile.loc[0, "geometry"])
     changes_made = True
     while changes_made:
       changes_made = False
@@ -233,7 +233,7 @@ class Tileable:
     """Move tiles that are outside the regularised prototile main polygon
     back inside it adjusting regularised prototile if needed.
     """
-    reg_prototile = self.regularised_prototile.geometry[0]
+    reg_prototile = self.regularised_prototile.loc[0, "geometry"]
     new_reg_prototile = copy.deepcopy(reg_prototile)
     new_tiles = list(self.tiles.geometry)
     for i, p in enumerate(self.tiles.geometry):
@@ -347,7 +347,7 @@ class Tileable:
     # because this may be more resistant to odd effects for non-convex tiles
     extent = self.prototile.geometry.scale(
       2 * r + tiling_utils.RESOLUTION, 2 * r + tiling_utils.RESOLUTION,
-      origin = self.prototile.geometry[0].centroid)[0]
+      origin = self.prototile.loc[0, "geometry"].centroid)[0]
     vector_lengths = {index: np.sqrt(sum([_ ** 2 for _ in index]))
                       for index in vecs.keys()}
     ordered_vector_keys = [k for k, v in sorted(vector_lengths.items(), 
@@ -460,8 +460,8 @@ class Tileable:
     Returns:
       pyplot.axes: to which calling context may add things.
     """
-    w = self.prototile.geometry[0].bounds[2] - \
-      self.prototile.geometry[0].bounds[0]
+    w = self.prototile.loc[0, "geometry"].bounds[2] - \
+      self.prototile.loc[0, "geometry"].bounds[0]
     n_cols = len(set(self.tiles.tile_id))
     if cmap is None:
       cm = "Dark2" if n_cols <= 8 else "Paired"

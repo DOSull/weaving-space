@@ -165,7 +165,7 @@ class TileUnit(Tileable):
     changes the tile to a diamond by manually altering the tile in place
     to be a diamond shape.
     """
-    tile = self.prototile.geometry[0]
+    tile = self.prototile.loc[0, "geometry"]
     # translate to sit on x-axis
     tile = affine.translate(tile, 0, -tile.bounds[1])
     pts = [p for p in tile.exterior.coords]
@@ -236,7 +236,7 @@ class TileUnit(Tileable):
       TileUnit: the new TileUnit with inset applied.
     """
     inset_tile = \
-      self.regularised_prototile.geometry.buffer(-d, join_style = 2, cap_style = 3)[0]
+      self.regularised_prototile.loc[0, "geometry"].buffer(-d, join_style = 2, cap_style = 3)
     new_tiles = [inset_tile.intersection(e) for e in self.tiles.geometry]
     result = copy.deepcopy(self)
     result.tiles.geometry = gpd.GeoSeries(new_tiles)
