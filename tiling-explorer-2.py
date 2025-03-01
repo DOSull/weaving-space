@@ -65,7 +65,7 @@ def _(mo):
 def _(mo, pals, rev_pals, tile, tool_tip, vars):
     _tile_ids = sorted(list(set((tile.tiles.tile_id))))
     mo.md("\n".join([
-        f"#### Tiles `{t_id}` {tool_tip(v, "Choose variable")} &rarr; {tool_tip(p, "Choose named palette")} {tool_tip(r, "click to reverse ramp")}" 
+        f"#### Tiles `{t_id}` {tool_tip(v, f"Variable for tiles with id {t_id}")} &rarr; {tool_tip(p, f"Palette for variable {v.value}")} {tool_tip(r, "Reverse ramp")}" 
         for t_id, v, p, r in zip(_tile_ids, vars, pals, rev_pals)
     ]))
     return
