@@ -62,23 +62,10 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, pals, rev_pals, tile, tiling_map, tool_tip, vars):
+def _(get_palettes, mo, mpl, pals, tiling_map):
     mo.stop(tiling_map)
-    _tile_ids = sorted(list(set((tile.tiles.tile_id))))
-    mo.md("\n".join([
-        f"#### Tiles `{t_id}` \
-        {tool_tip(v, f"Variable for tiles with id {t_id}")} &rarr; \
-        {tool_tip(p, f"Palette for variable {v.value}")} \
-        {tool_tip(r, "Reverse ramp")}" 
-        for t_id, v, p, r in zip(_tile_ids, vars, pals, rev_pals)
-    ]))
-    return
-
-
-@app.cell(hide_code=True)
-def _(get_palettes, mpl, pals):
     _n = len(pals)
-    _fig, _axs = mpl.pyplot.subplots(nrows = _n + 1, figsize=(1.5, 0.25 + 0.5 * _n))
+    _fig, _axs = mpl.pyplot.subplots(nrows = _n + 1, figsize=(1.5, 0.25 + 0.48 * _n))
     for ax, cm, in zip(_axs[1:], get_palettes()):
         _xy = [[x / 256 for x in range(257)], [x / 256 for x in range(257)]]
         ax.imshow(_xy, aspect='auto', cmap=mpl.colormaps.get(cm))
@@ -86,6 +73,22 @@ def _(get_palettes, mpl, pals):
         ax.set_axis_off()
     ax
     return ax, cm
+
+
+@app.cell(hide_code=True)
+def _(mo, pals, rev_pals, tile, tiling_map, tool_tip, vars):
+    mo.stop(tiling_map)
+    _tile_ids = sorted(list(set((tile.tiles.tile_id))))
+    mo.md("\n".join([
+        "&nbsp;&nbsp;".join([
+            f"#### Tiles `{t_id}`",
+            f"{tool_tip(v, f"Variable for tiles with id {t_id}")} &rarr;",
+            f"{tool_tip(p, f"Palette for variable {v.value}")}",
+            f"<span style='position:relative;top:5px;'>{tool_tip(r, 'Reverse ramp')}</span>",
+        ])
+        for t_id, v, p, r in zip(_tile_ids, vars, pals, rev_pals)
+    ]))
+    return
 
 
 @app.cell(hide_code=True)
