@@ -771,8 +771,13 @@ class TiledMap:
     groups = gdf.groupby("tile_id")
     for id, var in self.variables.items():
       subset = groups.get_group(id)
-      if len(subset[var].unique()) < 100:
-        subset.plot(ax = ax, fc = 'k')
+      n_values = len(subset[var].unique())
+      if n_values == 1:
+        subset.plot(ax = ax, hatch = "/", fc = "#00000000")
+      elif n_values < 100:
+        subset.plot(ax = ax, column = var, cmap = self.colourmaps[var], 
+                    scheme = "EqualInterval", k = n_values)
+        # subset.plot(ax = ax, fc = 'k')
         # fc = 'k' # matplotlib.colormaps.get(self.colourmaps)(0.5))
       # Handle custom color assignments via 'cmaps' parameter.
       # Result is setting 'cmap' variable used in plot command afterwards.
