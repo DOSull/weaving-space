@@ -65,10 +65,10 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(get_input_data, gpd):
     def get_gdf():
-        if type(get_input_data()) is str:
-            _gdf = gpd.read_file(get_input_data(), engine="fiona")
+        if type(get_input_data()) is str or len(get_input_data()) == 0:
+            _gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json", engine="fiona")
         else:
-            _gdf = gpd.read_file(get_input_data()[0].path, engine="fiona")
+            _gdf = gpd.read_file(get_input_data()[0].contents, IMMUTABLE="YES")
         if not _gdf.crs.is_projected:
             _gdf = _gdf.to_crs(3857)
         return _gdf
@@ -91,10 +91,13 @@ def _(get_input_data, gpd):
 
 @app.cell(hide_code=True)
 def _(mo, set_input_data, tool_tip):
+    # _fb = mo.ui.file_browser(multiple=False, 
+    #                          on_change=set_input_data, 
+    #                          label=f"### Select an input data set")
+    _fb = mo.ui.file(on_change=set_input_data, label=f"Upload data")
     f = tool_tip(
-        mo.ui.file_browser(multiple=False, on_change=set_input_data, label=f"### Select an input data set"),
-        "Your data should be geospatial polygons - preferably GPKG or GeoJSON, and contain a number of numerical attributes to be symbolised.")
-    mo.md(f"{f}")
+        _fb, "Your data should be geospatial polygons - preferably GPKG or GeoJSON, and contain a number of numerical attributes to be symbolised.")
+    mo.md(f"{f}").center()
     return (f,)
 
 
