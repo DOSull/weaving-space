@@ -177,7 +177,7 @@ def _(final_tile, gdf, get_palettes, mo, tile, vars, wsp):
     _tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
     _tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
     tiling_map = False
-    _tiled_map.render(legend=False)
+    _tiled_map.render(legend=False, scheme="EqualInterval")
     return (tiling_map,)
 
 
@@ -265,7 +265,7 @@ def _(mo, spacing_lims, tile_or_weave, tool_tip):
         spacing = mo.ui.slider(
             start=spacing_lims['min strand width'], 
             stop=spacing_lims['max strand width'], 
-            step=spacing_lims['step_strand_width'], 
+            step=spacing_lims['step strand width'], 
             value=spacing_lims['max strand width'] // 2,
             show_value=True, debounce=True)
 
