@@ -43,16 +43,16 @@ def _():
 
 @app.cell(hide_code=True)
 def _(gdf, is_numeric_dtype, mo, num_tiles):
-    _tile_ids = list("abcdefghijkl")[:num_tiles.value]
     _var_names = [_ for _ in gdf.columns if not "geom" in _ and is_numeric_dtype(gdf[_].dtype)]
-    _pal_names = ['Reds', 'Greens', 'Greys', 'Blues', 'Oranges', 'Purples', 
+    _pal_names = ['Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples', 
                   'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
 
+    _letters = "abcdefghijkl"[:num_tiles.value]
     vars = mo.ui.array([mo.ui.dropdown(options=_var_names, value=_var_names[i]) 
-                        for i, id in enumerate(_tile_ids)], label="Variables") 
+                        for i, id in enumerate(_letters)], label="Variables") 
     pals = mo.ui.array([mo.ui.dropdown(options=_pal_names, value=_pal_names[i]) 
-                        for i in range(len(_tile_ids))], label="Palettes")
-    rev_pals = mo.ui.array([mo.ui.switch(False) for i in range(len(_tile_ids))])
+                        for i in range(num_tiles.value)], label="Palettes")
+    rev_pals = mo.ui.array([mo.ui.switch(False) for i in range(num_tiles.value)])
     return pals, rev_pals, vars
 
 
@@ -106,7 +106,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo, tool_tip):
-    num_tiles = mo.ui.dropdown(options = {str(x): x for x in range(2, 13)}, value="6")
+    num_tiles = mo.ui.dropdown(options = {str(x): x for x in range(2, 13) if x != 11}, value="6")
     mo.md(f"#### Set number of variables {tool_tip(num_tiles, "Choose the number of distinct tiles you want to use to symbolise data.")}")
     return (num_tiles,)
 
@@ -292,7 +292,7 @@ def _(mo, num_tiles, tile_or_weave, tilings_by_n, tool_tip):
 
 
 @app.cell(hide_code=True)
-def _(family, mo, num_tiles, tile_or_weave, tilings_by_n):
+def _(family, mo, tile_or_weave):
     _chosen_family = family.value
 
     if "slice" in family.value:
@@ -306,8 +306,8 @@ def _(family, mo, num_tiles, tile_or_weave, tilings_by_n):
             label="#### Offset", debounce=True)
 
     if "weave" in family.value:
-        _strands = mo.ui.text(value=tilings_by_n[num_tiles.value][family.value]["strands"], 
-                              label="#### Strands spec") 
+        # _strands = mo.ui.text(value=tilings_by_n[num_tiles.value][family.value]["strands"], 
+        #                       label="#### Strands spec") 
         _aspect = mo.ui.slider(steps=[x / 6 for x in range(1,7)], value=5/6, label="#### Strand width",
                                show_value=True, debounce=True)
         _over_under = mo.ui.text(value="2,2" if "twill" in family.value else "2", 
@@ -324,13 +324,13 @@ def _(family, mo, num_tiles, tile_or_weave, tilings_by_n):
     else:
         if "plain" in family.value:
             tile_spec = mo.ui.dictionary({
-                "strands": _strands,
+                # "strands": _strands,
                 "aspect": _aspect,
             })
             tooltips = ["A code expressing the sequence of distinct weave elements as a series of letters in the warp and weft directions, separated by a pipe | symbol.", "The width of the weave ribbons relative to spacing."]
         else:
             tile_spec = mo.ui.dictionary({
-                "strands": _strands,
+                # "strands": _strands,
                 "aspect": _aspect,
                 "over_under": _over_under,
             })
@@ -390,7 +390,7 @@ def _(
         tile = wsp.WeaveUnit(
             weave_type=_spec["weave_type"],
             spacing=spacing.value,
-            strands=tile_spec["strands"].value,
+            strands=_spec["strands"],
             n=1 if "plain" in family.value else get_over_under(tile_spec["over_under"].value),
             aspect=tile_spec["aspect"].value,
             crs=3857 if gdf is None else gdf.crs)
@@ -475,7 +475,7 @@ def _(pals, rev_pals):
     return (get_palettes,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     tilings_by_n = {
       2: {
@@ -491,7 +491,7 @@ def _():
       },
       3: {
         "hex-slice 3": {"type":"tiling", "tiling_type": "hex-slice", "n": 3},
-        "laves 3.6.3.6": {"type":"tiling", "tiling_type": "laves", "code": "3.6.3.6"},
+        # "laves 3.6.3.6": {"type":"tiling", "tiling_type": "laves", "code": "3.6.3.6"},
         "hex-colouring 3": {"type":"tiling", "tiling_type": "hex-colouring", "n": 3},
         "crosses 3": {"type":"tiling", "tiling_type": "crosses", "n": 3},
         "square-colouring 3": {"type":"tiling", "tiling_type": "square-colouring", "n": 3},
@@ -502,18 +502,19 @@ def _():
       4: {
         "laves 3.3.4.3.4": {"type":"tiling", "tiling_type": "laves", "code": "3.3.4.3.4"},
         "basket weave ab|cd": {"type":"weave", "weave_type": "basket", "strands": "ab|cd"},
-        "laves 4.8.8": {"type":"tiling", "tiling_type": "laves", "code": "4.8.8"},
+        "twill weave ab|cd": {"type":"weave", "weave_type": "twill", "strands": "ab|cd"},
+        # "laves 4.8.8": {"type":"tiling", "tiling_type": "laves", "code": "4.8.8"},
         "crosses 4": {"type":"tiling", "tiling_type": "crosses", "n": 4},
         "square-slice 4": {"type":"tiling", "tiling_type": "square-slice", "n": 4},
         "hex-colouring 4": {"type":"tiling", "tiling_type": "hex-colouring", "n": 4},
-        "square-colouring 4": {"type":"tiling", "tiling_type": "square-colouring", "n": 4},
+        # "square-colouring 4": {"type":"tiling", "tiling_type": "square-colouring", "n": 4},
         "hex-dissection 4": {"type":"tiling", "tiling_type": "hex-dissection", "n": 4},
         "hex-slice 4": {"type":"tiling", "tiling_type": "hex-slice", "n": 4},
       },
       5: {
         "square-colouring 5": {"type":"tiling", "tiling_type": "square-colouring", "n": 5},
         "crosses 5": {"type":"tiling", "tiling_type": "crosses", "n": 5},
-        "twill weave abc|cd-": {"type":"weave", "weave_type": "twill", "strands": "abc|cd-"},
+        "twill weave abc|cd-": {"type":"weave", "weave_type": "twill", "strands": "abc|de-"},
         "hex-colouring 5": {"type":"tiling", "tiling_type": "hex-colouring", "n": 5},
         "hex-slice 5": {"type":"tiling", "tiling_type": "hex-slice", "n": 5},
         "square-slice 5": {"type":"tiling", "tiling_type": "square-slice", "n": 5},
@@ -522,11 +523,11 @@ def _():
         "hex-slice 6": {"type":"tiling", "tiling_type": "hex-slice", "n": 6},
         "square-slice 6": {"type":"tiling", "tiling_type": "square-slice", "n": 6},
         "square-colouring 6": {"type":"tiling", "tiling_type": "square-colouring", "n": 6},
-        "laves 3.3.3.6": {"type":"tiling", "tiling_type": "laves", "code": "3.3.3.6"},
-        "laves 3.4.6.4": {"type":"tiling", "tiling_type": "laves", "code": "3.4.6.4"},
+        "laves 3.3.3.3.6": {"type":"tiling", "tiling_type": "laves", "code": "3.3.3.3.6"},
+        # "laves 3.4.6.4": {"type":"tiling", "tiling_type": "laves", "code": "3.4.6.4"},
         "laves 3.12.12": {"type":"tiling", "tiling_type": "laves", "code": "3.12.12"},
         "basket weave abc|def": {"type":"weave", "weave_type": "basket", "strands": "abc|def"},
-        "archimedean 3.3.4.3.4": {"type":"tiling", "tiling_type": "archimedean", "code": "3.3.4.3.3"},
+        "archimedean 3.3.4.3.4": {"type":"tiling", "tiling_type": "archimedean", "code": "3.3.4.3.4"},
         "archimedean 3.4.6.4": {"type":"tiling", "tiling_type": "archimedean", "code": "3.4.6.4"},
         "archimedean 4.6.12": {"type":"tiling", "tiling_type": "archimedean", "code": "4.6.12"},
         "crosses 6": {"type":"tiling", "tiling_type": "crosses", "n": 6},
@@ -565,7 +566,7 @@ def _():
       },
       12: {
         "hex-slice 12": {"type":"tiling", "tiling_type": "hex-slice", "n": 12},
-        "laves 4.6.12": {"type":"tiling", "tiling_type": "laves", "code": "4.6.12"},
+        # "laves 4.6.12": {"type":"tiling", "tiling_type": "laves", "code": "4.6.12"},
         "square-slice 12": {"type":"tiling", "tiling_type": "square-slice", "n": 12},
       },
     }
