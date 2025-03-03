@@ -23,17 +23,18 @@ def _(mo):
 def _():
     import matplotlib as mpl
     import geopandas as gpd
+    from pandas.api.types import is_numeric_dtype
     import weavingspace as wsp
-    return gpd, mpl, wsp
+    return gpd, is_numeric_dtype, mpl, wsp
 
 
 @app.cell(hide_code=True)
-def _(gpd):
-    gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json", engine="fiona")
-    return (gdf,)
+def _():
+    # gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json", engine="fiona")
+    return
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     def tool_tip(ele:str, tip:str):
         return f'<span title="{tip}">{ele}</span>'
@@ -41,11 +42,11 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(gdf, mo, tile):
-    _tile_ids = sorted(list(set(tile.tiles.tile_id)))
-    _var_names = [_ for _ in gdf.columns if not "geom" in _]
+def _(gdf, is_numeric_dtype, mo, tile):
+    _var_names = [_ for _ in gdf.columns if not "geom" in _ and is_numeric_dtype(gdf[_].dtype)]
     _pal_names = ['Reds', 'Greens', 'Greys', 'Blues', 'Oranges', 'Purples', 
                   'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
+    _tile_ids = sorted(list(set(tile.tiles.tile_id)))[:len(_var_names)]
 
     vars = mo.ui.array([mo.ui.dropdown(options=_var_names, value=_var_names[i]) 
                         for i, id in enumerate(_tile_ids)], label="Variables") 
@@ -53,6 +54,46 @@ def _(gdf, mo, tile):
                         for i in range(len(_tile_ids))], label="Palettes")
     rev_pals = mo.ui.array([mo.ui.switch(False) for i in range(len(_tile_ids))])
     return pals, rev_pals, vars
+
+
+@app.cell
+def _(mo):
+    get_input_data, set_input_data = mo.state("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json")
+    return get_input_data, set_input_data
+
+
+@app.cell
+def _(get_input_data, gpd):
+    def get_gdf():
+        if type(get_input_data()) is str:
+            _gdf = gpd.read_file(get_input_data(), engine="fiona")
+        else:
+            _gdf = gpd.read_file(get_input_data()[0].path, engine="fiona")
+        if not _gdf.crs.is_projected:
+            _gdf = _gdf.to_crs(3857)
+        return _gdf
+
+    gdf = get_gdf()
+    _bb = gdf.total_bounds
+    _w, _h = _bb[2] - _bb[0], _bb[3] - _bb[1]
+    _a = _w * _h
+    _min_spacing = max(_w, _h) // 200
+    spacing_lims = {
+        "min spacing": _min_spacing,
+        "max spacing": _min_spacing * 10,
+        "step spacing": (_min_spacing * 9) // 100,
+        "min strand width": _min_spacing // 3,
+        "max strand width": _min_spacing // 3  * 10,
+        "step strand width": (_min_spacing * 3) // 100,
+    }
+    return gdf, get_gdf, spacing_lims
+
+
+@app.cell
+def _(mo, set_input_data):
+    f = mo.ui.file_browser(multiple=False, on_change=set_input_data)
+    f
+    return (f,)
 
 
 @app.cell(hide_code=True)
@@ -212,13 +253,21 @@ def _(mo, tile_or_weave, tool_tip):
 
 
 @app.cell(hide_code=True)
-def _(mo, tile_or_weave, tool_tip):
+def _(mo, spacing_lims, tile_or_weave, tool_tip):
     if tile_or_weave.value == "tiles":
-        spacing = mo.ui.slider(start=50, stop=5000, step=50, value=750,
-                               show_value=True, debounce=True)
+        spacing = mo.ui.slider(
+            start=spacing_lims['min spacing'], 
+            stop=spacing_lims['max spacing'], 
+            step=spacing_lims['step spacing'], 
+            value=spacing_lims['max spacing'] // 2,
+            show_value=True, debounce=True)
     else:
-        spacing = mo.ui.slider(start=100, stop=1000, step=10, value=250,
-                               show_value=True, debounce=True)
+        spacing = mo.ui.slider(
+            start=spacing_lims['min strand width'], 
+            stop=spacing_lims['max strand width'], 
+            step=spacing_lims['step_strand_width'], 
+            value=spacing_lims['max strand width'] // 2,
+            show_value=True, debounce=True)
 
     mo.md(f"#### Spacing {tool_tip(spacing, 'In units of the map CRS. For tiles, size of the repeat unit; for weaves, width of the ribbons.')}")
     return (spacing,)

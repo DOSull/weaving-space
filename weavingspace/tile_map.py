@@ -771,9 +771,12 @@ class TiledMap:
     groups = gdf.groupby("tile_id")
     for id, var in self.variables.items():
       subset = groups.get_group(id)
+      if len(subset[var].unique()) < 100:
+        subset.plot(ax = ax, fc = 'k')
+        # fc = 'k' # matplotlib.colormaps.get(self.colourmaps)(0.5))
       # Handle custom color assignments via 'cmaps' parameter.
       # Result is setting 'cmap' variable used in plot command afterwards.
-      if (isinstance(self.colourmaps[var], dict)):
+      elif (isinstance(self.colourmaps[var], dict)):
         colormap_dict = self.colourmaps[var]
         data_unique_sorted = sorted(subset[var].unique())
         cmap = matplotlib.colors.ListedColormap(
