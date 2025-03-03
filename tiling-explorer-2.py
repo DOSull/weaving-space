@@ -21,72 +21,41 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _():
+    import io
     import matplotlib as mpl
+    import pandas as pd
     import geopandas as gpd
     from pandas.api.types import is_numeric_dtype
     import weavingspace as wsp
-    return gpd, is_numeric_dtype, mpl, wsp
+    return gpd, io, is_numeric_dtype, mpl, pd, wsp
 
 
 @app.cell(hide_code=True)
 def _():
-    # gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json", engine="fiona")
-    return
+    dummy_data_file = "https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json"
+    return (dummy_data_file,)
 
 
-@app.cell(hide_code=True)
-def _():
-    def tool_tip(ele:str, tip:str):
-        return f'<span title="{tip}">{ele}</span>'
-    return (tool_tip,)
+@app.cell
+def _(dummy_data_file, mo):
+    get_input_data, set_input_data = mo.state(dummy_data_file)
+    get_num_tiles, set_num_tiles = mo.state("6")
+    return get_input_data, get_num_tiles, set_input_data, set_num_tiles
 
 
-@app.cell(hide_code=True)
-def _(gdf, is_numeric_dtype, mo, num_tiles):
-    _var_names = [_ for _ in gdf.columns if not "geom" in _ and is_numeric_dtype(gdf[_].dtype)]
-    _pal_names = ['Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples', 
-                  'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
-
-    _letters = "abcdefghijkl"[:num_tiles.value]
-    vars = mo.ui.array([mo.ui.dropdown(options=_var_names, value=_var_names[i]) 
-                        for i, id in enumerate(_letters)], label="Variables") 
-    pals = mo.ui.array([mo.ui.dropdown(options=_pal_names, value=_pal_names[i]) 
-                        for i in range(num_tiles.value)], label="Palettes")
-    rev_pals = mo.ui.array([mo.ui.switch(False) for i in range(num_tiles.value)])
-    return pals, rev_pals, vars
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    get_input_data, set_input_data = mo.state("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json")
-    return get_input_data, set_input_data
-
-
-@app.cell(hide_code=True)
-def _(get_input_data, gpd):
+@app.cell
+def _(dummy_data_file, get_input_data, gpd, io):
     def get_gdf():
         if type(get_input_data()) is str or len(get_input_data()) == 0:
-            _gdf = gpd.read_file("https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json", engine="fiona")
+            _gdf = gpd.read_file(dummy_data_file, engine="fiona", mode="r")
         else:
-            _gdf = gpd.read_file(get_input_data()[0].contents, IMMUTABLE="YES")
+            _gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents) , engine="fiona", mode="r")
         if not _gdf.crs.is_projected:
             _gdf = _gdf.to_crs(3857)
         return _gdf
 
     gdf = get_gdf()
-    _bb = gdf.total_bounds
-    _w, _h = _bb[2] - _bb[0], _bb[3] - _bb[1]
-    _a = _w * _h
-    _min_spacing = max(_w, _h) // 200
-    spacing_lims = {
-        "min spacing": _min_spacing,
-        "max spacing": _min_spacing * 10,
-        "step spacing": (_min_spacing * 9) // 100,
-        "min strand width": _min_spacing // 3,
-        "max strand width": _min_spacing // 3  * 10,
-        "step strand width": (_min_spacing * 3) // 100,
-    }
-    return gdf, get_gdf, spacing_lims
+    return gdf, get_gdf
 
 
 @app.cell(hide_code=True)
@@ -101,6 +70,66 @@ def _(mo, set_input_data, tool_tip):
     return (f,)
 
 
+@app.cell(hide_code=True)
+def _(gdf):
+    _bb = gdf.total_bounds
+    _w, _h = _bb[2] - _bb[0], _bb[3] - _bb[1]
+    _a = _w * _h
+    _min_spacing = max(_w, _h) // 200
+    spacing_lims = {
+        "min spacing": _min_spacing,
+        "max spacing": _min_spacing * 10,
+        "step spacing": (_min_spacing * 9) // 100,
+        "min strand width": _min_spacing // 3,
+        "max strand width": _min_spacing // 3  * 10,
+        "step strand width": (_min_spacing * 3) // 100,
+    }
+    return (spacing_lims,)
+
+
+@app.cell(hide_code=True)
+def _(final_tile, gdf, get_palettes, mo, tile, vars, wsp):
+    _centred = {"display": "flex", 
+                "height": "500px", 
+                "justify-content": "center", 
+                "align-items": "center", 
+                "text-align": "center"}
+
+    mo.output.replace(
+        mo.vstack([
+            mo.md("## Making tiled map..."),
+            mo.md("### This might take a while"),
+            mo.status.spinner(),
+            mo.md("During initialisation ignore messages about missing modules")
+        ]).style(_centred)
+    )
+
+    # _btn_text = f"Tile map!"
+    # _btn = f"<span style='background-color:#efefef;font-family:monospace;padding:3px;box-shadow:3px 3px #888;'>{_btn_text}</span>"
+
+    # _msg = "\n".join([
+    #     f"## Click {_btn} above left", 
+    #     f"## to start, and also to remake the", 
+    #     f"## map after design changes",
+    # ])
+    # mo.stop(not tile_map_button.value, mo.md(_msg).style(_centred))
+
+    # _tile_ids = sorted(list(set((tile.tiles.tile_id))))
+    # tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
+    # tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
+    # tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
+    # tiled_map.render(legend=False)_tile_ids = sorted(list(set((tile.tiles.tile_id))))
+
+    tiling_map = True
+    _tile_ids = sorted(list(set((tile.tiles.tile_id))))
+    _tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
+    _tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
+    _tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
+    tiling_map = False
+    _tiled_map.render(legend=False, scheme="EqualInterval")
+    return (tiling_map,)
+
+
 @app.cell
 def _(mo):
     mo.md(f"### General settings")
@@ -108,8 +137,9 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, tool_tip):
-    num_tiles = mo.ui.dropdown(options = {str(x): x for x in range(2, 13) if x != 11}, value="6")
+def _(get_num_tiles, mo, set_num_tiles, tool_tip):
+    num_tiles = mo.ui.dropdown(options = {str(x): x for x in range(2, 13) if x != 11}, 
+                               value=get_num_tiles(), on_change=set_num_tiles)
     mo.md(f"#### Set number of variables {tool_tip(num_tiles, "Choose the number of distinct tiles you want to use to symbolise data.")}")
     return (num_tiles,)
 
@@ -118,6 +148,24 @@ def _(mo, tool_tip):
 def _(mo):
     mo.md("""### Variable to palette mapping""")
     return
+
+
+@app.cell(hide_code=True)
+def _(gdf, get_num_tiles, is_numeric_dtype, mo, set_num_tiles):
+    _var_names = [_ for _ in gdf.columns if not "geom" in _ and is_numeric_dtype(gdf[_].dtype)]
+    _pal_names = ['Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples', 
+                  'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
+
+    _n_tiles = min(int(get_num_tiles()), len(_var_names))
+    if _n_tiles < int(get_num_tiles()):
+        set_num_tiles(str(len(_var_names)))
+    _letters = "abcdefghijkl"[:_n_tiles]
+    vars = mo.ui.array([mo.ui.dropdown(options=_var_names, value=_var_names[i]) 
+                        for i, id in enumerate(_letters)], label="Variables") 
+    pals = mo.ui.array([mo.ui.dropdown(options=_pal_names, value=_pal_names[i]) 
+                        for i in range(_n_tiles)], label="Palettes")
+    rev_pals = mo.ui.array([mo.ui.switch(False) for i in range(_n_tiles)])
+    return pals, rev_pals, vars
 
 
 @app.cell(hide_code=True)
@@ -148,55 +196,6 @@ def _(mo, pals, rev_pals, tile, tiling_map, tool_tip, vars):
         for t_id, v, p, r in zip(_tile_ids, vars, pals, rev_pals)
     ]))
     return
-
-
-@app.cell(hide_code=True)
-def _():
-    # tile_map_button = mo.ui.run_button(label="Tile map!")
-    # mo.md(f"{tool_tip(tile_map_button, "Click to tile the map data")}").center().style({"padding": "5px"})
-    return
-
-
-@app.cell(hide_code=True)
-def _(final_tile, gdf, get_palettes, mo, tile, vars, wsp):
-    _centred = {"display": "flex", 
-                "height": "500px", 
-                "justify-content": "center", 
-                "align-items": "center", 
-                "text-align": "center"}
-
-    mo.output.replace(
-        mo.vstack([
-            mo.md("## Making tiled map..."),
-            mo.md("### This might take a while"),
-            mo.status.spinner()
-        ]).style(_centred)
-    )
-
-    # _btn_text = f"Tile map!"
-    # _btn = f"<span style='background-color:#efefef;font-family:monospace;padding:3px;box-shadow:3px 3px #888;'>{_btn_text}</span>"
-
-    # _msg = "\n".join([
-    #     f"## Click {_btn} above left", 
-    #     f"## to start, and also to remake the", 
-    #     f"## map after design changes",
-    # ])
-    # mo.stop(not tile_map_button.value, mo.md(_msg).style(_centred))
-
-    # _tile_ids = sorted(list(set((tile.tiles.tile_id))))
-    # tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
-    # tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
-    # tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
-    # tiled_map.render(legend=False)_tile_ids = sorted(list(set((tile.tiles.tile_id))))
-
-    tiling_map = True
-    _tile_ids = sorted(list(set((tile.tiles.tile_id))))
-    _tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
-    _tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
-    _tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
-    tiling_map = False
-    _tiled_map.render(legend=False, scheme="EqualInterval")
-    return (tiling_map,)
 
 
 @app.cell(hide_code=True)
@@ -574,6 +573,13 @@ def _():
       },
     }
     return (tilings_by_n,)
+
+
+@app.cell(hide_code=True)
+def _():
+    def tool_tip(ele:str, tip:str):
+        return f'<span title="{tip}">{ele}</span>'
+    return (tool_tip,)
 
 
 if __name__ == "__main__":
