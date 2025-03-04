@@ -19,9 +19,8 @@ def module_imports():
     import matplotlib as mpl
     import pandas as pd
     import geopandas as gpd
-    from pandas.api.types import is_numeric_dtype
     import weavingspace as wsp
-    return gpd, io, is_numeric_dtype, mpl, pd, wsp
+    return gpd, io, mpl, pd, wsp
 
 
 @app.cell(hide_code=True)
@@ -114,11 +113,12 @@ def build_variable_and_palette_dropdowns(
     gdf,
     get_num_tiles,
     get_tile_ids,
-    is_numeric_dtype,
     mo,
+    pd,
     set_num_tiles,
 ):
-    _var_names = [_ for _ in gdf.columns if not "geom" in _ and is_numeric_dtype(gdf[_].dtype)]
+    _var_names = [col for col in gdf.columns if not "geom" in col 
+                  and pd.api.types.is_numeric_dtype(gdf[col].dtype)]
     _pal_names = ['Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples', 
                   'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
 
