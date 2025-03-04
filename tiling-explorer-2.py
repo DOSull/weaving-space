@@ -590,7 +590,7 @@ def _(pd):
 
 @app.cell
 def _(dummy_data_file, gpd):
-    builtin_gdf = gpd.read_file(dummy_data_file, engine="fiona", mode="r")
+    builtin_gdf = gpd.read_file(dummy_data_file, engine="fiona")
     return (builtin_gdf,)
 
 
@@ -607,7 +607,7 @@ def read_gdf(
     if type(get_input_data()) is str or len(get_input_data()) == 0:
         gdf = builtin_gdf
     else:
-        _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), engine="fiona", mode="r")
+        _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), engine="fiona")
         if len(get_numeric_variables(_new_gdf)) < 2:
             set_input_data(dummy_data_file)
             gdf = builtin_gdf
