@@ -282,7 +282,8 @@ def setup_chosen_tiling_options(family, mo, tile_or_weave):
     if "weave" in family.value:
         # _strands = mo.ui.text(value=tilings_by_n[num_tiles.value][family.value]["strands"], 
         #                       label="#### Strands spec") 
-        _aspect = mo.ui.slider(steps=[x / 6 for x in range(1,7)], value=5/6, label="#### Strand width",
+        _aspect = mo.ui.slider(steps=[x / 6 for x in range(1,7)], 
+                               value=5/6, label="#### Strand width",
                                show_value=True, debounce=True)
         _over_under = mo.ui.text(value="2,2" if "twill" in family.value else "2", 
                                  label="#### Over-under pattern")
@@ -292,7 +293,9 @@ def setup_chosen_tiling_options(family, mo, tile_or_weave):
             tile_spec = mo.ui.dictionary({
                 "offset": _offset,
             })
-            tooltips = ["0 starts at the base tile corners, 1 at the mid-point along segments equally dividing the base tile perimeter."]
+            tooltips = [
+                "0 starts at the base tile corners, 1 at the mid-point along segments equally dividing the base tile perimeter."
+            ]
         else:
             tile_spec = None
     else:
@@ -301,14 +304,21 @@ def setup_chosen_tiling_options(family, mo, tile_or_weave):
                 # "strands": _strands,
                 "aspect": _aspect,
             })
-            tooltips = ["A code expressing the sequence of distinct weave elements as a series of letters in the warp and weft directions, separated by a pipe | symbol.", "The width of the weave ribbons relative to spacing."]
+            tooltips = [
+                # "A code expressing the sequence of distinct weave elements as a series of letters in the warp and weft directions, separated by a pipe | symbol.", 
+                "The width of the weave ribbons relative to spacing."
+            ]
         else:
             tile_spec = mo.ui.dictionary({
                 # "strands": _strands,
                 "aspect": _aspect,
                 "over_under": _over_under,
             })
-            tooltips = ["A code expressing the sequence of distinct weave elements as a series of letters in the warp and weft directions, separated by a pipe | symbol.", "The width of the weave ribbons relative to spacing.", "A comma-separated sequence of how many strands in the other direction each ribbon should go over, then under."]
+            tooltips = [
+                # "A code expressing the sequence of distinct weave elements as a series of letters in the warp and weft directions, separated by a pipe | symbol.", 
+                "The width of the weave ribbons relative to spacing.", 
+                "A comma-separated sequence of how many strands in the other direction each ribbon should go over, then under."
+            ]
     return tile_spec, tooltips
 
 
@@ -576,7 +586,8 @@ def read_gdf(dummy_data_file, get_input_data, gpd, io):
         if type(get_input_data()) is str or len(get_input_data()) == 0:
             _gdf = gpd.read_file(dummy_data_file, engine="fiona", mode="r")
         else:
-            _gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents) , engine="fiona", mode="r")
+            _gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), 
+                                 engine="fiona", mode="r")
         if not _gdf.crs.is_projected:
             _gdf = _gdf.to_crs(3857)
         return _gdf
