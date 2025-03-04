@@ -41,11 +41,11 @@ def upload_data(mo, set_input_data, tool_tip):
     # _fb = mo.ui.file_browser(multiple=False, 
     #                          on_change=set_input_data, 
     #                          label=f"### Select an input data set")
-    _fb = mo.ui.file(on_change=set_input_data, label=f"Upload data")
-    f = tool_tip(
-        _fb, "Your data should be geospatial polygons - preferably GPKG or GeoJSON, and contain a number of numerical attributes to be symbolised.")
-    mo.md(f"{f}").center()
-    return (f,)
+    fb = mo.ui.file(on_change=set_input_data, label=f"Upload data")
+    _f = tool_tip(
+        fb, "Your data should be geospatial polygons - preferably GPKG or GeoJSON, and contain a number of numerical attributes to be symbolised.")
+    mo.md(f"{_f}").center()
+    return (fb,)
 
 
 @app.cell(hide_code=True)
@@ -580,20 +580,42 @@ def _():
     return (tool_tip,)
 
 
-@app.cell(hide_code=True)
-def read_gdf(dummy_data_file, get_input_data, gpd, io):
-    def get_gdf():
-        if type(get_input_data()) is str or len(get_input_data()) == 0:
-            _gdf = gpd.read_file(dummy_data_file, engine="fiona", mode="r")
-        else:
-            _gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), 
-                                 engine="fiona", mode="r")
-        if not _gdf.crs.is_projected:
-            _gdf = _gdf.to_crs(3857)
-        return _gdf
+@app.cell
+def _(pd):
+    def get_numeric_variables(_gdf):
+        return [col for col in _gdf.columns if not "geom" in col 
+                and pd.api.types.is_numeric_dtype(_gdf[col].dtype)]
+    return (get_numeric_variables,)
 
-    gdf = get_gdf()
-    return gdf, get_gdf
+
+@app.cell
+def _(dummy_data_file, gpd):
+    builtin_gdf = gpd.read_file(dummy_data_file, engine="fiona", mode="r")
+    return (builtin_gdf,)
+
+
+@app.cell(hide_code=True)
+def read_gdf(
+    builtin_gdf,
+    dummy_data_file,
+    get_input_data,
+    get_numeric_variables,
+    gpd,
+    io,
+    set_input_data,
+):
+    if type(get_input_data()) is str or len(get_input_data()) == 0:
+        gdf = builtin_gdf
+    else:
+        _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), engine="fiona", mode="r")
+        if len(get_numeric_variables(_new_gdf)) < 2:
+            set_input_data(dummy_data_file)
+            gdf = builtin_gdf
+        else:
+            if not _new_gdf.crs.is_projected:
+                _new_gdf = _new_gdf.to_crs(3857)
+            gdf = _new_gdf
+    return (gdf,)
 
 
 @app.cell(hide_code=True)
