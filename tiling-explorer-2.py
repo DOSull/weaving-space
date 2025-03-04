@@ -1,16 +1,10 @@
 import marimo
 
-__generated_with = "0.11.9"
+__generated_with = "0.11.13"
 app = marimo.App(
     width="medium",
     layout_file="layouts/tiling-explorer-2.grid.json",
 )
-
-
-@app.cell(hide_code=True)
-def _():
-    import marimo as mo
-    return (mo,)
 
 
 @app.cell(hide_code=True)
@@ -20,7 +14,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _():
+def module_imports():
     import io
     import matplotlib as mpl
     import pandas as pd
@@ -43,23 +37,8 @@ def _(dummy_data_file, mo):
     return get_input_data, get_num_tiles, set_input_data, set_num_tiles
 
 
-@app.cell
-def _(dummy_data_file, get_input_data, gpd, io):
-    def get_gdf():
-        if type(get_input_data()) is str or len(get_input_data()) == 0:
-            _gdf = gpd.read_file(dummy_data_file, engine="fiona", mode="r")
-        else:
-            _gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents) , engine="fiona", mode="r")
-        if not _gdf.crs.is_projected:
-            _gdf = _gdf.to_crs(3857)
-        return _gdf
-
-    gdf = get_gdf()
-    return gdf, get_gdf
-
-
 @app.cell(hide_code=True)
-def _(mo, set_input_data, tool_tip):
+def upload_data(mo, set_input_data, tool_tip):
     # _fb = mo.ui.file_browser(multiple=False, 
     #                          on_change=set_input_data, 
     #                          label=f"### Select an input data set")
@@ -71,59 +50,39 @@ def _(mo, set_input_data, tool_tip):
 
 
 @app.cell(hide_code=True)
-def _(gdf):
-    _bb = gdf.total_bounds
-    _w, _h = _bb[2] - _bb[0], _bb[3] - _bb[1]
-    _a = _w * _h
-    _min_spacing = max(_w, _h) // 200
-    spacing_lims = {
-        "min spacing": _min_spacing,
-        "max spacing": _min_spacing * 10,
-        "step spacing": (_min_spacing * 9) // 100,
-        "min strand width": _min_spacing // 3,
-        "max strand width": _min_spacing // 3  * 10,
-        "step strand width": (_min_spacing * 3) // 100,
+def tile_the_map(
+    gdf,
+    get_modded_tile_unit,
+    get_palettes,
+    get_tile_ids,
+    mo,
+    vars,
+    wsp,
+):
+    _centred = {
+        "display": "flex",
+        "height": "500px",
+        "justify-content": "center",
+        "align-items": "center",
+        "text-align": "center",
     }
-    return (spacing_lims,)
-
-
-@app.cell(hide_code=True)
-def _(final_tile, gdf, get_palettes, mo, tile, vars, wsp):
-    _centred = {"display": "flex", 
-                "height": "500px", 
-                "justify-content": "center", 
-                "align-items": "center", 
-                "text-align": "center"}
 
     mo.output.replace(
-        mo.vstack([
-            mo.md("## Making tiled map..."),
-            mo.md("### This might take a while"),
-            mo.status.spinner(),
-            mo.md("During initialisation ignore messages about missing modules")
-        ]).style(_centred)
+        mo.vstack(
+            [
+                mo.md("## Making tiled map..."),
+                mo.md("### This might take a while"),
+                mo.status.spinner(),
+                mo.md(
+                    "During initialisation ignore messages about missing modules"
+                ),
+            ]
+        ).style(_centred)
     )
 
-    # _btn_text = f"Tile map!"
-    # _btn = f"<span style='background-color:#efefef;font-family:monospace;padding:3px;box-shadow:3px 3px #888;'>{_btn_text}</span>"
-
-    # _msg = "\n".join([
-    #     f"## Click {_btn} above left", 
-    #     f"## to start, and also to remake the", 
-    #     f"## map after design changes",
-    # ])
-    # mo.stop(not tile_map_button.value, mo.md(_msg).style(_centred))
-
-    # _tile_ids = sorted(list(set((tile.tiles.tile_id))))
-    # tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
-    # tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
-    # tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
-    # tiled_map.render(legend=False)_tile_ids = sorted(list(set((tile.tiles.tile_id))))
-
     tiling_map = True
-    _tile_ids = sorted(list(set((tile.tiles.tile_id))))
-    _tiled_map = wsp.Tiling(final_tile, gdf).get_tiled_map()
-    _tiled_map.variables = {k: v for k, v in zip(_tile_ids, vars.value)}
+    _tiled_map = wsp.Tiling(get_modded_tile_unit(), gdf).get_tiled_map()
+    _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), vars.value)}
     _tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
     tiling_map = False
     _tiled_map.render(legend=False, scheme="EqualInterval")
@@ -137,7 +96,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(get_num_tiles, mo, set_num_tiles, tool_tip):
+def set_number_of_variables(get_num_tiles, mo, set_num_tiles, tool_tip):
     num_tiles = mo.ui.dropdown(options = {str(x): x for x in range(2, 13) if x != 11}, 
                                value=get_num_tiles(), on_change=set_num_tiles)
     mo.md(f"#### Set number of variables {tool_tip(num_tiles, "Choose the number of distinct tiles you want to use to symbolise data.")}")
@@ -151,7 +110,14 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(gdf, get_num_tiles, is_numeric_dtype, mo, set_num_tiles):
+def build_variable_and_palette_dropdowns(
+    gdf,
+    get_num_tiles,
+    get_tile_ids,
+    is_numeric_dtype,
+    mo,
+    set_num_tiles,
+):
     _var_names = [_ for _ in gdf.columns if not "geom" in _ and is_numeric_dtype(gdf[_].dtype)]
     _pal_names = ['Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples', 
                   'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
@@ -159,9 +125,8 @@ def _(gdf, get_num_tiles, is_numeric_dtype, mo, set_num_tiles):
     _n_tiles = min(int(get_num_tiles()), len(_var_names))
     if _n_tiles < int(get_num_tiles()):
         set_num_tiles(str(len(_var_names)))
-    _letters = "abcdefghijkl"[:_n_tiles]
     vars = mo.ui.array([mo.ui.dropdown(options=_var_names, value=_var_names[i]) 
-                        for i, id in enumerate(_letters)], label="Variables") 
+                        for i, id in enumerate(get_tile_ids())], label="Variables") 
     pals = mo.ui.array([mo.ui.dropdown(options=_pal_names, value=_pal_names[i]) 
                         for i in range(_n_tiles)], label="Palettes")
     rev_pals = mo.ui.array([mo.ui.switch(False) for i in range(_n_tiles)])
@@ -169,7 +134,7 @@ def _(gdf, get_num_tiles, is_numeric_dtype, mo, set_num_tiles):
 
 
 @app.cell(hide_code=True)
-def _(get_palettes, mo, mpl, pals, tiling_map):
+def draw_colour_ramps(get_palettes, mo, mpl, pals, tiling_map):
     mo.stop(tiling_map)
     _n = len(pals)
     _fig, _axs = mpl.pyplot.subplots(nrows = _n + 1, figsize=(1.5, 0.25 + 0.48 * _n))
@@ -183,9 +148,16 @@ def _(get_palettes, mo, mpl, pals, tiling_map):
 
 
 @app.cell(hide_code=True)
-def _(mo, pals, rev_pals, tile, tiling_map, tool_tip, vars):
+def build_var_palette_mapping(
+    get_tile_ids,
+    mo,
+    pals,
+    rev_pals,
+    tiling_map,
+    tool_tip,
+    vars,
+):
     mo.stop(tiling_map)
-    _tile_ids = sorted(list(set((tile.tiles.tile_id))))
     mo.md("\n".join([
         "&nbsp;&nbsp;".join([
             f"#### Tiles `{t_id}`",
@@ -193,7 +165,7 @@ def _(mo, pals, rev_pals, tile, tiling_map, tool_tip, vars):
             f"{tool_tip(p, f"Palette for variable {v.value}")}",
             f"<span style='position:relative;top:5px;'>{tool_tip(r, 'Reverse ramp')}</span>",
         ])
-        for t_id, v, p, r in zip(_tile_ids, vars, pals, rev_pals)
+        for t_id, v, p, r in zip(get_tile_ids(), vars, pals, rev_pals)
     ]))
     return
 
@@ -205,22 +177,22 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, spacing_lims, tile_or_weave):
+def set_spacing_limits(get_spacings, mo, tile_or_weave):
+    _spacings = get_spacings()
     if tile_or_weave.value == "tiling":
         spacing = mo.ui.slider(
-            start=spacing_lims['min spacing'], 
-            stop=spacing_lims['max spacing'], 
-            step=spacing_lims['step spacing'], 
-            value=spacing_lims['max spacing'] // 2,
+            start=_spacings['min spacing'], 
+            stop=_spacings['max spacing'], 
+            step=_spacings['step spacing'], 
+            value=_spacings['max spacing'] // 2,
             show_value=True, debounce=True)
     else:
         spacing = mo.ui.slider(
-            start=spacing_lims['min strand width'], 
-            stop=spacing_lims['max strand width'], 
-            step=spacing_lims['step strand width'], 
-            value=spacing_lims['max strand width'] // 2,
+            start=_spacings['min strand width'], 
+            stop=_spacings['max strand width'], 
+            step=_spacings['step strand width'], 
+            value=_spacings['max strand width'] // 2,
             show_value=True, debounce=True)
-    # mo.md(f"#### Spacing {tool_tip(spacing, 'In units of the map CRS. For tiles, size of the repeat unit; for weaves, width of the ribbons.')}")
     return (spacing,)
 
 
@@ -238,8 +210,8 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, p_inset, tile, tile_or_weave):
-    _max_t_inset = p_inset.value / 3 if tile_or_weave.value == "tiling" else tile.spacing / 10
+def _(mo, p_inset, spacing, tile_or_weave):
+    _max_t_inset = p_inset.value / 3 if tile_or_weave.value == "tiling" else spacing.value / 10
     _value_t_inset = _max_t_inset / 3 if tile_or_weave.value == "tiling" else 0
     t_inset = mo.ui.slider(start=0, stop=2.5, step = 0.1, 
                            value=_value_t_inset, show_value=True, debounce=True)
@@ -247,7 +219,7 @@ def _(mo, p_inset, tile, tile_or_weave):
 
 
 @app.cell(hide_code=True)
-def _(
+def setup_tiling_modifiers(
     mo,
     p_inset,
     spacing,
@@ -294,7 +266,7 @@ def _(mo, num_tiles, tile_or_weave, tilings_by_n, tool_tip):
 
 
 @app.cell(hide_code=True)
-def _(family, mo, tile_or_weave):
+def setup_chosen_tiling_options(family, mo, tile_or_weave):
     _chosen_family = family.value
 
     if "slice" in family.value:
@@ -355,67 +327,8 @@ def _(mo, tile_or_weave, tile_spec, tiling_map, tool_tip, tooltips):
 
 
 @app.cell(hide_code=True)
-def _():
-    def get_over_under(pattern):
-        if any([not c in "0123456789," for c in pattern]): return (2, 2)
-        numbers = [int(s) for s in pattern.split(",")]
-        length = 2 * len(numbers) // 2
-        if length == 0:
-            return (2, 2)
-        else:
-            return tuple(numbers[:length])
-    return (get_over_under,)
-
-
-@app.cell(hide_code=True)
-def _(
-    family,
-    gdf,
-    get_over_under,
-    num_tiles,
-    spacing,
-    tile_or_weave,
-    tile_spec,
-    tilings_by_n,
-    wsp,
-):
-    _spec = tilings_by_n[num_tiles.value][family.value]
-    if tile_or_weave.value == "tiling":
-        tile = wsp.TileUnit(
-            tiling_type=_spec["tiling_type"],
-            spacing=spacing.value,
-            n=_spec["n"] if "n" in _spec else None,
-            code=_spec["code"] if "code" in _spec else None,
-            offset=tile_spec["offset"].value if tile_spec is not None else None,
-            crs=3857 if gdf is None else gdf.crs)
-    else:
-        tile = wsp.WeaveUnit(
-            weave_type=_spec["weave_type"],
-            spacing=spacing.value,
-            strands=_spec["strands"],
-            n=1 if "plain" in family.value else get_over_under(tile_spec["over_under"].value),
-            aspect=tile_spec["aspect"].value,
-            crs=3857 if gdf is None else gdf.crs)
-    return (tile,)
-
-
-@app.cell(hide_code=True)
-def _(p_inset, spacing, t_inset, tile, tile_or_weave, tile_rotate):
-    if tile_or_weave.value == "tiling":
-        final_tile = tile \
-           .transform_rotate(tile_rotate.value) \
-           .inset_tiles(t_inset.value * spacing.value / 100) \
-           .inset_prototile(p_inset.value * spacing.value / 100)
-    else:
-        final_tile = tile \
-           .transform_rotate(tile_rotate.value) \
-           .inset_tiles(t_inset.value * spacing.value / 100)
-    return (final_tile,)
-
-
-@app.cell(hide_code=True)
-def _(final_tile, plot_tiles):
-    plot_tiles(final_tile)
+def _(get_modded_tile_unit, plot_tiles):
+    plot_tiles(get_modded_tile_unit())
     return
 
 
@@ -453,6 +366,74 @@ def _(mo, tool_tip, view_settings):
        f"#### Show base tile {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the repeating base tile (usually a square or hexagon) which forms the basis of the pattern.')}",
     ]))
     return
+
+
+@app.cell(hide_code=True)
+def _(
+    family,
+    gdf,
+    get_over_under,
+    num_tiles,
+    spacing,
+    tile_or_weave,
+    tile_spec,
+    tilings_by_n,
+    wsp,
+):
+    def get_base_tile_unit():
+        spec = tilings_by_n[num_tiles.value][family.value]
+        if tile_or_weave.value == "tiling":
+            return wsp.TileUnit(
+                tiling_type=spec["tiling_type"],
+                spacing=spacing.value,
+                n=spec["n"] if "n" in spec else None,
+                code=spec["code"] if "code" in spec else None,
+                offset=tile_spec["offset"].value if tile_spec is not None else None,
+                crs=3857 if gdf is None else gdf.crs)
+        else:
+            return wsp.WeaveUnit(
+                weave_type=spec["weave_type"],
+                spacing=spacing.value,
+                strands=spec["strands"],
+                n=1 if "plain" in family.value else get_over_under(tile_spec["over_under"].value),
+                aspect=tile_spec["aspect"].value,
+                crs=3857 if gdf is None else gdf.crs)
+    return (get_base_tile_unit,)
+
+
+@app.cell(hide_code=True)
+def _(
+    get_base_tile_unit,
+    p_inset,
+    spacing,
+    t_inset,
+    tile_or_weave,
+    tile_rotate,
+):
+    def get_modded_tile_unit():
+        if tile_or_weave.value == "tiling":
+            return get_base_tile_unit() \
+               .transform_rotate(tile_rotate.value) \
+               .inset_tiles(t_inset.value * spacing.value / 100) \
+               .inset_prototile(p_inset.value * spacing.value / 100)
+        else:
+            return get_base_tile_unit() \
+               .transform_rotate(tile_rotate.value) \
+               .inset_tiles(t_inset.value * spacing.value / 100)
+    return (get_modded_tile_unit,)
+
+
+@app.cell(hide_code=True)
+def _():
+    def get_over_under(pattern):
+        if any([not c in "0123456789," for c in pattern]): return (2, 2)
+        numbers = [int(s) for s in pattern.split(",")]
+        length = 2 * len(numbers) // 2
+        if length == 0:
+            return (2, 2)
+        else:
+            return tuple(numbers[:length])
+    return (get_over_under,)
 
 
 @app.cell(hide_code=True)
@@ -576,10 +557,56 @@ def _():
 
 
 @app.cell(hide_code=True)
+def _(num_tiles):
+    def get_tile_ids():
+        return list("abcdefghijkl")[:num_tiles.value]
+    return (get_tile_ids,)
+
+
+@app.cell(hide_code=True)
 def _():
     def tool_tip(ele:str, tip:str):
         return f'<span title="{tip}">{ele}</span>'
     return (tool_tip,)
+
+
+@app.cell(hide_code=True)
+def read_gdf(dummy_data_file, get_input_data, gpd, io):
+    def get_gdf():
+        if type(get_input_data()) is str or len(get_input_data()) == 0:
+            _gdf = gpd.read_file(dummy_data_file, engine="fiona", mode="r")
+        else:
+            _gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents) , engine="fiona", mode="r")
+        if not _gdf.crs.is_projected:
+            _gdf = _gdf.to_crs(3857)
+        return _gdf
+
+    gdf = get_gdf()
+    return gdf, get_gdf
+
+
+@app.cell(hide_code=True)
+def _(gdf):
+    def get_spacings():
+        _bb = gdf.total_bounds
+        _w, _h = _bb[2] - _bb[0], _bb[3] - _bb[1]
+        _a = _w * _h
+        _min_spacing = max(_w, _h) // 200
+        return {
+            "min spacing": _min_spacing,
+            "max spacing": _min_spacing * 10,
+            "step spacing": (_min_spacing * 9) // 100,
+            "min strand width": _min_spacing // 3,
+            "max strand width": _min_spacing // 3  * 10,
+            "step strand width": (_min_spacing * 3) // 100,
+    }
+    return (get_spacings,)
+
+
+@app.cell(hide_code=True)
+def _():
+    import marimo as mo
+    return (mo,)
 
 
 if __name__ == "__main__":
