@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.9"
+__generated_with = "0.11.13"
 app = marimo.App(
     width="medium",
     app_title="MapWeaver",
@@ -11,31 +11,33 @@ app = marimo.App(
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(f"# MapWeaver ~ tiled maps of multivariate data")
+    mo.hstack([
+        mo.md(f"# MapWeaver ~ tiled maps of complex data"),
+        mo.md("v2025.03.05.22:56")
+    ]).center()
     return
 
 
 @app.cell(hide_code=True)
 def module_imports():
     import io
+    from PIL import Image
     import matplotlib as mpl
     import pandas as pd
     import geopandas as gpd
     import fiona
     import weavingspace as wsp
-    return fiona, gpd, io, mpl, pd, wsp
+    return Image, fiona, gpd, io, mpl, pd, wsp
 
 
 @app.cell(hide_code=True)
-def _():
+def _(gpd):
     dummy_data_file = "https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json"
-    return (dummy_data_file,)
-
-
-@app.cell(hide_code=True)
-def _(dummy_data_file, gpd):
     builtin_gdf = gpd.read_file(dummy_data_file, engine="fiona")
-    return (builtin_gdf,)
+    available_palettes = [
+        'Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples',
+        'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
+    return available_palettes, builtin_gdf, dummy_data_file
 
 
 @app.cell
@@ -99,22 +101,15 @@ def upload_data(mo, set_input_data, tool_tip):
 
 @app.cell(hide_code=True)
 def tile_the_map(
+    centred,
     gdf,
     get_modded_tile_unit,
-    get_palettes,
+    get_selected_colour_palettes,
     get_tile_ids,
     mo,
     vars,
     wsp,
 ):
-    _centred = {
-        "display": "flex",
-        "height": "500px",
-        "justify-content": "center",
-        "align-items": "center",
-        "text-align": "center",
-    }
-
     mo.output.replace(
         mo.vstack(
             [
@@ -125,13 +120,13 @@ def tile_the_map(
                     "During initialisation ignore messages about missing modules"
                 ),
             ]
-        ).style(_centred)
+        ).style(centred)
     )
 
     tiling_map = True
     _tiled_map = wsp.Tiling(get_modded_tile_unit(), gdf).get_tiled_map()
     _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), vars.value)}
-    _tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_palettes())}
+    _tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_selected_colour_palettes())}
     tiling_map = False
     _tiled_map.render(legend=False, scheme="EqualInterval")
     return (tiling_map,)
@@ -148,30 +143,41 @@ def set_number_of_variables(mo, tool_tip):
 
 
 @app.cell(hide_code=True)
-def build_variable_and_palette_dropdowns(gdf, get_tile_ids, mo, pd):
-    _tile_ids = get_tile_ids()
-    _var_names = [col for col in gdf.columns if not "geom" in col 
-                  and pd.api.types.is_numeric_dtype(gdf[col].dtype)]
-    repeated_variables = len(_tile_ids) > len(_var_names)
-    while len(_var_names) < len(_tile_ids):
-        _var_names = _var_names + _var_names
-    if repeated_variables:
-        _var_names = _var_names[:len(_tile_ids)]
-    _pal_names = ['Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples', 
-                  'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
-    vars = mo.ui.array([mo.ui.dropdown(options=_var_names, value=_var_names[i]) 
-                        for i, id in enumerate(_tile_ids)], label="Variables") 
-    pals = mo.ui.array([mo.ui.dropdown(options=_pal_names, value=_pal_names[i]) 
-                        for i, id in enumerate(_tile_ids)], label="Palettes")
-    rev_pals = mo.ui.array([mo.ui.switch(False) for i, id in enumerate(_tile_ids)])
-    return pals, repeated_variables, rev_pals, vars
+def build_variable_and_palette_dropdowns(
+    available_palettes,
+    gdf,
+    mo,
+    num_tiles,
+    pals,
+    pd,
+    rev_pals,
+    set_palettes,
+    set_reversed,
+):
+    available_vars = [col for col in gdf.columns if not "geom" in col 
+                       and pd.api.types.is_numeric_dtype(gdf[col].dtype)]
+    repeated_variables = len(available_vars) < num_tiles.value
+
+    _chosen_vars = available_vars
+    _chosen_palettes = pals.value[:len(available_vars)]
+    _chosen_reversed = rev_pals.value[:len(available_vars)]
+    vars = mo.ui.array(
+        [mo.ui.dropdown(options=available_vars, value=_chosen_vars[i]) 
+         for i, id in enumerate(_chosen_vars)], label="Variables") 
+    pals = mo.ui.array(
+        [mo.ui.dropdown(options=available_palettes, value=_chosen_palettes[i]) 
+         for i, id in enumerate(_chosen_palettes)], label="Palettes", on_change=set_palettes)
+    rev_pals = mo.ui.array(
+        [mo.ui.switch(_chosen_reversed[i]) 
+         for i, id in enumerate(_chosen_reversed)], on_change=set_reversed)
+    return available_vars, pals, repeated_variables, rev_pals, vars
 
 
 @app.cell
-def _(gdf, get_numeric_variables, mo, repeated_variables):
+def _(gdf, get_numeric_variables, mo, num_tiles, repeated_variables):
     _title = mo.md("### Variable &rarr; palette map")
     if repeated_variables:
-        _warning_text = f"Repeat variables: only {len(get_numeric_variables(gdf))} in data"
+        _warning_text = f"{len(get_numeric_variables(gdf))} variables but {num_tiles.value} elements in tiling"
         _warning = mo.md(f"<span style='background-color:pink;font-face:sans-serif;padding:2px;'>{_warning_text}</span>")
     else:
         _warning = mo.md("")
@@ -182,6 +188,7 @@ def _(gdf, get_numeric_variables, mo, repeated_variables):
 
 @app.cell(hide_code=True)
 def build_var_palette_mapping(
+    get_colour_ramp,
     get_tile_ids,
     mo,
     pals,
@@ -193,28 +200,40 @@ def build_var_palette_mapping(
     mo.stop(tiling_map)
     mo.md("\n".join([
         "&nbsp;&nbsp;".join([
-            f"#### Tiles `{t_id}`",
-            f"{tool_tip(v, f"Variable for tiles with id {t_id}")} &rarr;",
-            f"{tool_tip(p, f"Palette for variable {v.value}")}",
-            f"<span style='position:relative;top:5px;'>{tool_tip(r, 'Reverse ramp')}</span>",
-        ])
-        for t_id, v, p, r in zip(get_tile_ids(), vars, pals, rev_pals)
-    ]))
+        f"#### Tiles `{t_id}`",
+        f"{tool_tip(v, f"Variable for tiles with id {t_id}")} &rarr;",
+        f"{tool_tip(p, f"Palette for variable {v.value}")}",
+        f"<span style='position:relative;top:5px;'>{tool_tip(r, 'Reverse ramp')}</span>",
+        f"<span style='display:inline-block;object-fit:cover;height:24px;position:relative;bottom:24px;'>{mo.image(get_colour_ramp(p.value, r.value))}</span>",
+    ]) for t_id, v, p, r in zip(get_tile_ids(), vars, pals, rev_pals)]))
     return
 
 
-@app.cell(hide_code=True)
-def draw_colour_ramps(get_palettes, mo, mpl, pals, tiling_map):
-    mo.stop(tiling_map)
-    _n = len(pals)
-    _fig, _axs = mpl.pyplot.subplots(nrows = _n + 1, figsize=(1.5, 0.25 + 0.48 * _n))
-    for ax, cm, in zip(_axs[1:], get_palettes()):
-        _xy = [[x / 256 for x in range(257)], [x / 256 for x in range(257)]]
-        ax.imshow(_xy, aspect='auto', cmap=mpl.colormaps.get(cm))
-    for ax in _axs:
+@app.cell
+def _(io, mpl):
+    def get_colour_ramp(pal_name:str="Reds", rev:bool=False):
+        fig, ax = mpl.pyplot.subplots()
+        xy = [[x / 256 for x in range(257)] for i in range(2)]
+        ax.imshow(xy, aspect=32, cmap=mpl.colormaps.get(pal_name + ("_r" if rev else "")))
         ax.set_axis_off()
-    ax
-    return ax, cm
+        buf = io.BytesIO()
+        mpl.pyplot.savefig(buf, dpi=24, pad_inches=0, bbox_inches="tight")
+        return buf
+    return (get_colour_ramp,)
+
+
+@app.cell(hide_code=True)
+def draw_colour_ramps():
+    # mo.stop(tiling_map)
+    # _fig, _axs = mpl.pyplot.subplots(nrows = num_tiles.value + 1, 
+    #                                  figsize=(1.5, 0.25 + 0.48 * num_tiles.value))
+    # for ax, cm, in zip(_axs[1:], get_selected_colour_palettes()):
+    #     _xy = [[x / 256 for x in range(257)], [x / 256 for x in range(257)]]
+    #     ax.imshow(_xy, aspect='auto', cmap=mpl.colormaps.get(cm))
+    # for ax in _axs:
+    #     ax.set_axis_off()
+    # ax
+    return
 
 
 @app.cell(hide_code=True)
@@ -484,9 +503,12 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(get_palettes, mpl, view_settings):
+def _(get_selected_colour_palettes, mpl, num_tiles, view_settings):
     def plot_tiles(tiles):
-        cm = mpl.colors.ListedColormap([mpl.colormaps.get(p)(2/3) for p in get_palettes()])
+        cols = [mpl.colormaps.get(p)(2/3) for p in get_selected_colour_palettes()]
+        while len(cols) < num_tiles.value:
+            cols = cols + ["#00000000"]
+        cm = mpl.colors.ListedColormap(cols)
         plot = tiles.plot(r=view_settings["radius"].value, 
                           show_vectors=view_settings["show_vectors"].value, 
                           show_prototile=view_settings["show_prototile"].value,
@@ -499,10 +521,12 @@ def _(get_palettes, mpl, view_settings):
 
 
 @app.cell(hide_code=True)
-def _(pals, rev_pals):
-    def get_palettes():
-        return [(p if not r else p + "_r") for p, r in zip(pals.value, rev_pals.value)]
-    return (get_palettes,)
+def _(num_tiles, pals, rev_pals):
+    def get_selected_colour_palettes():
+        return [(p if not r else p + "_r") 
+                for p, r in zip(pals.value[:num_tiles.value], 
+                                rev_pals.value[:num_tiles.value])]
+    return (get_selected_colour_palettes,)
 
 
 @app.cell(hide_code=True)
@@ -641,6 +665,18 @@ def _():
       },
     }
     return (tilings_by_n,)
+
+
+@app.cell
+def _():
+    centred = {
+        "display": "flex",
+        "height": "500px",
+        "justify-content": "center",
+        "align-items": "center",
+        "text-align": "center",
+    }
+    return (centred,)
 
 
 @app.cell(hide_code=True)
