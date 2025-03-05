@@ -155,7 +155,8 @@ def build_variable_and_palette_dropdowns(gdf, get_tile_ids, mo, pd):
     repeated_variables = len(_tile_ids) > len(_var_names)
     while len(_var_names) < len(_tile_ids):
         _var_names = _var_names + _var_names
-    _var_names = _var_names[:len(_tile_ids)]
+    if repeated_variables:
+        _var_names = _var_names[:len(_tile_ids)]
     _pal_names = ['Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples', 
                   'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
     vars = mo.ui.array([mo.ui.dropdown(options=_var_names, value=_var_names[i]) 
