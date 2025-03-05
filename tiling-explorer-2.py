@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.05.22:56")
+        mo.md("v2025.03.05.23:31")
     ]).center()
     return
 
@@ -41,9 +41,18 @@ def _(gpd):
 
 
 @app.cell
-def _(dummy_data_file, mo):
+def _(available_palettes, dummy_data_file, mo):
     get_input_data, set_input_data = mo.state(dummy_data_file)
-    return get_input_data, set_input_data
+    get_palettes, set_palettes = mo.state(available_palettes)
+    get_reversed, set_reversed = mo.state([False] * 12)
+    return (
+        get_input_data,
+        get_palettes,
+        get_reversed,
+        set_input_data,
+        set_palettes,
+        set_reversed,
+    )
 
 
 @app.cell(hide_code=True)
@@ -146,11 +155,11 @@ def set_number_of_variables(mo, tool_tip):
 def build_variable_and_palette_dropdowns(
     available_palettes,
     gdf,
+    get_palettes,
+    get_reversed,
     mo,
     num_tiles,
-    pals,
     pd,
-    rev_pals,
     set_palettes,
     set_reversed,
 ):
@@ -159,8 +168,8 @@ def build_variable_and_palette_dropdowns(
     repeated_variables = len(available_vars) < num_tiles.value
 
     _chosen_vars = available_vars
-    _chosen_palettes = pals.value[:len(available_vars)]
-    _chosen_reversed = rev_pals.value[:len(available_vars)]
+    _chosen_palettes = get_palettes()[:len(available_vars)]
+    _chosen_reversed = get_reversed()[:len(available_vars)]
     vars = mo.ui.array(
         [mo.ui.dropdown(options=available_vars, value=_chosen_vars[i]) 
          for i, id in enumerate(_chosen_vars)], label="Variables") 
