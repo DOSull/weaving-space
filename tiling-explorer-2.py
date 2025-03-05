@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.06-10:08")
+        mo.md("v2025.03.06-10:40")
     ]).center()
     return
 
@@ -268,7 +268,9 @@ def set_spacing_limits(get_spacings, mo, tile_or_weave):
 @app.cell(hide_code=True)
 def _(mo):
     tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True, debounce=True)
-    return (tile_rotate,)
+    tile_skew_x = mo.ui.slider(start=-40, stop=40, step=5, value=0, show_value=True, debounce=True)
+    tile_skew_y = mo.ui.slider(start=-40, stop=40, step=5, value=0, show_value=True, debounce=True)
+    return tile_rotate, tile_skew_x, tile_skew_y
 
 
 @app.cell(hide_code=True)
@@ -295,6 +297,8 @@ def setup_tiling_modifiers(
     t_inset,
     tile_or_weave,
     tile_rotate,
+    tile_skew_x,
+    tile_skew_y,
     tiling_map,
     tool_tip,
 ):
@@ -302,16 +306,20 @@ def setup_tiling_modifiers(
     if tile_or_weave.value == "tiling":
         _str = "\n".join([
             f"### Tiling modifiers",
-            f"#### Spacing {tool_tip(spacing, 'In units of the map CRS. For tiles, approximate dimension of the repeat unit; for weaves, the distance between strand centre lines.')}",
-            f"#### Rotate by {tool_tip(tile_rotate, "Rotate tile unit (degrees)")}",
-            f"#### Prototile inset {tool_tip(p_inset, "Inset group of tiles (% spacing)")}",
-            f"#### Tile inset {tool_tip(t_inset, "Inset tiles (% spacing)")}"])
+            f"#### Spacing {tool_tip(spacing, 'In units of the map CRS, the approximate dimension of the repeating group')}",
+            f"#### Rotate by {tool_tip(tile_rotate, "Rotate tiling (degrees)")}",
+            f"#### Skew left-right {tool_tip(tile_skew_x, "Skew in the x direction (degrees)")}",
+            f"#### Skew up-down {tool_tip(tile_skew_y, "Skew in the y direction (degrees)")}",
+            f"#### Tile group inset {tool_tip(p_inset, "Inset the tile group (% spacing)")}",
+            f"#### Tiles inset {tool_tip(t_inset, "Inset individual tiles (% spacing)")}"])
     else:
         _str = "\n".join([
-            f"### Tiling modifiers",
-            f"#### Spacing {tool_tip(spacing, 'In units of the map CRS. For tiles, size of the repeat unit; for weaves, width of the ribbons.')}",
-            f"#### Rotate by {tool_tip(tile_rotate, "Rotate tile unit (degrees)")}",
-            f"#### Tile inset {tool_tip(t_inset, "Inset tiles (% spacing)")}"])
+            f"### Weave modifiers",
+            f"#### Spacing {tool_tip(spacing, 'In units of the map CRS, the distance between strand centre lines.')}",
+            f"#### Rotate by {tool_tip(tile_rotate, "Rotate weave (degrees)")}",
+            f"#### Skew left-right {tool_tip(tile_skew_x, "Skew in the x direction (degrees)")}",
+            f"#### Skew up-down {tool_tip(tile_skew_y, "Skew in the y direction (degrees)")}",
+            f"#### Strands inset {tool_tip(t_inset, "Inset strands (% spacing)")}"])
     mo.md(_str)
     return
 
@@ -426,12 +434,12 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo, tool_tip, view_settings):
     mo.md(f"""
-    ### Tile design view settings
-    #### Repeats to show {tool_tip(view_settings['radius'], 'The number of &lsquo;shells&rsquo; of the tiling to show away from the base tile unit.')}
-    #### Show tile IDs {tool_tip(view_settings['show_ids'], 'Show the tile labels used to match tiling elements to variables in the map data.')}
-    #### Show &lsquo;jigsaw piece&rsquo; {tool_tip(view_settings['show_reg_prototile'], 'Show in a red outline the repeating set of tiles that piece together jigsaw-like to form the pattern.')}
+    ### Tiling design view settings
+    #### Tile group 'shells' to show {tool_tip(view_settings['radius'], 'The number of &lsquo;shells&rsquo; of the tiling to show around the base tile group.')}
+    #### Show tile IDs {tool_tip(view_settings['show_ids'], 'Show the tiling element labels used to match tiles to variables in the map data.')}
+    #### Show &lsquo;jigsaw piece&rsquo; {tool_tip(view_settings['show_reg_prototile'], 'Show in a red outline the repeating set tile group that pieces together jigsaw-like to form the pattern.')}
     #### Show vectors {tool_tip(view_settings['show_vectors'], 'Show the translations that map repeating tiles in the pattern onto one another.')}
-    #### Show base tile {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the repeating base tile (usually a square or hexagon) which forms the basis of the pattern.')}
+    #### Show base tile {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the simple tile (usually a square or hexagon) which forms the basis of the pattern.')}
     #### Show scale {tool_tip(view_settings['show_scale'], 'Give an indication of scale in map units.')}
     """)
     return
@@ -478,16 +486,20 @@ def _(
     t_inset,
     tile_or_weave,
     tile_rotate,
+    tile_skew_x,
+    tile_skew_y,
 ):
     def get_modded_tile_unit():
         if tile_or_weave.value == "tiling":
             return get_base_tile_unit() \
                .transform_rotate(tile_rotate.value) \
+               .transform_skew(tile_skew_x.value, tile_skew_y.value) \
                .inset_tiles(t_inset.value * spacing.value / 100) \
                .inset_prototile(p_inset.value * spacing.value / 100)
         else:
             return get_base_tile_unit() \
                .transform_rotate(tile_rotate.value) \
+               .transform_skew(tile_skew_x.value, tile_skew_y.value) \
                .inset_tiles(t_inset.value * spacing.value / 100)
     return (get_modded_tile_unit,)
 
