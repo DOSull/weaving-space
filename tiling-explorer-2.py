@@ -364,8 +364,8 @@ def setup_chosen_tiling_options(
             label="#### Offset", debounce=True)
 
     if "weave" in family.value:
-        _aspect = mo.ui.slider(steps=[x / 12 for x in range(1,12)], 
-                               value=9 / 12, label="#### Strand width",
+        _aspect = mo.ui.slider(steps=[x/12 for x in range(1,13)], 
+                               value=9/12, label="#### Strand width",
                                show_value=True, debounce=True)
         _over_under = mo.ui.text(value=tilings_by_n[num_tiles.value][family.value]["n"],
                                 label="#### Over-under pattern")
