@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.13"
+__generated_with = "0.11.9"
 app = marimo.App(
     width="medium",
     app_title="MapWeaver",
@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.06-10:40")
+        mo.md("v2025.03.06-17:16")
     ]).center()
     return
 
@@ -31,7 +31,7 @@ def module_imports():
 
 
 @app.cell(hide_code=True)
-def _(gpd):
+def globals(gpd):
     dummy_data_file = "https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json"
     builtin_gdf = gpd.read_file(dummy_data_file, engine="fiona")
     available_palettes = [
@@ -41,7 +41,7 @@ def _(gpd):
 
 
 @app.cell
-def _(available_palettes, dummy_data_file, mo):
+def marimo_states(available_palettes, dummy_data_file, mo):
     get_input_data, set_input_data = mo.state(dummy_data_file)
     get_palettes, set_palettes = mo.state(available_palettes)
     get_reversed, set_reversed = mo.state([False] * 12)
@@ -183,15 +183,26 @@ def build_variable_and_palette_dropdowns(
 
 
 @app.cell
-def _(gdf, get_numeric_variables, mo, num_tiles, repeated_variables):
-    _title = mo.md("### Variable &rarr; palette map")
+def variable_palette_map_header(mo):
+    mo.md("""### Variable &rarr; palette map""")
+    return
+
+
+@app.cell
+def status_panel(
+    gdf,
+    get_numeric_variables,
+    mo,
+    num_tiles,
+    repeated_variables,
+):
     if repeated_variables:
-        _warning_text = f"{len(get_numeric_variables(gdf))} variables but {num_tiles.value} elements in tiling"
+        _warning_text = f"WARNING! {len(get_numeric_variables(gdf))} variables but {num_tiles.value} elements in tiling"
         _warning = mo.md(f"<span style='background-color:pink;font-face:sans-serif;padding:2px;'>{_warning_text}</span>")
     else:
-        _warning = mo.md("")
+        _warning = mo.md(f"<span style='background-color:lightgreen;font-face:sans-serif;padding:2px;'>STATUS All good!</span>")
 
-    mo.hstack([_title, _warning])
+    _warning.center()
     return
 
 
@@ -216,19 +227,6 @@ def build_var_palette_mapping(
         f"<span style='display:inline-block;object-fit:cover;height:24px;position:relative;bottom:24px;'>{mo.image(get_colour_ramp(p.value, r.value))}</span>",
     ]) for t_id, v, p, r in zip(get_tile_ids(), vars, pals, rev_pals)]))
     return
-
-
-@app.cell
-def _(io, mpl):
-    def get_colour_ramp(pal_name:str="Reds", rev:bool=False):
-        fig, ax = mpl.pyplot.subplots()
-        xy = [[x / 256 for x in range(257)] for i in range(2)]
-        ax.imshow(xy, aspect=32, cmap=mpl.colormaps.get(pal_name + ("_r" if rev else "")))
-        ax.set_axis_off()
-        buf = io.BytesIO()
-        mpl.pyplot.savefig(buf, dpi=24, pad_inches=0, bbox_inches="tight")
-        return buf
-    return (get_colour_ramp,)
 
 
 @app.cell(hide_code=True)
@@ -307,7 +305,7 @@ def setup_tiling_modifiers(
         _str = "\n".join([
             f"### Tiling modifiers",
             f"#### Spacing {tool_tip(spacing, 'In units of the map CRS, the approximate dimension of the repeating group')}",
-            f"#### Rotate by {tool_tip(tile_rotate, "Rotate tiling (degrees)")}",
+            f"#### Rotate by {tool_tip(tile_rotate, "Rotate tiling (degrees). Note that the tile group is rotated before any skews are applied.")}",
             f"#### Skew left-right {tool_tip(tile_skew_x, "Skew in the x direction (degrees)")}",
             f"#### Skew up-down {tool_tip(tile_skew_y, "Skew in the y direction (degrees)")}",
             f"#### Tile group inset {tool_tip(p_inset, "Inset the tile group (% spacing)")}",
@@ -316,7 +314,7 @@ def setup_tiling_modifiers(
         _str = "\n".join([
             f"### Weave modifiers",
             f"#### Spacing {tool_tip(spacing, 'In units of the map CRS, the distance between strand centre lines.')}",
-            f"#### Rotate by {tool_tip(tile_rotate, "Rotate weave (degrees)")}",
+            f"#### Rotate by {tool_tip(tile_rotate, "Rotate weave (degrees). Note that the weave is rotated before any skews are applied.")}",
             f"#### Skew left-right {tool_tip(tile_skew_x, "Skew in the x direction (degrees)")}",
             f"#### Skew up-down {tool_tip(tile_skew_y, "Skew in the y direction (degrees)")}",
             f"#### Strands inset {tool_tip(t_inset, "Inset strands (% spacing)")}"])
@@ -541,6 +539,14 @@ def _(get_selected_colour_palettes, mpl, num_tiles, view_settings):
 
 
 @app.cell(hide_code=True)
+def _(get_modded_tile_unit, num_tiles):
+    def get_tile_ids():
+        return sorted(list(set(get_modded_tile_unit().tiles.tile_id)))
+        return list("abcdefghijkl")[:num_tiles.value]
+    return (get_tile_ids,)
+
+
+@app.cell(hide_code=True)
 def _(num_tiles, pals, rev_pals):
     def get_selected_colour_palettes():
         return [(p if not r else p + "_r") 
@@ -550,18 +556,16 @@ def _(num_tiles, pals, rev_pals):
 
 
 @app.cell(hide_code=True)
-def _(get_modded_tile_unit, num_tiles):
-    def get_tile_ids():
-        return sorted(list(set(get_modded_tile_unit().tiles.tile_id)))
-        return list("abcdefghijkl")[:num_tiles.value]
-    return (get_tile_ids,)
-
-
-@app.cell(hide_code=True)
-def _():
-    def tool_tip(ele:str, tip:str):
-        return f'<span title="{tip}">{ele}</span>'
-    return (tool_tip,)
+def _(io, mpl):
+    def get_colour_ramp(pal_name:str="Reds", rev:bool=False):
+        fig, ax = mpl.pyplot.subplots()
+        xy = [[x / 256 for x in range(257)] for i in range(2)]
+        ax.imshow(xy, aspect=32, cmap=mpl.colormaps.get(pal_name + ("_r" if rev else "")))
+        ax.set_axis_off()
+        buf = io.BytesIO()
+        mpl.pyplot.savefig(buf, dpi=24, pad_inches=0, bbox_inches="tight")
+        return buf
+    return (get_colour_ramp,)
 
 
 @app.cell(hide_code=True)
@@ -592,6 +596,13 @@ def _(gdf):
 
 @app.cell(hide_code=True)
 def _():
+    def tool_tip(ele:str, tip:str):
+        return f'<span title="{tip}">{ele}</span>'
+    return (tool_tip,)
+
+
+@app.cell(hide_code=True)
+def setup_tilings_dictionary():
     tilings_by_n = {
       2: {
         "plain weave a|b": {"type":"weave", "weave_type": "plain", "strands": "a|b", "n": "1"},
@@ -698,7 +709,7 @@ def _():
     return (tilings_by_n,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     centred = {
         "display": "flex",
