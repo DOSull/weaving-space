@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.9"
+__generated_with = "0.11.13"
 app = marimo.App(
     width="medium",
     app_title="MapWeaver",
@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.06-17:16")
+        mo.md("v2025.03.06-21:45")
     ]).center()
     return
 
@@ -45,13 +45,16 @@ def marimo_states(available_palettes, dummy_data_file, mo):
     get_input_data, set_input_data = mo.state(dummy_data_file)
     get_palettes, set_palettes = mo.state(available_palettes)
     get_reversed, set_reversed = mo.state([False] * 12)
+    get_status_message, set_status_message = mo.state("STATUS All good!")
     return (
         get_input_data,
         get_palettes,
         get_reversed,
+        get_status_message,
         set_input_data,
         set_palettes,
         set_reversed,
+        set_status_message,
     )
 
 
@@ -162,10 +165,13 @@ def build_variable_and_palette_dropdowns(
     pd,
     set_palettes,
     set_reversed,
+    set_status_message,
 ):
     available_vars = [col for col in gdf.columns if not "geom" in col 
                        and pd.api.types.is_numeric_dtype(gdf[col].dtype)]
-    repeated_variables = len(available_vars) < num_tiles.value
+
+    if len(available_vars) < num_tiles.value:
+        set_status_message(f"WARNING! More tile elements ({num_tiles.value}) than variables ({len(available_vars)})")
 
     _chosen_vars = available_vars
     _chosen_palettes = get_palettes()[:len(available_vars)]
@@ -179,7 +185,7 @@ def build_variable_and_palette_dropdowns(
     rev_pals = mo.ui.array(
         [mo.ui.switch(_chosen_reversed[i]) 
          for i, id in enumerate(_chosen_reversed)], on_change=set_reversed)
-    return available_vars, pals, repeated_variables, rev_pals, vars
+    return available_vars, pals, rev_pals, vars
 
 
 @app.cell
@@ -189,18 +195,9 @@ def variable_palette_map_header(mo):
 
 
 @app.cell
-def status_panel(
-    gdf,
-    get_numeric_variables,
-    mo,
-    num_tiles,
-    repeated_variables,
-):
-    if repeated_variables:
-        _warning_text = f"WARNING! {len(get_numeric_variables(gdf))} variables but {num_tiles.value} elements in tiling"
-        _warning = mo.md(f"<span style='background-color:pink;font-face:sans-serif;padding:2px;'>{_warning_text}</span>")
-    else:
-        _warning = mo.md(f"<span style='background-color:lightgreen;font-face:sans-serif;padding:2px;'>STATUS All good!</span>")
+def status_panel(get_status_message, mo):
+    _bkgd = "lightgreen" if get_status_message() == "STATUS All good!" else "pink"
+    _warning = mo.md(f"<span style='background-color:{_bkgd};font-face:sans-serif;padding:2px;'>{get_status_message()}</span>")
 
     _warning.center()
     return
@@ -470,7 +467,8 @@ def _(
                 weave_type=spec["weave_type"],
                 spacing=spacing.value,
                 strands=spec["strands"],
-                n=1 if "plain" in family.value else get_over_under(tile_spec["over_under"].value),
+                n=get_over_under(tile_spec["over_under"].value) \
+                    if spec["weave_type"] in ["twill", "basket"] else 1,
                 aspect=tile_spec["aspect"].value,
                 crs=3857 if gdf is None else gdf.crs)
     return (get_base_tile_unit,)
@@ -624,15 +622,15 @@ def setup_tilings_dictionary():
         "archimedean 3.6.3.6": {"type":"tiling", "tiling_type": "archimedean", "code": "3.6.3.6"},
         "archimedean 3.12.12": {"type":"tiling", "tiling_type": "archimedean", "code": "3.12.12"},
         "square-slice 3": {"type":"tiling", "tiling_type": "square-slice", "n": 3},
-        "twill weave ab|c-": {"type":"weave", "weave_type": "twill", "strands": "ab|c-", "n": "2"},
-        "basket weave ab|c-": {"type":"weave", "weave_type": "basket", "strands": "ab|c-", "n": "2"},
+        # "twill weave ab|c-": {"type":"weave", "weave_type": "twill", "strands": "ab|c-", "n": "2"},
+        # "basket weave ab|c-": {"type":"weave", "weave_type": "basket", "strands": "ab|c-", "n": "2"},
       },
       4: {
         "laves 3.3.4.3.4": {"type":"tiling", "tiling_type": "laves", "code": "3.3.4.3.4"},
         "basket weave ab|cd": {"type":"weave", "weave_type": "basket", "strands": "ab|cd", "n": "2"},
         "twill weave ab|cd": {"type":"weave", "weave_type": "twill", "strands": "ab|cd", "n": "2"},
-        "basket weave ab|cd-": {"type":"weave", "weave_type": "basket", "strands": "ab|cd", "n": "2,3"},
-        "twill weave ab|cd-": {"type":"weave", "weave_type": "twill", "strands": "ab|cd", "n": "2,3"},
+        "basket weave ab|cd-": {"type":"weave", "weave_type": "basket", "strands": "ab|cd-", "n": "3"},
+        "twill weave ab|cd-": {"type":"weave", "weave_type": "twill", "strands": "ab|cd-", "n": "3"},
         # "laves 4.8.8": {"type":"tiling", "tiling_type": "laves", "code": "4.8.8"},
         "crosses 4": {"type":"tiling", "tiling_type": "crosses", "n": 4},
         "square-slice 4": {"type":"tiling", "tiling_type": "square-slice", "n": 4},
@@ -644,8 +642,8 @@ def setup_tilings_dictionary():
       5: {
         "square-colouring 5": {"type":"tiling", "tiling_type": "square-colouring", "n": 5},
         "crosses 5": {"type":"tiling", "tiling_type": "crosses", "n": 5},
-        "twill weave abc|de": {"type":"weave", "weave_type": "twill", "strands": "abc|de-", "n": "3,3"},
-        "basket weave abc|de": {"type":"weave", "weave_type": "basket", "strands": "abc|de-", "n": "3,3"},
+        "twill weave abc|de": {"type":"weave", "weave_type": "twill", "strands": "abc|de", "n": "3"},
+        "twill weave abc|de-": {"type":"weave", "weave_type": "twill", "strands": "abc|de-", "n": "3"},
         "hex-colouring 5": {"type":"tiling", "tiling_type": "hex-colouring", "n": 5},
         "hex-slice 5": {"type":"tiling", "tiling_type": "hex-slice", "n": 5},
         "square-slice 5": {"type":"tiling", "tiling_type": "square-slice", "n": 5},
@@ -659,8 +657,8 @@ def setup_tilings_dictionary():
         "laves 3.12.12": {"type":"tiling", "tiling_type": "laves", "code": "3.12.12"},
         "basket weave abc|def": {"type":"weave", "weave_type": "basket", "strands": "abc|def", "n": "3"},
         "twill weave abc|def": {"type":"weave", "weave_type": "twill", "strands": "abc|def", "n": "3"},
-        "basket weave abc|def-": {"type":"weave", "weave_type": "basket", "strands": "abc|def-", "n": "3"},
-        "twill weave abc|def-": {"type":"weave", "weave_type": "twill", "strands": "abc|def-", "n": "3"},
+        "basket weave abc|def-": {"type":"weave", "weave_type": "basket", "strands": "abc|def-", "n": "4"},
+        "twill weave abc|def-": {"type":"weave", "weave_type": "twill", "strands": "abc|def-", "n": "4"},
         "archimedean 3.3.4.3.4": {"type":"tiling", "tiling_type": "archimedean", "code": "3.3.4.3.4"},
         "archimedean 3.4.6.4": {"type":"tiling", "tiling_type": "archimedean", "code": "3.4.6.4"},
         "archimedean 4.6.12": {"type":"tiling", "tiling_type": "archimedean", "code": "4.6.12"},
@@ -671,21 +669,21 @@ def setup_tilings_dictionary():
         "hex-colouring 7": {"type":"tiling", "tiling_type": "hex-colouring", "n": 7},
         "crosses 7": {"type":"tiling", "tiling_type": "crosses", "n": 7},
         "hex-dissection 7": {"type":"tiling", "tiling_type": "hex-dissection", "n": 7},
-        "basket weave abcd|efg-": {"type":"weave", "weave_type": "basket", "strands": "abcd|defg-", "n": "2"},
-        "twill weave abcd|efg-": {"type":"weave", "weave_type": "twill", "strands": "abcd|defg-", "n": "2"},
+        "twill weave abcd|efg": {"type":"weave", "weave_type": "twill", "strands": "abcd|defg", "n": "4"},
+        "twill weave abcd|efg-": {"type":"weave", "weave_type": "twill", "strands": "abcd|defg-", "n": "4"},
         "square-colouring 7": {"type":"tiling", "tiling_type": "square-colouring", "n": 7},
         "hex-slice 7": {"type":"tiling", "tiling_type": "hex-slice", "n": 7},
         "square-slice 7": {"type":"tiling", "tiling_type": "square-slice", "n": 7},
       },
       8: {
         "square-slice 8": {"type":"tiling", "tiling_type": "square-slice", "n": 8},
-        "basket weave abcd|efgh": {"type":"weave", "weave_type": "basket", "strands": "abcd|efgh", "n": "2"},
-        "twill weave abcd|efgh": {"type":"weave", "weave_type": "twill", "strands": "abcd|efgh", "n": "2"},
+        "basket weave abcd|efgh": {"type":"weave", "weave_type": "basket", "strands": "abcd|efgh", "n": "4"},
         "square-colouring 8": {"type":"tiling", "tiling_type": "square-colouring", "n": 8},
         "hex-slice 8": {"type":"tiling", "tiling_type": "hex-slice", "n": 8},
         "hex-colouring 8": {"type":"tiling", "tiling_type": "hex-colouring", "n": 8},
       },
       9: {
+        # "cube weave abc|def|ghi": {"type":"weave", "weave_type": "cube", "strands": "abc|def|ghi"},
         "hex-slice 9": {"type":"tiling", "tiling_type": "hex-slice", "n": 9},
         "square-colouring 9": {"type":"tiling", "tiling_type": "square-colouring", "n": 9},
         "hex-colouring 9": {"type":"tiling", "tiling_type": "hex-colouring", "n": 9},
