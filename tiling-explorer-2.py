@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.06-21:45")
+        mo.md("v2025.03.06-22:15")
     ]).center()
     return
 
@@ -45,12 +45,15 @@ def marimo_states(available_palettes, dummy_data_file, mo):
     get_input_data, set_input_data = mo.state(dummy_data_file)
     get_palettes, set_palettes = mo.state(available_palettes)
     get_reversed, set_reversed = mo.state([False] * 12)
+    get_aspect, set_aspect = mo.state(3/4)
     get_status_message, set_status_message = mo.state("STATUS All good!")
     return (
+        get_aspect,
         get_input_data,
         get_palettes,
         get_reversed,
         get_status_message,
+        set_aspect,
         set_input_data,
         set_palettes,
         set_reversed,
@@ -348,8 +351,10 @@ def _(get_modded_tile_unit, plot_tiles):
 @app.cell(hide_code=True)
 def setup_chosen_tiling_options(
     family,
+    get_aspect,
     mo,
     num_tiles,
+    set_aspect,
     tile_or_weave,
     tilings_by_n,
 ):
@@ -365,8 +370,8 @@ def setup_chosen_tiling_options(
 
     if "weave" in family.value:
         _aspect = mo.ui.slider(steps=[x/12 for x in range(1,13)], 
-                               value=9/12, label="#### Strand width",
-                               show_value=True, debounce=True)
+                               value=get_aspect(), label="#### Strand width",
+                               show_value=True, debounce=True, on_change=set_aspect)
         _over_under = mo.ui.text(value=tilings_by_n[num_tiles.value][family.value]["n"],
                                 label="#### Over-under pattern")
 
@@ -444,6 +449,7 @@ def _(mo, tool_tip, view_settings):
 def _(
     family,
     gdf,
+    get_aspect,
     get_over_under,
     num_tiles,
     spacing,
@@ -469,7 +475,7 @@ def _(
                 strands=spec["strands"],
                 n=get_over_under(tile_spec["over_under"].value) \
                     if spec["weave_type"] in ["twill", "basket"] else 1,
-                aspect=tile_spec["aspect"].value,
+                aspect=get_aspect(),
                 crs=3857 if gdf is None else gdf.crs)
     return (get_base_tile_unit,)
 
