@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.08-09:20")
+        mo.md("v2025.03.08-10:40")
     ]).center()
     return
 
@@ -243,21 +243,6 @@ def draw_colour_ramps():
 
 @app.cell(hide_code=True)
 def set_spacing_limits(get_spacings, mo):
-    # _spacings = get_spacings()
-    # if tile_or_weave.value == "tiling":
-    #     spacing = mo.ui.slider(
-    #         start=_spacings['min spacing'], 
-    #         stop=_spacings['max spacing'], 
-    #         step=_spacings['step spacing'], 
-    #         value=_spacings['max spacing'] // 2,
-    #         show_value=True, debounce=True)
-    # else:
-    #     spacing = mo.ui.slider(
-    #         start=_spacings['min strand width'], 
-    #         stop=_spacings['max strand width'], 
-    #         step=_spacings['step strand width'], 
-    #         value=_spacings['max strand width'] // 2,
-    #         show_value=True, debounce=True)
     _spacing_steps, _spacing_value = get_spacings()
     spacing = mo.ui.slider(steps=_spacing_steps, value=_spacing_value,
                           show_value=True, debounce=True)
@@ -266,26 +251,29 @@ def set_spacing_limits(get_spacings, mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    tile_rotate = mo.ui.slider(start=-90, stop=90, step=5, value=0, show_value=True, debounce=True)
-    tile_skew_x = mo.ui.slider(start=-40, stop=40, step=5, value=0, show_value=True, debounce=True)
-    tile_skew_y = mo.ui.slider(start=-40, stop=40, step=5, value=0, show_value=True, debounce=True)
-    return tile_rotate, tile_skew_x, tile_skew_y
-
-
-@app.cell(hide_code=True)
-def _(mo):
+    tile_rotate = mo.ui.slider(steps=[x for x in range(-90, 91, 1)], value=0, 
+                               show_value=True, debounce=True)
+    tile_scale_x = mo.ui.slider(steps=[x / 10 for x in range(10, 41)], value=1, 
+                                show_value=True, debounce=True)
+    tile_scale_y = mo.ui.slider(steps=[x / 10 for x in range(10, 41)], value=1, 
+                                show_value=True, debounce=True)
+    tile_skew_x = mo.ui.slider(steps=[x for x in range(-40, 41, 1)], value=0, 
+                               show_value=True, debounce=True)
+    tile_skew_y = mo.ui.slider(steps=[x for x in range(-40, 41, 1)], value=0, 
+                               show_value=True, debounce=True)
     p_inset = mo.ui.slider(start=0, stop=10, step = 0.1, 
                            value=0, show_value=True, debounce=True)
-    return (p_inset,)
-
-
-@app.cell(hide_code=True)
-def _(mo, p_inset, spacing, tile_or_weave):
-    _max_t_inset = p_inset.value / 3 if tile_or_weave.value == "tiling" else spacing.value / 10
-    _value_t_inset = _max_t_inset / 3 if tile_or_weave.value == "tiling" else 0
-    t_inset = mo.ui.slider(start=0, stop=2.5, step = 0.1, 
-                           value=_value_t_inset, show_value=True, debounce=True)
-    return (t_inset,)
+    t_inset = mo.ui.slider(start=0, stop=5, step = 0.1, 
+                           value=0, show_value=True, debounce=True)
+    return (
+        p_inset,
+        t_inset,
+        tile_rotate,
+        tile_scale_x,
+        tile_scale_y,
+        tile_skew_x,
+        tile_skew_y,
+    )
 
 
 @app.cell(hide_code=True)
@@ -296,6 +284,8 @@ def setup_tiling_modifiers(
     t_inset,
     tile_or_weave,
     tile_rotate,
+    tile_scale_x,
+    tile_scale_y,
     tile_skew_x,
     tile_skew_y,
     tiling_map,
@@ -305,20 +295,24 @@ def setup_tiling_modifiers(
     if tile_or_weave.value == "tiling":
         _str = "\n".join([
             f"### Tiling modifiers",
-            f"#### Spacing {tool_tip(spacing, 'In units of the map CRS, the approximate dimension of the repeating group')}",
+            f"#### Spacing {tool_tip(spacing, 'In units of the map CRS, the approximate dimension of the repeating group.')}",
             f"#### Rotate by {tool_tip(tile_rotate, "Rotate tiling (degrees). Note that the tile group is rotated before any skews are applied.")}",
-            f"#### Skew left-right {tool_tip(tile_skew_x, "Skew in the x direction (degrees)")}",
-            f"#### Skew up-down {tool_tip(tile_skew_y, "Skew in the y direction (degrees)")}",
-            f"#### Tile group inset {tool_tip(p_inset, "Inset the tile group (% spacing)")}",
-            f"#### Tiles inset {tool_tip(t_inset, "Inset individual tiles (% spacing)")}"])
+            f"#### Scale left-right {tool_tip(tile_scale_x, "Scale in the x direction.")}",
+            f"#### Scale up-down {tool_tip(tile_scale_y, "Scale in the y direction.")}",
+            f"#### Skew left-right {tool_tip(tile_skew_x, "Skew in the x direction (degrees).")}",
+            f"#### Skew up-down {tool_tip(tile_skew_y, "Skew in the y direction (degrees).")}",
+            f"#### Tile group inset {tool_tip(p_inset, "Inset the tile group (% spacing).")}",
+            f"#### Tiles inset {tool_tip(t_inset, "Inset individual tiles (% spacing).")}"])
     else:
         _str = "\n".join([
             f"### Weave modifiers",
             f"#### Spacing {tool_tip(spacing, 'In units of the map CRS, the distance between strand centre lines.')}",
             f"#### Rotate by {tool_tip(tile_rotate, "Rotate weave (degrees). Note that the weave is rotated before any skews are applied.")}",
-            f"#### Skew left-right {tool_tip(tile_skew_x, "Skew in the x direction (degrees)")}",
-            f"#### Skew up-down {tool_tip(tile_skew_y, "Skew in the y direction (degrees)")}",
-            f"#### Strands inset {tool_tip(t_inset, "Inset strands (% spacing)")}"])
+            f"#### Scale left-right {tool_tip(tile_scale_x, "Scale in the x direction.")}",
+            f"#### Scale up-down {tool_tip(tile_scale_y, "Scale in the y direction.")}",
+            f"#### Skew left-right {tool_tip(tile_skew_x, "Skew in the x direction (degrees).")}",
+            f"#### Skew up-down {tool_tip(tile_skew_y, "Skew in the y direction (degrees).")}",
+            f"#### Strands inset {tool_tip(t_inset, "Inset strands (% width).")}"])
     mo.md(_str)
     return
 
@@ -414,7 +408,7 @@ def _(mo, tile_or_weave, tile_spec, tiling_map, tool_tip, tooltips):
 def _(mo):
     _radius = mo.ui.slider(0, 4, value=0, show_value=True)
     _show_prototile = mo.ui.switch(value=False)
-    _show_reg_prototile = mo.ui.switch(value=False)
+    _show_reg_prototile = mo.ui.switch(value=True)
     _show_vectors = mo.ui.switch(value=False)
     _show_ids = mo.ui.switch(value=True)
     _show_scale = mo.ui.switch(value=False)
@@ -486,21 +480,26 @@ def _(
     t_inset,
     tile_or_weave,
     tile_rotate,
+    tile_scale_x,
+    tile_scale_y,
     tile_skew_x,
     tile_skew_y,
+    tile_spec,
 ):
     def get_modded_tile_unit():
         if tile_or_weave.value == "tiling":
             return get_base_tile_unit() \
                .transform_rotate(tile_rotate.value) \
+               .transform_scale(tile_scale_x.value, tile_scale_y.value) \
                .transform_skew(tile_skew_x.value, tile_skew_y.value) \
                .inset_tiles(t_inset.value * spacing.value / 100) \
                .inset_prototile(p_inset.value * spacing.value / 100)
         else:
             return get_base_tile_unit() \
                .transform_rotate(tile_rotate.value) \
+               .transform_scale(tile_scale_x.value, tile_scale_y.value) \
                .transform_skew(tile_skew_x.value, tile_skew_y.value) \
-               .inset_tiles(t_inset.value * spacing.value / 100)
+               .inset_tiles(t_inset.value * tile_spec["aspect"].value * spacing.value / 100)
     return (get_modded_tile_unit,)
 
 
@@ -583,7 +582,6 @@ def _(gdf, math, tile_or_weave):
     def get_spacings():
         _bb = gdf.total_bounds
         _width, _height = _bb[2] - _bb[0], _bb[3] - _bb[1]
-        print((_width, _height))
         _max = 10 ** math.floor(math.log10(max(_width, _height))) // 5
         _mid = _max // 2
         _min = _max // 20
