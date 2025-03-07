@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.07-07:15")
+        mo.md("v2025.03.08-09:20")
     ]).center()
     return
 
@@ -23,11 +23,12 @@ def module_imports():
     import io
     from PIL import Image
     import matplotlib as mpl
+    import math
     import pandas as pd
     import geopandas as gpd
     import fiona
     import weavingspace as wsp
-    return Image, fiona, gpd, io, mpl, pd, wsp
+    return Image, fiona, gpd, io, math, mpl, pd, wsp
 
 
 @app.cell(hide_code=True)
@@ -241,22 +242,25 @@ def draw_colour_ramps():
 
 
 @app.cell(hide_code=True)
-def set_spacing_limits(get_spacings, mo, tile_or_weave):
-    _spacings = get_spacings()
-    if tile_or_weave.value == "tiling":
-        spacing = mo.ui.slider(
-            start=_spacings['min spacing'], 
-            stop=_spacings['max spacing'], 
-            step=_spacings['step spacing'], 
-            value=_spacings['max spacing'] // 2,
-            show_value=True, debounce=True)
-    else:
-        spacing = mo.ui.slider(
-            start=_spacings['min strand width'], 
-            stop=_spacings['max strand width'], 
-            step=_spacings['step strand width'], 
-            value=_spacings['max strand width'] // 2,
-            show_value=True, debounce=True)
+def set_spacing_limits(get_spacings, mo):
+    # _spacings = get_spacings()
+    # if tile_or_weave.value == "tiling":
+    #     spacing = mo.ui.slider(
+    #         start=_spacings['min spacing'], 
+    #         stop=_spacings['max spacing'], 
+    #         step=_spacings['step spacing'], 
+    #         value=_spacings['max spacing'] // 2,
+    #         show_value=True, debounce=True)
+    # else:
+    #     spacing = mo.ui.slider(
+    #         start=_spacings['min strand width'], 
+    #         stop=_spacings['max strand width'], 
+    #         step=_spacings['step strand width'], 
+    #         value=_spacings['max strand width'] // 2,
+    #         show_value=True, debounce=True)
+    _spacing_steps, _spacing_value = get_spacings()
+    spacing = mo.ui.slider(steps=_spacing_steps, value=_spacing_value,
+                          show_value=True, debounce=True)
     return (spacing,)
 
 
@@ -429,7 +433,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo, tool_tip, view_settings):
     mo.md(f"""
-    ### Tiling design view settings
+    ### Design view options
     #### Tile group 'shells' to show {tool_tip(view_settings['radius'], 'The number of &lsquo;shells&rsquo; of the tiling to show around the base tile group.')}
     #### Show tile IDs {tool_tip(view_settings['show_ids'], 'Show the tiling element labels used to match tiles to variables in the map data.')}
     #### Show &lsquo;jigsaw piece&rsquo; {tool_tip(view_settings['show_reg_prototile'], 'Show in a red outline the repeating set tile group that pieces together jigsaw-like to form the pattern.')}
@@ -575,20 +579,22 @@ def _(pd):
 
 
 @app.cell(hide_code=True)
-def _(gdf):
+def _(gdf, math, tile_or_weave):
     def get_spacings():
         _bb = gdf.total_bounds
-        _w, _h = _bb[2] - _bb[0], _bb[3] - _bb[1]
-        _a = _w * _h
-        _min_spacing = max(_w, _h) // 200
-        return {
-            "min spacing": _min_spacing,
-            "max spacing": _min_spacing * 10,
-            "step spacing": (_min_spacing * 9) // 100,
-            "min strand width": _min_spacing // 3,
-            "max strand width": _min_spacing // 3  * 10,
-            "step strand width": (_min_spacing * 3) // 100,
-        }
+        _width, _height = _bb[2] - _bb[0], _bb[3] - _bb[1]
+        print((_width, _height))
+        _max = 10 ** math.floor(math.log10(max(_width, _height))) // 5
+        _mid = _max // 2
+        _min = _max // 20
+        _stepsize1 = _min // 10
+        _stepsize2 = _min // 2
+        _steps = [x for x in range(_min, _mid, _stepsize1)] + \
+                 [x for x in range(_mid, _max + 1, _stepsize2)]
+        if tile_or_weave.value == "weave":
+            _steps = [x // 2 for x in _steps]
+            _mid = _mid // 2
+        return _steps, 3 * _mid // 4
     return (get_spacings,)
 
 
