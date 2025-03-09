@@ -95,7 +95,7 @@ class _TileGrid():
 
 
   def _get_area_to_tile(self, to_tile) -> geom.Polygon:
-    return gpd.GeoSeries(to_tile.unary_union.minimum_rotated_rectangle)
+    return gpd.GeoSeries(to_tile.union_all().minimum_rotated_rectangle)
 
 
   def _get_extent(self) -> tuple[gpd.GeoSeries, geom.Point]:
@@ -252,7 +252,7 @@ class Tiling:
               {prototile_margin}.""")
     self.region = region
     self.region.sindex
-    self.region_union = self.region.geometry.unary_union
+    self.region_union = self.region.geometry.union_all()
     if id_var != None:
       print("""id_var is no longer required and will be deprecated soon.
             A temporary unique index attribute is added and removed when 
@@ -452,7 +452,7 @@ class Tiling:
         the rotation.
     """
     centre = (
-      gdf.geometry.unary_union.centroid.coords[0]
+      gdf.geometry.union_all().centroid.coords[0]
       if centre is None
       else centre)
     return gdf.geometry.rotate(angle, origin = centre), centre
@@ -847,10 +847,10 @@ class TiledMap:
       ellipse = tiling_utils.get_bounding_ellipse(
         legend_tiles.geometry, mag = self.ellipse_magnification)
       bb = ellipse.total_bounds
-      c = ellipse.unary_union.centroid
+      c = ellipse.union_all().centroid
     else:
       bb = legend_tiles.geometry.total_bounds
-      c = legend_tiles.geometry.unary_union.centroid
+      c = legend_tiles.geometry.union_all().centroid
 
     # apply legend zoom - NOTE that this must be applied even
     # if self.legend_zoom is not == 1...

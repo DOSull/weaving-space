@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.08-10:40")
+        mo.md("v2025.03.09-14:40")
     ]).center()
     return
 
@@ -26,9 +26,8 @@ def module_imports():
     import math
     import pandas as pd
     import geopandas as gpd
-    import fiona
     import weavingspace as wsp
-    return Image, fiona, gpd, io, math, mpl, pd, wsp
+    return Image, gpd, io, math, mpl, pd, wsp
 
 
 @app.cell(hide_code=True)
@@ -63,7 +62,6 @@ def marimo_states(available_palettes, dummy_data_file, mo):
 def read_gdf(
     builtin_gdf,
     dummy_data_file,
-    fiona,
     get_input_data,
     get_numeric_variables,
     gpd,
@@ -76,17 +74,8 @@ def read_gdf(
         assert (len(get_input_data()) > 0), f"No uploaded file has been specified."
         try:
             _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), engine="fiona", mode="r")
-        # except FileNotFoundError as e:
-        #     print(e)
-        #     raise
-        # except OSError as e:
-        #     print(e)
-        #     raise
-        # except RuntimeError as e:
-        #     print(e)
-        #     raise
-        except fiona.errors.DriverError as e:
-            print(e)
+        except Exception as e:
+            print(e.args)
             raise
         else:
             _n = len(get_numeric_variables(_new_gdf))
@@ -189,13 +178,13 @@ def build_variable_and_palette_dropdowns(
     return available_vars, pals, rev_pals, vars
 
 
-@app.cell
+@app.cell(hide_code=True)
 def variable_palette_map_header(mo):
     mo.md("""### Variable &rarr; palette map""")
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def status_panel(get_status_message, mo):
     _bkgd = "lightgreen" if get_status_message() == "STATUS All good!" else "pink"
     _warning = mo.md(f"<span style='background-color:{_bkgd};font-face:sans-serif;padding:2px;'>{get_status_message()}</span>")

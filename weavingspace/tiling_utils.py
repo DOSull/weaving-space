@@ -929,7 +929,7 @@ def safe_union(gs:gpd.GeoSeries,
   union = gpd.GeoSeries(
     [p.buffer(RESOLUTION * 10, join_style = 2, cap_style = 3) 
      for p in gs], crs = gs.crs) \
-      .unary_union.buffer(-RESOLUTION * 10, join_style = 2, cap_style = 3)
+      .union_all().buffer(-RESOLUTION * 10, join_style = 2, cap_style = 3)
   if as_polygon:
     return gridify(union)
   else:
