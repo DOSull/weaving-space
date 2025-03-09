@@ -244,7 +244,7 @@ class WeaveGrid:
     strands = geom.MultiPolygon(
         [expanded_cell.intersection(s) for s in strands.geoms])
     strands = affine.rotate(strands, orientation, origin = cell.centroid)
-    return [s for s in strands.geoms]
+    return [tiling_utils.gridify(s) for s in strands.geoms]
 
 
   def get_visible_cell_strands(
@@ -277,14 +277,14 @@ class WeaveGrid:
                                             n_slices[order])
         if all_polys == []:
             all_polys.extend(next_polys)
-            mask = shapely.unary_union(next_polys)
+            mask = shapely.union_all(next_polys)
         else:
             # buffering the mask cleans up many issues with closely
             # aligned polygon edges in overlayed layers
             all_polys.extend([p.difference(
               mask.buffer(tiling_utils.RESOLUTION, join_style = 2, cap_style = 3)) 
               for p in next_polys])
-            mask = mask.union(shapely.unary_union(next_polys))
+            mask = mask.union(shapely.union_all(next_polys))
     return all_polys
 
 
