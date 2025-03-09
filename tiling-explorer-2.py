@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.09-14:40")
+        mo.md("v2025.03.09-22:15")
     ]).center()
     return
 
@@ -31,13 +31,16 @@ def module_imports():
 
 
 @app.cell(hide_code=True)
-def globals(gpd):
+def globals(get_colour_ramp, gpd, mo):
     dummy_data_file = "https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json"
     builtin_gdf = gpd.read_file(dummy_data_file, engine="fiona")
     available_palettes = [
         'Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples',
         'YlGnBu', 'RdPu', 'viridis', 'summer', 'spring', 'winter']
-    return available_palettes, builtin_gdf, dummy_data_file
+    # make a bunch of colour ramps and save them in a dictionary
+    color_ramps = {k: mo.image(get_colour_ramp(k))
+                   for k in available_palettes + [p + "_r" for p in available_palettes]}
+    return available_palettes, builtin_gdf, color_ramps, dummy_data_file
 
 
 @app.cell
@@ -195,7 +198,7 @@ def status_panel(get_status_message, mo):
 
 @app.cell(hide_code=True)
 def build_var_palette_mapping(
-    get_colour_ramp,
+    color_ramps,
     get_tile_ids,
     mo,
     pals,
@@ -211,7 +214,7 @@ def build_var_palette_mapping(
         f"{tool_tip(v, f"Variable for tiles with id {t_id}")} &rarr;",
         f"{tool_tip(p, f"Palette for variable {v.value}")}",
         f"<span style='position:relative;top:5px;'>{tool_tip(r, 'Reverse ramp')}</span>",
-        f"<span style='display:inline-block;object-fit:cover;height:24px;position:relative;bottom:24px;'>{mo.image(get_colour_ramp(p.value, r.value))}</span>",
+        f"<span style='display:inline-block;object-fit:cover;height:24px;position:relative;bottom:24px;'>{color_ramps[p.value + ("_r" if r.value else "")]}</span>",
     ]) for t_id, v, p, r in zip(get_tile_ids(), vars, pals, rev_pals)]))
     return
 
@@ -554,6 +557,7 @@ def _(io, mpl):
         ax.set_axis_off()
         buf = io.BytesIO()
         mpl.pyplot.savefig(buf, dpi=24, pad_inches=0, bbox_inches="tight")
+        mpl.pyplot.close(fig)
         return buf
     return (get_colour_ramp,)
 
