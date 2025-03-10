@@ -183,7 +183,7 @@ def setup_square_slice(unit:"TileUnit") -> None:
 def _get_radially_sliced_polygon(shape:geom.Polygon, n_sides:int,
                                  n_slices:int, offset:float):
   boundary = geom.LineString(shape.exterior.coords)
-  print(f'{n_sides=} {n_slices=} {offset=}')
+  # print(f'{n_sides=} {n_slices=} {offset=}')
   offset = (offset % 1 
             if offset < 0 or offset > 1 
             else offset)

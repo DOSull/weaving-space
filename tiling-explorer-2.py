@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.09-22:15")
+        mo.md("v2025.03.10-21:00")
     ]).center()
     return
 
@@ -46,6 +46,7 @@ def globals(get_colour_ramp, gpd, mo):
 @app.cell
 def marimo_states(available_palettes, dummy_data_file, mo):
     get_input_data, set_input_data = mo.state(dummy_data_file)
+    get_variables, set_variables = mo.state([])
     get_palettes, set_palettes = mo.state(available_palettes)
     get_reversed, set_reversed = mo.state([False] * 12)
     get_status_message, set_status_message = mo.state("STATUS All good!")
@@ -54,10 +55,12 @@ def marimo_states(available_palettes, dummy_data_file, mo):
         get_palettes,
         get_reversed,
         get_status_message,
+        get_variables,
         set_input_data,
         set_palettes,
         set_reversed,
         set_status_message,
+        set_variables,
     )
 
 
@@ -70,6 +73,7 @@ def read_gdf(
     gpd,
     io,
     set_input_data,
+    set_variables,
 ):
     if type(get_input_data()) is str or len(get_input_data()) == 0:
         gdf = builtin_gdf
@@ -89,6 +93,8 @@ def read_gdf(
                 if not _new_gdf.crs.is_projected:
                     _new_gdf = _new_gdf.to_crs(3857)
                 gdf = _new_gdf
+
+    set_variables(get_numeric_variables(gdf))
     return (gdf,)
 
 
@@ -112,7 +118,7 @@ def tile_the_map(
     get_selected_colour_palettes,
     get_tile_ids,
     mo,
-    vars,
+    variables,
     wsp,
 ):
     mo.output.replace(
@@ -130,8 +136,8 @@ def tile_the_map(
 
     tiling_map = True
     _tiled_map = wsp.Tiling(get_modded_tile_unit(), gdf).get_tiled_map()
-    _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), vars.value)}
-    _tiled_map.colourmaps = {k: v for k, v in zip(vars.value, get_selected_colour_palettes())}
+    _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), variables.value)}
+    _tiled_map.colourmaps = {k: v for k, v in zip(variables.value, get_selected_colour_palettes())}
     tiling_map = False
     _tiled_map.render(legend=False, scheme="EqualInterval", figsize=(9, 6))
     return (tiling_map,)
@@ -148,52 +154,62 @@ def set_number_of_variables(mo, tool_tip):
 
 
 @app.cell(hide_code=True)
-def build_variable_and_palette_dropdowns(
-    available_palettes,
-    gdf,
-    get_palettes,
-    get_reversed,
-    mo,
-    num_tiles,
-    pd,
-    set_palettes,
-    set_reversed,
-    set_status_message,
-):
-    available_vars = [col for col in gdf.columns if not "geom" in col 
-                       and pd.api.types.is_numeric_dtype(gdf[col].dtype)]
-
-    if len(available_vars) < num_tiles.value:
-        set_status_message(f"WARNING! More tile elements ({num_tiles.value}) than variables ({len(available_vars)})")
-
-    _chosen_vars = available_vars
-    _chosen_palettes = get_palettes()[:len(available_vars)]
-    _chosen_reversed = get_reversed()[:len(available_vars)]
-    vars = mo.ui.array(
-        [mo.ui.dropdown(options=available_vars, value=_chosen_vars[i]) 
-         for i, id in enumerate(_chosen_vars)], label="Variables") 
-    pals = mo.ui.array(
-        [mo.ui.dropdown(options=available_palettes, value=_chosen_palettes[i]) 
-         for i, id in enumerate(_chosen_palettes)], label="Palettes", on_change=set_palettes)
-    rev_pals = mo.ui.array(
-        [mo.ui.switch(_chosen_reversed[i]) 
-         for i, id in enumerate(_chosen_reversed)], on_change=set_reversed)
-    return available_vars, pals, rev_pals, vars
-
-
-@app.cell(hide_code=True)
 def variable_palette_map_header(mo):
     mo.md("""### Variable &rarr; palette map""")
     return
 
 
 @app.cell(hide_code=True)
-def status_panel(get_status_message, mo):
+def status_panel(
+    gdf,
+    get_numeric_variables,
+    get_status_message,
+    mo,
+    num_tiles,
+    set_status_message,
+):
+    available_vars = get_numeric_variables(gdf)
+    if len(available_vars) < num_tiles.value:
+        set_status_message(f"WARNING! More tile elements ({num_tiles.value}) than variables ({len(available_vars)})")
+
     _bkgd = "lightgreen" if get_status_message() == "STATUS All good!" else "pink"
     _warning = mo.md(f"<span style='background-color:{_bkgd};font-face:sans-serif;padding:2px;'>{get_status_message()}</span>")
 
     _warning.center()
-    return
+    return (available_vars,)
+
+
+@app.cell(hide_code=True)
+def build_variable_and_palette_dropdowns(
+    available_palettes,
+    available_vars,
+    get_palettes,
+    get_reversed,
+    get_variables,
+    mo,
+    num_tiles,
+    set_palettes,
+    set_reversed,
+    set_variables,
+):
+    if num_tiles.value < len(get_variables()):
+        set_variables(get_variables()[:num_tiles.value])
+    elif num_tiles.value > len(get_variables()):
+        n_to_add = num_tiles.value - len(get_variables())
+        to_add = [v for v in available_vars if v not in get_variables()][:n_to_add]
+        set_variables(get_variables() + to_add)
+
+    _chosen_palettes = get_palettes()[:num_tiles.value]
+    _chosen_reversed = get_reversed()[:num_tiles.value]
+    variables = mo.ui.array(
+        [mo.ui.dropdown(options=available_vars, value=v) for v in get_variables()], 
+        label="Variables", on_change=set_variables) 
+    pals = mo.ui.array(
+        [mo.ui.dropdown(options=available_palettes, value=p) for p in _chosen_palettes], 
+        label="Palettes", on_change=set_palettes)
+    rev_pals = mo.ui.array(
+        [mo.ui.switch(r) for r in _chosen_reversed], on_change=set_reversed)
+    return n_to_add, pals, rev_pals, to_add, variables
 
 
 @app.cell(hide_code=True)
@@ -205,7 +221,7 @@ def build_var_palette_mapping(
     rev_pals,
     tiling_map,
     tool_tip,
-    vars,
+    variables,
 ):
     mo.stop(tiling_map)
     mo.md("\n".join([
@@ -215,7 +231,7 @@ def build_var_palette_mapping(
         f"{tool_tip(p, f"Palette for variable {v.value}")}",
         f"<span style='position:relative;top:5px;'>{tool_tip(r, 'Reverse ramp')}</span>",
         f"<span style='display:inline-block;object-fit:cover;height:24px;position:relative;bottom:24px;'>{color_ramps[p.value + ("_r" if r.value else "")]}</span>",
-    ]) for t_id, v, p, r in zip(get_tile_ids(), vars, pals, rev_pals)]))
+    ]) for t_id, v, p, r in zip(get_tile_ids(), variables, pals, rev_pals)]))
     return
 
 
