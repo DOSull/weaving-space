@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.10-21:00")
+        mo.md("v2025.03.11-09:30")
     ]).center()
     return
 
@@ -110,6 +110,13 @@ def upload_data(mo, set_input_data, tool_tip):
     return (fb,)
 
 
+@app.cell
+def _(mo):
+    show_data_layer = mo.ui.switch(False)
+    mo.md(f"<span style='line-height:0.8;'>Show data</span>&nbsp;{show_data_layer}")
+    return (show_data_layer,)
+
+
 @app.cell(hide_code=True)
 def tile_the_map(
     centred,
@@ -118,6 +125,7 @@ def tile_the_map(
     get_selected_colour_palettes,
     get_tile_ids,
     mo,
+    show_data_layer,
     variables,
     wsp,
 ):
@@ -133,14 +141,31 @@ def tile_the_map(
             ]
         ).style(centred)
     )
-
     tiling_map = True
     _tiled_map = wsp.Tiling(get_modded_tile_unit(), gdf).get_tiled_map()
     _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), variables.value)}
     _tiled_map.colourmaps = {k: v for k, v in zip(variables.value, get_selected_colour_palettes())}
+    fig = _tiled_map.render(legend=False, scheme="EqualInterval", figsize=(9, 6))
     tiling_map = False
-    _tiled_map.render(legend=False, scheme="EqualInterval", figsize=(9, 6))
-    return (tiling_map,)
+    if show_data_layer.value:
+        map = gdf.plot(ax=fig.axes[0], fc="#00000000", ec="grey")
+    else:
+        map = fig
+    map
+    # Potential web map alternative
+    # _style_kwds = {"fillOpacity":1,"stroke":False}
+    # _tile_lyr = "CartoDB positron"
+    # for i, t in enumerate(get_tile_ids()):
+    #     if i == 0:
+    #         m = _tiled_map.map[_tiled_map.map.tile_id == t].explore(
+    #             column=variables.value[i], cmap=get_selected_colour_palettes()[i],
+    #             tooltip=False, style_kwds=_style_kwds, legend=False, tiles=_tile_lyr)
+    #     else:
+    #         _tiled_map.map[_tiled_map.map.tile_id == t].explore(m=m,
+    #             column=variables.value[i], cmap=get_selected_colour_palettes()[i],
+    #             tooltip=False, style_kwds=_style_kwds, legend=False)
+    # m
+    return fig, map, tiling_map
 
 
 @app.cell(hide_code=True)
