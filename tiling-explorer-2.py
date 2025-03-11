@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.12-07:55")
+        mo.md("v2025.03.12-11:25")
     ]).center()
     return
 
@@ -27,9 +27,9 @@ def module_imports():
     import math
     import pandas as pd
     import geopandas as gpd
-    import shapely
+    from shapely import is_valid
     import weavingspace as wsp
-    return Image, gpd, io, json, math, mpl, pd, shapely, wsp
+    return Image, gpd, io, is_valid, json, math, mpl, pd, wsp
 
 
 @app.cell(hide_code=True)
@@ -72,14 +72,13 @@ def marimo_states(available_palettes, builtin_gdf, dummy_data_file, mo):
 @app.cell
 def read_gdf(
     builtin_gdf,
-    dummy_data_file,
     get_gdf,
     get_input_data,
     get_numeric_variables,
     gpd,
     io,
+    is_valid,
     set_gdf,
-    set_input_data,
     set_status_message,
     set_variables,
 ):
@@ -108,7 +107,11 @@ def read_gdf(
             _n = len(get_numeric_variables(_new_gdf))
             if _n < 2:
                 set_status_message("WARNING! One or fewer variables, data not loaded")
-                set_input_data(dummy_data_file)
+                # set_input_data(dummy_data_file)
+                set_gdf(_old_gdf)
+            elif not all(is_valid(_new_gdf.geometry)):
+                set_status_message("ERROR! Geometries not valid, try another dataset")
+                # set_input_data(dummy_data_file)
                 set_gdf(_old_gdf)
             else:
                 if not _new_gdf.crs.is_projected:
@@ -159,12 +162,15 @@ def _(
             ]
         ).style(centred)
     )
+
     tiling_map = True
     _tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map(join_on_prototiles=False)
     _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), get_variables())}
     _tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
+    result = _tiled_map.render(legend=False, scheme="EqualInterval", figsize=(9, 6))
     tiling_map = False
-    _tiled_map.render(legend=False, scheme="EqualInterval", figsize=(9, 6))
+
+    result
 
     # Potential web map alternative
     # _style_kwds = {"fillOpacity":1,"stroke":False}
@@ -179,7 +185,7 @@ def _(
     #             column=variables.value[i], cmap=get_selected_colour_palettes()[i],
     #             tooltip=False, style_kwds=_style_kwds, legend=False)
     # m
-    return (tiling_map,)
+    return result, tiling_map
 
 
 @app.cell(hide_code=True)
@@ -207,9 +213,8 @@ def status_panel(
     num_tiles,
     set_status_message,
 ):
-    available_vars = get_numeric_variables(get_gdf())
-    if len(available_vars) < num_tiles.value:
-        set_status_message(f"WARNING! More tile elements ({num_tiles.value}) than variables ({len(available_vars)})")
+    if len(get_numeric_variables(get_gdf())) < num_tiles.value:
+        set_status_message(f"WARNING! More tile elements ({num_tiles.value}) than variables ({len(get_numeric_variables(get_gdf()))})")
 
     if get_status_message() == "STATUS All good!":
         _bkgd = "lightgreen"
@@ -223,13 +228,12 @@ def status_panel(
     _msg = mo.md(f"<span style='background-color:{_bkgd};color:{_col};font-face:sans-serif;padding:2px;'>{get_status_message()}</span>")
 
     _msg.center()
-    return (available_vars,)
+    return
 
 
 @app.cell(hide_code=True)
 def build_variable_and_palette_dropdowns(
     available_palettes,
-    available_vars,
     get_gdf,
     get_numeric_variables,
     get_palettes,
@@ -245,13 +249,13 @@ def build_variable_and_palette_dropdowns(
         set_variables(get_numeric_variables(get_gdf())[:num_tiles.value])
     elif num_tiles.value > len(get_variables()):
         n_to_add = num_tiles.value - len(get_variables())
-        to_add = [v for v in available_vars if v not in get_variables()][:n_to_add]
+        to_add = [v for v in get_numeric_variables(get_gdf()) if v not in get_variables()][:n_to_add]
         set_variables(get_variables() + to_add)
 
     _chosen_palettes = get_palettes()[:num_tiles.value]
     _chosen_reversed = get_reversed()[:num_tiles.value]
     variables = mo.ui.array(
-        [mo.ui.dropdown(options=available_vars, value=v) for v in get_variables()], 
+        [mo.ui.dropdown(options=get_numeric_variables(get_gdf()), value=v) for v in get_variables()], 
         label="Variables", on_change=set_variables) 
     pals = mo.ui.array(
         [mo.ui.dropdown(options=available_palettes, value=p) for p in _chosen_palettes], 
@@ -268,11 +272,10 @@ def build_var_palette_mapping(
     mo,
     pals,
     rev_pals,
-    tiling_map,
     tool_tip,
     variables,
 ):
-    mo.stop(tiling_map)
+    # mo.stop(tiling_map)
     mo.md("\n".join([
         "&nbsp;&nbsp;".join([
         f"#### Tiles `{t_id}`",
@@ -331,10 +334,9 @@ def setup_tiling_modifiers(
     tile_scale_y,
     tile_skew_x,
     tile_skew_y,
-    tiling_map,
     tool_tip,
 ):
-    mo.stop(tiling_map)
+    # mo.stop(tiling_map)
     if tile_or_weave.value == "tiling":
         _str = "\n".join([
             f"### Tiling modifiers",
@@ -434,8 +436,8 @@ def setup_chosen_tiling_options(
 
 
 @app.cell(hide_code=True)
-def _(mo, tile_or_weave, tile_spec, tiling_map, tool_tip, tooltips):
-    mo.stop(tiling_map)
+def _(mo, tile_or_weave, tile_spec, tool_tip, tooltips):
+    # mo.stop(tiling_map)
     if tile_spec is not None:
         x = mo.md("\n".join(
             [f"### Set {tile_or_weave.value} options"] + 
@@ -482,17 +484,6 @@ def _(mo, tool_tip, view_settings):
 
 
 @app.cell(hide_code=True)
-def _(shapely):
-    def get_shape(coords, shape_type):
-        if shape_type == "Polygon":
-            return shapely.geometry.Polygon(coords)
-        elif shape_type == "MultiPolygon":
-            return shapely.geometry.MultiPolygon(coords)
-        return None
-    return (get_shape,)
-
-
-@app.cell(hide_code=True)
 def _(
     family,
     get_gdf,
@@ -527,7 +518,6 @@ def _(
         slice = [i in get_tile_ids() for i in result.tiles.tile_id]
         result.tiles = result.tiles.loc[slice]
         return result
-
     return (get_base_tile_unit,)
 
 
@@ -603,7 +593,7 @@ def _(get_gdf, get_numeric_variables):
     def get_tile_ids():
         # return sorted(list(set(get_modded_tile_unit().tiles.tile_id)))
         # return list("abcdefghijkl")[:num_tiles.value]
-        return list("abcdefghijkl")[:len(get_numeric_variables(get_gdf()))]    
+        return list("abcdefghijkl")[:len(get_numeric_variables(get_gdf()))]
     return (get_tile_ids,)
 
 
