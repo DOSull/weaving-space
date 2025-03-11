@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.11-20:30")
+        mo.md("v2025.03.12-07:55")
     ]).center()
     return
 
@@ -230,6 +230,8 @@ def status_panel(
 def build_variable_and_palette_dropdowns(
     available_palettes,
     available_vars,
+    get_gdf,
+    get_numeric_variables,
     get_palettes,
     get_reversed,
     get_variables,
@@ -239,8 +241,8 @@ def build_variable_and_palette_dropdowns(
     set_reversed,
     set_variables,
 ):
-    if num_tiles.value < len(get_variables()):
-        set_variables(get_variables()[:num_tiles.value])
+    if num_tiles.value < len(get_numeric_variables(get_gdf())):
+        set_variables(get_numeric_variables(get_gdf())[:num_tiles.value])
     elif num_tiles.value > len(get_variables()):
         n_to_add = num_tiles.value - len(get_variables())
         to_add = [v for v in available_vars if v not in get_variables()][:n_to_add]
@@ -495,6 +497,7 @@ def _(
     family,
     get_gdf,
     get_over_under,
+    get_tile_ids,
     num_tiles,
     spacing,
     tile_or_weave,
@@ -505,7 +508,7 @@ def _(
     def get_base_tile_unit():
         spec = tilings_by_n[num_tiles.value][family.value]
         if tile_or_weave.value == "tiling":
-            return wsp.TileUnit(
+            result = wsp.TileUnit(
                 tiling_type=spec["tiling_type"],
                 spacing=spacing.value,
                 n=spec["n"] if "n" in spec else None,
@@ -513,7 +516,7 @@ def _(
                 offset=tile_spec["offset"].value if tile_spec is not None else None,
                 crs=get_gdf().crs)
         else:
-            return wsp.WeaveUnit(
+            result = wsp.WeaveUnit(
                 weave_type=spec["weave_type"],
                 spacing=spacing.value,
                 strands=spec["strands"],
@@ -521,6 +524,10 @@ def _(
                     if spec["weave_type"] in ["twill", "basket"] else 1,
                 aspect=tile_spec["aspect"].value,
                 crs=get_gdf().crs)
+        slice = [i in get_tile_ids() for i in result.tiles.tile_id]
+        result.tiles = result.tiles.loc[slice]
+        return result
+
     return (get_base_tile_unit,)
 
 
@@ -573,7 +580,7 @@ def _(get_selected_colour_palettes, mpl, num_tiles, view_settings):
     def plot_tiles(tiles):
         cols = [mpl.colormaps.get(p)(2/3) for p in get_selected_colour_palettes()]
         while len(cols) < num_tiles.value:
-            cols = cols + ["#00000000"]
+            cols = cols + ["#ffffff00"]
         cm = mpl.colors.ListedColormap(cols)
         plot = tiles.plot(r=view_settings["radius"].value, 
                           show_vectors=view_settings["show_vectors"].value, 
@@ -592,10 +599,11 @@ def _(get_selected_colour_palettes, mpl, num_tiles, view_settings):
 
 
 @app.cell(hide_code=True)
-def _(get_modded_tile_unit, num_tiles):
+def _(get_gdf, get_numeric_variables):
     def get_tile_ids():
-        return sorted(list(set(get_modded_tile_unit().tiles.tile_id)))
-        return list("abcdefghijkl")[:num_tiles.value]
+        # return sorted(list(set(get_modded_tile_unit().tiles.tile_id)))
+        # return list("abcdefghijkl")[:num_tiles.value]
+        return list("abcdefghijkl")[:len(get_numeric_variables(get_gdf()))]    
     return (get_tile_ids,)
 
 
