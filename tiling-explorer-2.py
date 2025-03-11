@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.11-13:40")
+        mo.md("v2025.03.11-14:20")
     ]).center()
     return
 
@@ -70,7 +70,6 @@ def marimo_states(available_palettes, dummy_data_file, mo):
 def read_gdf(
     builtin_gdf,
     dummy_data_file,
-    fb,
     get_input_data,
     get_numeric_variables,
     get_shape,
@@ -83,16 +82,16 @@ def read_gdf(
     if type(get_input_data()) is str or len(get_input_data()) == 0:
         gdf = builtin_gdf
     else:
-        assert (len(get_input_data()) > 0), f"No uploaded file has been specified."
         try:
-            _data = fb.value[0].contents
+            _data = get_input_data()[0].contents
             _geojson_dict = json.loads(io.BytesIO(_data).read())
-        
+
             _crs = _geojson_dict["crs"]["properties"]["name"]
+            if "CRS84" in _crs: _crs = "epsg:4326"
             _features = _geojson_dict["features"]
             _props = [p["properties"] for p in _features]
             _geoms = [get_shape(p["geometry"]["coordinates"], p["geometry"]["type"]) for p in _features]
-        
+
             _new_gdf = gpd.GeoDataFrame(data=_props, geometry=_geoms, crs=_crs).to_crs(3857)
             # _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), engine="fiona", mode="r")
         except Exception as e:
@@ -107,8 +106,7 @@ def read_gdf(
                 if not _new_gdf.crs.is_projected:
                     _new_gdf = _new_gdf.to_crs(3857)
                 gdf = _new_gdf
-
-    set_variables(get_numeric_variables(gdf))
+                set_variables(get_numeric_variables(gdf))
     return (gdf,)
 
 
@@ -116,7 +114,7 @@ def read_gdf(
 def upload_data(mo, set_input_data, tool_tip):
     fb = mo.ui.file(on_change=set_input_data, label=f"Upload data")
     _f = tool_tip(
-        fb, "Your data should be geospatial polygons - preferably GPKG or GeoJSON, and contain a number of numerical attributes to be symbolised.")
+        fb, "Your data should be geospatial polygons - and currently only GeoJSON is readable.")
     mo.md(f"{_f}").center()
     return (fb,)
 
