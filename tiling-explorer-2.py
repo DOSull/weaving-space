@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.11-20:30")
+        mo.md("v2025.03.11-22:40")
     ]).center()
     return
 
@@ -98,7 +98,7 @@ def read_gdf(
             # _geoms = [get_shape(p["geometry"]["coordinates"], p["geometry"]["type"]) for p in _features]
 
             # _new_gdf = gpd.GeoDataFrame(data=_props, geometry=_geoms, crs=_crs).to_crs(3857)
-            _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents).read().decode())
+            _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents).read()) #.decode())
         except Exception as e:
             set_gdf(_old_gdf)
             set_status_message("ERROR! Exception in uploading data")
@@ -121,7 +121,8 @@ def read_gdf(
 
 @app.cell(hide_code=True)
 def upload_data(mo, set_input_data, tool_tip):
-    fb = mo.ui.file(filetypes=[".geojson", ".json"], on_change=set_input_data, label=f"Upload data")
+    fb = mo.ui.file(filetypes=[".geojson", ".json", ".gpkg"], 
+                    on_change=set_input_data, label=f"Upload data")
     _f = tool_tip(
         fb, "Your data should be geospatial polygons - and currently only GeoJSON is readable.")
     mo.md(f"{_f}").left()
@@ -159,7 +160,7 @@ def _(
         ).style(centred)
     )
     tiling_map = True
-    _tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map()
+    _tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map(join_on_prototiles=False)
     _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), get_variables())}
     _tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
     tiling_map = False
