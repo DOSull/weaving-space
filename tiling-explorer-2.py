@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.12-11:50")
+        mo.md("v2025.03.12-12:05")
     ]).center()
     return
 
@@ -81,6 +81,7 @@ def read_gdf(
     set_gdf,
     set_status_message,
     set_variables,
+    wsp,
 ):
     _done = False
     _did_repairs = False
@@ -115,9 +116,7 @@ def read_gdf(
                 if not _new_gdf.crs.is_projected:
                     _new_gdf = _new_gdf.to_crs(3857)
                 if not all(is_valid(_new_gdf.geometry)):
-                    _new_gdf.geometry = _new_gdf.geometry \
-                        .buffer(1e-3, join_style=3, cap_style=3, resolution=0) \
-                        .buffer(-1e-3, join_style=3, cap_style=3, resolution=0)
+                    _new_gdf.geometry = wsp.tiling_utils.repair_polygon(_new_gdf.geometry)
                     if not all(is_valid(_new_gdf.geometry)):
                         set_status_message("ERROR! Geometries not valid, try another dataset")
                         set_gdf(_old_gdf)
