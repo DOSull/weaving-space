@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.9"
+__generated_with = "0.11.13"
 app = marimo.App(
     width="medium",
     app_title="MapWeaver",
@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.11-14:20")
+        mo.md("v2025.03.11-20:30")
     ]).center()
     return
 
@@ -27,9 +27,9 @@ def module_imports():
     import math
     import pandas as pd
     import geopandas as gpd
-    import shapely.geometry as geom
+    import shapely
     import weavingspace as wsp
-    return Image, geom, gpd, io, json, math, mpl, pd, wsp
+    return Image, gpd, io, json, math, mpl, pd, shapely, wsp
 
 
 @app.cell(hide_code=True)
@@ -46,18 +46,21 @@ def globals(get_colour_ramp, gpd, mo):
 
 
 @app.cell
-def marimo_states(available_palettes, dummy_data_file, mo):
+def marimo_states(available_palettes, builtin_gdf, dummy_data_file, mo):
     get_input_data, set_input_data = mo.state(dummy_data_file)
+    get_gdf, set_gdf = mo.state(builtin_gdf)
     get_variables, set_variables = mo.state([])
     get_palettes, set_palettes = mo.state(available_palettes)
     get_reversed, set_reversed = mo.state([False] * 12)
     get_status_message, set_status_message = mo.state("STATUS All good!")
     return (
+        get_gdf,
         get_input_data,
         get_palettes,
         get_reversed,
         get_status_message,
         get_variables,
+        set_gdf,
         set_input_data,
         set_palettes,
         set_reversed,
@@ -66,56 +69,62 @@ def marimo_states(available_palettes, dummy_data_file, mo):
     )
 
 
-@app.cell(hide_code=True)
+@app.cell
 def read_gdf(
     builtin_gdf,
     dummy_data_file,
+    get_gdf,
     get_input_data,
     get_numeric_variables,
-    get_shape,
     gpd,
     io,
-    json,
+    set_gdf,
     set_input_data,
+    set_status_message,
     set_variables,
 ):
     if type(get_input_data()) is str or len(get_input_data()) == 0:
-        gdf = builtin_gdf
+        set_gdf(builtin_gdf)
     else:
+        _old_gdf = get_gdf()
         try:
-            _data = get_input_data()[0].contents
-            _geojson_dict = json.loads(io.BytesIO(_data).read())
+            # _data = get_input_data()[0].contents
+            # _geojson_dict = json.loads(io.BytesIO(_data).read())
 
-            _crs = _geojson_dict["crs"]["properties"]["name"]
-            if "CRS84" in _crs: _crs = "epsg:4326"
-            _features = _geojson_dict["features"]
-            _props = [p["properties"] for p in _features]
-            _geoms = [get_shape(p["geometry"]["coordinates"], p["geometry"]["type"]) for p in _features]
+            # _crs = _geojson_dict["crs"]["properties"]["name"]
+            # if "CRS84" in _crs: _crs = "epsg:4326"
+            # _features = _geojson_dict["features"]
+            # _props = [p["properties"] for p in _features]
+            # _geoms = [get_shape(p["geometry"]["coordinates"], p["geometry"]["type"]) for p in _features]
 
-            _new_gdf = gpd.GeoDataFrame(data=_props, geometry=_geoms, crs=_crs).to_crs(3857)
-            # _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), engine="fiona", mode="r")
+            # _new_gdf = gpd.GeoDataFrame(data=_props, geometry=_geoms, crs=_crs).to_crs(3857)
+            _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents).read().decode())
         except Exception as e:
+            set_gdf(_old_gdf)
+            set_status_message("ERROR! Exception in uploading data")
             print(e.args)
             raise
         else:
             _n = len(get_numeric_variables(_new_gdf))
             if _n < 2:
+                set_status_message("WARNING! One or fewer variables, data not loaded")
                 set_input_data(dummy_data_file)
-                gdf = builtin_gdf
+                set_gdf(_old_gdf)
             else:
                 if not _new_gdf.crs.is_projected:
                     _new_gdf = _new_gdf.to_crs(3857)
-                gdf = _new_gdf
-                set_variables(get_numeric_variables(gdf))
-    return (gdf,)
+                set_gdf(_new_gdf)
+                set_variables(get_numeric_variables(get_gdf()))
+                set_status_message("STATUS All good!")
+    return
 
 
 @app.cell(hide_code=True)
 def upload_data(mo, set_input_data, tool_tip):
-    fb = mo.ui.file(on_change=set_input_data, label=f"Upload data")
+    fb = mo.ui.file(filetypes=[".geojson", ".json"], on_change=set_input_data, label=f"Upload data")
     _f = tool_tip(
         fb, "Your data should be geospatial polygons - and currently only GeoJSON is readable.")
-    mo.md(f"{_f}").center()
+    mo.md(f"{_f}").left()
     return (fb,)
 
 
@@ -126,16 +135,15 @@ def _(mo, tool_tip):
     return (show_data_layer,)
 
 
-@app.cell(hide_code=True)
-def tile_the_map(
+@app.cell
+def _(
     centred,
-    gdf,
+    get_gdf,
     get_modded_tile_unit,
     get_selected_colour_palettes,
     get_tile_ids,
+    get_variables,
     mo,
-    show_data_layer,
-    variables,
     wsp,
 ):
     mo.output.replace(
@@ -151,16 +159,12 @@ def tile_the_map(
         ).style(centred)
     )
     tiling_map = True
-    _tiled_map = wsp.Tiling(get_modded_tile_unit(), gdf).get_tiled_map()
-    _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), variables.value)}
-    _tiled_map.colourmaps = {k: v for k, v in zip(variables.value, get_selected_colour_palettes())}
-    fig = _tiled_map.render(legend=False, scheme="EqualInterval", figsize=(9, 6))
+    _tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map()
+    _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), get_variables())}
+    _tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
     tiling_map = False
-    if show_data_layer.value:
-        map = gdf.plot(ax=fig.axes[0], fc="#00000000", ec="grey")
-    else:
-        map = fig
-    map
+    _tiled_map.render(legend=False, scheme="EqualInterval", figsize=(9, 6))
+
     # Potential web map alternative
     # _style_kwds = {"fillOpacity":1,"stroke":False}
     # _tile_lyr = "CartoDB positron"
@@ -174,7 +178,7 @@ def tile_the_map(
     #             column=variables.value[i], cmap=get_selected_colour_palettes()[i],
     #             tooltip=False, style_kwds=_style_kwds, legend=False)
     # m
-    return fig, map, tiling_map
+    return (tiling_map,)
 
 
 @app.cell(hide_code=True)
@@ -195,21 +199,29 @@ def variable_palette_map_header(mo):
 
 @app.cell(hide_code=True)
 def status_panel(
-    gdf,
+    get_gdf,
     get_numeric_variables,
     get_status_message,
     mo,
     num_tiles,
     set_status_message,
 ):
-    available_vars = get_numeric_variables(gdf)
+    available_vars = get_numeric_variables(get_gdf())
     if len(available_vars) < num_tiles.value:
         set_status_message(f"WARNING! More tile elements ({num_tiles.value}) than variables ({len(available_vars)})")
 
-    _bkgd = "lightgreen" if get_status_message() == "STATUS All good!" else "pink"
-    _warning = mo.md(f"<span style='background-color:{_bkgd};font-face:sans-serif;padding:2px;'>{get_status_message()}</span>")
+    if get_status_message() == "STATUS All good!":
+        _bkgd = "lightgreen"
+    elif "WARNING" in get_status_message():
+        _bkgd = "pink"
+    else:
+        _bkgd = "red"
 
-    _warning.center()
+    _col = "white" if "ERROR" in get_status_message() else "black"
+
+    _msg = mo.md(f"<span style='background-color:{_bkgd};color:{_col};font-face:sans-serif;padding:2px;'>{get_status_message()}</span>")
+
+    _msg.center()
     return (available_vars,)
 
 
@@ -266,20 +278,6 @@ def build_var_palette_mapping(
         f"<span style='position:relative;top:5px;'>{tool_tip(r, 'Reverse ramp')}</span>",
         f"<span style='display:inline-block;object-fit:cover;height:24px;position:relative;bottom:24px;'>{color_ramps[p.value + ("_r" if r.value else "")]}</span>",
     ]) for t_id, v, p, r in zip(get_tile_ids(), variables, pals, rev_pals)]))
-    return
-
-
-@app.cell(hide_code=True)
-def draw_colour_ramps():
-    # mo.stop(tiling_map)
-    # _fig, _axs = mpl.pyplot.subplots(nrows = num_tiles.value + 1, 
-    #                                  figsize=(1.5, 0.25 + 0.48 * num_tiles.value))
-    # for ax, cm, in zip(_axs[1:], get_selected_colour_palettes()):
-    #     _xy = [[x / 256 for x in range(257)], [x / 256 for x in range(257)]]
-    #     ax.imshow(_xy, aspect='auto', cmap=mpl.colormaps.get(cm))
-    # for ax in _axs:
-    #     ax.set_axis_off()
-    # ax
     return
 
 
@@ -481,12 +479,12 @@ def _(mo, tool_tip, view_settings):
 
 
 @app.cell(hide_code=True)
-def _(geom):
+def _(shapely):
     def get_shape(coords, shape_type):
         if shape_type == "Polygon":
-            return geom.Polygon(coords)
+            return shapely.geometry.Polygon(coords)
         elif shape_type == "MultiPolygon":
-            return geom.MultiPolygon(coords)
+            return shapely.geometry.MultiPolygon(coords)
         return None
     return (get_shape,)
 
@@ -494,7 +492,7 @@ def _(geom):
 @app.cell(hide_code=True)
 def _(
     family,
-    gdf,
+    get_gdf,
     get_over_under,
     num_tiles,
     spacing,
@@ -512,7 +510,7 @@ def _(
                 n=spec["n"] if "n" in spec else None,
                 code=spec["code"] if "code" in spec else None,
                 offset=tile_spec["offset"].value if tile_spec is not None else None,
-                crs=3857 if gdf is None else gdf.crs)
+                crs=get_gdf().crs)
         else:
             return wsp.WeaveUnit(
                 weave_type=spec["weave_type"],
@@ -521,7 +519,7 @@ def _(
                 n=get_over_under(tile_spec["over_under"].value) \
                     if spec["weave_type"] in ["twill", "basket"] else 1,
                 aspect=tile_spec["aspect"].value,
-                crs=3857 if gdf is None else gdf.crs)
+                crs=get_gdf().crs)
     return (get_base_tile_unit,)
 
 
@@ -632,9 +630,9 @@ def _(pd):
 
 
 @app.cell(hide_code=True)
-def _(gdf, math, tile_or_weave):
+def _(get_gdf, math, tile_or_weave):
     def get_spacings():
-        _bb = gdf.total_bounds
+        _bb = get_gdf().total_bounds
         _width, _height = _bb[2] - _bb[0], _bb[3] - _bb[1]
         _max = 10 ** math.floor(math.log10(max(_width, _height))) // 5
         _mid = _max // 2
