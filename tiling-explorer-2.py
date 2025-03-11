@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.13"
+__generated_with = "0.11.9"
 app = marimo.App(
     width="medium",
     app_title="MapWeaver",
@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.11-09:30")
+        mo.md("v2025.03.11-13:40")
     ]).center()
     return
 
@@ -21,13 +21,15 @@ def _(mo):
 @app.cell(hide_code=True)
 def module_imports():
     import io
+    import json
     from PIL import Image
     import matplotlib as mpl
     import math
     import pandas as pd
     import geopandas as gpd
+    import shapely.geometry as geom
     import weavingspace as wsp
-    return Image, gpd, io, math, mpl, pd, wsp
+    return Image, geom, gpd, io, json, math, mpl, pd, wsp
 
 
 @app.cell(hide_code=True)
@@ -68,10 +70,13 @@ def marimo_states(available_palettes, dummy_data_file, mo):
 def read_gdf(
     builtin_gdf,
     dummy_data_file,
+    fb,
     get_input_data,
     get_numeric_variables,
+    get_shape,
     gpd,
     io,
+    json,
     set_input_data,
     set_variables,
 ):
@@ -80,7 +85,16 @@ def read_gdf(
     else:
         assert (len(get_input_data()) > 0), f"No uploaded file has been specified."
         try:
-            _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), engine="fiona", mode="r")
+            _data = fb.value[0].contents
+            _geojson_dict = json.loads(io.BytesIO(_data).read())
+        
+            _crs = _geojson_dict["crs"]["properties"]["name"]
+            _features = _geojson_dict["features"]
+            _props = [p["properties"] for p in _features]
+            _geoms = [get_shape(p["geometry"]["coordinates"], p["geometry"]["type"]) for p in _features]
+        
+            _new_gdf = gpd.GeoDataFrame(data=_props, geometry=_geoms, crs=_crs).to_crs(3857)
+            # _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents), engine="fiona", mode="r")
         except Exception as e:
             print(e.args)
             raise
@@ -100,9 +114,6 @@ def read_gdf(
 
 @app.cell(hide_code=True)
 def upload_data(mo, set_input_data, tool_tip):
-    # _fb = mo.ui.file_browser(multiple=False, 
-    #                          on_change=set_input_data, 
-    #                          label=f"### Select an input data set")
     fb = mo.ui.file(on_change=set_input_data, label=f"Upload data")
     _f = tool_tip(
         fb, "Your data should be geospatial polygons - preferably GPKG or GeoJSON, and contain a number of numerical attributes to be symbolised.")
@@ -111,9 +122,9 @@ def upload_data(mo, set_input_data, tool_tip):
 
 
 @app.cell
-def _(mo):
+def _(mo, tool_tip):
     show_data_layer = mo.ui.switch(False)
-    mo.md(f"<span style='line-height:0.8;'>Show data</span>&nbsp;{show_data_layer}")
+    mo.md(f"{tool_tip(show_data_layer, "Show the data layer")}")
     return (show_data_layer,)
 
 
@@ -469,6 +480,17 @@ def _(mo, tool_tip, view_settings):
     #### Show scale {tool_tip(view_settings['show_scale'], 'Give an indication of scale in map units.')}
     """)
     return
+
+
+@app.cell(hide_code=True)
+def _(geom):
+    def get_shape(coords, shape_type):
+        if shape_type == "Polygon":
+            return geom.Polygon(coords)
+        elif shape_type == "MultiPolygon":
+            return geom.MultiPolygon(coords)
+        return None
+    return (get_shape,)
 
 
 @app.cell(hide_code=True)
