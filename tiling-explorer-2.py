@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.12-11:25")
+        mo.md("v2025.03.12-11:50")
     ]).center()
     return
 
@@ -82,6 +82,8 @@ def read_gdf(
     set_status_message,
     set_variables,
 ):
+    _done = False
+    _did_repairs = False
     if type(get_input_data()) is str or len(get_input_data()) == 0:
         set_gdf(builtin_gdf)
     else:
@@ -107,18 +109,28 @@ def read_gdf(
             _n = len(get_numeric_variables(_new_gdf))
             if _n < 2:
                 set_status_message("WARNING! One or fewer variables, data not loaded")
-                # set_input_data(dummy_data_file)
                 set_gdf(_old_gdf)
-            elif not all(is_valid(_new_gdf.geometry)):
-                set_status_message("ERROR! Geometries not valid, try another dataset")
-                # set_input_data(dummy_data_file)
-                set_gdf(_old_gdf)
-            else:
+                _done = True
+            if not _done:
                 if not _new_gdf.crs.is_projected:
                     _new_gdf = _new_gdf.to_crs(3857)
+                if not all(is_valid(_new_gdf.geometry)):
+                    _new_gdf.geometry = _new_gdf.geometry \
+                        .buffer(1e-3, join_style=3, cap_style=3, resolution=0) \
+                        .buffer(-1e-3, join_style=3, cap_style=3, resolution=0)
+                    if not all(is_valid(_new_gdf.geometry)):
+                        set_status_message("ERROR! Geometries not valid, try another dataset")
+                        set_gdf(_old_gdf)
+                        _done = True
+                    else:
+                        _did_repairs = True
+            if not _done:
                 set_gdf(_new_gdf)
                 set_variables(get_numeric_variables(get_gdf()))
-                set_status_message("STATUS All good!")
+                if _did_repairs:
+                    set_status_message("WARNING! Had to repair geometry errors in your data")
+                else:
+                    set_status_message("STATUS All good!")
     return
 
 
