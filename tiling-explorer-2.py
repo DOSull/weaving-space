@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.12-12:05")
+        mo.md("v2025.03.12-21:15")
     ]).center()
     return
 
@@ -201,7 +201,7 @@ def _(
 
 @app.cell(hide_code=True)
 def set_number_of_variables(mo, tool_tip):
-    num_tiles = mo.ui.slider(steps = [x for x in range(2, 13) if x != 11], value=4, debounce=True, show_value=True)
+    num_tiles = mo.ui.slider(steps = [x for x in range(2, 13)], value=4, debounce=True, show_value=True)
     mo.md(f"""
     ### General settings
     #### Set number of tiling elements {tool_tip(num_tiles, 'Choose the number of distinct tiles you want to use to symbolise data.')}
@@ -419,7 +419,7 @@ def setup_chosen_tiling_options(
 
     if "weave" in family.value:
         _aspect = mo.ui.slider(steps=[x/12 for x in range(1,13)], 
-                               value=1, label="#### Strand width",
+                               value=3/4, label="#### Strand width",
                                show_value=True, debounce=True)
         _over_under = mo.ui.text(value=tilings_by_n[num_tiles.value][family.value]["n"],
                                 label="#### Over-under pattern")
@@ -464,7 +464,7 @@ def _(mo, tile_or_weave, tile_spec, tool_tip, tooltips):
 def _(mo):
     _radius = mo.ui.slider(0, 4, value=0, show_value=True)
     _show_prototile = mo.ui.switch(value=False)
-    _show_reg_prototile = mo.ui.switch(value=True)
+    _show_reg_prototile = mo.ui.switch(value=False)
     _show_vectors = mo.ui.switch(value=False)
     _show_ids = mo.ui.switch(value=True)
     _show_scale = mo.ui.switch(value=False)
@@ -484,12 +484,12 @@ def _(mo):
 def _(mo, tool_tip, view_settings):
     mo.md(f"""
     ### Design view options
-    #### Tile group 'shells' to show {tool_tip(view_settings['radius'], 'The number of &lsquo;shells&rsquo; of the tiling to show around the base tile group.')}
     #### Show tile IDs {tool_tip(view_settings['show_ids'], 'Show the tiling element labels used to match tiles to variables in the map data.')}
-    #### Show &lsquo;jigsaw piece&rsquo; {tool_tip(view_settings['show_reg_prototile'], 'Show in a red outline the repeating set tile group that pieces together jigsaw-like to form the pattern.')}
-    #### Show vectors {tool_tip(view_settings['show_vectors'], 'Show the translations that map repeating tiles in the pattern onto one another.')}
     #### Show base tile {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the simple tile (usually a square or hexagon) which forms the basis of the pattern.')}
+    #### Show vectors {tool_tip(view_settings['show_vectors'], 'Show the translations that map repeating tiles in the pattern onto one another.')}
+    #### Show &lsquo;jigsaw piece&rsquo; {tool_tip(view_settings['show_reg_prototile'], 'Show in a red outline the repeating set tile group that pieces together jigsaw-like to form the pattern.')}
     #### Show scale {tool_tip(view_settings['show_scale'], 'Give an indication of scale in map units.')}
+    #### Tile group 'shells' to show {tool_tip(view_settings['radius'], 'The number of &lsquo;shells&rsquo; of the tiling to show around the base tile group.')}
     """)
     return
 
@@ -588,7 +588,7 @@ def _(get_selected_colour_palettes, mpl, num_tiles, view_settings):
                           show_prototile=view_settings["show_prototile"].value,
                           show_reg_prototile=view_settings["show_reg_prototile"].value,
                           show_ids=view_settings["show_ids"].value,
-                          cmap=cm, figsize=(4, 4))
+                          cmap=cm, figsize=(4, 4), r_alpha=0.5)
         if view_settings["show_scale"].value:
             plot.xaxis.set_visible(True)
             plot.yaxis.set_visible(False)
@@ -671,7 +671,15 @@ def setup_tilings_dictionary():
       2: {
         "plain weave a|b": {"type":"weave", "weave_type": "plain", "strands": "a|b", "n": "1"},
         "twill weave a|b": {"type":"weave", "weave_type": "twill", "strands": "a|b", "n": "2"},
-        "basket weave a|b": {"type":"weave", "weave_type": "basket", "strands": "a|b", "n": "2"},
+        "twill weave a|b-": {"type":"weave", "weave_type": "twill", "strands": "a|b-", "n": "2"},
+        "twill weave a|b 3": {"type":"weave", "weave_type": "twill", "strands": "a|b", "n": "3"},
+        "twill weave a|b- 3": {"type":"weave", "weave_type": "twill", "strands": "a|b-", "n": "3"},
+        "twill weave a|b 4": {"type":"weave", "weave_type": "twill", "strands": "a|b", "n": "4"},
+        "twill weave a|b 1,2": {"type":"weave", "weave_type": "twill", "strands": "a|b", "n": "1,2"},
+        "twill weave a|b- 1,2": {"type":"weave", "weave_type": "twill", "strands": "a|b-", "n": "1,2"},
+        "twill weave a|b 1,2,2,1": {"type":"weave", "weave_type": "twill", "strands": "a|b", "n": "1,2,2,1"},
+        "twill weave a|b 2,3": {"type":"weave", "weave_type": "twill", "strands": "a|b", "n": "2,3"},
+        "twill weave a|b 2,3,3,2": {"type":"weave", "weave_type": "twill", "strands": "a|b", "n": "2,3,3,2"},
         "archimedean 4.8.8": {"type":"tiling", "tiling_type": "archimedean", "code": "4.8.8"},
         "square-slice 2": {"type":"tiling", "tiling_type": "square-slice", "n": 2},
         "crosses 2": {"type":"tiling", "tiling_type": "crosses", "n": 2},
@@ -680,6 +688,10 @@ def setup_tilings_dictionary():
         "hex-slice 2": {"type":"tiling", "tiling_type": "hex-slice", "n": 2},
       },
       3: {
+        "plain weave ab|c": {"type":"weave", "weave_type": "plain", "strands": "ab|c", "n": "1"},
+        "plain weave ab-|c": {"type":"weave", "weave_type": "plain", "strands": "ab-|c", "n": "1"},
+        "twill weave ab|c-": {"type":"weave", "weave_type": "twill", "strands": "ab|c-", "n": "2"},
+        "basket weave ab|c-": {"type":"weave", "weave_type": "basket", "strands": "ab|c-", "n": "2"},
         "hex-slice 3": {"type":"tiling", "tiling_type": "hex-slice", "n": 3},
         # "laves 3.6.3.6": {"type":"tiling", "tiling_type": "laves", "code": "3.6.3.6"},
         "hex-colouring 3": {"type":"tiling", "tiling_type": "hex-colouring", "n": 3},
@@ -693,10 +705,19 @@ def setup_tilings_dictionary():
       },
       4: {
         "laves 3.3.4.3.4": {"type":"tiling", "tiling_type": "laves", "code": "3.3.4.3.4"},
+        "plain weave ab|cd": {"type":"weave", "weave_type": "plain", "strands": "ab|cd", "n": "1"},
+        "plain weave ab-|cd": {"type":"weave", "weave_type": "plain", "strands": "ab-|cd", "n": "1"},
+        "plain weave ab-|cd-": {"type":"weave", "weave_type": "plain", "strands": "ab-|cd-", "n": "1"},
         "basket weave ab|cd": {"type":"weave", "weave_type": "basket", "strands": "ab|cd", "n": "2"},
+        "basket weave ab|cd 3": {"type":"weave", "weave_type": "basket", "strands": "ab|cd", "n": "3"},
         "twill weave ab|cd": {"type":"weave", "weave_type": "twill", "strands": "ab|cd", "n": "2"},
-        "basket weave ab|cd-": {"type":"weave", "weave_type": "basket", "strands": "ab|cd-", "n": "3"},
-        "twill weave ab|cd-": {"type":"weave", "weave_type": "twill", "strands": "ab|cd-", "n": "3"},
+        "twill weave ab|cd 3": {"type":"weave", "weave_type": "twill", "strands": "ab|cd", "n": "3"},
+        "twill weave ab|cd 1,2": {"type":"weave", "weave_type": "twill", "strands": "ab|cd", "n": "1,2"},
+        "twill weave ab|cd 1,2,2,1": {"type":"weave", "weave_type": "twill", "strands": "ab|cd", "n": "1,2,2,1"},
+        "basket weave ab-|cd": {"type":"weave", "weave_type": "basket", "strands": "ab-|cd", "n": "3"},
+        "twill weave ab-|cd": {"type":"weave", "weave_type": "twill", "strands": "ab-|cd", "n": "3"},
+        "basket weave ab-|cd-": {"type":"weave", "weave_type": "basket", "strands": "ab-|cd-", "n": "3"},
+        "twill weave ab-|cd-": {"type":"weave", "weave_type": "twill", "strands": "ab-|cd-", "n": "3"},
         # "laves 4.8.8": {"type":"tiling", "tiling_type": "laves", "code": "4.8.8"},
         "crosses 4": {"type":"tiling", "tiling_type": "crosses", "n": 4},
         "square-slice 4": {"type":"tiling", "tiling_type": "square-slice", "n": 4},
@@ -708,8 +729,15 @@ def setup_tilings_dictionary():
       5: {
         "square-colouring 5": {"type":"tiling", "tiling_type": "square-colouring", "n": 5},
         "crosses 5": {"type":"tiling", "tiling_type": "crosses", "n": 5},
+        "plain weave abc|de": {"type":"weave", "weave_type": "plain", "strands": "abc|de", "n": "1"},
+        "plain weave abc-|de": {"type":"weave", "weave_type": "plain", "strands": "abc-|de", "n": "1"},
+        "plain weave abc-|de-": {"type":"weave", "weave_type": "plain", "strands": "abc-|de-", "n": "1"},
         "twill weave abc|de": {"type":"weave", "weave_type": "twill", "strands": "abc|de", "n": "3"},
         "twill weave abc|de-": {"type":"weave", "weave_type": "twill", "strands": "abc|de-", "n": "3"},
+        "twill weave abc-|de-": {"type":"weave", "weave_type": "twill", "strands": "abc-|de-", "n": "3"},
+        "basket weave abc|de": {"type":"weave", "weave_type": "basket", "strands": "abc|de", "n": "3"},
+        "basket weave abc|de-": {"type":"weave", "weave_type": "basket", "strands": "abc|de-", "n": "3"},
+        "basket weave abc-|de-": {"type":"weave", "weave_type": "basket", "strands": "abc-|de-", "n": "3"},
         "hex-colouring 5": {"type":"tiling", "tiling_type": "hex-colouring", "n": 5},
         "hex-slice 5": {"type":"tiling", "tiling_type": "hex-slice", "n": 5},
         "square-slice 5": {"type":"tiling", "tiling_type": "square-slice", "n": 5},
@@ -721,10 +749,15 @@ def setup_tilings_dictionary():
         "laves 3.3.3.3.6": {"type":"tiling", "tiling_type": "laves", "code": "3.3.3.3.6"},
         # "laves 3.4.6.4": {"type":"tiling", "tiling_type": "laves", "code": "3.4.6.4"},
         "laves 3.12.12": {"type":"tiling", "tiling_type": "laves", "code": "3.12.12"},
+        "plain weave abc|def": {"type":"weave", "weave_type": "plain", "strands": "abc|def", "n": "1"},
+        "plain weave abc-|def": {"type":"weave", "weave_type": "plain", "strands": "abc-|def", "n": "1"},
+        "plain weave abc-|def-": {"type":"weave", "weave_type": "plain", "strands": "abc-|def-", "n": "1"},
         "basket weave abc|def": {"type":"weave", "weave_type": "basket", "strands": "abc|def", "n": "3"},
         "twill weave abc|def": {"type":"weave", "weave_type": "twill", "strands": "abc|def", "n": "3"},
-        "basket weave abc|def-": {"type":"weave", "weave_type": "basket", "strands": "abc|def-", "n": "4"},
-        "twill weave abc|def-": {"type":"weave", "weave_type": "twill", "strands": "abc|def-", "n": "4"},
+        "basket weave abc-|def": {"type":"weave", "weave_type": "basket", "strands": "abc-|def", "n": "3"},
+        "twill weave abc-|def": {"type":"weave", "weave_type": "twill", "strands": "abc-|def", "n": "3"},
+        "basket weave abc-|def-": {"type":"weave", "weave_type": "basket", "strands": "abc-|def-", "n": "4"},
+        "twill weave abc-|def-": {"type":"weave", "weave_type": "twill", "strands": "abc-|def-", "n": "4"},
         "archimedean 3.3.4.3.4": {"type":"tiling", "tiling_type": "archimedean", "code": "3.3.4.3.4"},
         "archimedean 3.4.6.4": {"type":"tiling", "tiling_type": "archimedean", "code": "3.4.6.4"},
         "archimedean 4.6.12": {"type":"tiling", "tiling_type": "archimedean", "code": "4.6.12"},
@@ -735,15 +768,28 @@ def setup_tilings_dictionary():
         "hex-colouring 7": {"type":"tiling", "tiling_type": "hex-colouring", "n": 7},
         "crosses 7": {"type":"tiling", "tiling_type": "crosses", "n": 7},
         "hex-dissection 7": {"type":"tiling", "tiling_type": "hex-dissection", "n": 7},
-        "twill weave abcd|efg": {"type":"weave", "weave_type": "twill", "strands": "abcd|defg", "n": "4"},
-        "twill weave abcd|efg-": {"type":"weave", "weave_type": "twill", "strands": "abcd|defg-", "n": "4"},
+        "plain weave abcd|efg": {"type":"weave", "weave_type": "plain", "strands": "abcd|efg", "n": "1"},
+        "plain weave abcd|efg-": {"type":"weave", "weave_type": "plain", "strands": "abcd|efg-", "n": "1"},
+        "plain weave abcd-|efg-": {"type":"weave", "weave_type": "plain", "strands": "abcd-|efg-", "n": "1"},
+        "basket weave abcd|efg": {"type":"weave", "weave_type": "basket", "strands": "abcd|efg", "n": "3"},
+        "basket weave abcd|efg-": {"type":"weave", "weave_type": "basket", "strands": "abcd|efg-", "n": "4"},
+        "basket weave abcd|efg- 2": {"type":"weave", "weave_type": "basket", "strands": "abcd|efg-", "n": "2"},
+        "twill weave abcd|efg": {"type":"weave", "weave_type": "twill", "strands": "abcd|efg", "n": "3"},
+        "twill weave abcd|efg-": {"type":"weave", "weave_type": "twill", "strands": "abcd|efg-", "n": "4"},
+        "twill weave abcd|efg- 2": {"type":"weave", "weave_type": "twill", "strands": "abcd|efg-", "n": "2"},
         "square-colouring 7": {"type":"tiling", "tiling_type": "square-colouring", "n": 7},
         "hex-slice 7": {"type":"tiling", "tiling_type": "hex-slice", "n": 7},
         "square-slice 7": {"type":"tiling", "tiling_type": "square-slice", "n": 7},
       },
       8: {
         "square-slice 8": {"type":"tiling", "tiling_type": "square-slice", "n": 8},
+        "plain weave abcd|efgh": {"type":"weave", "weave_type": "plain", "strands": "abcd|efgh", "n": "1"},
+        "plain weave abcd-|efgh": {"type":"weave", "weave_type": "plain", "strands": "abcd-|efgh", "n": "1"},
+        "plain weave abcd-|efgh-": {"type":"weave", "weave_type": "plain", "strands": "abcd-|efgh-", "n": "1"},
         "basket weave abcd|efgh": {"type":"weave", "weave_type": "basket", "strands": "abcd|efgh", "n": "4"},
+        "basket weave abcd|efgh 2": {"type":"weave", "weave_type": "basket", "strands": "abcd|efgh", "n": "2"},
+        "twill weave abcd|efgh": {"type":"weave", "weave_type": "twill", "strands": "abcd|efgh", "n": "4"},
+        "twill weave abcd|efgh 2": {"type":"weave", "weave_type": "twill", "strands": "abcd|efgh", "n": "2"},
         "square-colouring 8": {"type":"tiling", "tiling_type": "square-colouring", "n": 8},
         "hex-slice 8": {"type":"tiling", "tiling_type": "hex-slice", "n": 8},
         "hex-colouring 8": {"type":"tiling", "tiling_type": "hex-colouring", "n": 8},
@@ -755,19 +801,31 @@ def setup_tilings_dictionary():
         "hex-colouring 9": {"type":"tiling", "tiling_type": "hex-colouring", "n": 9},
         "square-slice 9": {"type":"tiling", "tiling_type": "square-slice", "n": 9},
         "archimedean 3.3.3.3.6": {"type":"tiling", "tiling_type": "archimedean", "code": "3.3.3.3.6"},
+        "plain weave abcde|fghi": {"type":"weave", "weave_type": "plain", "strands": "abcde|fghi", "n": "1"},
+        "plain weave abcde-|fghi": {"type":"weave", "weave_type": "plain", "strands": "abcde-|fghi", "n": "1"},
+        "plain weave abcde-|fghi-": {"type":"weave", "weave_type": "plain", "strands": "abcde-|fghi-", "n": "1"},
       },
       10: {
         "hex-slice 10": {"type":"tiling", "tiling_type": "hex-slice", "n": 10},
         "square-slice 10": {"type":"tiling", "tiling_type": "square-slice", "n": 10},
+        "plain weave abcde|fghij": {"type":"weave", "weave_type": "plain", "strands": "abcde|fghij", "n": "1"},
+        "plain weave abcde-|fghij": {"type":"weave", "weave_type": "plain", "strands": "abcde-|fghij", "n": "1"},
+        "plain weave abcde-|fghij-": {"type":"weave", "weave_type": "plain", "strands": "abcde-|fghij-", "n": "1"},
       },
       11: {
         "hex-slice 11": {"type":"tiling", "tiling_type": "hex-slice", "n": 11},
         "square-slice 11": {"type":"tiling", "tiling_type": "square-slice", "n": 11},
+        "plain weave abcdef|ghijk": {"type":"weave", "weave_type": "plain", "strands": "abcdef|ghijk", "n": "1"},
+        "plain weave abcdef|ghijk-": {"type":"weave", "weave_type": "plain", "strands": "abcdef|ghijk-", "n": "1"},
+        "plain weave abcdef-|ghijk-": {"type":"weave", "weave_type": "plain", "strands": "abcdef-|ghijk-", "n": "1"},
       },
       12: {
         "hex-slice 12": {"type":"tiling", "tiling_type": "hex-slice", "n": 12},
         # "laves 4.6.12": {"type":"tiling", "tiling_type": "laves", "code": "4.6.12"},
         "square-slice 12": {"type":"tiling", "tiling_type": "square-slice", "n": 12},
+        "plain weave abcdef|ghijkl": {"type":"weave", "weave_type": "plain", "strands": "abcdef|ghijkl", "n": "1"},
+        "plain weave abcdef-|ghijkl": {"type":"weave", "weave_type": "plain", "strands": "abcdef-|ghijkl", "n": "1"},
+        "plain weave abcdef-|ghijkl-": {"type":"weave", "weave_type": "plain", "strands": "abcdef-|ghijkl-", "n": "1"},
       },
     }
     return (tilings_by_n,)
