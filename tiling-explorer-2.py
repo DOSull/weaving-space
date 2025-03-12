@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.12-21:15")
+        mo.md("v2025.03.13-11:45")
     ]).center()
     return
 
