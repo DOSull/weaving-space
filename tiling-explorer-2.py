@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.19"
+__generated_with = "0.11.13"
 app = marimo.App(
     width="medium",
     app_title="MapWeaver",
@@ -13,7 +13,7 @@ app = marimo.App(
 @app.cell(hide_code=True)
 def _(centred, mo):
     mo.vstack([
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.13-19:45</span>").style({'background-color':'rgba(255,255,255,0.5'}),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.13-21:45</span>").style({'background-color':'rgba(255,255,255,0.5'}),
         mo.image(src="mw.png").style(centred)
     ])
     return
@@ -159,6 +159,7 @@ def _(
     get_selected_colour_palettes,
     get_tile_ids,
     get_variables,
+    io,
     mo,
     wsp,
 ):
@@ -179,25 +180,18 @@ def _(
     _tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map(join_on_prototiles=False)
     _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), get_variables())}
     _tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
-    result = _tiled_map.render(legend=False, scheme="EqualInterval", figsize=(9, 6))
+    result = _tiled_map.render(legend=False, scheme="EqualInterval")
     tiling_map = False
 
-    result
+    # result
 
-    # Potential web map alternative
-    # _style_kwds = {"fillOpacity":1,"stroke":False}
-    # _tile_lyr = "CartoDB positron"
-    # for i, t in enumerate(get_tile_ids()):
-    #     if i == 0:
-    #         m = _tiled_map.map[_tiled_map.map.tile_id == t].explore(
-    #             column=variables.value[i], cmap=get_selected_colour_palettes()[i],
-    #             tooltip=False, style_kwds=_style_kwds, legend=False, tiles=_tile_lyr)
-    #     else:
-    #         _tiled_map.map[_tiled_map.map.tile_id == t].explore(m=m,
-    #             column=variables.value[i], cmap=get_selected_colour_palettes()[i],
-    #             tooltip=False, style_kwds=_style_kwds, legend=False)
-    # m
-    return result, tiling_map
+    # Possibly when it comes to saving as png
+    _buf = io.BytesIO()
+    result.savefig(_buf, pad_inches=0, bbox_inches="tight")
+    fig = mo.image(_buf)
+    _buf.close()
+    fig
+    return fig, result, tiling_map
 
 
 @app.cell(hide_code=True)
@@ -589,7 +583,7 @@ def _(get_selected_colour_palettes, mpl, num_tiles, view_settings):
                           show_prototile=view_settings["show_prototile"].value,
                           show_reg_prototile=view_settings["show_reg_prototile"].value,
                           show_ids=view_settings["show_ids"].value,
-                          cmap=cm, figsize=(4, 4), r_alpha=0.5)
+                          cmap=cm, figsize=(4.25, 4.25), r_alpha=0.5)
         if view_settings["show_scale"].value:
             plot.xaxis.set_visible(True)
             plot.yaxis.set_visible(False)
@@ -841,7 +835,14 @@ def _():
         "align-items": "center",
         "text-align": "center",
     }
-    return (centred,)
+    centred_100 = {
+        "display": "flex",
+        "width": "100%",
+        "justify-content": "center",
+        "align-items": "center",
+        "text-align": "center",
+    }
+    return centred, centred_100
 
 
 @app.cell(hide_code=True)
