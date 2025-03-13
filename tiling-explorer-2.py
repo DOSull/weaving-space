@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.13"
+__generated_with = "0.11.17"
 app = marimo.App(
     width="medium",
     app_title="MapWeaver",
@@ -13,7 +13,7 @@ app = marimo.App(
 def _(mo):
     mo.hstack([
         mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.13-11:45")
+        mo.md("v2025.03.13-15:15")
     ]).center()
     return
 
