@@ -95,7 +95,10 @@ class _TileGrid():
 
 
   def _get_area_to_tile(self, to_tile) -> geom.Polygon:
-    return gpd.GeoSeries(to_tile.union_all().minimum_rotated_rectangle)
+    tbb = self.tile.tiles.total_bounds
+    r = max(tbb[2] - tbb[0], tbb[3], tbb[1])
+    return gpd.GeoSeries(
+      to_tile.union_all().buffer(r).minimum_rotated_rectangle)
 
 
   def _get_extent(self) -> tuple[gpd.GeoSeries, geom.Point]:

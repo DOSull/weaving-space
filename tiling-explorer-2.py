@@ -1,20 +1,21 @@
 import marimo
 
-__generated_with = "0.11.17"
+__generated_with = "0.11.19"
 app = marimo.App(
     width="medium",
     app_title="MapWeaver",
     layout_file="layouts/tiling-explorer-2.grid.json",
+    css_file="",
     html_head_file="splash.html",
 )
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.hstack([
-        mo.md(f"# MapWeaver ~ tiled maps of complex data"),
-        mo.md("v2025.03.13-15:15")
-    ]).center()
+def _(centred, mo):
+    mo.vstack([
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.13-19:45</span>").style({'background-color':'rgba(255,255,255,0.5'}),
+        mo.image(src="mw.png").style(centred)
+    ])
     return
 
 
