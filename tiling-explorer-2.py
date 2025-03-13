@@ -13,7 +13,7 @@ app = marimo.App(
 @app.cell(hide_code=True)
 def _(centred, mo):
     mo.vstack([
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.13-22:15</span>").style({'background-color':'rgba(255,255,255,0.5'}),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.14-10:45</span>").style({'background-color':'rgba(255,255,255,0.5'}),
         mo.image(src="mw.png").style(centred)
     ])
     return
@@ -86,7 +86,7 @@ def read_gdf(
 ):
     _done = False
     _did_repairs = False
-    if type(get_input_data()) is str or len(get_input_data()) == 0:
+    if isinstance(get_input_data(), str) or len(get_input_data()) == 0:
         set_gdf(builtin_gdf)
     else:
         _old_gdf = get_gdf()
@@ -126,12 +126,42 @@ def read_gdf(
 
 @app.cell(hide_code=True)
 def upload_data(mo, set_input_data, tool_tip):
-    fb = mo.ui.file(filetypes=[".geojson", ".json"], 
+    _file_browser = mo.ui.file(filetypes=[".geojson", ".json"], 
                     on_change=set_input_data, label=f"Upload data")
-    _f = tool_tip(
-        fb, "Your data should be geospatial polygons - and currently only GeoJSON is readable.")
-    mo.md(f"{_f}").left()
-    return (fb,)
+    mo.md(f"{tool_tip(_file_browser, "Your data should be geospatial polygons - and currently only GeoJSON is readable.")}").left()
+    return
+
+
+@app.cell
+def _(mo):
+    download_type = mo.ui.dropdown(options=["GeoJSON", "GeoPackage"], value="GeoJSON")
+    mo.md(f"{download_type}")
+    return (download_type,)
+
+
+@app.cell
+def _(download_type, get_input_data, io, mo, tiled_map):
+    if isinstance(get_input_data(), str) or len(get_input_data()) == 0:
+        _src = get_input_data().split("/")[-1].split(".")[0]
+    else:
+        _src = get_input_data()[0].name.split(".")[0]
+    _src = _src + "-map-weaver-map"
+
+    if download_type.value == "GeoJSON":
+        _download_button = mo.download(data=tiled_map.map.to_json().encode('utf-8'), 
+                                       filename=f'{_src}.geojson', 
+                                       mimetype='text/plain', 
+                                       label='Download')
+    else:
+        with io.BytesIO() as _f:
+            tiled_map.map.to_file(_f, driver="GPKG", engine="fiona")
+            _download_button = mo.download(data=_f, 
+                                           filename=f'{_src}.gpkg', 
+                                           mimetype="application/geopackage+sqlite3",
+                                           label='Download')
+
+    mo.md(f'{_download_button}')
+    return
 
 
 @app.cell(hide_code=True)
@@ -159,14 +189,14 @@ def _(
     )
 
     tiling_map = True
-    _tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map(join_on_prototiles=False)
-    _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), get_variables())}
-    _tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
-    _result = _tiled_map.render(legend=False, scheme="EqualInterval")
+    tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map(join_on_prototiles=False)
+    tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), get_variables())}
+    tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
+    _result = tiled_map.render(legend=False, scheme="EqualInterval")
     tiling_map = False
 
     _result
-    return (tiling_map,)
+    return tiled_map, tiling_map
 
 
 @app.cell(hide_code=True)
