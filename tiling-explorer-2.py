@@ -2,7 +2,7 @@ import marimo
 
 __generated_with = "0.11.19"
 app = marimo.App(
-    width="medium",
+    width="full",
     app_title="MapWeaver",
     layout_file="layouts/tiling-explorer-2.grid.json",
     css_file="",
@@ -13,7 +13,7 @@ app = marimo.App(
 @app.cell(hide_code=True)
 def _(centred, mo):
     mo.vstack([
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.13-21:45</span>").style({'background-color':'rgba(255,255,255,0.5'}),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.13-22:15</span>").style({'background-color':'rgba(255,255,255,0.5'}),
         mo.image(src="mw.png").style(centred)
     ])
     return
@@ -46,7 +46,7 @@ def globals(get_colour_ramp, gpd, mo):
     return available_palettes, builtin_gdf, color_ramps, dummy_data_file
 
 
-@app.cell
+@app.cell(hide_code=True)
 def marimo_states(available_palettes, builtin_gdf, dummy_data_file, mo):
     get_input_data, set_input_data = mo.state(dummy_data_file)
     get_gdf, set_gdf = mo.state(builtin_gdf)
@@ -70,7 +70,7 @@ def marimo_states(available_palettes, builtin_gdf, dummy_data_file, mo):
     )
 
 
-@app.cell
+@app.cell(hide_code=True)
 def read_gdf(
     builtin_gdf,
     get_gdf,
@@ -91,16 +91,6 @@ def read_gdf(
     else:
         _old_gdf = get_gdf()
         try:
-            # _data = get_input_data()[0].contents
-            # _geojson_dict = json.loads(io.BytesIO(_data).read())
-
-            # _crs = _geojson_dict["crs"]["properties"]["name"]
-            # if "CRS84" in _crs: _crs = "epsg:4326"
-            # _features = _geojson_dict["features"]
-            # _props = [p["properties"] for p in _features]
-            # _geoms = [get_shape(p["geometry"]["coordinates"], p["geometry"]["type"]) for p in _features]
-
-            # _new_gdf = gpd.GeoDataFrame(data=_props, geometry=_geoms, crs=_crs).to_crs(3857)
             _new_gdf = gpd.read_file(io.BytesIO(get_input_data()[0].contents).read().decode())
         except Exception as e:
             set_gdf(_old_gdf)
@@ -144,14 +134,7 @@ def upload_data(mo, set_input_data, tool_tip):
     return (fb,)
 
 
-@app.cell
-def _(mo, tool_tip):
-    show_data_layer = mo.ui.switch(False)
-    mo.md(f"{tool_tip(show_data_layer, "Show the data layer")}")
-    return (show_data_layer,)
-
-
-@app.cell
+@app.cell(hide_code=True)
 def _(
     centred,
     get_gdf,
@@ -159,7 +142,6 @@ def _(
     get_selected_colour_palettes,
     get_tile_ids,
     get_variables,
-    io,
     mo,
     wsp,
 ):
@@ -180,18 +162,11 @@ def _(
     _tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map(join_on_prototiles=False)
     _tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), get_variables())}
     _tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
-    result = _tiled_map.render(legend=False, scheme="EqualInterval")
+    _result = _tiled_map.render(legend=False, scheme="EqualInterval")
     tiling_map = False
 
-    # result
-
-    # Possibly when it comes to saving as png
-    _buf = io.BytesIO()
-    result.savefig(_buf, pad_inches=0, bbox_inches="tight")
-    fig = mo.image(_buf)
-    _buf.close()
-    fig
-    return fig, result, tiling_map
+    _result
+    return (tiling_map,)
 
 
 @app.cell(hide_code=True)
@@ -301,8 +276,15 @@ def set_spacing_limits(get_spacings, mo):
     return (spacing,)
 
 
+@app.cell
+def _(mo, tile_or_weave):
+    _str = "Tiling" if tile_or_weave.value == "tiling" else "Weave"
+    mo.md(f"### {_str} modifiers")
+    return
+
+
 @app.cell(hide_code=True)
-def _(mo):
+def tiling_modifier_ui_elements(mo):
     tile_rotate = mo.ui.slider(steps=[x for x in range(-90, 91, 1)], value=0, 
                                show_value=True, debounce=True)
     tile_scale_x = mo.ui.slider(steps=[x / 10 for x in range(10, 41)], value=1, 
@@ -345,7 +327,6 @@ def setup_tiling_modifiers(
     # mo.stop(tiling_map)
     if tile_or_weave.value == "tiling":
         _str = "\n".join([
-            f"### Tiling modifiers",
             f"#### Spacing {tool_tip(spacing, 'In units of the map CRS, the approximate dimension of the repeating group.')}",
             f"#### Rotate by {tool_tip(tile_rotate, "Rotate tiling (degrees). Note that the tile group is rotated before any skews are applied.")}",
             f"#### Scale left-right {tool_tip(tile_scale_x, "Scale in the x direction.")}",
@@ -356,7 +337,6 @@ def setup_tiling_modifiers(
             f"#### Tiles inset {tool_tip(t_inset, "Inset individual tiles (% spacing).")}"])
     else:
         _str = "\n".join([
-            f"### Weave modifiers",
             f"#### Spacing {tool_tip(spacing, 'In units of the map CRS, the distance between strand centre lines.')}",
             f"#### Rotate by {tool_tip(tile_rotate, "Rotate weave (degrees). Note that the weave is rotated before any skews are applied.")}",
             f"#### Scale left-right {tool_tip(tile_scale_x, "Scale in the x direction.")}",
@@ -369,7 +349,7 @@ def setup_tiling_modifiers(
 
 
 @app.cell(hide_code=True)
-def _(mo, num_tiles, tilings_by_n, tool_tip):
+def tiling_or_weave_chooser(mo, num_tiles, tilings_by_n, tool_tip):
     _options = list(set([v["type"] for v in tilings_by_n[num_tiles.value].values()]))
     tile_or_weave = mo.ui.dropdown(options=_options, value="tiling", label="#### Pick tiling or weave")
     mo.md(f"{tool_tip(tile_or_weave, "Choose tiling or a weave tiling")}")
@@ -377,7 +357,7 @@ def _(mo, num_tiles, tilings_by_n, tool_tip):
 
 
 @app.cell(hide_code=True)
-def _(mo, num_tiles, tile_or_weave, tilings_by_n, tool_tip):
+def tiling_type_chooser(mo, num_tiles, tile_or_weave, tilings_by_n, tool_tip):
     _type = tile_or_weave.value
     _options = [k for k, v in tilings_by_n[num_tiles.value].items() if v["type"] == _type]
 
@@ -389,7 +369,7 @@ def _(mo, num_tiles, tile_or_weave, tilings_by_n, tool_tip):
 
 
 @app.cell(hide_code=True)
-def _(get_modded_tile_unit, plot_tiles):
+def tiling_design_plot(get_modded_tile_unit, plot_tiles):
     plot_tiles(get_modded_tile_unit())
     return
 
@@ -442,7 +422,13 @@ def setup_chosen_tiling_options(
 
 
 @app.cell(hide_code=True)
-def _(mo, tile_or_weave, tile_spec, tool_tip, tooltips):
+def additional_tiling_options(
+    mo,
+    tile_or_weave,
+    tile_spec,
+    tool_tip,
+    tooltips,
+):
     # mo.stop(tiling_map)
     if tile_spec is not None:
         x = mo.md("\n".join(
@@ -476,9 +462,14 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, tool_tip, view_settings):
+def _(mo):
+    mo.md(f"### Design view options")
+    return
+
+
+@app.cell(hide_code=True)
+def design_view_ui_elements(mo, tool_tip, view_settings):
     mo.md(f"""
-    ### Design view options
     #### Show tile IDs {tool_tip(view_settings['show_ids'], 'Show the tiling element labels used to match tiles to variables in the map data.')}
     #### Show base tile {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the simple tile (usually a square or hexagon) which forms the basis of the pattern.')}
     #### Show vectors {tool_tip(view_settings['show_vectors'], 'Show the translations that map repeating tiles in the pattern onto one another.')}
