@@ -13,9 +13,9 @@ app = marimo.App(
 @app.cell(hide_code=True)
 def _(centred, mo):
     mo.vstack([
+        mo.image(src="mw.png").style(centred),
         mo.md(f"<span title='Weaving maps of complex data'>2025.03.14-10:45</span>").style({'background-color':'rgba(255,255,255,0.5'}),
-        mo.image(src="mw.png").style(centred)
-    ])
+    ]).left()
     return
 
 
