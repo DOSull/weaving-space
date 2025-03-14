@@ -14,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.14-10:45</span>").style({'background-color':'rgba(255,255,255,0.5'}),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.14-22:45</span>").style({'background-color':'rgba(255,255,255,0.5'}),
     ]).left()
     return
 
@@ -22,6 +22,7 @@ def _(centred, mo):
 @app.cell(hide_code=True)
 def module_imports():
     import io
+    import zipfile
     import json
     from PIL import Image
     import matplotlib as mpl
@@ -30,7 +31,7 @@ def module_imports():
     import geopandas as gpd
     from shapely import is_valid
     import weavingspace as wsp
-    return Image, gpd, io, is_valid, json, math, mpl, pd, wsp
+    return Image, gpd, io, is_valid, json, math, mpl, pd, wsp, zipfile
 
 
 @app.cell(hide_code=True)
@@ -133,14 +134,14 @@ def upload_data(mo, set_input_data, tool_tip):
 
 
 @app.cell
-def _(mo):
-    download_type = mo.ui.dropdown(options=["GeoJSON", "GeoPackage"], value="GeoJSON")
-    mo.md(f"{download_type}")
+def _(mo, tool_tip):
+    download_type = mo.ui.dropdown(options=["GeoJSON", "GeoPackage", "SVG", "PNG"], value="GeoJSON")
+    mo.md(f"{tool_tip(download_type, 'Set the file format for downloaded map data')}")
     return (download_type,)
 
 
 @app.cell
-def _(download_type, get_input_data, io, mo, tiled_map):
+def _(download_type, get_input_data, io, mo, result, tiled_map, tool_tip):
     if isinstance(get_input_data(), str) or len(get_input_data()) == 0:
         _src = get_input_data().split("/")[-1].split(".")[0]
     else:
@@ -152,15 +153,42 @@ def _(download_type, get_input_data, io, mo, tiled_map):
                                        filename=f'{_src}.geojson', 
                                        mimetype='text/plain', 
                                        label='Download')
-    else:
+    elif download_type.value == "GeoPackage":
         with io.BytesIO() as _f:
             tiled_map.map.to_file(_f, driver="GPKG", engine="fiona")
             _download_button = mo.download(data=_f, 
                                            filename=f'{_src}.gpkg', 
                                            mimetype="application/geopackage+sqlite3",
                                            label='Download')
+    elif download_type.value == "SVG":
+        with io.BytesIO() as _f:
+            result.savefig(_f, format="svg")
+            _download_button = mo.download(data=_f,
+                                           filename=f'{_src}.svg',
+                                           mimetype="image/svg+xml",
+                                           label="Download")
+    else:
+        with io.BytesIO() as _f:
+            result.savefig(_f, format="png", dpi=300)
+            _download_button = mo.download(data=_f,
+                                           filename=f'{_src}.png',
+                                           mimetype="image/png",
+                                           label="Download")
+    
+    # else:
+    #     _f = bytes()
+    #     # with io.BytesIO() as _f:
+    #     for id in pd.Series.unique(tiled_map.map["tile_id"]):
+    #         _layer = tiled_map.map[tiled_map.map.tile_id == id]
+    #         with io.BytesIO() as _fl:
+    #             _layer.to_file(_fl, layer=id, driver="GPKG", engine="fiona")
+    #             _f += _fl.getvalue()
+    #     _download_button = mo.download(data=_f,
+    #                                    filename=f'{_src}.gpkg',
+    #                                    mimetype="application/geopackage+sqlite3",
+    #                                    label='Download')
 
-    mo.md(f'{_download_button}')
+    mo.md(f'{tool_tip(_download_button, "Download the tiled map")}')
     return
 
 
@@ -192,11 +220,11 @@ def _(
     tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map(join_on_prototiles=False)
     tiled_map.variables = {k: v for k, v in zip(get_tile_ids(), get_variables())}
     tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
-    _result = tiled_map.render(legend=False, scheme="EqualInterval")
+    result = tiled_map.render(legend=False, scheme="EqualInterval")
     tiling_map = False
 
-    _result
-    return tiled_map, tiling_map
+    result
+    return result, tiled_map, tiling_map
 
 
 @app.cell(hide_code=True)
