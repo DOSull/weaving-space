@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.19"
+__generated_with = "0.11.9"
 app = marimo.App(
     width="full",
     app_title="MapWeaver",
@@ -14,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.16-13:40</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.18-10:45</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
     ])
     return
 
@@ -515,8 +515,9 @@ def setup_chosen_tiling_options(
                                label="#### Strand width",
                                show_value=True, 
                                debounce=True)
-        _over_under = mo.ui.text(value=tilings_by_n[num_tiles.value][family.value]["n"],
-                                 label="#### Over-under pattern")
+        if not "cube" in family.value:
+            _over_under = mo.ui.text(value=tilings_by_n[num_tiles.value][family.value]["n"],
+                                     label="#### Over-under pattern")
 
     if tile_or_weave.value == "tiling":
         if "slice" in family.value or "dissection" in family.value:
@@ -525,7 +526,7 @@ def setup_chosen_tiling_options(
         else:
             tile_spec = None
     else:
-        if "plain" in family.value:
+        if "plain" in family.value or "cube" in family.value:
             tile_spec = mo.ui.dictionary({"aspect": _aspect})
             tooltips = ["The width of the weave strands relative to strand spacing. A value of 1 will fill the map with no gaps. Progressively smaller values will leave 'holes' in the woven pattern and will eventually give the appearance of a cross hatch."]
         else:
@@ -817,6 +818,7 @@ def setup_tilings_dictionary():
         "hex-slice 2": {"type":"tiling", "tiling_type": "hex-slice", "n": 2},
       },
       3: {
+        # "cube weave a--|b--|c--": {"type": "weave", "weave_type": "cube", "strands": "a--|b--|c--"},
         "plain weave ab|c": {"type":"weave", "weave_type": "plain", "strands": "ab|c", "n": "1"},
         "plain weave ab-|c": {"type":"weave", "weave_type": "plain", "strands": "ab-|c", "n": "1"},
         "twill weave ab|c-": {"type":"weave", "weave_type": "twill", "strands": "ab|c-", "n": "2"},
@@ -878,6 +880,7 @@ def setup_tilings_dictionary():
         "laves 3.3.3.3.6": {"type":"tiling", "tiling_type": "laves", "code": "3.3.3.3.6"},
         # "laves 3.4.6.4": {"type":"tiling", "tiling_type": "laves", "code": "3.4.6.4"},
         "laves 3.12.12": {"type":"tiling", "tiling_type": "laves", "code": "3.12.12"},
+        # "cube weave a-b|c-d|e-f": {"type": "weave", "weave_type": "cube", "strands": "a-b|c-d|e-f"},
         "plain weave abc|def": {"type":"weave", "weave_type": "plain", "strands": "abc|def", "n": "1"},
         "plain weave abc-|def": {"type":"weave", "weave_type": "plain", "strands": "abc-|def", "n": "1"},
         "plain weave abc-|def-": {"type":"weave", "weave_type": "plain", "strands": "abc-|def-", "n": "1"},
@@ -924,7 +927,7 @@ def setup_tilings_dictionary():
         "hex-colouring 8": {"type":"tiling", "tiling_type": "hex-colouring", "n": 8},
       },
       9: {
-        # "cube weave abc|def|ghi": {"type":"weave", "weave_type": "cube", "strands": "abc|def|ghi"},
+        # "cube weave abc|def|ghi": {"type": "weave", "weave_type": "cube", "strands": "abc|def|ghi"},
         "hex-slice 9": {"type":"tiling", "tiling_type": "hex-slice", "n": 9},
         "square-colouring 9": {"type":"tiling", "tiling_type": "square-colouring", "n": 9},
         "hex-colouring 9": {"type":"tiling", "tiling_type": "hex-colouring", "n": 9},
