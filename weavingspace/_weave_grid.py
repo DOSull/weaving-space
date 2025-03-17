@@ -11,7 +11,6 @@ import shapely.geometry as geom
 import shapely.ops
 import shapely.wkt as wkt
 
-# import weavingspace.tiling_utils as tiling_utils
 from weavingspace import tiling_utils
 
 @dataclass
@@ -311,34 +310,8 @@ class WeaveGrid:
       w = np.round((xmax - xmin) / h_spacing) * h_spacing
     h = np.round((ymax - ymin) / self.spacing) * self.spacing
     if self.n_axes == 2:
-      return geom.Polygon([(-w/2, -h/2), (-w/2, h/2),
-                           (w/2, h/2), (w/2, -h/2)])
+      return geom.Polygon([(-w/2, -h/2), (-w/2,  h/2),
+                           ( w/2,  h/2), ( w/2, -h/2)])
     else:
-      return geom.Polygon([(w/4, -h/2), (-w/4, -h/2), (-w/2, 0),
-                           (-w/4, h/2), ( w/4, h/2), (w/2, 0)])
-
-
-  # THIS IS HERE FOR SAFE KEEPING... at various times the shapely.set_precision
-  # function causes havoc in this class, and the below has proven more stable
-  # Note that the more aggressive precision setting here might be relevant also
-  # def _gridify(self, shape: geom.Polygon, precision = 4) -> geom.Polygon:
-  #   """Returns polygon with coordinates at specified precision.
-    
-  #   IMPORTANT (and not understood...!!!). This local method seems to work 
-  #   better on the kinds of gridification required for the weave grid polygons 
-  #   to work... I have no idea why. It may relate to the reordering of 
-  #   coordinates that shapely.set_precision engages in... or... it might not. 
-  #   It clearly has something to do with floating point issues. I JUST DON'T 
-  #   KNOW...
-    
-  #   TODO: Figure this the hell out at some point!
-
-  #   Args:
-  #     shape (geom.Polygon): polygon to gridify.
-  #     precision (int): digits of precision. Defaults to 4.
-
-  #   Returns:
-  #     geom.Polygon: gridified polygon.
-  #   """
-  #   return wkt.loads(wkt.dumps(shape, rounding_precision = precision))
-  
+      return geom.Polygon([( w/4, -h/2), (-w/4, -h/2), (-w/2, 0),
+                           (-w/4,  h/2), ( w/4,  h/2), ( w/2, 0)])

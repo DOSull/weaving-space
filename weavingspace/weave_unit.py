@@ -22,15 +22,6 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import shapely.ops
 
-# import weavingspace.weave_matrices as weave_matrices
-# import weavingspace.tiling_utils as tiling_utils
-
-# from weavingspace._loom import Loom
-# from weavingspace._weave_grid import WeaveGrid
-
-# from weavingspace.tileable import TileShape
-# from weavingspace.tileable import Tileable
-
 from weavingspace import weave_matrices
 from weavingspace import tiling_utils
 
@@ -79,7 +70,7 @@ class WeaveUnit(Tileable):
       self.base_shape = TileShape.HEXAGON
       self._setup_triaxial_weave_unit()
       # this is experimental for now:
-      self._minimise_triaxial_weave_unit()
+      # self._minimise_triaxial_weave_unit()
     else:
       self.base_shape = TileShape.RECTANGLE
       self._setup_biaxial_weave_unit()
@@ -215,8 +206,11 @@ class WeaveUnit(Tileable):
     v_ij = [k for k, v in v_ij.items()][:12]
     combos = itertools.combinations(v_ij, 3)
     result = [c for c in combos 
-              if np.isclose(sum([x for x, y in c]), 0)
-            and np.isclose(sum([y for x, y in c]), 0)]
+              if not (tiling_utils.are_parallel(c[0], c[1]) or
+                      tiling_utils.are_parallel(c[1], c[2]) or
+                      tiling_utils.are_parallel(c[2], c[0]))] # no two parallel
+            #   if np.isclose(sum([x for x, y in c]), 0)
+            #  and np.isclose(sum([y for x, y in c]), 0)] # resultant (0, 0)
     result = sorted(result, 
                     key = lambda vecs: sum([dx**2 + dy**2 for dx, dy in vecs]))
     poly = tiling_utils.get_prototile_from_vectors(result[0][:3])
@@ -281,8 +275,8 @@ class WeaveUnit(Tileable):
     shift = (-tile.centroid.x, -tile.centroid.y) if loom.n_axes == 2 else (0, 0)
     tile = grid.get_tile_from_cells(tile)
     self.tiles = self._get_weave_tiles_gdf(weave_polys, strand_ids, shift)
-    self.prototile = gpd.GeoDataFrame(geometry = gpd.GeoSeries([
-      tiling_utils.get_clean_polygon(tile)]), crs = self.crs)
+    self.prototile = gpd.GeoDataFrame(
+      geometry = gpd.GeoSeries([tile]), crs = self.crs)
     # self.setup_vectors()
     return None
 

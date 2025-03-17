@@ -41,14 +41,6 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import matplotlib.pyplot as pyplot
 
-# from weavingspace.tileable import Tileable
-# from weavingspace.symmetry import Symmetries
-# from weavingspace.symmetry import Shape_Matcher
-# from weavingspace.topology_elements import Tile
-# from weavingspace.topology_elements import Vertex
-# from weavingspace.topology_elements import Edge
-# import weavingspace.tiling_utils as tiling_utils
-
 from weavingspace import Tileable
 from weavingspace import Symmetries
 from weavingspace import Transform
@@ -58,8 +50,15 @@ from weavingspace import Vertex
 from weavingspace import Edge
 from weavingspace import tiling_utils
 
-ALPHABET = string.ascii_letters.upper()
-alphabet = string.ascii_letters.lower()
+# all two letter combinations of the alphabet for labelling
+LABELS = \
+  list(string.ascii_letters.upper()) + \
+  [''.join(x) for x in 
+   itertools.combinations(list(string.ascii_letters.upper()), 2)]
+labels = \
+  list(string.ascii_letters.lower()) + \
+  [''.join(x) for x in 
+   itertools.combinations(list(string.ascii_letters.lower()), 2)]
 
 
 class Topology:
@@ -273,7 +272,7 @@ class Topology:
     and visualisation.
     """
     self._assign_vertex_base_IDs(True, False)
-    self._assign_vertex_base_IDs(False, True)
+    # self._assign_vertex_base_IDs(False, True)
     self._assign_edge_base_IDs()
 
   def _assign_vertex_base_IDs(self, first_pass:bool = True,
@@ -293,20 +292,28 @@ class Topology:
         finally assigned based on the lowest ID assigned in previous rounds. 
         Defaults to False.
     """
-    if first_pass:
-      for i, v in enumerate(self.vertices_in_tiles(self.tiles[:self.n_tiles])):
-        v.base_ID = set([i])
-    for tile in self.tiles:
-      for v, vb in zip(tile.corners, self.tiles[tile.base_ID].corners):
-        if v.base_ID == v.ID: # 1_000_000:
-          v.base_ID = set([x for x in vb.base_ID])
-        else:
-          v.base_ID = v.base_ID.union(vb.base_ID)
-    if last_pass:
-      for tile in self.tiles:
-        for v in tile.corners:
-          if isinstance(v.base_ID, set):
-            v.base_ID = min(v.base_ID)
+    for tile0 in self.tiles[:self.n_tiles]:
+      for v in tile0.get_corner_IDs():
+        self.points[v].base_ID = v
+    for t0 in self.tiles[:self.n_tiles]:
+      for t1 in self.tiles[self.n_tiles:]:
+        if t1.base_ID == t0.base_ID:
+          for v0, v1 in zip(t0.corners, t1.corners):
+            v1.base_ID = v0.base_ID
+    # if first_pass:
+    #   for i, v in enumerate(self.vertices_in_tiles(self.tiles[:self.n_tiles])):
+    #     v.base_ID = set([i])
+    # for tile in self.tiles:
+    #   for v, vb in zip(tile.corners, self.tiles[tile.base_ID].corners):
+    #     if v.base_ID == v.ID: # 1_000_000:
+    #       v.base_ID = set([x for x in vb.base_ID])
+    #     else:
+    #       v.base_ID = v.base_ID.union(vb.base_ID)
+    # if last_pass:
+    #   for tile in self.tiles:
+    #     for v in tile.corners:
+    #       if isinstance(v.base_ID, set):
+    #         v.base_ID = min(v.base_ID)
 
   def _assign_edge_base_IDs(self):
     """Assigns base_ID attribute of edges, based on the base_ID attributes of
@@ -573,9 +580,6 @@ class Topology:
     attribute. The process need only determine the classes for vertices
     in the core tileable.tiles, then assign those to all vertices by 
     matched base_ID.
-    
-    TODO: carefully consider here whether labelling only the tiling vertices
-    is the right thing to do or not...
     """
     if ignore_tile_id_labels:
       equivalent_vertices = defaultdict(set)
@@ -602,7 +606,7 @@ class Topology:
       # label vertices based on their transitivity class
       for v in self.points.values():
         if v.is_tiling_vertex:
-          v.label = ALPHABET[v.transitivity_class]
+          v.label = LABELS[v.transitivity_class]
     else:
       self.vertex_transitivity_classes = defaultdict(list)
       for i, v in self.points.items():
@@ -613,7 +617,7 @@ class Topology:
         self.vertex_transitivity_classes.values())
       for v in self.points.values():
         if v.is_tiling_vertex:
-          v.label = ALPHABET[v.transitivity_class]
+          v.label = LABELS[v.transitivity_class]
 
   def _find_edge_transitivity_classes(self, ignore_tile_id_labels:bool = True):
     """Finds edge transitivity classes by checking which edges align
@@ -647,7 +651,7 @@ class Topology:
         self.edge_transitivity_classes.values())
       # label edges based on their transitivity class
       for e in self.edges.values():
-        e.label = alphabet[e.transitivity_class]
+        e.label = labels[e.transitivity_class]
     else:
       self.edge_transitivity_classes = defaultdict(list)
       for e in self.edges.values():
@@ -657,7 +661,7 @@ class Topology:
       for i, eclass in enumerate(self.edge_transitivity_classes):
         for e in eclass:
           self.edges[e].transitivity_class = i
-          self.edges[e].label = alphabet[i]
+          self.edges[e].label = labels[i]
     
   def _match_geoms_under_transform(
       self, geom1:Union[Tile,Vertex,Edge], 
@@ -1099,7 +1103,7 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
       list[str]: corresponding list of edge labels.
     """
     AB_labels = [a + b for a, b in zip(vlabels, vlabels[1:] + vlabels[:1])]
-    letter = ALPHABET.index(min(list(vlabels)))
+    letter = LABELS.index(min(list(vlabels)))
     edge_labels = {}
     for AB_label in AB_labels:
       if not AB_label in edge_labels:
@@ -1108,7 +1112,7 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
           edge_labels[AB_label] = label + "-"
           edge_labels[AB_label[::-1]] = label + "+"
         else:
-          edge_labels[AB_label] = alphabet[letter]
+          edge_labels[AB_label] = labels[letter]
           letter = letter + 1
     return [edge_labels[i] for i in AB_labels]
 
@@ -1139,7 +1143,7 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
       uniques.add(v.label)
     for vi in sorted(vs):
       v = self.points[vi]
-      v.label = ALPHABET[sorted(uniques).index(v.label)]
+      v.label = LABELS[sorted(uniques).index(v.label)]
     # now copy to corresponding vertices in the rest of tiling
     for ti, t in enumerate(self.tiles):
       if ti >= self.n_tiles:
@@ -1164,7 +1168,7 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
         labelled.add(e.ID)
     for ei in sorted(labelled):
       e = self.edges[ei]
-      e.label = alphabet[sorted(uniques).index(e.label)]
+      e.label = labels[sorted(uniques).index(e.label)]
     # now copy to corresponding edges in the rest of tiling
     for ti, t in enumerate(self.tiles):
       if ti >= self.n_tiles:

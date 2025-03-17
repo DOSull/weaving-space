@@ -158,16 +158,16 @@ def rotate_preserving_order(polygon:geom.Polygon, angle:float,
 
 def geometry_matches(geom1:geom.Polygon, geom2:geom.Polygon):
   a, b = geom1.area, geom2.area
-  return bool(np.isclose(a, b, rtol = RESOLUTION * 100, atol = RESOLUTION * 100) and 
-    np.isclose(a, geom1.intersection(geom2).area, rtol = RESOLUTION * 100, atol=RESOLUTION * 100))
-  # return shapely.equals_exact(
-  #   geom1.normalize(), geom2.normalize(), RESOLUTION * 10)
+  return bool(
+    np.isclose(a, b, rtol = RESOLUTION * 100, atol = RESOLUTION * 100) and 
+    np.isclose(a, geom1.intersection(geom2).area, rtol = RESOLUTION * 100, 
+               atol=RESOLUTION * 100))
 
 
 def are_parallel(v1:tuple[float], v2:tuple[float]) -> bool:
   a1 = np.arctan2(v1[1], v1[0])
   a2 = np.arctan2(v2[1], v2[0])
-  return np.isclose(a1, a2) or np.isclose(np.abs(a1 - a2), np.pi)
+  return bool(np.isclose(a1, a2) or np.isclose(np.abs(a1 - a2), np.pi))
 
 
 def is_convex(shape:geom.Polygon) -> bool:
