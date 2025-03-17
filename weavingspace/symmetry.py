@@ -133,6 +133,8 @@ class Transform:
   def __str__(self) -> str:
     if self.transform_type == "rotation":
       return f"{self.transform_type} {self.angle:.1f}° POINT ({self.centre.x:.1f} {self.centre.y:.1f}) {tuple([np.round(x, 3) for x in self.transform])}"
+    elif self.transform_type == "translation":
+      return f"{self.transform_type} {self.translation} {tuple([np.round(x, 3) for x in self.transform])}"
     elif self.transform_type == "reflection":
       return f"{self.transform_type} {self.angle:.1f}° {tuple([np.round(x, 3) for x in self.transform])}"
     else:
@@ -196,8 +198,8 @@ class Transform:
                    fontsize = w / 20)
     return ax
 
-  def draw_reflection(self, ax:pyplot.Axes, w = 5, 
-                      mirror_length = 100, add_title = True) -> pyplot.Axes:
+  def draw_reflection(self, ax:pyplot.Axes, w:float = 5, 
+                      mirror_length = 100, add_title:bool = True) -> pyplot.Axes:
     x, y = self.centre.x, self.centre.y
     dx, dy = self.translation
     r = np.sqrt(self.translation[0] ** 2 + self.translation[1] ** 2) 
@@ -220,14 +222,13 @@ class Transform:
     return ax
 
   def draw_translation(self, ax:pyplot.Axes, c:geom.Point, 
-                       w:float = 5, add_title = True) -> pyplot.Axes:
+                       w:float = 5, add_title:bool = True) -> pyplot.Axes:
     gpd.GeoSeries([c]).plot(ax = ax, color = "b")
     pyplot.arrow(c.x, c.y, self.translation[0], self.translation[1], lw = 0.5,
                 width = w, fc = "b", ec = None, head_width = w * 6, zorder = 5)
     if add_title:
       w = ax.get_window_extent().width
-      rounded_tr = tuple([np.round(x, 1) for x in self.translation])
-      ax.set_title(f"{self.transform_type} {rounded_tr}",
+      ax.set_title(f"{self.transform_type} ({self.translation[0]:.1f}, {self.translation[1]:.1f})",
                    fontsize = w / 20)
     return ax
 
