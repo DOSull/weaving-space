@@ -22,6 +22,7 @@ import matplotlib.pyplot as pyplot
 
 import shapely.geometry as geom
 import shapely.affinity as affine
+import shapely.algorithms.polylabel as polylabel
 import shapely.ops
 
 # from weavingspace.tileable import Tileable
@@ -79,7 +80,7 @@ class _TileGrid():
     self.extent, self.centre = self._get_extent()
     self._at_centroids = at_centroids
     if self._at_centroids:
-      self.points = to_tile.centroid
+      self.points = to_tile.representative_point()
     else:
       self.points = self._get_grid()
     self.points.crs = self.tile.crs
@@ -260,12 +261,10 @@ class Tiling:
       print("""id_var is no longer required and will be deprecated soon.
             A temporary unique index attribute is added and removed when 
             generating the tiled map.""")
-    if as_icons:
-      self.grid = _TileGrid(self.tile_unit, gpd.GeoSeries(self.region_union), True)
-      # self.grid = _TileGrid(self.tile_unit, self.region.geometry, True)
-    else:
-      self.grid = _TileGrid(self.tile_unit, gpd.GeoSeries(self.region_union))
-      # self.grid = _TileGrid(self.tile_unit, self.region.geometry)
+    self.grid = _TileGrid(
+      self.tile_unit, 
+      self.region.geometry if as_icons else gpd.GeoSeries([self.region_union]), 
+      as_icons)
     self.tiles, self.prototiles = self.make_tiling()
     self.tiles.sindex
 
