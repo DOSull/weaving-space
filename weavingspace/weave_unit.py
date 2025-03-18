@@ -270,10 +270,15 @@ class WeaveUnit(Tileable):
     weave_polys = [p for p, b in zip(weave_polys, real_polys) if b]
     strand_ids = [id for id, b in zip(strand_ids, real_polys) if b]
     # note that the tile is important for the biaxial case, which may
-    # not be centred on (0, 0)
-    tile = tiling_utils.safe_union(gpd.GeoSeries(cells), as_polygon = True)
-    shift = (-tile.centroid.x, -tile.centroid.y) if loom.n_axes == 2 else (0, 0)
-    tile = grid.get_tile_from_cells(tile)
+    # also a little hard to understand why the behaviour is so differe in 
+    # the biaxial and triaxial cases; however below seems to work...
+    if loom.n_axes == 3:
+      tile = grid.get_tile_from_cells(cells)
+      shift = (0, 0)
+    else:
+      tile = tiling_utils.safe_union(gpd.GeoSeries(cells), as_polygon = True)
+      shift = (-tile.centroid.x, -tile.centroid.y)
+      tile = grid.get_tile_from_cells(tile)
     self.tiles = self._get_weave_tiles_gdf(weave_polys, strand_ids, shift)
     self.prototile = gpd.GeoDataFrame(
       geometry = gpd.GeoSeries([tile]), crs = self.crs)
@@ -302,22 +307,27 @@ class WeaveUnit(Tileable):
       geometry = gpd.GeoSeries([affine.translate(p, offset[0], offset[1])
                                 for p in polys]))
     weave = weave[weave.tile_id != "-"]
+    weave.geometry = gpd.GeoSeries(
+      [tiling_utils.get_clean_polygon(p) for p in weave.geometry])
     
     # some buffering is required if aspect is 1 to safely dissolve and
     # explode weave unit tiles that meet at corners
     if self.aspect == 1:
       # grow for dissolve
       weave.geometry = weave.geometry.buffer(
-        self.spacing * tiling_utils.RESOLUTION, 
+        # self.spacing * tiling_utils.RESOLUTION, 
+        tiling_utils.RESOLUTION, 
         join_style = 2, cap_style = 3)
       weave = weave.dissolve(by = "tile_id", as_index = False)
       # shrink by more to explode into separate polygons
       weave.geometry = weave.geometry.buffer(
-        -2 * self.spacing * tiling_utils.RESOLUTION, 
+        # -2 * self.spacing * tiling_utils.RESOLUTION, 
+        -2 * tiling_utils.RESOLUTION, 
         join_style = 2, cap_style = 3)
       weave = weave.explode(ignore_index = True)
       weave.geometry = weave.geometry.buffer(
-        self.spacing * tiling_utils.RESOLUTION, 
+        # self.spacing * tiling_utils.RESOLUTION, 
+        tiling_utils.RESOLUTION, 
         join_style = 2, cap_style = 3)
     else: # aspect < 1 is fine without buffering
       weave = weave.dissolve(by = "tile_id", as_index = False)

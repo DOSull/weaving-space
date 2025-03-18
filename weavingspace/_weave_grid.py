@@ -287,7 +287,8 @@ class WeaveGrid:
     return all_polys
 
 
-  def get_tile_from_cells(self, approx_tile:geom.Polygon) -> geom.Polygon:
+  def get_tile_from_cells(
+      self, approx_tile:Union[geom.Polygon,list[geom.Polygon]]) -> geom.Polygon:
     """Returns a rectangle or hexagon derived from the bounds of the
     supplied approximation to a tile.
 
@@ -302,13 +303,21 @@ class WeaveGrid:
     Returns:
       geom.Polygon (geom.Polygon): rectangle or hexagon geom.Polygon.
     """
-    xmin, ymin, xmax, ymax = approx_tile.bounds
+    if isinstance(approx_tile, list):
+      xmin, ymin, xmax, ymax = \
+        1000_000_000, 1000_000_000, -1000_000_000, -1000_000_000
+      for p in approx_tile:
+        xmn, ymn, xmx, ymx = p.bounds
+        xmin, ymin, xmax, ymax = \
+          min(xmin, xmn), min(ymin, ymn), max(xmx, xmax), max(ymx, ymax)
+    else:
+      xmin, ymin, xmax, ymax = approx_tile.bounds
     if self.n_axes == 2:
-      w = np.round((xmax - xmin) / self.spacing) * self.spacing
+      w = (xmax - xmin) / self.spacing * self.spacing
     else:
       h_spacing = self.spacing * 2 / np.sqrt(3)
-      w = np.round((xmax - xmin) / h_spacing) * h_spacing
-    h = np.round((ymax - ymin) / self.spacing) * self.spacing
+      w = (xmax - xmin) / h_spacing * h_spacing
+    h = (ymax - ymin) / self.spacing * self.spacing
     if self.n_axes == 2:
       return geom.Polygon([(-w/2, -h/2), (-w/2,  h/2),
                            ( w/2,  h/2), ( w/2, -h/2)])
