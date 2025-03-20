@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.21"
+__generated_with = "0.11.19"
 app = marimo.App(
     width="full",
     app_title="MapWeaver",
@@ -14,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.18</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.21-08:00</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
     ])
     return
 
@@ -187,8 +187,10 @@ def _(
     mo,
     result,
     tiled_map,
+    tiling_map,
     tool_tip,
 ):
+    mo.stop(tiling_map)
     if isinstance(get_input_data(), str) or len(get_input_data()) == 0:
         _fname = f"{Path(get_input_data()).with_suffix('').stem}-map-weaver-map"
     else:
@@ -226,39 +228,20 @@ def _(
     return
 
 
-@app.cell(hide_code=True)
-def _(
-    centred,
-    get_gdf,
-    get_modded_tile_unit,
-    get_selected_colour_palettes,
-    get_tile_ids,
-    get_variables,
-    mo,
-    wsp,
-):
-    # spinner for while we wait for the tiling to complete
-    mo.output.replace(
-        mo.vstack(
-            [
-                mo.md("## Making tiled map..."),
-                mo.md("### This might take a while"),
-                mo.status.spinner(),
-                mo.md(
-                    "During initialisation ignore messages about missing modules"
-                ),
-            ]
-        ).style(centred)
-    )
+@app.cell
+def _(get_gdf, get_modded_tile_unit, wsp):
     tiling_map = True # flag to block some other cells (potentially...)
     tiled_map = wsp.Tiling(get_modded_tile_unit(), get_gdf()).get_tiled_map(join_on_prototiles=False)
+    tiling_map = False # stop blocking other cells
+    return tiled_map, tiling_map
+
+
+@app.cell(hide_code=True)
+def _(get_selected_colour_palettes, get_tile_ids, get_variables, tiled_map):
     tiled_map.variables =  {k: v for k, v in zip(get_tile_ids(),  get_variables())}
     tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
-    result = tiled_map.render(legend=False, scheme="EqualInterval")
-    tiling_map = False # stop blocking other cells
-
-    result
-    return result, tiled_map, tiling_map
+    tiled_map.render(legend=False, scheme="EqualInterval")
+    return
 
 
 @app.cell(hide_code=True)
@@ -316,7 +299,9 @@ def build_variable_and_palette_dropdowns(
     set_palettes,
     set_reversed,
     set_variables,
+    tiling_map,
 ):
+    mo.stop(tiling_map)
     if num_tiles.value < len(get_variables()):
         set_variables(get_variables()[:num_tiles.value])
     elif num_tiles.value > len(get_variables()):
@@ -348,7 +333,6 @@ def build_var_palette_mapping(
     tool_tip,
     variables,
 ):
-    # mo.stop(tiling_map)
     _cols = [pal.value + ("_r" if rev.value else "") for pal, rev in zip(pals, rev_pals)]
     mo.md("\n".join([
         "&nbsp;&nbsp;".join([f"#### Tiles `{tile_id}`",
@@ -435,9 +419,10 @@ def setup_tiling_modifiers(
     tile_scale_y,
     tile_skew_x,
     tile_skew_y,
+    tiling_map,
     tool_tip,
 ):
-    # mo.stop(tiling_map)
+    mo.stop(tiling_map)
     if tile_or_weave.value == "tiling":
         _str = f"""
             #### Spacing {tool_tip(spacing, 'In units of the map CRS, the approximate dimension of the repeating group.')}
@@ -546,10 +531,11 @@ def additional_tiling_options(
     mo,
     tile_or_weave,
     tile_spec,
+    tiling_map,
     tool_tip,
     tooltips,
 ):
-    # mo.stop(tiling_map)
+    mo.stop(tiling_map)
     if tile_spec is None:
         _show_options = mo.md(f"#### No {tile_or_weave.value} options to set")
     else:
