@@ -14,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.23-15:15</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.23</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
     ])
     return
 
@@ -52,7 +52,8 @@ def globals(CMAPS_DIVERGING, CMAPS_SEQUENTIAL, get_colour_ramp, gpd):
     ok_message = "STATUS All good!"
     dummy_data_file = "https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json"
     builtin_gdf = gpd.read_file(dummy_data_file, engine="fiona")
-    available_palettes = [pal for pal in CMAPS_SEQUENTIAL + CMAPS_DIVERGING if pal[-2:] != "_r"]
+    available_palettes = [pal for pal in CMAPS_SEQUENTIAL + CMAPS_DIVERGING if pal[-2:] != "_r" and 
+                         pal not in ["berlin", "managua", "vanimo"]] # these don't seem to be in MPL3.8.4
     # make a bunch of colour ramps and save them in a dictionary so we only
     # have to make them at notebook initialisation
     color_ramps = {k: get_colour_ramp(k) 
