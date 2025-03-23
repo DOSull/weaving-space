@@ -286,6 +286,12 @@ def get_clean_polygon(
   """
   if isinstance(shape, geom.MultiPolygon):
     return geom.MultiPolygon([get_clean_polygon(p) for p in shape.geoms])
+  elif isinstance(shape, geom.GeometryCollection):
+    elements = [p for p in shape.geoms if isinstance(p, geom.Polygon)]
+    if len(elements) > 1:
+      return get_clean_polygon(geom.MultiPolygon(elements))
+    else:
+      return get_clean_polygon(elements[0])
   else:
     corners = get_corners(shape, repeat_first = False)
     # first remove any 'near neighbour' corners
@@ -454,7 +460,11 @@ def in_circle(shape:geom.Polygon) -> geom.Polygon:
 
 
 def get_apothem_length(shape:geom.Polygon) -> float:
-  return 2 * shape.area / geom.LineString(shape.exterior.coords).length
+  if is_regular_polygon(shape):
+    return 2 * shape.area / geom.LineString(shape.exterior.coords).length
+  else:
+    c = polylabel.polylabel(shape, RESOLUTION)
+    return min([c.distance(e) for e in get_sides(shape)])
 
 
 def ensure_cw(shape:geom.Polygon) -> geom.Polygon:
@@ -719,7 +729,7 @@ def get_collapse_distance(geometry:geom.Polygon) -> float:
   Returns:
     float: its collapse distance.
   """
-  if is_convex(geometry):
+  if is_regular_polygon(geometry):
     return get_apothem_length(geometry)
   radius = np.sqrt(geometry.area / np.pi)
   lower = 0

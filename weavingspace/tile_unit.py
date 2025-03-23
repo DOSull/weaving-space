@@ -207,7 +207,8 @@ class TileUnit(Tileable):
       bandwidths = [np.sqrt(bw) for bw in bandwidths]
       distances = np.cumsum(bandwidths)
       # get the negative buffer distance that will 'collapse' the polygon
-      radius = tiling_utils.get_collapse_distance(polygon)
+      # radius = tiling_utils.get_collapse_distance(polygon)
+      radius = tiling_utils.get_apothem_length(polygon)
       distances = distances * radius / distances[-1]
       nested_polys = [polygon.buffer(-d, join_style = 2, cap_style = 3) 
                       for d in distances]
@@ -237,7 +238,8 @@ class TileUnit(Tileable):
     """
     inset_tile = \
       self.regularised_prototile.loc[0, "geometry"].buffer(-d, join_style = 2, cap_style = 3)
-    new_tiles = [inset_tile.intersection(e) for e in self.tiles.geometry]
+    new_tiles = [tiling_utils.get_clean_polygon(inset_tile.intersection(e)) 
+                 for e in self.tiles.geometry]
     result = copy.deepcopy(self)
     result.tiles.geometry = gpd.GeoSeries(new_tiles)
     return result
