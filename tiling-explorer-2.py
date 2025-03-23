@@ -14,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.21-08:00</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.23-15:15</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
     ])
     return
 
@@ -23,27 +23,36 @@ def _(centred, mo):
 def module_imports():
     import io                     # for in-memory loading of inputs and outputs
     from pathlib import Path
+    from typing import Union
     import matplotlib as mpl
     import math
     import pandas as pd
     import geopandas as gpd
     from shapely import is_valid
     import weavingspace as wsp
-    return Path, gpd, io, is_valid, math, mpl, pd, wsp
+    from weavingspace import CMAPS_SEQUENTIAL
+    from weavingspace import CMAPS_DIVERGING
+    return (
+        CMAPS_DIVERGING,
+        CMAPS_SEQUENTIAL,
+        Path,
+        Union,
+        gpd,
+        io,
+        is_valid,
+        math,
+        mpl,
+        pd,
+        wsp,
+    )
 
 
 @app.cell(hide_code=True)
-def globals(get_colour_ramp, gpd):
+def globals(CMAPS_DIVERGING, CMAPS_SEQUENTIAL, get_colour_ramp, gpd):
     ok_message = "STATUS All good!"
     dummy_data_file = "https://raw.githubusercontent.com/DOSull/weaving-space/refs/heads/main/examples/data/dummy-data.json"
     builtin_gdf = gpd.read_file(dummy_data_file, engine="fiona")
-    available_palettes = [
-        'Reds', 'Greys', 'Blues', 'Oranges', 'Greens', 'Purples', # plain sequential Brewers 
-        'YlOrRd', 'YlGnBu', 'RdPu', 'PuBu',                       # multihue sequential Brewers
-        'viridis', 'plasma', 'magma', 'cividis',                  # viridis
-        'PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu',           # diverging around white  
-        'RdYlBu', 'RdYlGn', 'Spectral'                            # diverging around yellow
-    ]
+    available_palettes = [pal for pal in CMAPS_SEQUENTIAL + CMAPS_DIVERGING if pal[-2:] != "_r"]
     # make a bunch of colour ramps and save them in a dictionary so we only
     # have to make them at notebook initialisation
     color_ramps = {k: get_colour_ramp(k) 
@@ -237,11 +246,12 @@ def _(get_gdf, get_modded_tile_unit, wsp):
 
 
 @app.cell(hide_code=True)
-def _(get_selected_colour_palettes, get_tile_ids, get_variables, tiled_map):
-    tiled_map.variables =  {k: v for k, v in zip(get_tile_ids(),  get_variables())}
-    tiled_map.colourmaps = {k: v for k, v in zip(get_variables(), get_selected_colour_palettes())}
-    tiled_map.render(legend=False, scheme="EqualInterval")
-    return
+def _(get_selected_colour_palettes, get_variables, tiled_map):
+    tiled_map.vars_to_map = get_variables()
+    tiled_map.colors_to_use = get_selected_colour_palettes()
+    result = tiled_map.render(legend=False, scheme="EqualInterval")
+    result
+    return (result,)
 
 
 @app.cell(hide_code=True)
@@ -601,7 +611,10 @@ def _(
     tilings_by_n,
     wsp,
 ):
-    def get_base_tile_unit():
+    def get_base_tile_unit() -> wsp.Tileable:
+        """
+        Returns a Tileable object based on the current configuration of the app UI
+        """
         # call TileUnit or WeaveUnit with appropriate settings
         spec = tilings_by_n[num_tiles.value][family.value]
         if tile_or_weave.value == "tiling":
@@ -643,6 +656,10 @@ def _(
     tile_spec,
 ):
     def get_modded_tile_unit():
+        """
+        Returns a Tileable object based on the current configuration of the app UI
+        including any modifications (rotations, skews, scaling etc.)
+        """
         # make any requested modifications to the tile or weave unit
         if tile_or_weave.value == "tiling":
             return get_base_tile_unit() \
@@ -661,8 +678,12 @@ def _(
 
 
 @app.cell(hide_code=True)
-def _():
-    def get_over_under(pattern):
+def _(Union):
+    def get_over_under(pattern:str) -> Union[int,tuple[int]]:
+        """
+        Returns either an integer or tuple of integers of even length 
+        based on the supplied comma-separated string of integer values
+        """
         # convert string over under pattern to tuple[int]
         # if any invalid characters in string return a useful default
         if any([not c in "0123456789," for c in pattern]): return (2, 2)
@@ -677,8 +698,11 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(get_selected_colour_palettes, mpl, num_tiles, view_settings):
-    def plot_tiles(tiles):
+def _(get_selected_colour_palettes, mpl, num_tiles, view_settings, wsp):
+    def plot_tiles(tiles:wsp.Tileable) -> mpl.axis:
+        """
+        Returns a matplotlib axis with the Tileable supplied plotted on it
+        """
         cols = [mpl.colormaps.get(p)(2/3) for p in get_selected_colour_palettes()]
         while len(cols) < num_tiles.value:
             cols = cols + ["#ffffff00"]
@@ -701,14 +725,22 @@ def _(get_selected_colour_palettes, mpl, num_tiles, view_settings):
 
 @app.cell(hide_code=True)
 def _(get_gdf, get_numeric_variables):
-    def get_tile_ids():
+    def get_tile_ids() -> list[str]:
+        """
+        Returns a list of lower case letters starting ['a', 'b', ...] length limited
+        by the number of available numeric variables in the data
+        """
         return list("abcdefghijkl")[:len(get_numeric_variables(get_gdf()))]
     return (get_tile_ids,)
 
 
 @app.cell(hide_code=True)
 def _(num_tiles, pals, rev_pals):
-    def get_selected_colour_palettes():
+    def get_selected_colour_palettes() -> list[str]:
+        """
+        Returns a list of the currently selected colourmap names, including
+        _r suffix where the reverse switch has been set
+        """
         return [(p if not r else p + "_r") 
                 for p, r in zip(pals.value[:num_tiles.value], 
                                 rev_pals.value[:num_tiles.value])]
@@ -717,7 +749,12 @@ def _(num_tiles, pals, rev_pals):
 
 @app.cell(hide_code=True)
 def _(io, mo, mpl):
-    def get_colour_ramp(pal_name:str="Reds", rev:bool=False):
+    def get_colour_ramp(pal_name:str="Reds", rev:bool=False) -> mo.image:
+        """
+        Returns a marimo image to represent the colour ramp specified by the supplied
+        base name (`pal`) and whether or not it is reversed (the `rev`) setting when
+        _r will be appended to the base name
+        """
         # returns an image representing the colour ramp for the supplied palette name
         fig, ax = mpl.pyplot.subplots()
         # this code based on code in matplotlib docs at
@@ -735,8 +772,12 @@ def _(io, mo, mpl):
 
 
 @app.cell(hide_code=True)
-def _(pd):
-    def get_numeric_variables(_gdf):
+def _(gpd, pd):
+    def get_numeric_variables(_gdf:gpd.GeoDataFrame) -> list[str]:
+        """
+        Returns a list of the column names in the supplied GeoDataFrame which
+        are numeric
+        """
         return [col for col in _gdf.columns if not "geom" in col 
                 and pd.api.types.is_numeric_dtype(_gdf[col].dtype)]
     return (get_numeric_variables,)
@@ -744,7 +785,10 @@ def _(pd):
 
 @app.cell(hide_code=True)
 def _(get_gdf, math, tile_or_weave):
-    def get_spacings():
+    def get_spacings() -> list[int]:
+        """
+        Returns a list of int values to apply as steps for the spacing UI element
+        """
         # returns reasonable rounded set of spacing options given the bounds of the data
         _bb = get_gdf().total_bounds
         _width, _height = _bb[2] - _bb[0], _bb[3] - _bb[1]
@@ -764,7 +808,10 @@ def _(get_gdf, math, tile_or_weave):
 
 @app.cell(hide_code=True)
 def tool_tip():
-    def tool_tip(ele:str, tip:str):
+    def tool_tip(ele:str, tip:str) -> str:
+        """
+        Returns a HTML <span> string putting a tooltip around the supplied element 
+        """
         # convenience function to add a tooltip to supplied string
         return f'<span title="{tip}">{ele}</span>'
     return (tool_tip,)
