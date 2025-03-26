@@ -424,6 +424,25 @@ class Tileable:
     return result
 
 
+  def scale_tiles(self, sf:float = 1, individually = False) -> "Tileable":
+    """Scales the tiles by the specified factor, centred on (0, 0).
+
+    Args:
+      sf (float, optional): scale factor to apply. Defaults to 1.
+
+    Returns:
+      TileUnit: the scaled TileUnit.
+    """
+    result = copy.deepcopy(self)
+    if individually:
+      result.tiles.geometry = tiling_utils.gridify(
+        self.tiles.geometry.scale(sf, sf))
+    else:
+      result.tiles.geometry = tiling_utils.gridify(
+        self.tiles.geometry.scale(sf, sf, origin = (0, 0)))
+    return result
+
+
   def plot(self, ax = None, show_prototile: bool = True, 
     show_reg_prototile: bool = True, show_ids: str = "tile_id",
     show_vectors: bool = False, r: int = 0, prototile_edgecolour: str = "k", 

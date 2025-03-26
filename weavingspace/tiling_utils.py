@@ -201,10 +201,7 @@ def get_corners(shape:geom.Polygon,
     list[geom.Point]: list of geom.Point vertices of the polygon.
   """
   corners = [gridify(geom.Point(pt)) for pt in shape.exterior.coords]
-  if repeat_first:
-    return corners
-  else:
-    return corners[:-1]
+  return corners if repeat_first else corners[:-1]
 
 
 def get_sides(shape:geom.Polygon) -> list[geom.LineString]:
@@ -796,8 +793,9 @@ def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
       extent[0], extent[1])
 
 
-def get_bounding_ellipse(shapes:gpd.GeoSeries, 
-                         mag:float = 1.0) -> gpd.GeoSeries:
+def get_bounding_ellipse(
+    shapes:gpd.GeoSeries,
+    mag:float = 1.0) -> gpd.GeoSeries:
   """Returns an ellipse containing the supplied shapes.
 
   The method used is to calculate the size of square that would contain
@@ -812,14 +810,13 @@ def get_bounding_ellipse(shapes:gpd.GeoSeries,
   Returns:
     gpd.GeoSeries: the set of shapes.
   """
-
   w, h, l, b = get_width_height_left_bottom(shapes)
-
   c = geom.Point(l + w / 2, b + h / 2)
   r = min(w, h) * np.sqrt(2)
   circle = [c.buffer(r)]
-  return gridify(gpd.GeoSeries(circle, crs = shapes.crs).scale(
-    w / r * mag / np.sqrt(2), h / r * mag / np.sqrt(2), origin = c))
+  return gridify(gpd.GeoSeries(
+    circle, crs = shapes.crs).scale(w / r * mag / np.sqrt(2), 
+                                    h / r * mag / np.sqrt(2), origin = c))
 
 
 def get_tiling_edges(tiles:gpd.GeoSeries) -> gpd.GeoSeries:

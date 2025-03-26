@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""The `TileUnit` subclass of `weavingspace.tileable.Tileable` implements
-many 'conventional' tilings of the plane.
+"""The `TileUnit` subclass of `weavingspace.tileable.Tileable` implements many
+'conventional' tilings of the plane.
 
 Examples:
   A `TileUnit` is initialised like this
@@ -12,27 +12,29 @@ Examples:
   The `tiling_type` may be one of the following
 
   + "cairo" the Cairo tiling more formally known as the Laves
-  [3<sup>2</sup>.4.3.4] tiling. The author's favourite tiling, hence it
-  has its own tiling_type.
-  + "hex-slice" a range of dissections of the regular hexagon into,
-  2, 3, 4, 6, or 12 'pie slices'. The number of slices is set by
-  specifying an additional argument `n`. Slices are cut either starting
-  at the corners of  the hexagon or from the midpoints of hexagon edges,
-  by specifying an additional argument `offset` set to either
-  0 or 1 respectively.
+  [3<sup>2</sup>.4.3.4] tiling. The author's favourite tiling, hence it has its
+  own tiling_type.
+  + "hex-slice" a range of dissections of the regular hexagon into, 2, 3, 4, 6,
+  or 12 'pie slices'. The number of slices is set by specifying an additional
+  argument `n`. Slices are cut either starting at the corners of  the hexagon
+  or from the midpoints of hexagon edges, by specifying an additional argument
+  `offset` set to either 0 or 1 respectively.
   + "hex-dissection" a range of 4, 7 or 9-fold dissections of the hexagon.  
   + "laves" a range of isohedral tilings. See [this article](https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings).
-  The desired tiling is specified by the additional argument `code` which
-  is a string like "3.3.4.3.4".
+  The desired tiling is specified by the additional argument `code` which is a
+  string like "3.3.4.3.4". Not all the possible Laves tilings are implemented.
   + "archimedean" a range of tilings by regular polygons. See [this
-  article](https://en.wikipedia.org/wiki/Euclidean_tilings_by_convex_regular_polygons#Archimedean,_uniform_or_semiregular_tilings). Many of these are the dual tilings of
-  the Laves tilings. The desired tiling is specified by the additional
-  argument `code` which is a string like "3.3.4.3.4". Not all the
-  possible Archimedean tilings are implemented.
-  + "hex-colouring" three colourings of the regular hexagon tiling, of
-  either 3, 4, or 7 colours, as specified by the argument `n`.
-  + "square-colouring" one colouring of the regular square tiling, of 5
-  colours as specified by the argument `n = 5`.
+  article](https://en.wikipedia.org/wiki/Euclidean_tilings_by_convex_regular_polygons#Archimedean,_uniform_or_semiregular_tilings). 
+  Many of these are the dual tilings of the Laves tilings. The desired tiling
+  is specified by the additional argument `code` which is a string like
+  "3.3.4.3.4". Not all the possible Archimedean tilings are implemented.
+  + "hex-colouring" or "square-colouring" colourings of the regular hexagonal
+  and square tilings of between 2 and 10 colours, as specified by the argument
+  `n`.
+  + "hex-slice" or "square-slice" dissections of the regular hexagonal and
+  square tilings of between 2 and 12 colours, as specified by the arguments `n`
+  and `offset`.
+  + "crosses" colourings of cross-shaped pentominoes of between 
 
   Spacing and coordinate reference of the tile unit are specified by the
   `weavingspace.tileable.Tileable` superclass variables
@@ -176,9 +178,12 @@ class TileUnit(Tileable):
     return None
 
 
-  def _get_legend_key_shapes(self, polygon:geom.Polygon,
-                 counts:Iterable = [1] * 25, angle:float = 0,
-                 radial:bool = False) -> list[geom.Polygon]:
+  def _get_legend_key_shapes(
+      self, 
+      polygon:geom.Polygon,
+      counts:Iterable = [1] * 25, 
+      angle:float = 0,
+      radial:bool = False) -> list[geom.Polygon]:
     """Returns a set of shapes that can be used to make a legend key
     symbol for the supplied polygon. In TileUnit this is a set of 'nested'
     polygons.
@@ -210,18 +215,18 @@ class TileUnit(Tileable):
       # radius = tiling_utils.get_collapse_distance(polygon)
       radius = tiling_utils.get_apothem_length(polygon)
       distances = distances * radius / distances[-1]
-      nested_polys = [polygon.buffer(-d, join_style = 2, cap_style = 3) 
+      nested_polys = [polygon.buffer(-d, join_style = 2, cap_style = 3)
                       for d in distances]
-      # return converted to annuli (who knows someone might set alpha < 1)
-      nested_polys = [g1.difference(g2) for g1, g2 in
-              zip(nested_polys[:-1], nested_polys[1:])]
+      # DON'T CONVERT TO ANNULI - it washes the final colours out in rendering
+      # nested_polys = [g1.difference(g2) for g1, g2 in
+      #         zip(nested_polys[:-1], nested_polys[1:])]
       return [p for c, p in zip(counts, nested_polys) if c > 0]
     else:
       n = sum(counts)
       slice_posns = list(np.cumsum(counts))
       slice_posns = [0] + [p / n for p in slice_posns]
       return [tiling_utils.get_polygon_sector(polygon, i, j)
-          for i, j in zip(slice_posns[:-1], slice_posns[1:])]
+              for i, j in zip(slice_posns[:-1], slice_posns[1:])]
 
 
   # Note that geopandas clip is not order preserving hence we do this
@@ -242,21 +247,6 @@ class TileUnit(Tileable):
                  for e in self.tiles.geometry]
     result = copy.deepcopy(self)
     result.tiles.geometry = gpd.GeoSeries(new_tiles)
-    return result
-
-
-  def scale_tiles(self, sf:float = 1) -> "TileUnit":
-    """Scales the tiles by the specified factor, centred on (0, 0).
-
-    Args:
-      sf (float, optional): scale factor to apply. Defaults to 1.
-
-    Returns:
-      TileUnit: the scaled TileUnit.
-    """
-    result = copy.deepcopy(self)
-    result.tiles.geometry = tiling_utils.gridify(
-      self.tiles.geometry.scale(sf, sf, origin = (0, 0)))
     return result
   
   

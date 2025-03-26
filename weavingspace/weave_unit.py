@@ -411,8 +411,10 @@ class WeaveUnit(Tileable):
     return geoms[d.index(min(d))]
 
 
-  def _get_legend_key_shapes(self, polygon:geom.Polygon,
-                             counts:Iterable = [1] * 25, angle:float = 0,
+  def _get_legend_key_shapes(self, 
+                             polygon:geom.Polygon,
+                             counts:Iterable = [1] * 25, 
+                             angle:float = 0,
                              radial:bool = False) -> list[geom.Polygon]:
     """Returns a list of polygons obtained by slicing the supplied polygon
     across its length into n slices. Orientation of the polygon is
@@ -435,18 +437,20 @@ class WeaveUnit(Tileable):
     g = affine.rotate(polygon, -angle, origin = c)
     width, height, left, bottom = \
       tiling_utils.get_width_height_left_bottom(gpd.GeoSeries([g]))
+    margin = width / 100
     total = sum(counts)
     cuts = list(np.cumsum(counts))
     cuts = [0] + [c / total for c in cuts]
     cuts = [left + c * width for c in cuts]
-    # add margin to avoid weird effects intersecting almost parallel lines.
-    cuts[0] = cuts[0] - 1
-    cuts[-1] = cuts[-1] + 1
-    bottom = bottom - 1
-    top = bottom + height + 1
+    bottom = bottom - margin
+    top = bottom + height + 2 * margin
     slices = []
     for l, r in zip(cuts[:-1], cuts[1:]):
-      slice = geom.Polygon([(l, bottom), (r, bottom), (r, top), (l, top)])
+      # we add a margin to left and right so that they overplot; otherwise in
+      # rendering matplotlib leaves small gaps which give a washed out look
+      # to the fill colour!
+      slice = geom.Polygon([(l - margin, bottom), (r + margin, bottom), 
+                            (r + margin,    top), (l - margin,    top)])
       slices.append(slice.intersection(g))
     return [affine.rotate(s, angle, origin = c) for s in slices]
 
