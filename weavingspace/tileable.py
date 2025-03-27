@@ -73,6 +73,7 @@ class Tileable:
   def __init__(self, **kwargs):
     for k, v in kwargs.items():
       if isinstance(v, str):
+        # make any string arguments lower case
         self.__dict__[k] = v.lower()
       else:
         self.__dict__[k] = v

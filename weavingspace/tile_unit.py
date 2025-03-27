@@ -73,12 +73,14 @@ from weavingspace import tiling_geometries
 
 @dataclass
 class TileUnit(Tileable):
-  """Class to represent the tiles of a 'conventional' tiling.
+  """Class to represent the tiles of a 'conventional' tiling. Most of the
+  functionality of TileUnit is either in `the weavingspace.Tileable` superclass
+  or, for setup, in the functions in `weavingspace.tiling_geometries`.
   """
   tiling_type:str = ""
   """tiling type as detailed in the class documentation preamble."""
-  offset:int = 1
-  """offset for 'hex-dissection' and 'hex-slice tilings. Defaults to 1."""
+  offset:float = 1
+  """offset for 'dissection' and 'slice' tilings. Defaults to 1."""
   n:int = 3
   """number of dissections or colours in 'hex-dissection', 'hex-slice' and
   'hex-colouring' tilings. Defaults to 3."""
@@ -87,35 +89,41 @@ class TileUnit(Tileable):
 
   def __init__(self, **kwargs) -> None:
     # pass the kwargs to the superclass constructor
-    # it will delegate setting up the tiles back to TileUnit
+    # it will delegate setting up the tiles back to `TileUnit._setup_tiles()`
     super(TileUnit, self).__init__(**kwargs)
 
 
   def _setup_tiles(self) -> Union[None,str]:
-    """Delegates setup of the unit to various functions depending on
-    self.tiling_type. If there is a problem a string is returned. If all is OK
-    then None is returned (some care is required to do this!)
+    """Delegates setup of unit to functions in `tiling_geometries` depending on
+    `self.tiling_type`. If there is a problem a string is returned. If all is
+    OK then None is returned (some care is required to do this!)
+
+    The logical tests applied to check for tiling type are expansive to allow
+    scope for user errors.
     """
     if self.tiling_type == "cairo":
       return tiling_geometries.setup_cairo(self)
-    elif "hex-slice" in self.tiling_type:
-      return tiling_geometries.setup_hex_slice(self)
-    elif self.tiling_type == "hex-dissection":
-      return tiling_geometries.setup_hex_dissection(self)
+    elif "hex" in self.tiling_type:
+      if "slice" in self.tiling_type:
+        return tiling_geometries.setup_hex_slice(self)
+      elif "dissect" in self.tiling_type:
+        return tiling_geometries.setup_hex_dissection(self)
+      elif "col" in self.tiling_type:
+        return tiling_geometries.setup_hex_colouring(self)
+    elif "square" in self.tiling_type:
+      if "slice" in self.tiling_type:
+        return tiling_geometries.setup_square_slice(self)
+      elif "col" in self.tiling_type:
+        return tiling_geometries.setup_square_colouring(self)
+    elif "lave" in self.tiling_type:
+      return tiling_geometries.setup_laves(self)
+    elif "archi" in self.tiling_type:
+      # easy to misspell this one!
+      return tiling_geometries.setup_archimedean(self)
     elif "cross" in self.tiling_type:
       return tiling_geometries.setup_crosses(self)
-    elif "square-slice" in self.tiling_type:
-      return tiling_geometries.setup_square_slice(self)
-    elif self.tiling_type == "laves":
-      return tiling_geometries.setup_laves(self)
-    elif self.tiling_type == "archimedean":
-      return tiling_geometries.setup_archimedean(self)
-    elif self.tiling_type in ("hex-colouring", "hex-coloring"):
-      return tiling_geometries.setup_hex_colouring(self)
-    elif self.tiling_type in ("square-colouring", "square-coloring"):
-      return tiling_geometries.setup_square_colouring(self)
     else:
-      return f"No tiling type provided."
+      return f"No supported tiling type provided."
 
 
   def _setup_regularised_prototile(self) -> None:
@@ -182,11 +190,10 @@ class TileUnit(Tileable):
               for i, j in zip(slice_posns[:-1], slice_posns[1:])]
 
 
-  # Note that geopandas clip is not order preserving hence we do this one
-  # polygon at a time...
   def inset_prototile(self, d:float = 0) -> "TileUnit":
     """Returns a new TileUnit clipped by `self.regularised_prototile` after
-    a negative buffer d has been applied.
+    a negative buffer d has been applied. Note that geopandas clip is not order
+    preserving hence we do this one polygon at a time.
 
     Args:
       d (float, optional): the inset distance. Defaults to 0.
@@ -205,6 +212,11 @@ class TileUnit(Tileable):
   
   
   def _as_circles(self) -> "TileUnit":
+    """Experimental implementation of returning tiles as their incircles.
+
+    Returns:
+        TileUnit: a tiling which replaces each tile with its incircle.
+    """
     result = copy.deepcopy(self)
     result.tiles.geometry = gpd.GeoSeries([tiling_utils.in_circle(p) 
                                            for p in self.tiles.geometry])
