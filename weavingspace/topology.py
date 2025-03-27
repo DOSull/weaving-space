@@ -987,7 +987,8 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
         t.set_corners_from_edges()
     topo.tileable.tiles.geometry = gpd.GeoSeries(
       [topo.tiles[i].shape for i in range(topo.n_tiles)])
-    topo.tileable.setup_regularised_prototile_from_tiles()
+    topo.tileable._setup_regularised_prototile()
+    # topo.tileable.setup_regularised_prototile_from_tiles()
     return topo
 
   def zigzag_edge(self, edge:Edge, start:str = "A", sf:float = 1.0,

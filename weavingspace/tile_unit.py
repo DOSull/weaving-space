@@ -60,22 +60,13 @@ Examples:
 import copy
 from dataclasses import dataclass
 from typing import Iterable
-import string
+from typing import Union
 
 import geopandas as gpd
 import numpy as np
 import shapely.geometry as geom
-import shapely.affinity as affine
-
-# from weavingspace.tileable import Tileable
-# from weavingspace.tileable import TileShape
-
-# import weavingspace.tiling_utils as tiling_utils
-# import weavingspace.tiling_geometries as tiling_geometries
 
 from weavingspace import Tileable
-from weavingspace import TileShape
-
 from weavingspace import tiling_utils
 from weavingspace import tiling_geometries
 
@@ -95,86 +86,46 @@ class TileUnit(Tileable):
   """the code for 'laves' or 'archimedean' tiling types."""
 
   def __init__(self, **kwargs) -> None:
+    # pass the kwargs to the superclass constructor
+    # it will delegate setting up the tiles back to TileUnit
     super(TileUnit, self).__init__(**kwargs)
-    # this next line makes all TileUnit geometries shapely 2.x precision-aware
-    self.tiles.geometry = tiling_utils.gridify(self.tiles.geometry)
-    if not self.tiling_type is None:
-      self.tiling_type = self.tiling_type.lower()
-    if self.base_shape == TileShape.TRIANGLE:
-      self._modify_tile()
-      self._modify_tiles()
-      self.setup_vectors()
-    self.setup_regularised_prototile_from_tiles()
-    # if self.regularised_prototile is None:
-    #   self.setup_regularised_prototile_from_tiles()
 
 
-  def _setup_tiles(self) -> None:
-    """Delegates setup of the unit to various functions depending
-    on self.tiling_type.
+  def _setup_tiles(self) -> Union[None,str]:
+    """Delegates setup of the unit to various functions depending on
+    self.tiling_type. If there is a problem a string is returned. If all is OK
+    then None is returned (some care is required to do this!)
     """
     if self.tiling_type == "cairo":
-      tiling_geometries.setup_cairo(self)
-    elif self.tiling_type == "hex-slice":
-      tiling_geometries.setup_hex_slice(self)
+      return tiling_geometries.setup_cairo(self)
+    elif "hex-slice" in self.tiling_type:
+      return tiling_geometries.setup_hex_slice(self)
     elif self.tiling_type == "hex-dissection":
-      tiling_geometries.setup_hex_dissection(self)
+      return tiling_geometries.setup_hex_dissection(self)
     elif "cross" in self.tiling_type:
-      tiling_geometries.setup_crosses(self)
-    elif self.tiling_type == "square-slice":
-      tiling_geometries.setup_square_slice(self)
+      return tiling_geometries.setup_crosses(self)
+    elif "square-slice" in self.tiling_type:
+      return tiling_geometries.setup_square_slice(self)
     elif self.tiling_type == "laves":
-      tiling_geometries.setup_laves(self)
+      return tiling_geometries.setup_laves(self)
     elif self.tiling_type == "archimedean":
-      tiling_geometries.setup_archimedean(self)
+      return tiling_geometries.setup_archimedean(self)
     elif self.tiling_type in ("hex-colouring", "hex-coloring"):
-      tiling_geometries.setup_hex_colouring(self)
+      return tiling_geometries.setup_hex_colouring(self)
     elif self.tiling_type in ("square-colouring", "square-coloring"):
-      tiling_geometries.setup_square_colouring(self)
+      return tiling_geometries.setup_square_colouring(self)
     else:
-      tiling_geometries._setup_none_tile(self)
-    return
+      return f"No tiling type provided."
 
 
   def _setup_regularised_prototile(self) -> None:
-    self.regularise_tiles()
-    self.regularised_prototile.geometry = tiling_utils.repair_polygon(
-      self.regularised_prototile.geometry)
-    
-
-  def _modify_tiles(self) -> None:
-    """It is not trivial to tile a triangle, so this function augments
-    the tiles of a triangular tile to a diamond by 180 degree
-    rotation. Operation is 'in place'.
+    """Sets up a 'regularised prototile' which fully contains all the tile
+    elements, i.e. it does not cut them. In all TileUnit cases a suitable shape
+    is the union of the elements.
     """
-    tiles = self.tiles.geometry
-    ids = list(self.tiles.tile_id)
-
-    new_ids = list(string.ascii_letters[:(len(ids) * 2)])
-    tiles = tiles.translate(0, -tiles.total_bounds[1])
-    twins = [affine.rotate(tile, a, origin = (0, 0))
-             for tile in tiles
-             for a in range(0, 360, 180)]
-    self.tiles = gpd.GeoDataFrame(
-      data = {"tile_id": new_ids},
-      geometry = tiling_utils.gridify(gpd.GeoSeries(twins)),
-      crs = self.tiles.crs)
-    return None
-
-
-  def _modify_tile(self) -> None:
-    """It is not trivial to tile a triangular tile so this function
-    changes the tile to a diamond by manually altering the tile in place
-    to be a diamond shape.
-    """
-    tile = self.prototile.loc[0, "geometry"]
-    # translate to sit on x-axis
-    tile = affine.translate(tile, 0, -tile.bounds[1])
-    pts = [p for p in tile.exterior.coords]
-    pts[-1] = (pts[1][0], -pts[1][1])
-    self.prototile.geometry = tiling_utils.gridify(
-      gpd.GeoSeries([geom.Polygon(pts)], crs = self.crs))
-    self.base_shape = TileShape.DIAMOND
+    reg_prototile = tiling_utils.safe_union(self.tiles.geometry)
+    self.regularised_prototile = gpd.GeoDataFrame(
+      geometry = reg_prototile, crs = self.crs)
     return None
 
 
@@ -184,16 +135,18 @@ class TileUnit(Tileable):
       counts:Iterable = [1] * 25, 
       angle:float = 0,
       radial:bool = False) -> list[geom.Polygon]:
-    """Returns a set of shapes that can be used to make a legend key
-    symbol for the supplied polygon. In TileUnit this is a set of 'nested'
-    polygons.
+    """Returns a set of shapes that can be used to make a legend key symbol for
+    the supplied polygon. In TileUnit this is a set of 'nested' polygons formed
+    by serially negative buffering the tile shapes.
 
     Args:
       polygon (geom.Polygon): the polygon to symbolise.
       count (Iterable, optional): iterable of the counts of each slice.
         Defaults to [1] * 25.
-      rot (float, optional): rotation that may have to be applied.
-        Not used in the TileUnit case. Defaults to 0.
+      rot (float, optional): rotation that may have to be applied. Not used in 
+        the TileUnit case. Defaults to 0.
+      radial (bool): if True then a pie slice dissection will be applied; if
+        False then a set of 'nested' shapes will be applied. Defaults to False.
 
     Returns:
       list[geom.Polygon]: a list of nested polygons.
@@ -229,10 +182,10 @@ class TileUnit(Tileable):
               for i, j in zip(slice_posns[:-1], slice_posns[1:])]
 
 
-  # Note that geopandas clip is not order preserving hence we do this
-  # one polygon at a time...
+  # Note that geopandas clip is not order preserving hence we do this one
+  # polygon at a time...
   def inset_prototile(self, d:float = 0) -> "TileUnit":
-    """Returns a new TileUnit clipped by `self.regularised_tile` after
+    """Returns a new TileUnit clipped by `self.regularised_prototile` after
     a negative buffer d has been applied.
 
     Args:
@@ -242,8 +195,9 @@ class TileUnit(Tileable):
       TileUnit: the new TileUnit with inset applied.
     """
     inset_tile = \
-      self.regularised_prototile.loc[0, "geometry"].buffer(-d, join_style = 2, cap_style = 3)
-    new_tiles = [tiling_utils.get_clean_polygon(inset_tile.intersection(e)) 
+      self.regularised_prototile.loc[0, "geometry"] \
+        .buffer(-d, join_style = 2, cap_style = 3)
+    new_tiles = [tiling_utils.get_clean_polygon(inset_tile.intersection(e))
                  for e in self.tiles.geometry]
     result = copy.deepcopy(self)
     result.tiles.geometry = gpd.GeoSeries(new_tiles)

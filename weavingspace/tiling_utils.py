@@ -111,7 +111,10 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
   Returns:
     geom.Polygon: required geom.Polygon.
   """
-  R = spacing / np.cos(np.radians(180 / n)) / 2
+  if n % 2 == 0:
+    R = spacing / np.cos(np.radians(180 / n)) / 2
+  else:
+    R = spacing / (1 + np.cos(np.radians(180 / n)))
   a0 = -90 + 180 / n
   a_diff = 360 / n
   angles = [a0 + a * a_diff for a in range(n)]
@@ -460,7 +463,7 @@ def get_apothem_length(shape:geom.Polygon) -> float:
   if is_regular_polygon(shape):
     return 2 * shape.area / geom.LineString(shape.exterior.coords).length
   else:
-    c = polylabel.polylabel(shape, RESOLUTION)
+    c = polylabel.polylabel(shape, 1)
     return min([c.distance(e) for e in get_sides(shape)])
 
 
@@ -625,8 +628,8 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
   # TODO: Check  the logic of this - it seems like dumb luck that it works...
   dual_faces = [(f, id) for f, id in dual_faces
                 if affine.translate(
-                  unit.prototile.loc[0, "geometry"], RESOLUTION * 10, 
-                  RESOLUTION * 10).contains(f.centroid)]
+                  unit.get_prototile_from_vectors().loc[0, "geometry"], 
+                  RESOLUTION * 10, RESOLUTION * 10).contains(f.centroid)]
   gdf = gpd.GeoDataFrame(
     data = {"tile_id": [f[1] for f in dual_faces]}, crs = unit.crs,
     geometry = gridify(gpd.GeoSeries([f[0] for f in dual_faces])))
@@ -1157,23 +1160,3 @@ def get_intersection(line1:StraightLine,
   x = x if x_set else (line1.B * line2.C - line2.B * line1.C) / denominator
   y = y if y_set else (line1.C * line2.A - line2.C * line1.A) / denominator
   return geom.Point(x, y)
-
-
-def get_prototile_from_vectors(vecs:list[tuple[float]]):
-  if len(vecs) == 2:
-    v1, v2 = vecs
-    v1 = [_ / 2 for _ in v1]
-    v2 = [_ / 2 for _ in v2]
-    return geom.Polygon([( v1[0] + v2[0],  v1[1] + v2[1]),
-                         ( v2[0] - v1[0],  v2[1] - v1[1]),
-                         (-v1[0] - v2[0], -v1[1] - v2[1]),
-                         (-v2[0] + v1[0], -v2[1] + v1[1])])
-  else:
-    v1, v2, v3 = vecs
-    v4 = [-_ for _ in v1]
-    v5 = [-_ for _ in v2]
-    v6 = [-_ for _ in v3]
-    q1 = geom.Polygon([v1, v2, v4, v5]) 
-    q2 = geom.Polygon([v2, v3, v5, v6]) 
-    q3 = geom.Polygon([v3, v4, v6, v1])
-    return gridify(q3.intersection(q2).intersection(q1))

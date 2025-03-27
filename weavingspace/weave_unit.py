@@ -57,7 +57,6 @@ class WeaveUnit(Tileable):
 
   def __init__(self, **kwargs):
     super(WeaveUnit, self).__init__(**kwargs)
-    self.weave_type = self.weave_type.lower()
 
 
   def _setup_tiles(self) -> None:
@@ -69,21 +68,26 @@ class WeaveUnit(Tileable):
     if self.weave_type in ("hex", "cube"):
       self.base_shape = TileShape.HEXAGON
       self._setup_triaxial_weave_unit()
-      # this is experimental for now:
-      # self._minimise_triaxial_weave_unit()
     else:
       self.base_shape = TileShape.RECTANGLE
       self._setup_biaxial_weave_unit()
     return
-  
-  
+
+
   def _setup_regularised_prototile(self) -> None:
-    self.regularise_tiles()
-    if self.aspect < 1:
-      self.reattach_tiles()
+    """Sets up a 'regularised prototile' which fully contains all the tile
+    elements, i.e. it does not intersect. The work is carried out by the two
+    methods  that follow _regularise_tiles() and _merge_fragments().
+    """
+    self._regularise_tiles()
+    # it's prudent to do some cleanup given all the manipulation of geometries
+    # carried out to generate the regularised prototile. But note that the 
+    # regularised prototile has no functional purpose, so it's OK if it has,
+    # for example, additional points along line segments.
     self.regularised_prototile.geometry = tiling_utils.repair_polygon(
       self.regularised_prototile.geometry)
-    
+    return None
+
 
   def _parameter_info(self) -> None:
     """Outputs logging message concerning the supplied aspect settings.
@@ -107,17 +111,19 @@ class WeaveUnit(Tileable):
     """
     warp_threads, weft_threads, _ = \
       tiling_utils.get_strand_ids(self.strands)
-
     if self.weave_type == "basket" and isinstance(self.n, (list, tuple)):
       self.n = self.n[0]
-
     p = weave_matrices.get_weave_pattern_matrix(
       weave_type = self.weave_type, n = self.n, warp = warp_threads,
       weft = weft_threads, tie_up = self._tie_up, tr = self._tr,
       th = self._th)
-
     self._make_shapes_from_coded_weave_matrix(
       Loom(p), strand_labels = [weft_threads, warp_threads, []])
+    bb = self.tiles.total_bounds
+    w = (bb[2] - bb[0]) // self.spacing * self.spacing
+    h = (bb[3] - bb[1]) // self.spacing * self.spacing
+    self.setup_vectors((0, h), (w, 0))
+    return None
 
 
   def _get_triaxial_weave_matrices(self,
@@ -181,48 +187,13 @@ class WeaveUnit(Tileable):
     """
     strands_1, strands_2, strands_3 = \
       tiling_utils.get_strand_ids(self.strands)
-
     loom = self._get_triaxial_weave_matrices(
       strands_1 = strands_1, strands_2 = strands_2, strands_3 = strands_3)
-
     self._make_shapes_from_coded_weave_matrix(
       loom, strand_labels = [strands_1, strands_2, strands_3])
-
-
-  def _minimise_triaxial_weave_unit(self) -> None:
-    n = self.tiles.shape[0]
-    tiles_ids = [x for x in zip(range(n), self.tiles.tile_id, 
-                                list(self.tiles.geometry))]
-    v_ij = defaultdict(list)
-    for i, id_i, tile_i in tiles_ids:
-      for j, id_j, tile_j in tiles_ids:
-        if i != j and id_i == id_j:
-          v = (tile_j.centroid.x - tile_i.centroid.x, 
-              tile_j.centroid.y - tile_i.centroid.y)
-          if tiling_utils.geometry_matches(
-            tile_j, affine.translate(tile_i, v[0], v[1])):
-              v_ij[v].append((i, j))
-    v_ij = dict(sorted(v_ij.items(), key = lambda x: len(x[1]), reverse = True))
-    v_ij = [k for k, v in v_ij.items()][:12]
-    combos = itertools.combinations(v_ij, 3)
-    result = [c for c in combos 
-              if not (tiling_utils.are_parallel(c[0], c[1]) or
-                      tiling_utils.are_parallel(c[1], c[2]) or
-                      tiling_utils.are_parallel(c[2], c[0]))] # no two parallel
-            #   if np.isclose(sum([x for x, y in c]), 0)
-            #  and np.isclose(sum([y for x, y in c]), 0)] # resultant (0, 0)
-    result = sorted(result, 
-                    key = lambda vecs: sum([dx**2 + dy**2 for dx, dy in vecs]))
-    poly = tiling_utils.get_prototile_from_vectors(result[0][:3])
-    self.prototile.geometry = [poly]
-    self.setup_vectors()
-    new_tiles = [(id, t.intersection(poly)) for id, t in 
-                 zip(self.tiles.tile_id, self.tiles.geometry) 
-                 if t.intersection(poly).area > 0]
-    self.tiles = gpd.GeoDataFrame({
-      'geometry': gpd.GeoSeries([x[1] for x in new_tiles]),
-      'tile_id': [x[0] for x in new_tiles]})
-    # self.regularise_tiles()
+    self.setup_vectors((0, 6 * self.spacing),
+                       (3 * self.spacing * np.sqrt(3),  3 * self.spacing),
+                       (3 * self.spacing * np.sqrt(3), -3 * self.spacing))
     return None
 
 
@@ -332,7 +303,6 @@ class WeaveUnit(Tileable):
     else: # aspect < 1 is fine without buffering
       weave = weave.dissolve(by = "tile_id", as_index = False)
       weave = weave.explode(ignore_index = True)
-
     weave.geometry = gpd.GeoSeries(
       [tiling_utils.get_clean_polygon(p) for p in weave.geometry])
     return weave.set_crs(self.crs)
@@ -375,8 +345,8 @@ class WeaveUnit(Tileable):
     for id in tile_ids:
       candidates = groups.get_group(id)
       axis = self._get_axis_from_label(id, self.strands)
-      tiles.append(self._get_most_central_large_tile(
-      candidates, tiles))
+      tiles.append(
+        self._get_most_central_large_tile(candidates, tiles))
       rotations.append(-angles[axis] + self.rotation)
     return gpd.GeoDataFrame(
       data = {"tile_id": tile_ids, "rotation": rotations},
@@ -437,7 +407,7 @@ class WeaveUnit(Tileable):
     g = affine.rotate(polygon, -angle, origin = c)
     width, height, left, bottom = \
       tiling_utils.get_width_height_left_bottom(gpd.GeoSeries([g]))
-    margin = width / 100
+    margin = width / 50
     total = sum(counts)
     cuts = list(np.cumsum(counts))
     cuts = [0] + [c / total for c in cuts]

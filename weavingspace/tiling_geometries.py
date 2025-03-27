@@ -25,8 +25,6 @@ Kaplan C S, 2009 _Introductory tiling theory for computer graphics_ (Morgan &
 Claypool)
 """
 
-from typing import TYPE_CHECKING
-import copy
 import itertools
 import string
 import math
@@ -37,48 +35,8 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 from shapely import line_interpolate_point
 
-# from weavingspace.tileable import TileShape
-# import weavingspace.tiling_utils as tiling_utils
-
 from weavingspace import TileShape
 from weavingspace import tiling_utils
-
-def _setup_none_tile(unit:"TileUnit") -> None:
-  """Setups a 'null' tile unit with one tile and one tile_id.
-
-  Args:
-    unit (TileUnit): the TileUnit to setup.
-  """
-  _setup_base_tile(unit, unit.base_shape)
-  unit.tiles = gpd.GeoDataFrame(
-    data = {"tile_id": ["a"]}, crs = unit.crs,
-    geometry = copy.deepcopy(unit.prototile.geometry))
-  return
-
-
-def _setup_base_tile(unit:"TileUnit", shape:TileShape) -> None:
-  """_summary_
-
-  Args:
-    unit (TileUnit):  the TileUnit to setup.
-    shape (TileShape): the TileShape to apply.
-  """
-  unit.base_shape = shape
-  if unit.base_shape == TileShape.DIAMOND:
-    tile = tiling_utils.gridify(geom.Polygon([
-      (unit.spacing / 2, 0), (0, unit.spacing * np.sqrt(3) / 2),
-      (-unit.spacing / 2, 0), (0, -unit.spacing * np.sqrt(3) / 2)]))
-  else:
-    tile = tiling_utils.get_regular_polygon(
-      unit.spacing, n = (4
-              if unit.base_shape in (TileShape.RECTANGLE, )
-              else (6
-                if unit.base_shape in (TileShape.HEXAGON, )
-                else 3)))
-  unit.prototile = gpd.GeoDataFrame(
-    geometry = gpd.GeoSeries([tile]), crs = unit.crs)
-  unit.setup_vectors()
-  return
 
 
 def setup_cairo(unit:"TileUnit") -> None:
@@ -96,7 +54,6 @@ def setup_cairo(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  _setup_base_tile(unit, TileShape.RECTANGLE)  # a square
   d = unit.spacing
   x = d/2 / (np.cos(np.radians(15)) + np.cos(np.radians(75)))
   # the following is just the geometry, it is what it is...
@@ -115,17 +72,17 @@ def setup_cairo(unit:"TileUnit") -> None:
   p2 = affine.rotate(p1, 90, (0, 0))
   p3 = affine.rotate(p1, 180, (0, 0))
   p4 = affine.rotate(p1, 270, (0, 0))
-
   # now move them so they are arranged as a hexagon centered on the tile
   p1 = affine.translate(p1, -unit.spacing / 2, 0)
   p2 = affine.translate(p2, unit.spacing / 2, 0)
   p3 = affine.translate(p3, unit.spacing / 2, 0)
   p4 = affine.translate(p4, -unit.spacing / 2, 0)
-
+  # setup tiles
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcd")}, crs = unit.crs,
     geometry = gpd.GeoSeries([p1, p2, p3, p4]))
-  unit.setup_regularised_prototile_from_tiles()
+  unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
+  return None
 
 
 def setup_hex_slice(unit:"TileUnit") -> None:
@@ -144,14 +101,16 @@ def setup_hex_slice(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  _setup_base_tile(unit, TileShape.HEXAGON)
   hexagon = tiling_utils.get_regular_polygon(unit.spacing, 6)
   slices = _get_radially_sliced_polygon(hexagon, 6, unit.n, unit.offset)
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(slices))
-  unit.regularised_prototile = copy.deepcopy(unit.prototile)
+  unit.setup_vectors((                            0,  unit.spacing    ), 
+                     (unit.spacing * np.sqrt(3) / 2,  unit.spacing / 2),
+                     (unit.spacing * np.sqrt(3) / 2, -unit.spacing / 2))
+  return None
 
 
 def setup_square_slice(unit:"TileUnit") -> None:
@@ -170,14 +129,14 @@ def setup_square_slice(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  _setup_base_tile(unit, TileShape.RECTANGLE)
   square = tiling_utils.get_regular_polygon(unit.spacing, 4)
   slices = _get_radially_sliced_polygon(square, 4, unit.n, unit.offset)
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(slices))
-  unit.regularised_prototile = copy.deepcopy(unit.prototile)
+  unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
+  return None
 
 
 def _get_radially_sliced_polygon(shape:geom.Polygon, n_sides:int,
@@ -187,7 +146,7 @@ def _get_radially_sliced_polygon(shape:geom.Polygon, n_sides:int,
   offset = (offset % 1 
             if offset < 0 or offset > 1 
             else offset)
-  offset = (offset * n_sides / n_slices / 2 
+  offset = (offset * n_sides / n_slices/2 
             if n_slices >= n_sides
             else offset / 2)
   along = [n_sides * _ / n_slices + offset for _ in range(n_slices)]
@@ -217,22 +176,24 @@ def setup_hex_dissection(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  _setup_base_tile(unit, TileShape.HEXAGON)
-  if unit.n == 4:
-    parts = get_4_parts_of_hexagon(unit)
-  elif unit.n == 7:
-    parts = get_7_parts_of_hexagon(unit)
-  elif unit.n == 9:
-    parts = get_9_parts_of_hexagon(unit)
-  else:
-    print(f"a [{unit.n}] hex-dissection is not implemented.")
-    _setup_none_tile(unit)
-    return
+  match unit.n:
+    case 4:
+      parts = get_4_parts_of_hexagon(unit)
+    case 7:
+      parts = get_7_parts_of_hexagon(unit)
+    case 9:
+      parts = get_9_parts_of_hexagon(unit)
+    case _:
+      unit.base_shape = TileShape.HEXAGON
+      return  f"""a {unit.n} hex-dissection is not implemented. Try 4, 7, or 9 elements instead."""
+  unit.setup_vectors((                            0,  unit.spacing    ), 
+                     (unit.spacing * np.sqrt(3) / 2,  unit.spacing / 2),
+                     (unit.spacing * np.sqrt(3) / 2, -unit.spacing / 2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(parts))
-  unit.regularised_prototile = copy.deepcopy(unit.prototile)
+  return None
 
 
 def get_4_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
@@ -344,55 +305,47 @@ def setup_crosses(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  _setup_base_tile(unit, TileShape.RECTANGLE)
   square = tiling_utils.get_regular_polygon(unit.spacing, 4)
   x = unit.spacing / unit.n
   cross = geom.Polygon([
-      (-x/2, -x/2), (-3 * x/2, -x/2), (-3 * x/2,  x/2), 
-      (-x/2,  x/2), (-x/2,  3 * x/2), ( x/2,  3 * x/2), 
-      ( x/2,  x/2), ( 3 * x/2,  x/2), ( 3 * x/2, -x/2), 
-      ( x/2, -x/2), ( x/2, -3 * x/2), (-x/2, -3 * x/2)])
-  if unit.n == 2:
-    tr = [(-x/2, -x), (x/2, x)]
-    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-3 * x, -x), (-x, 3 * x)])]
-  elif unit.n == 3:
-    tr = [(-3 * x/2, -x), (-x/2, x), (3 * x/2, 0)]
-    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-4 * x, -3 * x), (-5 * x, 0), (-x,  3 * x)])]
-  elif unit.n == 4:
-    tr = [(3 * x/2, x/2), (x/2, -3 * x/2), (-3 * x/2, -x/2), (-x/2, 3 * x/2)]
-    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-4 * x, -3 * x), (-4 * x,  2 * x), (0,  5 * x)])]
-  elif unit.n == 5:
-    tr = [(0, 0), (x, 2 * x), (2 * x, -x), (-x, -2 * x), (-2 * x, x)]
-    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-5 * x, 0), (0,  5 * x)])]
-  elif unit.n == 6:
-    tr = [(-2 * x, -3 * x/2), (-x,  x/2), (0,  5 * x/2), 
-          ( 2 * x,  3 * x/2), ( x, -x/2), (0, -5 * x/2)]
-    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-3 * x, -6 * x), (-5 * x, 0), (-2 * x,  6 * x)])]
-  elif unit.n == 7:
-    tr = [(0, 0), (-x, -2 * x), (-2 * x,  x), (-x,  3 * x), 
-                  ( x,  2 * x), ( 2 * x, -x), ( x, -3 * x)]
-    parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-4 * x, -3 * x), (-5 * x,  5 * x), (-x,  8 * x)])]
-  else:
-    print(f"a [{unit.n}] square-dissection is not implemented.")
-    _setup_none_tile(unit)
-    return
+      (-x/2, -x/2), (-3*x/2, -x/2), (-3*x/2,  x/2), 
+      (-x/2,  x/2), (-x/2,  3*x/2), ( x/2,  3*x/2), 
+      ( x/2,  x/2), ( 3*x/2,  x/2), ( 3*x/2, -x/2), 
+      ( x/2, -x/2), ( x/2, -3*x/2), (-x/2, -3*x/2)])
+  match unit.n:
+    case 2:
+      tr = [(-x/2, -x), (x/2, x)]
+      parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+      unit.setup_vectors((-3*x, -x), (-x, 3*x))
+    case 3:
+      tr = [(-3*x/2, -x), (-x/2, x), (3*x/2, 0)]
+      parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+      unit.setup_vectors((-4*x, -3*x), (-5*x, 0), (-x,  3*x))
+    case 4:
+      tr = [(3*x/2, x/2), (x/2, -3*x/2), (-3*x/2, -x/2), (-x/2, 3*x/2)]
+      parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+      unit.setup_vectors((-4*x, -3*x), (-4*x,  2*x), (0,  5*x))
+    case 5:
+      tr = [(0, 0), (x, 2*x), (2*x, -x), (-x, -2*x), (-2*x, x)]
+      parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+      unit.setup_vectors((-5*x, 0), (0,  5*x))
+    case 6:
+      tr = [(-2*x, -3*x/2), (-x,  x/2), (0,  5*x/2), 
+            ( 2*x,  3*x/2), ( x, -x/2), (0, -5*x/2)]
+      parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+      unit.setup_vectors((-3*x, -6*x), (-5*x, 0), (-2*x,  6*x))
+    case 7:
+      tr = [(0, 0), (-x, -2*x), (-2*x,  x), (-x,  3*x), 
+                    ( x,  2*x), ( 2*x, -x), ( x, -3*x)]
+      parts = [affine.translate(cross, dx, dy) for dx, dy in tr]
+      unit.setup_vectors((-4*x, -3*x), (-5*x,  5*x), (-x,  8*x))
+    case _:
+      return  f"a {unit.n} crosses tiling is not implemented. Try a number between 2 and 7."
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(parts))
-  unit.regularised_prototile = copy.deepcopy(unit.prototile)
+  return None
 
 
 def setup_laves(unit:"TileUnit") -> None:
@@ -406,63 +359,52 @@ def setup_laves(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  if unit.code == "3.3.3.3.3.3":
-    # this is the regular hexagons
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    _setup_none_tile(unit)
-    return
-  if unit.code == "3.3.3.3.6":
-    # this one needs its own code
-    _setup_laves_33336(unit)
-    return
-  elif unit.code == "3.3.3.4.4":
-    print(f"The code [{unit.code}] is unsupported.")
-  elif unit.code == "3.3.4.3.4":
-    # king of tilings!
-    setup_cairo(unit)
-    return
-  elif unit.code == "3.4.6.4":
-    # the hex 6-dissection
-    unit.n = 6
-    unit.offset = 1
-    setup_hex_slice(unit)
-    return
-  elif unit.code == "3.6.3.6":
-    # hex 3-dissection (also a cube weave!)
-    unit.n = 3
-    unit.offset = 0
-    setup_hex_slice(unit)
-    return
-  elif unit.code == "3.12.12":
-    # again this one needs its own
-    _setup_laves_31212(unit)
-    return
-  elif unit.code == "4.4.4.4":
-    # square grid
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    _setup_none_tile(unit)
-    return
-  elif unit.code == "4.6.12":
-    # hex 12-dissection
-    unit.n = 12
-    unit.offset = 0
-    setup_hex_slice(unit)
-    return
-  elif unit.code == "4.8.8":
-    # this one needs its own (a 4-dissection of the square)
-    # perhaps to be added as a category later...
-    _setup_laves_488(unit)
-    return
-  elif unit.code == "6.6.6":
-    # triangles
-    _setup_base_tile(unit, TileShape.TRIANGLE)
-    _setup_none_tile(unit)
-  else:
-    print(f"[{unit.code}] is not a valid Laves code.")
-
-  unit.tiling_type = None
-  _setup_none_tile(unit)
-  return
+  match unit.code:
+    case "3.3.3.3.3.3":
+      # this is the regular hexagons
+      unit.base_shape = TileShape.HEXAGON
+      return  f"""Laves 6.6.6 is a basic hexagonal tiling. Perhaps you want a hex-colouring, hex-slice or hex-dissection tiling?"""
+    case "3.3.3.3.6":
+      # this one needs its own code
+      _setup_laves_33336(unit)
+    case "3.3.3.4.4":
+      return  f"The code [{unit.code}] is unsupported."
+    case "3.3.4.3.4":
+      # king of tilings!
+      setup_cairo(unit)
+    case "3.4.6.4":
+      # the hex 6-dissection
+      unit.n = 6
+      unit.offset = 1
+      setup_hex_slice(unit)
+    case "3.6.3.6":
+      # hex 3-dissection (also a cube weave!)
+      unit.n = 3
+      unit.offset = 0
+      setup_hex_slice(unit)
+    case "3.12.12":
+      # again this one needs its own
+      _setup_laves_31212(unit)
+    case "4.4.4.4":
+      # square grid
+      unit.base_shape = TileShape.RECTANGLE
+      return f"""Laves 4.4.4.4 is a basic square tiling. Perhaps you want a square-colouring or square-slice tiling?"""
+    case "4.6.12":
+      # hex 12-dissection
+      unit.n = 12
+      unit.offset = 0
+      setup_hex_slice(unit)
+    case "4.8.8":
+      # this one needs its own (a 4-dissection of the square)
+      # perhaps to be added as a category later...
+      _setup_laves_488(unit)
+    case "6.6.6":
+      # triangles
+      unit.base_shape = TileShape.TRIANGLE
+      return  f"""Note that Laves 3.3.3.3.3.3 is a basic triangle tiling."""
+    case _:
+      return  "[{unit.code}] is not a valid Laves code."
+  return None
 
 
 def _setup_laves_33336(unit:"TileUnit") -> None:
@@ -474,7 +416,6 @@ def _setup_laves_33336(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  _setup_base_tile(unit, TileShape.HEXAGON)
   offset_a = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
   sf = 1 / np.sqrt(7)
   tile = tiling_utils.get_regular_polygon(unit.spacing, 6)
@@ -488,11 +429,14 @@ def _setup_laves_33336(unit:"TileUnit") -> None:
   petals = [
     tiling_utils.gridify(affine.rotate(petal, a + offset_a, origin = (0, 0)))
     for a in range(30, 360, 60)]
+  unit.setup_vectors((                            0,  unit.spacing    ), 
+                     (unit.spacing * np.sqrt(3) / 2,  unit.spacing / 2),
+                     (unit.spacing * np.sqrt(3) / 2, -unit.spacing / 2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdef")},
     crs = unit.crs,
     geometry = gpd.GeoSeries(petals))
-  unit.setup_regularised_prototile_from_tiles()
+  return None
 
 
 def _setup_laves_488(unit:"TileUnit") -> None:
@@ -501,15 +445,15 @@ def _setup_laves_488(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  _setup_base_tile(unit, TileShape.RECTANGLE)
   tile = tiling_utils.get_regular_polygon(unit.spacing, 4)
   pts = [p for p in tile.exterior.coords]
   tris = [geom.Polygon([pts[i], pts[i+1], (0, 0)]) for i in range(4)]
+  unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcd")},
     crs = unit.crs,
     geometry = gpd.GeoSeries(tris))
-  unit.setup_regularised_prototile_from_tiles()
+  return None
 
 
 def _setup_laves_31212(unit:"TileUnit") -> None:
@@ -519,7 +463,6 @@ def _setup_laves_31212(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  _setup_base_tile(unit, TileShape.HEXAGON)
   hexagon = tiling_utils.get_regular_polygon(unit.spacing, 6)
   pts = [p for p in hexagon.exterior.coords]
   tri1 = geom.Polygon([pts[0], pts[2], [0, 0]])
@@ -530,11 +473,14 @@ def _setup_laves_31212(unit:"TileUnit") -> None:
        for a in range(0, 360, 120)]
   # reorder so the 'inner' and 'outer' triangles are labelled alternately
   tris = itertools.chain(*zip(tris1, tris2))
+  unit.setup_vectors((                            0,  unit.spacing    ), 
+                     (unit.spacing * np.sqrt(3) / 2,  unit.spacing / 2),
+                     (unit.spacing * np.sqrt(3) / 2, -unit.spacing / 2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdef")}, crs = unit.crs,
     geometry = gpd.GeoSeries(tris)
   )
-  unit.regularised_prototile = copy.deepcopy(unit.prototile)
+  return None
 
 
 def setup_archimedean(unit:"TileUnit") -> None:
@@ -550,104 +496,84 @@ def setup_archimedean(unit:"TileUnit") -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
-  if unit.code == "3.3.3.3.3.3":
-    _setup_base_tile(unit, TileShape.TRIANGLE)
-    _setup_none_tile(unit)
-    return
-  if unit.code == "3.3.3.3.6":
-    setup_laves(unit)
-    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    unit.setup_regularised_prototile_from_tiles()
-    return
-  elif unit.code == "3.3.3.4.4":
-    print(f"The code [{unit.code}] is unsupported.")
-  elif unit.code == "3.3.4.3.4":
-    # this is an attractive 6-colourable triangles and squares tiling
-    setup_laves(unit)
-    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    unit.setup_regularised_prototile_from_tiles()
-    return
-  elif unit.code == "3.4.6.4":
-    setup_laves(unit)
-    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    unit.setup_regularised_prototile_from_tiles()
-    return
-  elif unit.code == "3.6.3.6":
-    setup_laves(unit)
-    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    unit.setup_regularised_prototile_from_tiles()
-    return
-  elif unit.code == "3.12.12":
-    # nice! we can make dodecagons without having to think too hard
-    # simply use the dual code. (Although really... it probably
-    # would've been easier to make the dodecagon... other than
-    # calculating the scale relative to the hexagon base tile!)
-    setup_laves(unit)
-    unit.setup_vectors()
-    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    unit.setup_regularised_prototile_from_tiles()
-    return
-  elif unit.code == "4.4.4.4":
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    _setup_none_tile(unit)
-    return
-  elif unit.code == "4.6.12":
-    # more dodecagons for free!
-    setup_laves(unit)
-    unit.setup_vectors()
-    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    unit.setup_regularised_prototile_from_tiles()
-    return
-  elif unit.code == "4.8.8":
-    # this is the octagon and square tiling
-    setup_laves(unit)
-    unit.tiles = tiling_utils.get_dual_tile_unit(unit)
-    unit.setup_regularised_prototile_from_tiles()
-    return
-  elif unit.code == "6.6.6":
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    _setup_none_tile(unit)
-    return
-  else:
-    print(f"[{unit.code}] is not a valid Laves code.")
-
-  unit.tiling_type = None
-  _setup_none_tile(unit)
-  return
+  match unit.code:
+    case "3.3.3.3.3.3":
+      unit.base_shape = TileShape.TRIANGLE
+      return  f"""Note that Archimedean 3.3.3.3.3.3 is a basic triangle tiling?"""
+    case "3.3.3.3.6":
+      setup_laves(unit)
+      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    case "3.3.3.4.4":
+      return  f"The code [{unit.code}] is unsupported."
+    case "3.3.4.3.4":
+      # this is an attractive 6-colourable triangles and squares tiling
+      setup_laves(unit)
+      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    case "3.4.6.4":
+      setup_laves(unit)
+      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    case "3.6.3.6":
+      setup_laves(unit)
+      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    case "3.12.12":
+      # nice! we can make dodecagons without having to think too hard
+      # simply use the dual code. (Although really... it probably
+      # would've been easier to make the dodecagon... other than
+      # calculating the scale relative to the hexagon base tile!)
+      setup_laves(unit)
+      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    case "4.4.4.4":
+      unit.base_shape = TileShape.RECTANGLE
+      return  f"""Archimedean 4.4.4.4 is a basic square tiling. Perhaps you want a square-colouring or square-slice tiling?""" 
+    case "4.6.12":
+      setup_laves(unit)
+      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    case "4.8.8":
+      # this is the octagon and square tiling
+      setup_laves(unit)
+      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+    case "6.6.6":
+      unit.base_shape = TileShape.HEXAGON
+      return  f"""Archimedean 6.6.6 is a basic hexagonal tiling. Perhaps you want a hex-colouring, hex-slice or hex-dissection tiling?"""
+    case _:
+      unit.base_shape = TileShape.RECTANGLE
+      return  f"[{unit.code}] is not a valid Archimedean code."
+  return None
 
 
-def _setup_archimedean_3464(unit:"TileUnit") -> None:
-  """The dual of Laves 3.4.6.4 is not accurately rendered
-  by our code, so we do this one by hand.
+# def _setup_archimedean_3464(unit:"TileUnit") -> None:
+#   """The dual of Laves 3.4.6.4 is not accurately rendered
+#   by our code, so we do this one by hand.
 
-  Args:
-    unit (TileUnit):  the TileUnit to setup.
-  """
-  _setup_base_tile(unit, TileShape.HEXAGON)
-  sf = np.sqrt(3) / (1 + np.sqrt(3))
-  hexagon = tiling_utils.get_regular_polygon(unit.spacing * sf, 6)
-  corners = [p for p in hexagon.exterior.coords]
-  p1 = corners[1]
-  p2 = corners[0]
-  #   HEX   p1
-  #        /    p4
-  #    ---p2   /
-  #           p3
-  dx, dy = p2[0] - p1[0], p2[1] - p1[1]
-  p3 = (p2[0] - dy, p2[1] + dx)
-  p4 = (p3[0] - dx, p3[1] - dy)
-  square1 = geom.Polygon([p1, p2, p3, p4])
-  square2 = affine.rotate(square1, 60, (0, 0))
-  square3 = affine.rotate(square2, 60, (0, 0))
-  p5 = [pt for pt in square2.exterior.coords][2]
-  tri1 = geom.Polygon([p1, p4, p5])
-  tri2 = affine.rotate(tri1, 60, (0, 0))
-
-  unit.tiles = gpd.GeoDataFrame(
-    data = {"tile_id": list("abcdef")},
-    crs = unit.crs,
-    geometry = gpd.GeoSeries([hexagon, square1, square2, square3, tri1, tri2]))
-  unit.setup_regularised_prototile_from_tiles()
+#   Args:
+#     unit (TileUnit):  the TileUnit to setup.
+#   """
+#   sf = np.sqrt(3) / (1 + np.sqrt(3))
+#   hexagon = tiling_utils.get_regular_polygon(unit.spacing * sf, 6)
+#   corners = [p for p in hexagon.exterior.coords]
+#   p1 = corners[1]
+#   p2 = corners[0]
+#   #   HEX   p1
+#   #        /    p4
+#   #    ---p2   /
+#   #           p3
+#   dx, dy = p2[0] - p1[0], p2[1] - p1[1]
+#   p3 = (p2[0] - dy, p2[1] + dx)
+#   p4 = (p3[0] - dx, p3[1] - dy)
+#   square1 = geom.Polygon([p1, p2, p3, p4])
+#   square2 = affine.rotate(square1, 60, (0, 0))
+#   square3 = affine.rotate(square2, 60, (0, 0))
+#   p5 = [pt for pt in square2.exterior.coords][2]
+#   tri1 = geom.Polygon([p1, p4, p5])
+#   tri2 = affine.rotate(tri1, 60, (0, 0))
+#   unit.setup_vectors((                            0,  unit.spacing    ), 
+#                      (unit.spacing * np.sqrt(3) / 2,  unit.spacing / 2),
+#                      (unit.spacing * np.sqrt(3) / 2, -unit.spacing / 2))
+#   unit.tiles = gpd.GeoDataFrame(
+#     data = {"tile_id": list("abcdef")},
+#     crs = unit.crs,
+#     geometry = gpd.GeoSeries([hexagon, square1, square2, square3, tri1, tri2]))
+#   return None
 
 
 def setup_hex_colouring(unit:"TileUnit") -> None:
@@ -657,112 +583,119 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
     unit (TileUnit):  the TileUnit to setup.
   """
   hexagon = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 6)
-  w = hexagon.bounds[2] - hexagon.bounds[0]
-  h = hexagon.bounds[3] - hexagon.bounds[1]
-  if unit.n == 2:
-    # Pair of point up hexes sideways displace by width of a hex
-    # Vectors are rectangular
-    hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    w, h = h, w
-    hexes = [affine.translate(hexagon, dx, 0) for dx in [-w/2, w/2]]
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    unit.prototile.geometry = [geom.Polygon([
-      (-5 * w/4, -3 * h/8), (-3 * w/4,  3 * h/8), 
-      ( 5 * w/4,  3 * h/8), ( 3 * w/4, -3 * h/8)
-    ])]
-  elif unit.n == 3:
-    # Point up hex at '*' displaced to 3 positions:
-    #      2
-    #      *
-    #    3   1
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    # Copy and translate to alternate corners
-    corners = [p for i, p in enumerate(hexagon.exterior.coords)
-           if i in (0, 2, 4)]
-    hexes = [affine.translate(hexagon, p[0], p[1]) for p in corners]
-  elif unit.n == 4:
-    # Point up hex at '*' displaced to 4 positions:
-    #      2
-    #     3*1
-    #      4
-    _setup_base_tile(unit, TileShape.DIAMOND)
-    hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    hex1 = affine.translate(hexagon, unit.spacing / 4, 0)
-    hex2 = affine.translate(hexagon, 0, unit.spacing * np.sqrt(3) / 4)
-    hex3 = affine.translate(hexagon, -unit.spacing / 4, 0)
-    hex4 = affine.translate(hexagon, 0, -unit.spacing * np.sqrt(3) / 4)
-    hexes = [hex1, hex2, hex3, hex4]
-  elif unit.n == 4:
-    # Point up hex at '*' displaced to 4 positions:
-    #      2
-    #     3*1
-    #      4
-    _setup_base_tile(unit, TileShape.DIAMOND)
-    hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    hex1 = affine.translate(hexagon, unit.spacing / 4, 0)
-    hex2 = affine.translate(hexagon, 0, unit.spacing * np.sqrt(3) / 4)
-    hex3 = affine.translate(hexagon, -unit.spacing / 4, 0)
-    hex4 = affine.translate(hexagon, 0, -unit.spacing * np.sqrt(3) / 4)
-    hexes = [hex1, hex2, hex3, hex4]
-  elif unit.n == 5:
-    hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    w, h = h, w
-    tr = [(-w, h/4), (0, h/4), ( w, h/4), 
-          (-w/2, -h/2), (w/2, -h/2)]
-    hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(0,  3 *  h/2), ( 5 * w/2,  3 * h/4), ( 5 * w/2, -3 * h/4)])]
-  elif unit.n == 6:
-    hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    w, h = h, w
-    tr = [(-5 * w/4,  3 * h/8), (-w/4,  3 * h/8), (3 * w/4,  3 * h/8), 
-          (-3 * w/4, -3 * h/8), ( w/4, -3 * h/8), (5 * w/4, -3 * h/8)]
-    hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-3 * w,  0), (0, -3 * h/2)])]
-  elif unit.n == 7:  # the 'H3' tile
-    # Make a hexagon and displace in the direction of its
-    # own 6 corners, scaled as needed
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    rotation = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
-    corners = [p for p in hexagon.exterior.coords][:-1]
-    hexagon = affine.rotate(hexagon, 30)
-    hexes = [hexagon] + [affine.translate(
-      hexagon, x * np.sqrt(3), y * np.sqrt(3)) for x, y in corners]
-    hexes = [affine.rotate(h, rotation, origin = (0, 0))
-             for h in hexes]
-  elif unit.n == 8:
-    hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-    w, h = h, w
-    tr = [(-w,  3 * h/4), (0,  3 * h/4), ( w,  3 * h/4), 
-                       (-w/2, 0), ( w/2, 0),
-          (-w, -3 * h/4), (0, -3 * h/4), ( w, -3 * h/4)]
-    hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-w/2, -9 *  h/4), (-3 * w, -3 * h/2), (-5 * w/2,  3 * h/4)])]
-  elif unit.n == 9:
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    offsets = [
-      (-3 * w/4, -5 * h/4), (0, -3 * h/4), ( 3 * w/4, -5 * h/4),
-      (-3 * w/4,     -h/4), (0,      h/4), ( 3 * w/4,     -h/4),
-      (-3 * w/4,  3 * h/4), (0,  5 * h/4), ( 3 * w/4,  3 * h/4)
-    ]
-    hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-  else:
-    print(f"{unit.n}-colouring of hexes is not supported.\nTry 2, 3, 4, 7, or 9.")
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    _setup_none_tile(unit)
-    return
-
+  bounds = hexagon.bounds
+  w = bounds[2] - bounds[0]
+  h = bounds[3] - bounds[1]
+  match unit.n:
+    case 2:
+      # Pair of point up hexes sideways displace by width of a hex
+      # Vectors are rectangular
+      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
+      w, h = h, w
+      hexes = [affine.translate(hexagon, dx, 0) for dx in [-w/2, w/2]]
+      unit.setup_vectors((w/2, 3*h/4), 
+                        (2*w,     0))
+    case 3:
+      # Point up hex at '*' displaced to 3 positions:
+      #      2
+      #      *
+      #    3   1
+      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
+      w, h = h, w
+      # Copy and translate to alternate corners
+      corners = [p for i, p in enumerate(hexagon.exterior.coords)
+            if i in (0, 2, 4)]
+      hexes = [affine.translate(hexagon, p[0], p[1]) for p in corners]
+      unit.setup_vectors((  0  ,  3*h/2), 
+                        (3*w/2,  3*h/4), 
+                        (3*w/2, -3*h/4))
+    case 4:
+      # Point up hex at '*' displaced to 4 positions:
+      #      2
+      #     3*1
+      #      4
+      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
+      w, h = h, w
+      hex1 = affine.translate(hexagon, unit.spacing / 4, 0)
+      hex2 = affine.translate(hexagon, 0, unit.spacing * np.sqrt(3) / 4)
+      hex3 = affine.translate(hexagon, -unit.spacing / 4, 0)
+      hex4 = affine.translate(hexagon, 0, -unit.spacing * np.sqrt(3) / 4)
+      hexes = [hex1, hex2, hex3, hex4]
+      unit.setup_vectors((w,  3*h/2), 
+                        (w, -3*h/2))
+    case 4:
+      # Point up hex at '*' displaced to 4 positions:
+      #      2
+      #     3*1
+      #      4
+      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
+      w, h = h, w
+      hex1 = affine.translate(hexagon, unit.spacing / 4, 0)
+      hex2 = affine.translate(hexagon, 0, unit.spacing * np.sqrt(3) / 4)
+      hex3 = affine.translate(hexagon, -unit.spacing / 4, 0)
+      hex4 = affine.translate(hexagon, 0, -unit.spacing * np.sqrt(3) / 4)
+      hexes = [hex1, hex2, hex3, hex4]
+    case 5:
+      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
+      w, h = h, w
+      tr = [(-w  ,  h/4), (  0,  h/4), ( w, h/4), 
+            (-w/2, -h/2), (w/2, -h/2)]
+      hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
+      unit.setup_vectors((  0  ,  3*h/2), 
+                        (5*w/2,  3*h/4), 
+                        (5*w/2, -3*h/4))
+    case 6:
+      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
+      w, h = h, w
+      tr = [(-5*w/4,  3*h/8), (-w/4,  3*h/8), (3*w/4,  3*h/8), 
+            (-3*w/4, -3*h/8), ( w/4, -3*h/8), (5*w/4, -3*h/8)]
+      hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
+      unit.setup_vectors((  0,  3*h/2), 
+                        (3*w,    0  ))
+    case 7:  # the 'H3' tile
+      # Make a hexagon and displace in the direction of its
+      # own 6 corners, scaled as needed
+      base_hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
+      bounds = base_hex.bounds
+      w = bounds[2] - bounds[0]
+      h = bounds[3] - bounds[1]
+      rotation = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
+      corners = [p for p in hexagon.exterior.coords][:-1]
+      hexagon = affine.rotate(hexagon, 30)
+      hexes = [hexagon] + [affine.translate(
+        hexagon, x * np.sqrt(3), y * np.sqrt(3)) for x, y in corners]
+      hexes = [affine.rotate(h, rotation, origin = (0, 0))
+              for h in hexes]
+      unit.setup_vectors((  0  ,  h), 
+                        (3*w/4,  h/2), 
+                        (3*w/4, -h/2))
+    case 8:
+      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
+      w, h = h, w
+      tr = [(-w,  3*h/4), (0,  3*h/4), ( w,  3*h/4), 
+                    (-w/2, 0), ( w/2, 0),
+            (-w, -3*h/4), (0, -3*h/4), ( w, -3*h/4)]
+      hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
+      unit.setup_vectors((  w/2,  9*h/4), 
+                        (3*w  ,  3*h/2),
+                        (5*w/2, -3*h/4)) 
+    case 9:
+      offsets = [
+        (-3*w/4, -5*h/4), (0, -3*h/4), ( 3*w/4, -5*h/4),
+        (-3*w/4,     -h/4), (0,      h/4), ( 3*w/4,     -h/4),
+        (-3*w/4,  3*h/4), (0,  5*h/4), ( 3*w/4,  3*h/4)
+      ]
+      hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
+      unit.setup_vectors((  0  ,  3*h  ), 
+                        (9*w/4,  3*h/2),
+                        (9*w/4, -3*h/2)) 
+    case _:
+      return  f"{unit.n}-colouring of hexes is not supported. Try a number between 2 and 9."
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(hexes))
-  unit.setup_regularised_prototile_from_tiles()
+  return None
 
 
 def setup_square_colouring(unit:"TileUnit") -> None:
@@ -773,101 +706,83 @@ def setup_square_colouring(unit:"TileUnit") -> None:
   """
   sq = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 4)
   s = sq.bounds[2] - sq.bounds[0]
-  if unit.n == 2:
-    # Copy and translate square
-    tr = [(-s/2, 0), (s/2, 0)]
-    squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-2 * s, 0), (0, -s)])]
-  elif unit.n == 3:
-    # Copy and translate square
-    tr = [(-s/2, -s/2), (s/2, -s/2), (-s/2, s/2)]
-    squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-    squares = [affine.rotate(sq, 45, (0, 0)) for sq in squares]
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    x = s * np.sqrt(2)
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(0, -x), (-3 * x/2, -x/2), (-3 * x/2,  x/2)])]
-  elif unit.n == 4:
-    # Copy and translate square
-    tr = [(-s/2, -s/2), (-s/2,  s/2), 
-          ( s/2,  s/2), ( s/2, -s/2)]
-    squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-  elif unit.n == 5:
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    # Copy and translate square
-    tr = [( 0, 0), 
-          ( s, 0), (0,  s),
-          (-s, 0), (0, -s)]
-    squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-    rotation = np.degrees(np.arctan2(1, 2))
-    squares = [affine.rotate(sq, rotation, origin = (0, 0))
-           for sq in squares]
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    unit.prototile.geometry = [affine.rotate(
-      tiling_utils.get_prototile_from_vectors(
-      [(-s, -2 * s), (-2 * s,  s)]), rotation)]
-  elif unit.n == 6:
-    # Copy and translate square
-    tr = [(-s, -s), (0, -s),
-          (-s,  0), (0,  0), ( s,  0),
-                    (0,  s)]
-    squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-    squares = [affine.rotate(sq, -45, origin = (0, 0)) for sq in squares]
-    x  = s * np.sqrt(2)
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    unit.prototile.geometry = [tiling_utils.get_prototile_from_vectors(
-      [(-3 * x/2, -3 * x/2), (-2 * x, 0), (-x/2, 3 * x/2)])]
-  elif unit.n == 7:
-    # Copy and translate square
-    tr = [(-s, -s), (0, -s),
-          (-s,  0), (0,  0), ( s,  0),
-                    (0,  s), ( s,  s)]
-    squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-    squares = [affine.rotate(sq, -45, (0, 0)) for sq in squares]
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    x = s * np.sqrt(2)
-    # this is a nicer prototile than the one generated by tiling_utils
-    unit.prototile.geometry = [geom.Polygon([
-      (-x, -x/2), (-3 * x/2, 0), (-x/2,  x),
-      ( x,  x/2), ( 3 * x/2, 0), ( x/2, -x)
-    ])]
-  elif unit.n == 8:
-    # Copy and translate square
-    tr = [(-s, -s), (0, -s), ( s, -s),
-          (-s,  0), (0,  0), ( s,  0),
-          (-s,  s), (0,  s)]
-    squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-    squares = [affine.rotate(sq, 45, origin = (0, 0)) for sq in squares]
-    _setup_base_tile(unit, TileShape.HEXAGON)
-    x  = s * np.sqrt(2)
-    # this is a nicer prototile than the one generated by tiling_utils
-    unit.prototile.geometry = [geom.Polygon([
-      (-x/2, -x), ( x/2, -x), ( 3 * x/2, 0),
-      ( x/2,  x), (-x/2,  x), (-3 * x/2, 0)
-    ])]
-  elif unit.n == 9:
-    # Copy and translate square
-    tr = [(-s, -s), (0, -s), ( s, -s),
-          (-s,  0), (0,  0), ( s,  0),
-          (-s,  s), (0,  s), ( s,  s)]
-    squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    unit.prototile.geometry = [geom.Polygon([
-      (-3 * s/2, -3 * s/2), (-3 * s/2,  3 * s/2), 
-      ( 3 * s/2,  3 * s/2), ( 3 * s/2, -3 * s/2)
-    ])]
-  else:
-    print(f"{unit.n}-colouring of squares is not supported. Try 2, 3, 4, 5, 7, or 9")
-    _setup_base_tile(unit, TileShape.RECTANGLE)
-    _setup_none_tile(unit)
-    return
+  match unit.n:
+    case 2:
+      # Copy and translate square
+      tr = [(-s/2, 0), (s/2, 0)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      unit.setup_vectors((0, s), (2*s, 0)) 
+    case 3:
+      # Copy and translate square
+      tr = [(-s/2, -s/2), (s/2, -s/2), (-s/2, s/2)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      squares = [affine.rotate(sq, 45, (0, 0)) for sq in squares]
+      x = s * np.sqrt(2)
+      unit.setup_vectors((  0  ,  x  ), 
+                        (3*x/2,  x/2),
+                        (3*x/2, -x/2)) 
+    case 4:
+      # Copy and translate square
+      tr = [(-s/2, -s/2), (-s/2,  s/2), 
+            ( s/2,  s/2), ( s/2, -s/2)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      unit.setup_vectors((0, unit.spacing), (unit.spacing, 0)) 
+    case 5:
+      # Copy and translate square
+      tr = [( 0, 0), 
+            ( s, 0), (0,  s),
+            (-s, 0), (0, -s)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      rotation = np.degrees(np.arctan2(1, 2))
+      squares = [affine.rotate(sq, rotation, origin = (0, 0))
+            for sq in squares]
+      unit.setup_vectors((0, unit.spacing), (unit.spacing, 0)) 
+    case 6:
+      # Copy and translate square
+      tr = [(-s, -s), (0, -s),
+            (-s,  0), (0,  0), ( s,  0),
+                      (0,  s)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      squares = [affine.rotate(sq, -45, origin = (0, 0)) for sq in squares]
+      x = s * np.sqrt(2)
+      unit.setup_vectors((  x/2,  3*x/2), 
+                        (2*x  ,    0  ),
+                        (3*x/2, -3*x/2)) 
+    case 7:
+      # Copy and translate square
+      tr = [(-s, -s), (0, -s),
+            (-s,  0), (0,  0), ( s,  0),
+                      (0,  s), ( s,  s)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      squares = [affine.rotate(sq, -45, (0, 0)) for sq in squares]
+      x = s * np.sqrt(2)
+      unit.setup_vectors((  x/2,  3*x/2), 
+                        (5*x/2,    x/2),
+                        (2*x  ,   -x  )) 
+    case 8:
+      # Copy and translate square
+      tr = [(-s, -s), (0, -s), ( s, -s),
+            (-s,  0), (0,  0), ( s,  0),
+            (-s,  s), (0,  s)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      squares = [affine.rotate(sq, 45, origin = (0, 0)) for sq in squares]
+      x  = s * np.sqrt(2)
+      unit.setup_vectors((  0, 2*x), 
+                        (2*x,   x),
+                        (2*x,  -x)) 
+    case 9:
+      # Copy and translate square
+      tr = [(-s, -s), (0, -s), ( s, -s),
+            (-s,  0), (0,  0), ( s,  0),
+            (-s,  s), (0,  s), ( s,  s)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      unit.setup_vectors((0, unit.spacing), (unit.spacing, 0)) 
+    case _:
+      return  f"{unit.n}-colouring of squares is not supported."
 
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(squares))
-  unit.setup_regularised_prototile_from_tiles()
+  return None
 
