@@ -57,10 +57,10 @@ Examples:
   by geometric construction of suitable shapely.geometry.Polygons. TODO: A detailed example of this usage can be found here ....
 """
 
+from __future__ import annotations
 import copy
 from dataclasses import dataclass
 from typing import Iterable
-from typing import Union
 
 import geopandas as gpd
 import numpy as np
@@ -93,13 +93,16 @@ class TileUnit(Tileable):
     super(TileUnit, self).__init__(**kwargs)
 
 
-  def _setup_tiles(self) -> Union[None,str]:
+  def _setup_tiles(self) -> None|str:
     """Delegates setup of unit to functions in `tiling_geometries` depending on
     `self.tiling_type`. If there is a problem a string is returned. If all is
     OK then None is returned (some care is required to do this!)
 
     The logical tests applied to check for tiling type are expansive to allow
     scope for user errors.
+
+    Returns:
+      str|None: if a problem occurs a message string, otherwise None.
     """
     if self.tiling_type == "cairo":
       return tiling_geometries.setup_cairo(self)

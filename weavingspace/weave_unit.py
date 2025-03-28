@@ -8,12 +8,11 @@ Examples:
   Explain usage here...
 """
 
+from __future__ import annotations
 import itertools
-from copy import deepcopy
 import logging
 from dataclasses import dataclass
-from collections import defaultdict
-from typing import Iterable, Union
+from typing import Iterable
 
 import pandas as pd
 import geopandas as gpd
@@ -42,7 +41,7 @@ class WeaveUnit(Tileable):
   `this`. Defaults to `plain`."""
   aspect:float = 1.
   """width of strands relative to the `spacing`. Defaults to 1.0."""
-  n:Union[int, tuple[int]] = (2, 2)
+  n:int|tuple[int] = (2, 2)
   """number of over-under strands in biaxial weaves. Only one item is 
   required in a plain weave. Twill and basket patterns expect an even number of 
   entries in the tuple."""
@@ -127,9 +126,9 @@ class WeaveUnit(Tileable):
 
 
   def _get_triaxial_weave_matrices(self,
-    strands_1:Union[list[str],tuple[str]] = ["a"],
-    strands_2:Union[list[str],tuple[str]] = ["b"],
-    strands_3:Union[list[str],tuple[str]] = ["c"]) -> Loom:
+    strands_1:list[str]|tuple[str] = ["a"],
+    strands_2:list[str]|tuple[str] = ["b"],
+    strands_3:list[str]|tuple[str] = ["c"]) -> Loom:
     """Returns encoded weave pattern matrix as Loom of three biaxial matrices.
 
     Allowed weave_types: "cube" or "hex".
@@ -144,11 +143,11 @@ class WeaveUnit(Tileable):
     Defaults will produce 'mad weave'.
 
     Args:
-      strands_1 (Union[list[str],tuple[str]], optional): list of labels
+      strands_1 (list[str]|tuple[str], optional): list of labels
       for warp strands. Defaults to ["a"].
-      strands_2 (Union[list[str],tuple[str]], optional): list of labels
+      strands_2 (list[str]|tuple[str], optional): list of labels
       for weft strands. Defaults to ["b"].
-      strands_3 (Union[list[str],tuple[str]], optional): list of labels
+      strands_3 (list[str]|tuple[str], optional): list of labels
       for weft strands. Defaults to ["c"].
 
     Returns:

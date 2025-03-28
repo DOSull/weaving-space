@@ -14,7 +14,6 @@ can be accessed through its subclasses.
 """
 
 from enum import Enum
-from typing import Union
 from dataclasses import dataclass
 import copy
 
@@ -25,7 +24,6 @@ import numpy as np
 import shapely.geometry as geom
 import shapely.affinity as affine
 
-# import weavingspace.tiling_utils as tiling_utils
 from weavingspace import tiling_utils
 
 class TileShape(Enum):
@@ -131,20 +129,19 @@ class Tileable:
 
   def get_vectors(
       self, 
-      as_dict: bool = False) -> Union[dict[tuple[int],tuple[float]],
-                                      list[tuple[float]]]:
+      as_dict: bool = False
+      ) -> dict[tuple[int],tuple[float]]|list[tuple[float]]:
     """
-    Returns symmetry translation vectors as floating point pairs.
-    Optionally returns the vectors in a dictionary indexed by their
-    coordinates, e.g.
+    Returns symmetry translation vectors as floating point pairs. Optionally 
+    returns the vectors in a dictionary indexed by their coordinates, e.g.
 
       {( 1,  0): ( 100, 0), ( 0,  1): (0,  100),
        (-1,  0): (-100, 0), ( 0, -1): (0, -100)}
 
     Returns:
-      Union[ dict[tuple[int],tuple[float]], list[tuple[float]] ]:
-        either the vectors as a list of float tuples, or a dictionary
-        of those vectors indexed by integer coordinate tuples.
+      dict[tuple[int],tuple[float]]|list[tuple[float]]: either the vectors as a
+        list of float tuples, or a dictionary of those vectors indexed by 
+        integer coordinate tuples.
     """
     if as_dict:
       return self.vectors

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from __future__ import annotations
+
+import numpy as np
 import shapely.geometry as geom
-# import weavingspace.tiling_utils as tiling_utils
 from weavingspace import tiling_utils
 
 class Tile(object):
@@ -13,12 +15,12 @@ class Tile(object):
   list."""
   base_ID: int
   """ID of corresponding Tile in the base tileable unit"""
-  corners: list["Vertex"]
+  corners: list[Vertex]
   """list of Vertex objects. This includes all corners of the original polygon 
   and any tiling vertices induced by (for example) a the corner of an adjacent 
   tile lying halfway along an edge of the original polygon on which this tile 
   is based. Vertex objects are stored in strictly clockwise sequence."""
-  edges: list["Edge"]
+  edges: list[Edge]
   """list of Edge objects that together compose the tile boundary."""
   edges_CW: list[bool]
   """list of Edge direction. Edges are stored only once in a Topology so some 
@@ -142,7 +144,7 @@ class Tile(object):
     self.edges_CW = [e1[-1] in e2 for e1, e2 in 
                      zip(edge_IDs, edge_IDs[1:] + edge_IDs[:1])]
 
-  def insert_vertex_at(self, v:"Vertex", i:int, 
+  def insert_vertex_at(self, v:Vertex, i:int, 
                        update_shape:bool = False) -> tuple:
     """Method to insert the supplied Vertex into tile at index position i, 
     optionally updating the shape attribute. Both corners and edges attributes
@@ -177,7 +179,7 @@ class Tile(object):
       self.set_shape_from_corners()
     return old_edge_ID, new_edges
 
-  def merge_edges_at_vertex(self, v:"Vertex") -> tuple:
+  def merge_edges_at_vertex(self, v:Vertex) -> tuple:
     """Method to merge the edges that meet at the supplied Vertex. It is 
     assumed that only two tiles are impacted this one, and its neighbour across
     the Edge on which v lies. Both are updated. For this reason the work is
@@ -198,7 +200,7 @@ class Tile(object):
       v.tiles[1].get_updated_edges_from_merge(v, new_edge)
     return to_remove, new_edge
 
-  def get_updated_edges_from_merge(self, v:"Vertex", new_edge:"Edge" = None):
+  def get_updated_edges_from_merge(self, v:Vertex, new_edge:Edge = None):
     """Updates the edges and edges_CW attributes based on insertion of 
     the supplied Vertex. If new_edge is supplied then the neighbour tile at
     v has already created the needed new Edge and this Edge is the one that
@@ -241,7 +243,7 @@ class Tile(object):
     else:
       return None
 
-  def get_edge_IDs_including_vertex(self, v:"Vertex") -> tuple[int]:
+  def get_edge_IDs_including_vertex(self, v:Vertex) -> tuple[int]:
     """Gets the (two) index positions of the edges that include supplied Vertex.
 
     Args:
@@ -252,7 +254,7 @@ class Tile(object):
     """
     return (i for i, e in enumerate(self.edges) if v.ID in e.ID)
 
-  def get_merged_edge(self, i:int, j:int) -> "Edge":
+  def get_merged_edge(self, i:int, j:int) -> Edge:
     """Returns the new edge resulting from merging the two existing edges at
     index positions i and j in the edges list. For example, if the current list 
     of edge IDs was
@@ -283,7 +285,7 @@ class Tile(object):
     v_sequence = (head if CWi else head[::-1]) + (tail if CWj else tail[::-1])
     return Edge(v_sequence)
 
-  def offset_corners(self, offset:int):
+  def offset_corners(self, offset:int) -> None:
     """Shifts shape, corners, edges, and edges_CW by an offset amount. This is
     used to align tiles that are similar, which is required for correct 
     transfer of 'base' tile labelling on to 'radius 1' tiles during Topology 
@@ -292,13 +294,14 @@ class Tile(object):
     Args:
       offset int: the number of positions to shift the lists.
     """
-    if not offset is None or offset == 0:
-      self.shape = tiling_utils.offset_polygon_corners(self.shape, offset)
+    if not offset is None or offset != 0:
       self.corners = self.corners[offset:] + self.corners[:offset]
+      self.shape = geom.Polygon([c.point for c in self.corners])
       self.edges = self.edges[offset:] + self.edges[:offset]
       self.edges_CW = self.edges_CW[offset:] + self.edges_CW[:offset]
+    return None
 
-  def get_edge_label(self, e:"Edge") -> str:
+  def get_edge_label(self, e:Edge) -> str:
     """Returns edge label of specified edge.
 
     Args:
@@ -309,7 +312,7 @@ class Tile(object):
     """
     return self.edge_labels[self.get_edge_IDs().index(e.ID)]
 
-  def get_corner_label(self, v:"Vertex") -> str:
+  def get_corner_label(self, v:Vertex) -> str:
     """Returns corner label of specified corner.
 
     Args:
@@ -348,7 +351,7 @@ class Tile(object):
     return [geom.LineString([s.centroid, c]).line_interpolate_point(d) 
             for s in sides]
 
-  def angle_at(self, v:"Vertex") -> float:
+  def angle_at(self, v:Vertex) -> float:
     """Returns interior angle at the specified corner (in degrees).
 
     Args:
@@ -371,7 +374,7 @@ class Vertex:
   ID: int
   """integer (mostly but not necessarily in sequence) of vertex keyed into the 
   points dictionary of the containing Topology."""
-  tiles: list["Tile"]
+  tiles: list[Tile]
   """list of Tiles incident on this vertex."""
   neighbours: list[int]
   """list of the immediately adjacent other corner IDs. Only required to 
@@ -451,7 +454,7 @@ class Vertex:
   def clockwise_order_incident_tiles(self):
     """Reorders the tiles list clockwise (this is for dual tiling construction)
     """
-    cw_order = tiling_utils.order_of_pts_cw_around_centre(
+    cw_order = self._order_of_pts_cw_around_centre(
       [t.centre for t in self.tiles], self.point)
     self.tiles = [self.tiles[i] for i in cw_order]
 
@@ -465,6 +468,26 @@ class Vertex:
     return abs(360 - sum([t.angle_at(self) for t in self.tiles])) \
                      < tiling_utils.RESOLUTION
 
+  def _order_of_pts_cw_around_centre(
+    self,
+    pts:list[geom.Point],
+    centre:geom.Point) -> list[int]:
+    """Returns the order of the supplied points clockwise relative to supplied 
+    centre point, i.e. a list of the indices in clockwise order.
+
+    Args:
+        pts (list[geom.Point]): list of points to order.
+        centre (geom.Point): centre relative to which CW order is determined.
+
+    Returns:
+        _type_: list of reordered points.
+    """
+    dx = [p.x - centre.x for p in pts]
+    dy = [p.y - centre.y for p in pts]
+    angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
+    d = dict(zip(angles, range(len(pts))))
+    return [i for angle, i in reversed(sorted(d.items()))]
+
 
 class Edge:
   """Class to represent edges in a tiling (not tile sides) per the definitions
@@ -473,15 +496,15 @@ class Edge:
   ID: tuple[int]
   """IDs of the vertices at ends of the edge. Used as key in the containing 
   Topology's edges dictionary."""
-  vertices: list["Vertex"]
+  vertices: list[Vertex]
   """two item list of the end vertices."""
-  corners: list["Vertex"]
+  corners: list[Vertex]
   """list of all the vertices in the edge (including its end vertices). In a 
   'normal' edge to edge tiling corners and vertices will be identical."""
-  right_tile: "Tile" = None
+  right_tile: Tile = None
   """the tile to the right of the edge traversed from its first to its last 
   vertex. Given clockwise winding default, all edges will have a right_tile."""
-  left_tile: "Tile" = None
+  left_tile: Tile = None
   """the tile to the left of the edge traversed from its first to its last 
   vertex. Exterior edges of the tiles in a Topology will not have a left_tile.
   """
@@ -534,7 +557,7 @@ class Edge:
     """
     return [v.ID for v in self.vertices]
 
-  def insert_vertex(self, v:"Vertex", predecessor:"Vertex") -> list["Edge"]:
+  def insert_vertex(self, v:Vertex, predecessor:Vertex) -> list[Edge]:
     """Inserts a vertex along this edge after the specified predecessor 
     Vertex and returns this edge modified and a new edge. 
     

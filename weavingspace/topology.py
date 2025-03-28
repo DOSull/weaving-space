@@ -25,23 +25,24 @@ Note also that these classes do not accurately represent the distinctions made
 in the mathematical literature between tiling vertices and tile corners, or 
 between tiling edges and tile sides.
 """
+from __future__ import annotations
 from collections import defaultdict
 import inspect
 import itertools
-from typing import Callable, Union
-from typing import Any
+from typing import Callable
 from typing import Iterable
 import pickle
 import string
 
 import numpy as np
+from scipy import interpolate
 import networkx as nx
 import geopandas as gpd
 import shapely.geometry as geom
 import shapely.affinity as affine
 import matplotlib.pyplot as pyplot
 
-# from weavingspace import Tileable
+from weavingspace import Tileable
 from weavingspace import Symmetries
 from weavingspace import Transform
 from weavingspace import Shape_Matcher
@@ -70,7 +71,7 @@ class Topology:
   so on. This is because self.tiles[i % n_tiles] is frequently used to reference
   the base unit Tile which corresponds to self.tiles[i].
   """
-  tileable: "Tileable"
+  tileable: Tileable
   """the Tileable on which the topology will be based."""
   tiles: list[Tile]
   """list of the Tiles in the topology. We use polygons returned by the
@@ -99,7 +100,7 @@ class Topology:
   edge_transitivity_classes: list[list[tuple[int]]]
   """list of lists of edge IDs in each transitivity class"""
 
-  def __init__(self, unit: "Tileable", ignore_tile_ids:bool = True):
+  def __init__(self, unit: Tileable, ignore_tile_ids:bool = True):
     """Class constructor.
 
     Args:
@@ -558,7 +559,7 @@ class Topology:
         self.tile_matching_transforms)
     return self.tile_matching_transforms
 
-  def _remove_duplicate_symmetries(self, transforms:dict[int,Any]):
+  def _remove_duplicate_symmetries(self, transforms:dict[int,Transform]):
     """Filters the supplied list of shapely affine transforms so that no 
     duplicates are retained.
     """
@@ -664,26 +665,26 @@ class Topology:
           self.edges[e].label = labels[i]
     
   def _match_geoms_under_transform(
-      self, geom1:Union[Tile,Vertex,Edge], 
-      geoms2:list[Union[Tile,Vertex,Edge]], transform:tuple[float]) -> int:
+      self, geom1:Tile|Vertex|Edge, 
+      geoms2:list[Tile|Vertex|Edge], transform:tuple[float]) -> int|tuple[int]:
     """Determines if there is a geometry in the supplied patch onto which the
     supplied geometry is mapped by the supplied symmetry.
 
     Args:
-      tile (Union[Tile,Vertex,Edge]): element whose geometry we want to match.
-      patch (list[Union[Tile,Vertex,Edge]]): set of elements among which a 
+      tile (Tile|Vertex|Edge): element whose geometry we want to match.
+      patch (list[Tile|Vertex|Edge]): set of elements among which a 
         match is sought.
       transform (tuple[float]): shapely affine transform 6-tuple to apply.
 
     Returns:
-      Union[int,tuple[int]]: ID of the element in patch that matches the geom1
+      int|tuple[int]: ID of the element in patch that matches the geom1
         element under the transform if one exists, otherwise returns -1.
     """
     match_id = -1
     for geom2 in geoms2:
       if isinstance(geom1, Tile):
         # an area of intersection based test
-        match = tiling_utils.geometry_matches(
+        match = self.geometry_matches(
           affine.affine_transform(geom1.shape, transform), geom2.shape)
       elif isinstance(geom1, Vertex):
         # distance test
@@ -701,7 +702,7 @@ class Topology:
     return match_id
 
   def _get_exclusive_supersets(
-      self, sets:list[Iterable[Any]]) -> list[Iterable[Any]]:
+      self, sets:list[Iterable]) -> list[Iterable]:
     """For the supplied list of lists, which may share elements, i.e. they are
     non-exclusives sets, returns a list of lists which are exclusive: each 
     element will only appear in one of the lists in the returned list. Uses
@@ -709,10 +710,10 @@ class Topology:
     where an intersection between two sets is an edge.
 
     Args:
-        sets (list[Iterable[Any]]): list of lists of possibly overlapping sets.
+        sets (list[Iterable]): list of lists of possibly overlapping sets.
 
     Returns:
-      list[Iterable[Any]]: list of lists that include all the original 
+      list[Iterable]: list of lists that include all the original 
         elements without overlaps.
     """
     overlaps = []
@@ -766,6 +767,9 @@ class Topology:
     
     TODO: make this a viable replacement for the existing dual tiling 
     generation.
+
+    TODO: also need to ensure that this finds a set of dual tiles that exhaust
+    the plane... 
 
     Returns:
       list[geom.Polygon]: a list of polygon objects.
@@ -821,6 +825,19 @@ class Topology:
     e = Edge(vs)
     self.edges[e.ID] = e
     return e
+
+  def geometry_matches(
+      self,
+      geom1:geom.Polygon, 
+      geom2:geom.Polygon) -> bool:
+    a, b = geom1.area, geom2.area
+    return bool(
+      np.isclose(a, b, 
+                 rtol = tiling_utils.RESOLUTION * 100, 
+                 atol = tiling_utils.RESOLUTION * 100) and 
+      np.isclose(a, geom1.intersection(geom2).area, 
+                 rtol = tiling_utils.RESOLUTION * 100,
+                 atol = tiling_utils.RESOLUTION * 100))
 
   def _get_tile_geoms(self) -> gpd.GeoDataFrame:
     return gpd.GeoDataFrame(
@@ -1022,8 +1039,7 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
     v0, v1 = edge.vertices[0], edge.vertices[1]
     if n % 2 == 1 and v0.label != start:
       h = -h
-    ls = tiling_utils.zigzag_between_points(v0.point, v1.point, 
-                                            n, h, smoothness)
+    ls = self.zigzag_between_points(v0.point, v1.point, n, h, smoothness)
     # remove current corners
     self.points = {k: v for k, v in self.points.items()
                    if not k in edge.get_corner_IDs()[1:-1]}
@@ -1034,6 +1050,47 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
       edge.right_tile.set_corners_from_edges(False)
     if not edge.left_tile is None:
       edge.left_tile.set_corners_from_edges(False)
+
+  def zigzag_between_points(
+      self,
+      p0:geom.Point, 
+      p1:geom.Point, 
+      n:int,
+      h:float = 1.0,  
+      smoothness:int = 0) -> geom.LineString:
+    """_summary_
+
+    Args:
+        p0 (geom.Point): _description_
+        p1 (geom.Point): _description_
+        n (int): _description_
+        h (float, optional): _description_. Defaults to 1.0.
+        smoothness (int, optional): _description_. Defaults to 0.
+
+    Returns:
+        geom.LineString: _description_
+    """
+    template_steps = n * 2 + 1
+    r = p0.distance(p1)
+    
+    x = np.linspace(0, n * np.pi, template_steps, endpoint = True)
+    y = [np.sin(x) for x in x]
+    s = interpolate.InterpolatedUnivariateSpline(x, y, k = 2)
+
+    spline_steps = (n + smoothness) * 2 + 1
+    xs = np.linspace(0, n * np.pi, spline_steps, endpoint = True)
+    ys = s(xs)
+    
+    sfx = 1 / max(x) * r
+    sfy = h * r / 2
+    theta = np.arctan2(p1.y - p0.y, p1.x - p0.x)
+
+    ls = geom.LineString([geom.Point(x, y) for x, y in zip(xs, ys)])
+    ls = affine.translate(ls, 0, -(ls.bounds[1] + ls.bounds[3]) / 2)
+    ls = affine.scale(ls, xfact = sfx, yfact = sfy, origin = (0, 0))
+    ls = affine.rotate(ls, theta, (0, 0), use_radians = True)
+    x0, y0 = list(ls.coords)[0]
+    return affine.translate(ls, p0.x - x0, p0.y - y0)
 
   def rotate_edge(self, edge:Edge, centre:str = "A", angle:float = 0) -> None:
     v0, v1 = edge.vertices[0], edge.vertices[1]
@@ -1065,7 +1122,7 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
   def nudge_vertex(self, vertex:Vertex, dx:float, dy:float):
     vertex.point = affine.translate(vertex.point, dx, dy)
 
-  def get_kwargs(self, fn:Callable, **kwargs) -> dict[Any]:
+  def get_kwargs(self, fn:Callable, **kwargs) -> dict:
     args = inspect.signature(fn).parameters
     return {k: kwargs.pop(k) for k in dict(kwargs) if k in args}
 

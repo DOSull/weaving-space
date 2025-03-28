@@ -7,8 +7,8 @@ respectively enable creation of a tiling and plotting of the tiling as a
 multivariate map.
 """
 
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import Union
 import itertools
 import copy
 from collections.abc import Iterable
@@ -26,7 +26,6 @@ import shapely.affinity as affine
 import shapely.ops
 
 from weavingspace import Tileable
-from weavingspace import TileShape
 from weavingspace import TileUnit
 
 from weavingspace import tiling_utils
@@ -607,7 +606,7 @@ class TiledMap:
   """tile_ids that are to be used to represent data"""
   vars_to_map:list[str] = None
   """dataset variables that are to be symbolised"""
-  colors_to_use:list[Union[str,list[str]]] = None
+  colors_to_use:list[str|list[str]] = None
   """list of matplotlib colormap names."""
   categoricals:list[bool] = None
   """list specifying if each variable is -- or is to be treated as --

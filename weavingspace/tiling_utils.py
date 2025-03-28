@@ -1,24 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# don't understand it but this allows import of TileUnit for type hinting only
 from __future__ import annotations
-from copy import deepcopy
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-  from weavingspace import TileUnit
-from typing import Iterable, Union
+from typing import Iterable
 
 import re
 import string
 from collections import namedtuple
-from collections import defaultdict
-from itertools import combinations
-from itertools import chain
 
 import numpy as np
-from scipy import interpolate
-
 import geopandas as gpd
 import pandas as pd
 import shapely.algorithms.polylabel as polylabel
@@ -64,18 +54,18 @@ def _parse_strand_label(s:str) -> list[str]:
 
 
 def get_strand_ids(strands_spec: str) -> tuple[list[str]]:
-  """Conversts a strands specification string to a list of lists of strand
-  labels.
-
-  Args:
-    strands_spec (str): string format "a|bc|(de)f" | separates strands in
-      each direction and () designates combining labels into a single
-      strand that will be sliced lengthwise. Example output:
+  """Converts a strands specification string to a list of lists of strand
+  labels. String format is "a|bc|(de)f" where | separates strands in each
+  direction and () designates combining labels into a single strand that
+  will be sliced lengthwise. Example output:
 
         "a|bc|(de)f" -> (["a"], ["b", "c"], ["de", "f"])
 
-    Superflous parentheses are removed, but no other error-checks are
-      applied.
+  Superflous parentheses are removed, but no other error-checks are
+  applied.
+
+  Args:
+    strands_spec (str): the strands specification to be parsed.
 
   Returns:
     tuple[str]: tuple of lists of labels for each set of strands.
@@ -85,24 +75,21 @@ def get_strand_ids(strands_spec: str) -> tuple[list[str]]:
   return tuple(strand_ids)
 
 
-def centre_offset(shape: geom.Polygon,
-                  target:tuple[float] = (0, 0)) -> tuple[float]:
-  """Returns vector required to move centroid of polygon to target.
-
-  Args:
-    shape (Polygon): polygon to move.
-    target (tuple[float], optional): target to move to.
-      Defaults to (0, 0).
-
-  Returns:
-    tuple[float]: tuple of x, y movement required.
-  """
-  shape_c = shape.centroid
-  return (target[0] - shape_c.x, target[1] - shape_c.y)
-
-
 def get_regular_polygon(spacing, n:int) -> geom.Polygon:
-  """Returns regular polygon with n sides centered on (0, 0) with a horizontal base, and height given by spacing.
+  r"""Returns regular polygon with n sides centered on (0, 0) with a horizontal
+  base, and height given by spacing. Generation is based on equally spaced
+  points around a circle with a radius calculated slightly differently 
+  depend on whether the number of sides is even or odd.
+
+            Even         Odd
+        \  /    \  /      |
+         \/   ___\/___    | 
+         /\      /\      / \
+        /  \    /  \    /   \
+
+  The returned polygon is gridified. Note also that shapely silently reorders
+  the coordinates clockwise from the lower left corner, regardless of the CCW
+  order in which we supply them.
 
   Args:
     spacing (_type_): required height.
@@ -112,79 +99,14 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
     geom.Polygon: required geom.Polygon.
   """
   if n % 2 == 0:
-    R = spacing / np.cos(np.radians(180 / n)) / 2
+    R = spacing / np.cos(np.pi / n) / 2
   else:
-    R = spacing / (1 + np.cos(np.radians(180 / n)))
-  a0 = -90 + 180 / n
-  a_diff = 360 / n
-  angles = [a0 + a * a_diff for a in range(n)]
-  corners = [(R * np.cos(np.radians(a)),
-              R * np.sin(np.radians(a))) for a in angles]
+    R = spacing / (1 + np.cos(np.pi / n))
+  angle_0 = -np.pi / 2 + np.pi / n
+  a_diff = 2 * np.pi / n
+  angles = [angle_0 + a_diff * i for i in range(n)]
+  corners = [(R * np.cos(angle), R * np.sin(angle)) for angle in angles]
   return gridify(geom.Polygon(corners))
-
-
-def offset_polygon_corners(polygon:geom.Polygon, 
-                          offset:int) -> geom.Polygon:
-  """Returns this polygon but with its first corner offset from its
-  original position in the coordinate sequence. The returned polygon will
-  be identical but stored differently internally.
-
-  Args:
-    polygon (geom.Polygon): the polygon to reorder.
-    offset (int): the number of corner positions by which to shift the
-      sequence.
-
-  Returns:
-      geom.Polygon: the reordered polygon.
-  """
-  corners = get_corners(polygon, repeat_first = False)
-  return geom.Polygon([c for c in corners[offset:] + corners[:offset]]) 
-
-
-def rotate_preserving_order(polygon:geom.Polygon, angle:float,
-                            centre:geom.Point) -> geom.Polygon:
-  """Returns the supplied polygon rotated with the order of its corner points
-  preserved (not guaranteed by shapely.affinity.rotate).
-
-  Args:
-      polygon (geom.Polygon): polygon to rotate.
-      angle (float): desired angle of rotation (in degrees).
-      centre (geom.Point): the rotation centre (passed on to shapely.affinity.
-        rotate).
-
-  Returns:
-      geom.Polygon: rotated polygon.
-  """
-  corners = get_corners(polygon, repeat_first = False)
-  return geom.Polygon([affine.rotate(c, angle, centre) for c in corners])
-
-
-def geometry_matches(geom1:geom.Polygon, geom2:geom.Polygon):
-  a, b = geom1.area, geom2.area
-  return bool(
-    np.isclose(a, b, rtol = RESOLUTION * 100, atol = RESOLUTION * 100) and 
-    np.isclose(a, geom1.intersection(geom2).area, rtol = RESOLUTION * 100, 
-               atol=RESOLUTION * 100))
-
-
-def are_parallel(v1:tuple[float], v2:tuple[float]) -> bool:
-  a1 = np.arctan2(v1[1], v1[0])
-  a2 = np.arctan2(v2[1], v2[0])
-  return bool(np.isclose(a1, a2) or np.isclose(np.abs(a1 - a2), np.pi))
-
-
-def is_convex(shape:geom.Polygon) -> bool:
-  """Tests for shape convexity. There are better ways to do this, like
-  e.g. using something like the get_interior_angles() function, but simply
-  checking if the area is close to that of its convex hull works too!
-
-  Args:
-    shape (geom.Polygon): polygon to check
-
-  Returns:
-    bool: True if the polygon is convex, False otherwise.
-  """
-  return np.isclose(shape.area, shape.convex_hull.area, rtol = RESOLUTION)
 
 
 def get_corners(shape:geom.Polygon,
@@ -271,7 +193,7 @@ def get_interior_angles(shape:geom.Polygon) -> list[float]:
 
 
 def get_clean_polygon(
-    shape:Union[geom.MultiPolygon,geom.Polygon]) -> geom.Polygon:
+    shape:geom.MultiPolygon|geom.Polygon) -> geom.Polygon:
   """Returns polygon with any successive corners that are co-linear along a 
   side or very close to one another removed. 
   
@@ -279,7 +201,7 @@ def get_clean_polygon(
   assembled from multiple 'cells' in the weave grid.
 
   Args:
-    shape (Union[geom.MultiPolygon,geom.Polygon]): polygon to clean.
+    shape (geom.MultiPolygon|geom.Polygon): polygon to clean.
 
   Returns:
     geom.Polygon: cleaned polygon.
@@ -331,28 +253,6 @@ def get_inner_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
                     np.arctan2(p1.y - p2.y, p1.x - p2.x)) % 360
 
 
-def get_outer_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
-  r"""Returns outer angle (in degrees) between lines p1-p2 and p2-p3, i.e., the 
-  angle A below
-                
-              /
-             /
-            p2 A
-           / \ 
-          /   \ 
-        p1     p3
-  
-  Args:
-    p1 (geom.Point): first point.
-    p2 (geom.Point): second 'corner' point.
-    p3 (geom.Point): third point.
-
-  Returns:
-    float: angle in degrees.
-  """
-  return 180 - get_inner_angle(p1, p2, p3)
-
-
 def is_regular_polygon(shape:geom.Polygon) -> bool:
   """Tests if supplied polygon is regular (i.e. equal sides and angles).
 
@@ -369,11 +269,14 @@ def is_regular_polygon(shape:geom.Polygon) -> bool:
 
 
 def is_tangential(shape:geom.Polygon) -> bool:
-  """Determines if the supplied polygon is tangential i.e., it can have
-  circle inscribed tangential to all its sides. 
+  """Determines if the supplied polygon is tangential i.e., it can have circle
+  inscribed tangential to all its sides. 
+
+  NOTE: not currently used but retained in case incentre is restored to use
+  'home made' code rather than polylabel.polylabel.
   
-  Note that this will fail for polygons with successive colinear sides,
-  meaning that polygons should be fully simplified...
+  Note that this will fail for polygons with successive colinear sides, meaning
+  that polygons should be fully simplified...
   """
   if is_regular_polygon(shape):
     return True
@@ -382,12 +285,12 @@ def is_tangential(shape:geom.Polygon) -> bool:
   if n % 2 == 1:
     if n == 3: #triangles are easy!
       return True
-    # odd number of sides there is a nice solvable system  of equations
-    # see https://math.stackexchange.com/questions/4065370/tangential-polygons-conditions-on-edge-lengths
+    # odd number of sides there is a nice solvable system  of equations see
+    # https://math.stackexchange.com/questions/4065370/tangential-polygons-conditions-on-edge-lengths
     #
-    # TODO: this is not reliable for reasons I don't fully understand
-    # there is a corresponding crude catch exception in incentre... but
-    # this needs a more complete investigation
+    # TODO: this is not reliable for reasons I don't fully understand. There is
+    # a corresponding crude catch exception in incentre... but this needs a
+    # more complete investigation
     mat = np.identity(n) + np.roll(np.identity(n), 1, axis = 1)
     fractions = np.linalg.inv(mat) @ side_lengths / side_lengths
     if not(np.isclose(np.mean(fractions), 
@@ -415,22 +318,22 @@ def is_tangential(shape:geom.Polygon) -> bool:
 
 
 def incentre(shape:geom.Polygon) -> geom.Point:
-  """A different polygon centre, which produces better results for some
-  dual tilings where tiles are not regular polygons... see
+  """A different polygon centre, which produces better results for some dual
+  tilings where tiles are not regular polygons... see 
   https://en.wikipedia.org/wiki/Incenter
 
   This method relies on the polygon being tangential, i.e. there is an
-  inscribed circle to which all sides of the polygon are tangent. It will
-  work on all the polygons encountered in the Laves tilings, but is not
-  guaranteed to work on all polygons.
+  inscribed circle to which all sides of the polygon are tangent. It will work
+  on all the polygons encountered in the Laves tilings, but is not guaranteed
+  to work on all polygons.
 
   Given that the polygon is tangential, the radius of the inscribed circle is
-  the [apothem of the polygon](https://en.wikipedia.org/wiki/Apothem) given
-  by 2 x Area / Perimeter. We apply a parallel offset of this size to two
-  sides of the polygon and find their intersection to determine the centre of
-  the circle, givng the incentre of the polygon.
+  the [apothem of the polygon](https://en.wikipedia.org/wiki/Apothem) given by
+  2 x Area / Perimeter. We apply a parallel offset of this size to two sides of
+  the polygon and find their intersection to determine the centre of the circle
+  givng the incentre of the polygon.
 
-    Args:
+  Args:
     shape (geom.Polygon): the polygon.
 
   Returns:
@@ -470,25 +373,6 @@ def get_apothem_length(shape:geom.Polygon) -> float:
     return min([c.distance(e) for e in get_sides(shape)])
 
 
-def ensure_cw(shape:geom.Polygon) -> geom.Polygon:
-  """Returns the polygon with its outer boundary vertices in clockwise order.
-
-  It is important to note that shapely.set_precision() imposes clockwise order
-  on polygons, and since it is used widely throughout theses modules, it makes
-  sense to impose this order.
-
-    Args:
-    shape (geom.Polygon): the polygon.
-
-  Returns:
-    geom.Polygon: the polygon in clockwise order.
-  """
-  if geom.LinearRing(shape.exterior.coords).is_ccw:
-    return shape.reverse()
-  else:
-    return shape
-
-
 def get_angle_bisector(shape:geom.Polygon, v = 0) -> geom.LineString:
   """Returns a line which is the angle bisector of the specified corner of the
   supplied polygon.
@@ -517,10 +401,6 @@ def get_angle_bisector(shape:geom.Polygon, v = 0) -> geom.LineString:
   return affine.scale(geom.LineString([p0, m]), 10, 10, origin = p0)
 
 
-def get_side_bisector(shape:geom.Polygon, i:int = 0) -> geom.LineString:
-  return affine.scale(affine.rotate(get_sides(shape)[i], 90), 100, 100)
-
-
 def _get_interior_vertices(tiles:gpd.GeoDataFrame) -> gpd.GeoSeries:
   """Returns points not on the outer boundary of the supplied set
   of tiles.
@@ -542,8 +422,8 @@ def _get_interior_vertices(tiles:gpd.GeoDataFrame) -> gpd.GeoSeries:
 
 
 def gridify(
-      gs:Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]
-    ) -> Union[gpd.GeoSeries, gpd.GeoDataFrame, geom.Polygon]:
+      gs:gpd.GeoSeries|gpd.GeoDataFrame|geom.Polygon
+    ) -> gpd.GeoSeries|gpd.GeoDataFrame|geom.Polygon:
   """Returns the supplied GeoSeries rounded to the specified precision.
 
   Args:
@@ -621,7 +501,7 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
       poly = local_patch.geometry[poly_id]
       pts.append(incentre(poly))
     # sort them into CW order so they are well formed
-    sorted_coords = sort_cw([(pt.x, pt.y, id)
+    sorted_coords = _sort_cw([(pt.x, pt.y, id)
                               for pt, id in zip(pts, ids)])
     dual_faces.append(
       (geom.Polygon([(pt_id[0], pt_id[1]) for pt_id in sorted_coords]),
@@ -640,11 +520,11 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
   gdf = gdf.dissolve(by = "tile_id", as_index = False).explode(
     index_parts = False, ignore_index = True)
 
-  gdf.tile_id = relabel(gdf.tile_id)
+  gdf.tile_id = _relabel(gdf.tile_id)
   return gdf
 
 
-def relabel(data:Iterable) -> list:
+def _relabel(data:Iterable) -> list:
   """Returns supplied data reassigned with unique values from
   string.ascii_letters.
 
@@ -663,7 +543,7 @@ def relabel(data:Iterable) -> list:
   return [new_data[d] for d in data]
 
 
-def sort_cw(pts_ids:list[tuple[float, float, str]]):
+def _sort_cw(pts_ids:list[tuple[float, float, str]]):
   """Sorts supplied tuple of x, y, ID into clockwise order relative to their
   mean centre.
 
@@ -683,24 +563,6 @@ def sort_cw(pts_ids:list[tuple[float, float, str]]):
   angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
   d = dict(zip(angles, pts_ids))
   return [pt_id for angle, pt_id in reversed(sorted(d.items()))]
-
-
-def order_of_pts_cw_around_centre(pts:list[geom.Point], centre:geom.Point):
-  """Returns the order of the supplied points clockwise relative to supplied 
-  centre point, i.e. a list of the indices in clockwise order.
-
-  Args:
-      pts (list[geom.Point]): list of points to order.
-      centre (geom.Point): centre relative to which CW order is determined.
-
-  Returns:
-      _type_: list of reordered points.
-  """
-  dx = [p.x - centre.x for p in pts]
-  dy = [p.y - centre.y for p in pts]
-  angles = [np.arctan2(dy, dx) for dx, dy in zip(dx, dy)]
-  d = dict(zip(angles, range(len(pts))))
-  return [i for angle, i in reversed(sorted(d.items()))]
 
 
 def write_map_to_layers(gdf:gpd.GeoDataFrame, fname:str = "output.gpkg",
@@ -794,9 +656,8 @@ def get_width_height_left_bottom(gs:gpd.GeoSeries) -> tuple[float]:
   Returns:
     tuple: four float values of width, height, left and bottom of gs.
   """
-  extent = gs.total_bounds
-  return (extent[2] - extent[0], extent[3] - extent[1],
-      extent[0], extent[1])
+  bb = gs.total_bounds
+  return (bb[2] - bb[0], bb[3] - bb[1], bb[0], bb[1])
 
 
 def get_bounding_ellipse(
@@ -884,8 +745,8 @@ def get_polygon_sector(polygon:geom.Polygon, start:float = 0.0,
 
 
 def repair_polygon(
-    polygon:Union[geom.Polygon, geom.MultiPolygon, gpd.GeoSeries],
-    shrink_then_grow:bool = True) -> Union[geom.Polygon, gpd.GeoSeries]:
+    polygon:geom.Polygon|geom.MultiPolygon|gpd.GeoSeries,
+    shrink_then_grow:bool = True) -> geom.Polygon|gpd.GeoSeries:
   """Convenience function to 'repair' a shapely polyon or GeoSeries by applying
   a negative buffer then the same positive buffer.
 
@@ -899,14 +760,14 @@ def repair_polygon(
   applied.
 
   Args:
-    p (Union[geom.Polygon, gpd.GeoSeries]): Polygon or GeoSeries to clean.
+    p (geom.Polygon|gpd.GeoSeries): Polygon or GeoSeries to clean.
     res (float, optional): buffer size to use. Defaults to 1e-3.
     shrink_then_grow (bool, optional): if True the negative buffer is
       applied first, otherwise the buffer operations are applied in
       reverse. Defaults to True.
 
   Returns:
-    Union[geom.Polygon, gpd.GeoSeries]: the cleaned Polygon or GeoSeries.
+    geom.Polygon|gpd.GeoSeries: the cleaned Polygon or GeoSeries.
   """
   if type(polygon) is gpd.GeoSeries:
     return gpd.GeoSeries([repair_polygon(p, shrink_then_grow) 
@@ -925,7 +786,7 @@ def repair_polygon(
 
 
 def safe_union(gs:gpd.GeoSeries,
-               as_polygon:bool = False) -> Union[gpd.GeoSeries, geom.Polygon]:
+               as_polygon:bool = False) -> gpd.GeoSeries|geom.Polygon:
   """Unions the supplied GeoSeries of Polygons while buffering them to avoid
   gaps and odd internal floating edges. Optionally returns a Polygon or a
   GeoSeries.
@@ -945,7 +806,7 @@ def safe_union(gs:gpd.GeoSeries,
       returns a one Polygon GeoSeries. Defaults to False.
 
   Returns:
-    Union[gpd.GeoSeries, geom.Polygon]: the resulting union of supplied
+    gpd.GeoSeries|geom.Polygon: the resulting union of supplied
       polygons.
   """
   r = RESOLUTION * 10
@@ -958,30 +819,30 @@ def safe_union(gs:gpd.GeoSeries,
     return gridify(gpd.GeoSeries([union], crs = gs.crs))
 
 
-def zigzag_between_points(
-    p0:geom.Point, p1: geom.Point, n:int, h:float = 1.0,  smoothness: int = 0):
+# def zigzag_between_points(
+#     p0:geom.Point, p1: geom.Point, n:int, h:float = 1.0,  smoothness: int = 0):
 
-  template_steps = n * 2 + 1
-  r = p0.distance(p1)
+#   template_steps = n * 2 + 1
+#   r = p0.distance(p1)
   
-  x = np.linspace(0, n * np.pi, template_steps, endpoint = True)
-  y = [np.sin(x) for x in x]
-  s = interpolate.InterpolatedUnivariateSpline(x, y, k = 2)
+#   x = np.linspace(0, n * np.pi, template_steps, endpoint = True)
+#   y = [np.sin(x) for x in x]
+#   s = interpolate.InterpolatedUnivariateSpline(x, y, k = 2)
 
-  spline_steps = (n + smoothness) * 2 + 1
-  xs = np.linspace(0, n * np.pi, spline_steps, endpoint = True)
-  ys = s(xs)
+#   spline_steps = (n + smoothness) * 2 + 1
+#   xs = np.linspace(0, n * np.pi, spline_steps, endpoint = True)
+#   ys = s(xs)
   
-  sfx = 1 / max(x) * r
-  sfy = h * r / 2
-  theta = np.arctan2(p1.y - p0.y, p1.x - p0.x)
+#   sfx = 1 / max(x) * r
+#   sfy = h * r / 2
+#   theta = np.arctan2(p1.y - p0.y, p1.x - p0.x)
 
-  ls = geom.LineString([geom.Point(x, y) for x, y in zip(xs, ys)])
-  ls = affine.translate(ls, 0, -(ls.bounds[1] + ls.bounds[3]) / 2)
-  ls = affine.scale(ls, xfact = sfx, yfact = sfy, origin = (0, 0))
-  ls = affine.rotate(ls, theta, (0, 0), use_radians = True)
-  x0, y0 = list(ls.coords)[0]
-  return affine.translate(ls, p0.x - x0, p0.y - y0)
+#   ls = geom.LineString([geom.Point(x, y) for x, y in zip(xs, ys)])
+#   ls = affine.translate(ls, 0, -(ls.bounds[1] + ls.bounds[3]) / 2)
+#   ls = affine.scale(ls, xfact = sfx, yfact = sfy, origin = (0, 0))
+#   ls = affine.rotate(ls, theta, (0, 0), use_radians = True)
+#   x0, y0 = list(ls.coords)[0]
+#   return affine.translate(ls, p0.x - x0, p0.y - y0)
 
 
 def get_translation_transform(dx:float, dy:float) -> list[float]:

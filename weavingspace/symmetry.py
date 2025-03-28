@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from __future__ import annotations
 import inspect
 from typing import Iterable
-from typing import Any
-from typing import Union
 from dataclasses import dataclass
-import string
 
 import numpy as np
 import matplotlib.pyplot as pyplot
-import io
-import PIL
 
 import shapely.geometry as geom
 import shapely.affinity as affine
@@ -494,7 +490,7 @@ class Symmetries():
       poly2 (geom.Polygon): polygon for which the offset is desired.
 
     Returns:
-      Union[int,None]: integer number of corners clockwise by which the polygon
+      int|None: integer number of corners clockwise by which the polygon
         is offset from this one, or None if they don't match.
     """
     s2 = Symmetries(poly2)
@@ -610,7 +606,7 @@ class Shape_Matcher:
       corners1:list[geom.Point],
       corners2:list[geom.Point], 
       offset:int
-      ) -> Union[tuple[float,geom.Point]|tuple[str,tuple[float]]]:
+      ) -> tuple[float,geom.Point]|tuple[str,tuple[float]]:
     """Returns the angle by which the polygons represented by the lists of
     corners supplied are rotationally offset from one another. If they are at
     the same orientation then the translation required to match them (if any)
@@ -623,7 +619,7 @@ class Shape_Matcher:
         corners2 are offset from corners1 as previously determined.
 
     Returns:
-      Union[tuple[float,geom.Point]|tuple[str,tuple[float]]]: one of 
+      tuple[float,geom.Point]|tuple[str,tuple[float]]: one of 
       ('identity' (0, 0)), ('translation', (x, y)), or (angle, geom.Point),
         where the last of these is an angle and a centre of rotation.
     """

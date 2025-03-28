@@ -27,6 +27,7 @@ Kaplan C S, 2009 _Introductory Tiling Theory for Computer Graphics_ (Morgan &
 Claypool)
 """
 
+from __future__ import annotations
 import itertools
 import string
 import math
@@ -39,7 +40,6 @@ from shapely import line_interpolate_point
 
 from weavingspace import TileShape
 from weavingspace import tiling_utils
-# from weavingspace import Topology
 
 
 def setup_cairo(unit:"TileUnit") -> None:
@@ -684,7 +684,7 @@ def setup_hex_dissection(unit:"TileUnit") -> None:
   return None
 
 
-def get_4_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
+def get_4_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
   """Returns 4 pieces that together compose the hexagon in the supplied 
   TileUnit.
 
@@ -720,7 +720,7 @@ def get_4_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
     ]
 
 
-def get_7_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
+def get_7_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
   """Returns 7 pieces that together compose the hexagon in the supplied 
   TileUnit.
 
@@ -765,7 +765,7 @@ def get_7_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
     ]
 
 
-def get_9_parts_of_hexagon(unit: "TileUnit") -> list[geom.Polygon]:
+def get_9_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
   """Returns 9 pieces that together compose the hexagon in the supplied 
   TileUnit.
 
