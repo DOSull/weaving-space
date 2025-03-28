@@ -439,6 +439,8 @@ def incentre(shape:geom.Polygon) -> geom.Point:
   if is_regular_polygon(shape):
     return shape.centroid
   return polylabel.polylabel(shape)
+  # if is_regular_polygon(shape):
+  #   return shape.centroid
   # shape = ensure_cw(shape)
   # if is_convex(shape):
   #   if is_tangential(shape):  # find the incentre
@@ -451,6 +453,7 @@ def incentre(shape:geom.Polygon) -> geom.Point:
   #     # get a Point, but a LineString, or even no intersection, so...
   #     return c if isinstance(c, geom.Point) else shape.centroid
   # return shape.centroid
+
 
 
 def in_circle(shape:geom.Polygon) -> geom.Polygon:

@@ -39,6 +39,7 @@ from shapely import line_interpolate_point
 
 from weavingspace import TileShape
 from weavingspace import tiling_utils
+# from weavingspace import Topology
 
 
 def setup_cairo(unit:"TileUnit") -> None:
@@ -200,8 +201,13 @@ def _get_radially_sliced_polygon(
       # two cut points on same polygon edge, so make the slice
       slices.append(geom.Polygon([p1, p2, (0, 0)]))
     else:
-      # there is at least one corner between the cut points so insert them
+      # there is at least one corner between the cut points so get them
       skipped_corners = corners[math.ceil(a1):math.ceil(a2)]
+      # but discard any that are close to the cut points...
+      skipped_corners = [
+        c for c in skipped_corners
+        if not (np.isclose(c.distance(p1), 0, rtol = 1e-6, atol = 1e-6) 
+             or np.isclose(c.distance(p2), 0, rtol = 1e-6, atol = 1e-6))]
       slices.append(geom.Polygon([p1] + skipped_corners + [p2, (0, 0)]))
   return gpd.GeoSeries(slices)
 

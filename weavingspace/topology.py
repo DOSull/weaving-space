@@ -41,7 +41,7 @@ import shapely.geometry as geom
 import shapely.affinity as affine
 import matplotlib.pyplot as pyplot
 
-from weavingspace import Tileable
+# from weavingspace import Tileable
 from weavingspace import Symmetries
 from weavingspace import Transform
 from weavingspace import Shape_Matcher
@@ -70,7 +70,7 @@ class Topology:
   so on. This is because self.tiles[i % n_tiles] is frequently used to reference
   the base unit Tile which corresponds to self.tiles[i].
   """
-  tileable: Tileable
+  tileable: "Tileable"
   """the Tileable on which the topology will be based."""
   tiles: list[Tile]
   """list of the Tiles in the topology. We use polygons returned by the
@@ -99,7 +99,7 @@ class Topology:
   edge_transitivity_classes: list[list[tuple[int]]]
   """list of lists of edge IDs in each transitivity class"""
 
-  def __init__(self, unit: Tileable, ignore_tile_ids:bool = True):
+  def __init__(self, unit: "Tileable", ignore_tile_ids:bool = True):
     """Class constructor.
 
     Args:
@@ -782,6 +782,13 @@ class Topology:
       if v.is_interior() and len(v.tiles) > 2:
         self.dual_tiles[v.ID] = \
           geom.Polygon([t.centre for t in v.tiles])
+
+  def get_dual_tiles(self):
+    n = len(self.dual_tiles)
+    return gpd.GeoDataFrame(
+      data = {"tile_id": [id for id in self.tileable.tiles.tile_id][:n]},
+      geometry = gpd.GeoSeries(self.dual_tiles.values()),
+      crs = self.tileable.crs)
 
   def add_vertex(self, pt:geom.Point) -> Vertex:
     """Adds a Vertex at the specified point location, returning it to the 
