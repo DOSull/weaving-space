@@ -927,6 +927,9 @@ def safe_union(gs:gpd.GeoSeries,
   gaps and odd internal floating edges. Optionally returns a Polygon or a
   GeoSeries.
 
+  NOTE: APPEARS NOT TO BE VERY SAFE... find workarounds for the few occasions
+  on which it is used.
+
   Frequently when unioning polygons that are ostensibly adjacent 'rogue'
   internal boundaries remain in the result. We can avoid this by buffering the
   polygons before unioning them, then reversing the buffer on the unioned
@@ -942,10 +945,10 @@ def safe_union(gs:gpd.GeoSeries,
     Union[gpd.GeoSeries, geom.Polygon]: the resulting union of supplied
       polygons.
   """
-  union = gpd.GeoSeries(
-    [p.buffer(RESOLUTION * 10, join_style = 2, cap_style = 3) 
-     for p in gs], crs = gs.crs) \
-      .union_all().buffer(-RESOLUTION * 10, join_style = 2, cap_style = 3)
+  r = RESOLUTION * 10
+  union = gpd.GeoSeries([p.buffer(r, join_style = 2, cap_style = 3) for p in gs],
+                         crs = gs.crs) \
+      .union_all().buffer(-r, join_style = 2, cap_style = 3)
   if as_polygon:
     return gridify(union)
   else:

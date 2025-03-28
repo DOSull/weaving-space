@@ -131,10 +131,39 @@ class TileUnit(Tileable):
     elements, i.e. it does not cut them. In all TileUnit cases a suitable shape
     is the union of the elements.
     """
-    reg_prototile = tiling_utils.safe_union(self.tiles.geometry)
+    # For whatever reasons in the web app version the unioning operation as
+    # operated by tiling_utils.safe_union() is anything but and produces
+    # TopologyException crashes... so here is a safe_union avoidant way...
+    tiles = copy.deepcopy(self.tiles.geometry)
+    tiles = gpd.GeoSeries(
+      [tiling_utils.gridify(p.buffer(
+        tiling_utils.RESOLUTION * 10, join_style=2, cap_style=3))
+        for p in tiles])
     self.regularised_prototile = gpd.GeoDataFrame(
-      geometry = reg_prototile, crs = self.crs)
+      geometry = gpd.GeoSeries(
+        [tiles.union_all().buffer(-tiling_utils.RESOLUTION * 10, 
+                                  join_style=2, cap_style=3).simplify(
+                                    tiling_utils.RESOLUTION * 10)]),
+      crs = self.crs)
     return None
+
+
+  # # Make up a regularised tile by carefully unioning the tiles
+  # def _setup_regularised_prototile(self) -> None:
+  #   """Sets the regularised tile to a union of the tiles."""
+  #   self.regularised_prototile = copy.deepcopy(self.prototile)
+  #   self.regularised_prototile.geometry = [tiling_utils.safe_union(
+  #     self.tiles.geometry, as_polygon = True)]
+  #   # This simplification seems very crude but fixes all kinds of issues...
+  #   # particularly with the triaxial weave units... where intersection 
+  #   # operations are prone to creating spurious vertices, etc.
+  #   self.regularised_prototile.loc[0, 'geometry'] = \
+  #     self.regularised_prototile.loc[0, 'geometry'].simplify(
+  #       self.spacing * tiling_utils.RESOLUTION)
+  #   # self.regularised_prototile.geometry[0] = \
+  #   #   self.regularised_prototile.geometry[0].simplify(
+  #   #     self.spacing * tiling_utils.RESOLUTION)
+  #   return
 
 
   def _get_legend_key_shapes(
