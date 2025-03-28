@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.19"
+__generated_with = "0.11.30"
 app = marimo.App(
     width="full",
     app_title="MapWeaver",
@@ -14,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.28-14:00</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.03.28</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
     ])
     return
 
@@ -852,7 +852,7 @@ def setup_tilings_dictionary():
         "hex-slice 2": dict(type="tiling", tiling_type="hex-slice", n=2),
       },
       3: {
-        "cube weave a--|b--|c--": dict(type= "weave, weave_type=cube", strands="a--|b--|c--"),
+        "cube weave a--|b--|c--": dict(type= "weave", weave_type="cube", strands="a--|b--|c--"),
         "plain weave ab|c": dict(type="weave", weave_type="plain", strands="ab|c", n="1"),
         "plain weave ab-|c": dict(type="weave", weave_type="plain", strands="ab-|c", n="1"),
         "twill weave ab|c-": dict(type="weave", weave_type="twill", strands="ab|c-", n="2"),
@@ -914,7 +914,7 @@ def setup_tilings_dictionary():
         "laves 3.3.3.3.6": dict(type="tiling", tiling_type="laves", code="3.3.3.3.6"),
         # "laves 3.4.6.4": dict(type="tiling", tiling_type="laves", code="3.4.6.4"),
         "laves 3.12.12": dict(type="tiling", tiling_type="laves", code="3.12.12"),
-        "cube weave a-b|c-d|e-f": dict(type= "weave, weave_type=cube", strands="a-b|c-d|e-f"),
+        "cube weave a-b|c-d|e-f": dict(type= "weave", weave_type="cube", strands="a-b|c-d|e-f"),
         "plain weave abc|def": dict(type="weave", weave_type="plain", strands="abc|def", n="1"),
         "plain weave abc-|def": dict(type="weave", weave_type="plain", strands="abc-|def", n="1"),
         "plain weave abc-|def-": dict(type="weave", weave_type="plain", strands="abc-|def-", n="1"),
@@ -961,7 +961,7 @@ def setup_tilings_dictionary():
         "hex-colouring 8": dict(type="tiling", tiling_type="hex-colouring", n=8),
       },
       9: {
-        "cube weave abc|def|ghi": dict(type= "weave, weave_type=cube", strands="abc|def|ghi"),
+        "cube weave abc|def|ghi": dict(type= "weave", weave_type="cube", strands="abc|def|ghi"),
         "hex-slice 9": dict(type="tiling", tiling_type="hex-slice", n=9),
         "square-colouring 9": dict(type="tiling", tiling_type="square-colouring", n=9),
         "hex-colouring 9": dict(type="tiling", tiling_type="hex-colouring", n=9),
