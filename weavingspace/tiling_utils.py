@@ -106,7 +106,8 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
   a_diff = 2 * np.pi / n
   angles = [angle_0 + a_diff * i for i in range(n)]
   corners = [(R * np.cos(angle), R * np.sin(angle)) for angle in angles]
-  return gridify(geom.Polygon(corners))
+  return geom.Polygon(corners)
+  # return gridify(geom.Polygon(corners))
 
 
 def get_corners(shape:geom.Polygon,
@@ -515,11 +516,10 @@ def get_dual_tile_unit(unit: TileUnit) -> gpd.GeoDataFrame:
                   RESOLUTION * 10, RESOLUTION * 10).contains(f.centroid)]
   gdf = gpd.GeoDataFrame(
     data = {"tile_id": [f[1] for f in dual_faces]}, crs = unit.crs,
-    geometry = gridify(gpd.GeoSeries([f[0] for f in dual_faces])))
+    geometry = gpd.GeoSeries([f[0] for f in dual_faces]))
   # ensure no duplicates
   gdf = gdf.dissolve(by = "tile_id", as_index = False).explode(
     index_parts = False, ignore_index = True)
-
   gdf.tile_id = _relabel(gdf.tile_id)
   return gdf
 

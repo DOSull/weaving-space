@@ -10,5 +10,4 @@ from .weave_matrices import *
 from .weave_unit import *
 from .tile_map import *
 from .symmetry import *
-from .topology_elements import *
 from .topology import *

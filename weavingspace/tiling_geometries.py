@@ -28,6 +28,9 @@ Claypool)
 """
 
 from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+  from weavingspace import TileUnit
 import itertools
 import string
 import math
@@ -42,7 +45,7 @@ from weavingspace import TileShape
 from weavingspace import tiling_utils
 
 
-def setup_cairo(unit:"TileUnit") -> None:
+def setup_cairo(unit:TileUnit) -> None:
   """Sets up the Cairo tiling. King of tilings. All hail the Cairo tiling.
 
   The pattern in this function shows how any new setup function should be
@@ -105,7 +108,7 @@ def setup_cairo(unit:"TileUnit") -> None:
   return None
 
 
-def setup_hex_slice(unit:"TileUnit") -> None:
+def setup_hex_slice(unit:TileUnit) -> None:
   """Arbitrary number of radial slices of a hexagon, with an optional
   offset starting point.
 
@@ -133,7 +136,7 @@ def setup_hex_slice(unit:"TileUnit") -> None:
   return None
 
 
-def setup_square_slice(unit:"TileUnit") -> None:
+def setup_square_slice(unit:TileUnit) -> None:
   """Arbitrary number of radial slices of a square, with an optional
   offset starting point.
 
@@ -212,7 +215,7 @@ def _get_radially_sliced_polygon(
   return gpd.GeoSeries(slices)
 
 
-def setup_crosses(unit:"TileUnit") -> None:
+def setup_crosses(unit:TileUnit) -> None:
   """Tilings by varying numbers of crosses.
 
   The supplied unit should have n set. The specific arrangements used are
@@ -267,7 +270,7 @@ def setup_crosses(unit:"TileUnit") -> None:
   return None
 
 
-def setup_laves(unit:"TileUnit") -> None:
+def setup_laves(unit:TileUnit) -> None:
   """The Laves tilings. See 
   
   https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings.
@@ -288,11 +291,11 @@ def setup_laves(unit:"TileUnit") -> None:
               hex-colouring, hex-slice or hex-dissection tiling?""")
     case "3.3.3.3.6":
       # this one needs its own code
-      _setup_laves_33336(unit)
+      _setup_laves_3_3_3_3_6(unit)
     case "3.3.3.4.4":
       # this is a boring tiling...
-      return (f"""The code [{unit.code}] is unsupported. You can get a tiling
-              of similar appearance with hex-slice n=2 offset=1.""")
+      setup_archimedean_3_3_3_4_4(unit)
+      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
     case "3.3.4.3.4":
       # king of tilings!
       print(f"A fine choice!")
@@ -309,7 +312,7 @@ def setup_laves(unit:"TileUnit") -> None:
       setup_hex_slice(unit)
     case "3.12.12":
       # again this one needs its own
-      _setup_laves_31212(unit)
+      _setup_laves_3_12_12(unit)
     case "4.4.4.4":
       # square grid
       unit.base_shape = TileShape.RECTANGLE
@@ -334,8 +337,7 @@ def setup_laves(unit:"TileUnit") -> None:
       return  "[{unit.code}] is not a valid Laves code."
   return None
 
-
-def _setup_laves_33336(unit:"TileUnit") -> None:
+def _setup_laves_3_3_3_3_6(unit:TileUnit) -> None:
   """Sets up Laves [3.3.3.3.6] which is like a 6 petal flower.
 
   Similar to the H3 7 hexagon group with the central hex removed and each
@@ -366,8 +368,7 @@ def _setup_laves_33336(unit:"TileUnit") -> None:
     geometry = gpd.GeoSeries(petals))
   return None
 
-
-def _setup_laves_31212(unit:"TileUnit") -> None:
+def _setup_laves_3_12_12(unit:TileUnit) -> None:
   """This is also a hexagon dissection... like 3.6.3.6 with each rhombus
   sliced in half along its long diagonal.
 
@@ -394,12 +395,14 @@ def _setup_laves_31212(unit:"TileUnit") -> None:
   return None
 
 
-def setup_archimedean(unit:"TileUnit") -> None:
-  """The Archimedean 'regular tilings. See 
+def setup_archimedean(unit:TileUnit) -> None:
+  r"""The Archimedean 'regular tilings. See 
   
   https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Convex_uniform_tilings_of_the_Euclidean_plane
 
-  Many of these are most easily constructed as duals of the Laves tilings.
+  Many of these are easily constructed as duals of the Laves tilings. However,
+  inaccuracies in the `tiling_utils.get_dual_tiling()` function yield tiles
+  can't sustain reliable Topology detection... ¯\_(ツ)_/¯
 
   Some are not implemented: (3.3.3.4.4) is kind of weird (stripes of triangles 
   and squares) so can't be bothered with it.
@@ -413,38 +416,25 @@ def setup_archimedean(unit:"TileUnit") -> None:
       return (f"""Note that Archimedean 3.3.3.3.3.3 is a basic 
               triangle tiling?""")
     case "3.3.3.3.6":
-      setup_laves(unit)
-      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+      setup_archimedean_3_3_3_3_6(unit)
     case "3.3.3.4.4":
-      return  f"The code [{unit.code}] is unsupported."
+      setup_archimedean_3_3_3_4_4(unit)
     case "3.3.4.3.4":
-      # this is an attractive 6-colourable triangles and squares tiling
-      setup_laves(unit)
-      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+      setup_archimedean_3_3_4_3_4(unit)
     case "3.4.6.4":
-      setup_laves(unit)
-      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+      setup_archimedean_3_4_6_4(unit)
     case "3.6.3.6":
-      setup_laves(unit)
-      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+      setup_archimedean_3_6_3_6(unit)
     case "3.12.12":
-      # nice! we can make dodecagons without having to think too hard
-      # simply use the dual code. (Although really... it probably
-      # would've been easier to make the dodecagon... other than
-      # calculating the scale relative to the hexagon base tile!)
-      setup_laves(unit)
-      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+      setup_archimedean_3_12_12(unit)
     case "4.4.4.4":
       unit.base_shape = TileShape.RECTANGLE
       return (f"""Archimedean 4.4.4.4 is a basic square tiling. Perhaps you
               want a square-colouring or square-slice tiling?""") 
     case "4.6.12":
-      setup_laves(unit)
-      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+      setup_archimedean_4_6_12(unit)
     case "4.8.8":
-      # this is the octagon and square tiling
-      setup_laves(unit)
-      unit.tiles = tiling_utils.get_dual_tile_unit(unit)
+      setup_archimedean_4_8_8(unit)
     case "6.6.6":
       unit.base_shape = TileShape.HEXAGON
       return (f"""Archimedean 6.6.6 is a basic hexagonal tiling. Perhaps you
@@ -454,8 +444,176 @@ def setup_archimedean(unit:"TileUnit") -> None:
       return  f"({unit.code}) is not a valid Archimedean code."
   return None
 
+def setup_archimedean_3_3_3_3_6(unit:TileUnit) -> None:
+  s = unit.spacing * np.sqrt(3 / 7)
+  hexagon = tiling_utils.get_regular_polygon(s, 6)
+  tri = tiling_utils.get_regular_polygon(s / 2, 3)
+  tri_down = affine.rotate(tiling_utils.get_regular_polygon(s / 2, 3), 180)
+  tri_up = affine.translate(tri, 0, -tri.bounds[3])
+  tri_down = affine.rotate(tri_up, 180, origin = (0, 0))
+  w, h = tri.bounds[2] - tri.bounds[0], tri.bounds[3] - tri.bounds[1]
+  triangles = [affine.translate(tri_down, -w/2, h),
+               affine.translate(tri_up, 0, 2*h),
+               affine.translate(tri_down, w/2, h),
+               affine.translate(tri_up, w, 2*h),
+               affine.translate(tri_down, w, 0),
+               affine.translate(tri_up, 3*w/2, h),
+               affine.translate(tri_down, 3*w/2, -h),
+               affine.translate(tri_up, w, 0)]
+  polys = [hexagon] + triangles
+  unit.setup_vectors((   -w/2, 3 * h), 
+                     (2 * w  , 2 * h),
+                     (5 * w/2,    -h))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abcdefghi")}, crs = unit.crs,
+    geometry = gpd.GeoSeries(polys)
+  )
+  return None
 
-def setup_hex_colouring(unit:"TileUnit") -> None:
+def setup_archimedean_3_3_3_4_4(unit:TileUnit) -> None:
+  s = unit.spacing / np.sqrt(1 + np.sqrt(3))
+  t = s * np.sqrt(3) / 2
+  square = tiling_utils.get_regular_polygon(s, 4)
+  tri = tiling_utils.get_regular_polygon(t, 3)
+  tri_up = affine.translate(tri, 0, -tri.bounds[1] + s / 2)
+  tri_down = affine.rotate(tri_up, 180, origin = (0, 0))
+  polys = [square, tri_up, tri_down]
+  unit.setup_vectors((s/2,  s + t), 
+                     (s  ,  0),
+                     (s/2, -s - t))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abc")}, crs = unit.crs,
+    geometry = gpd.GeoSeries(polys)
+  )
+  return None
+
+def setup_archimedean_3_3_4_3_4(unit:TileUnit) -> None:
+  s = unit.spacing / 2 / np.cos(np.pi / 12)
+  t = s * np.sqrt(3) / 2
+  square = tiling_utils.get_regular_polygon(s, 4)
+  tri = tiling_utils.get_regular_polygon(t, 3)
+  tri1 = affine.translate(tri, 0, -tri.bounds[3])
+  tri2 = affine.rotate(tri1, 180, origin = (0, -t))
+  tri3 = affine.rotate(tri1, 150, origin = (0, 0))
+  tri4 = affine.rotate(tri1, -150, origin = (0, 0))
+  sq1 = affine.translate(square, s/2, -s/2)
+  sq1 = affine.rotate(sq1, 30, origin = (0, 0))
+  sq2 = affine.rotate(sq1, -150, origin = (0, 0))
+  polys = [tri2, tri1, sq2, tri4, tri3, sq1]
+  polys = [affine.translate(p, 0, t - s/2) for p in polys]
+  unit.setup_vectors((t + s/2,  t + s/2), 
+                     (t + s/2, -t - s/2))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abcdef")}, crs = unit.crs,
+    geometry = gpd.GeoSeries(polys)
+  )
+  return None
+
+def setup_archimedean_3_4_6_4(unit:TileUnit) -> None:
+  h = unit.spacing / (1 + np.sqrt(3)) * np.sqrt(3)
+  s = h / np.sqrt(3)
+  t = h / 2
+  hex    = tiling_utils.get_regular_polygon(h, 6)
+  square = tiling_utils.get_regular_polygon(s, 4)
+  tri    = tiling_utils.get_regular_polygon(t, 3)
+  sq1 = affine.translate(square, 0, s / 2 + t)
+  sq2 = affine.rotate(sq1,  60, origin = (0, 0))
+  sq3 = affine.rotate(sq1, -60, origin = (0, 0))
+  tri1 = affine.translate(tri, 0, t - tri.bounds[1])
+  tri2 = affine.translate(tri, 0, t - tri.bounds[1])
+  tri1 = affine.rotate(tri1, 90, origin = (-s / 2, t))
+  tri2 = affine.rotate(tri2, -90, origin = (s / 2, t))
+  polys = [hex, sq2, tri1, sq1, tri2, sq3]
+  unit.setup_vectors((            0,  h + s), 
+                     (t + 3 * s / 2,  t + s / 2), 
+                     (t + 3 * s / 2, -t - s / 2))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abcdef")}, crs = unit.crs,
+    geometry = gpd.GeoSeries(polys)
+  )
+  return None
+
+def setup_archimedean_3_6_3_6(unit:TileUnit) -> None:
+  h = unit.spacing * np.sqrt(3) / 2
+  t = h / 2
+  hex = tiling_utils.get_regular_polygon(h, 6)
+  tri = tiling_utils.get_regular_polygon(t, 3)
+  tri1 = affine.translate(tri, 0,   t - tri.bounds[1])
+  tri2 = affine.rotate(tri, 180)
+  tri2 = affine.translate(tri2, 0, -t - tri.bounds[3])
+  polys = [hex, tri1, tri2]
+  unit.setup_vectors((t * 2 / np.sqrt(3),  h),
+                     (t * 2 / np.sqrt(3), -h))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abc")}, crs = unit.crs,
+    geometry = gpd.GeoSeries(polys)
+  )
+  return None
+
+def setup_archimedean_3_12_12(unit:TileUnit) -> None:
+  d = unit.spacing
+  t = d * np.sqrt(3) / 2 / (2 + np.sqrt(3))
+  dodecagon = tiling_utils.get_regular_polygon(d, 12)
+  tri = tiling_utils.get_regular_polygon(t, 3)
+  tri = affine.translate(tri, 0, unit.spacing / 2 - tri.bounds[1])
+  tri_1 = affine.rotate(tri,  30, origin = (0, 0))
+  tri_2 = affine.rotate(tri, -30, origin = (0, 0))
+  polys = [dodecagon, tri_1, tri_2]
+  unit.setup_vectors((                 0,  d    ), 
+                     (d * np.sqrt(3) / 2,  d / 2),
+                     (d * np.sqrt(3) / 2, -d / 2))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abc")}, crs = unit.crs,
+    geometry = gpd.GeoSeries(polys)
+  )
+  return None
+
+def setup_archimedean_4_6_12(unit:TileUnit) -> None:
+  d = unit.spacing * (2 + np.sqrt(3)) / (3 + np.sqrt(3))
+  s = d / (2 + np.sqrt(3))
+  h = s * np.sqrt(3)
+  dodecagon = tiling_utils.get_regular_polygon(d, 12)
+  hex = tiling_utils.get_regular_polygon(h, 6)
+  square = tiling_utils.get_regular_polygon(s, 4)
+  sq1 = affine.translate(square, 0, (s + d) / 2)
+  sq2 = affine.rotate(sq1,  60, origin = (0, 0))
+  sq3 = affine.rotate(sq1, -60, origin = (0, 0))
+  hex1 = affine.translate(hex, 0, (h + d) / 2)
+  hex1 = affine.rotate(hex1,  30, origin = (0, 0))
+  hex2 = affine.rotate(hex1, -60, origin = (0, 0))
+  polys = [dodecagon, sq2, hex1, sq1, hex2, sq3]  
+  unit.setup_vectors((                       0,   d + s), 
+                     ((d + s) * np.sqrt(3) / 2,  (d + s) / 2),
+                     ((d + s) * np.sqrt(3) / 2, -(d + s) / 2))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abcdef")}, crs = unit.crs,
+    geometry = gpd.GeoSeries(polys)
+  )
+  return None
+
+def setup_archimedean_4_8_8(unit:TileUnit) -> None:
+  o = unit.spacing
+  s = o / (1 + np.sqrt(2))
+  octagon = tiling_utils.get_regular_polygon(o, 8)
+  square = tiling_utils.get_regular_polygon(s, 4)
+  square = affine.translate(square, 0, (o + s) / 2)
+  square = affine.rotate(square, 45, origin = (0, 0))
+  polys = [octagon, square]
+  unit.setup_vectors((0, o), (o, 0))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("ab")}, crs = unit.crs,
+    geometry = gpd.GeoSeries(polys)
+  )
+  return None
+
+o = 1000
+s = o / (1 + np.sqrt(2))
+octagon = tiling_utils.get_regular_polygon(o, 8)
+square = tiling_utils.get_regular_polygon(s, 4)
+square = affine.translate(square, 0, (o + s) / 2)
+polys = [octagon, square]
+
+def setup_hex_colouring(unit:TileUnit) -> None:
   """2 through 9 colourings of a regular array of hexagons. The supplied unit
   must have unit.n set.
 
@@ -566,7 +724,7 @@ def setup_hex_colouring(unit:"TileUnit") -> None:
   return None
 
 
-def setup_square_colouring(unit:"TileUnit") -> None:
+def setup_square_colouring(unit:TileUnit) -> None:
   """2 through 9 colourings of a regular array of squares. The supplied unit
   must have unit.n set.
 
@@ -650,7 +808,7 @@ def setup_square_colouring(unit:"TileUnit") -> None:
   return None
 
 
-def setup_hex_dissection(unit:"TileUnit") -> None:
+def setup_hex_dissection(unit:TileUnit) -> None:
   """Tilings from dissection of a hexagon into parts. Only 3 options are
   supported, 4, 7, and 9, and each is handled in its own function.
 
