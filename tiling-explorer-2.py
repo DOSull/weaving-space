@@ -14,8 +14,8 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.03.28-22:00</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
-        mo.md(f"<span title='Requires weavingspace 0.0.6.35'>0.0.6.35</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.01-09:45</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Requires weavingspace 0.0.6.36'>0.0.6.36</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
 
@@ -499,12 +499,24 @@ def setup_chosen_tiling_options(
                                label="#### Offset",
                                show_value=True, 
                                debounce=True) 
-    elif "hex-dissection" in family.value:
+    elif "dissect" in family.value:
         _offset = mo.ui.number(start=0, 
                                stop=1,
                                value=0,
                                label="#### Offset", 
                                debounce=True)
+        if "hex" in family.value:
+            _offset_angle = mo.ui.slider(steps=[x for x in range(-50, 86)],
+                                         value=0,
+                                         label="#### Inner angle offset",
+                                         show_value=True,
+                                         debounce=True)
+        else:
+            _offset_angle = mo.ui.slider(steps=[x for x in range(-30, 51)],
+                                         value=0,
+                                         label="#### Inner angle offset",
+                                         show_value=True,
+                                         debounce=True)
 
     if "weave" in family.value:
         _aspect = mo.ui.slider(steps=[x / 12 for x in range(1,13)], 
@@ -517,9 +529,12 @@ def setup_chosen_tiling_options(
                                      label="#### Over-under pattern")
 
     if tile_or_weave.value == "tiling":
-        if "slice" in family.value or "dissection" in family.value:
+        if "slice" in family.value:
             tile_spec = mo.ui.dictionary({"offset": _offset,})
             tooltips = ["0 starts at the base tile corners, 1 at the mid-point along segments equally dividing the base tile perimeter into the requested number of tiles."]
+        elif "dissect" in family.value:
+            tile_spec = mo.ui.dictionary({"offset": _offset, "offset_angle": _offset_angle,})
+            tooltips = ["0 starts at the base tile corners, 1 at the mid-point along segments equally dividing the base tile perimeter into the requested number of tiles.", "Angle by which inner polygon is rotated relative to the outer. Reverse the angle for a different look."]
         else:
             tile_spec = None
     else:
@@ -527,10 +542,7 @@ def setup_chosen_tiling_options(
             tile_spec = mo.ui.dictionary({"aspect": _aspect})
             tooltips = ["The width of the weave strands relative to strand spacing. A value of 1 will fill the map with no gaps. Progressively smaller values will leave 'holes' in the woven pattern and will eventually give the appearance of a cross hatch."]
         else:
-            tile_spec = mo.ui.dictionary({
-                "aspect": _aspect,
-                "over_under": _over_under,
-            })
+            tile_spec = mo.ui.dictionary({"aspect": _aspect, "over_under": _over_under,})
             tooltips = [
                 "The width of the weave strands relative to strand spacing.", 
                 "Comma-separated sequence of how many strands in the other direction each ribbon should go over, then under. Use values that are factors of the numbers of strands in each direction to avoid very large and complex repeating units."
@@ -626,6 +638,7 @@ def _(
                 n=spec["n"] if "n" in spec else None,
                 code=spec["code"] if "code" in spec else None,
                 offset=tile_spec["offset"].value if tile_spec is not None else None,
+                offset_angle=tile_spec["offset_angle"].value if "offset_angle" in spec else None,
                 crs=get_gdf().crs)
         else:
             result = wsp.WeaveUnit(
@@ -845,12 +858,13 @@ def setup_tilings_dictionary():
         "twill weave a|b 1,2,2,1": dict(type="weave", weave_type="twill", strands="a|b", n="1,2,2,1"),
         "twill weave a|b 2,3": dict(type="weave", weave_type="twill", strands="a|b", n="2,3"),
         "twill weave a|b 2,3,3,2": dict(type="weave", weave_type="twill", strands="a|b", n="2,3,3,2"),
-        "archimedean 4.8.8": dict(type="tiling", tiling_type="archimedean", code="4.8.8"),
+        "archimedean 4.8.8": dict(type="tiling", tiling_type="archi", code="4.8.8"),
         "square-slice 2": dict(type="tiling", tiling_type="square-slice", n=2),
-        "crosses 2": dict(type="tiling", tiling_type="crosses", n=2),
-        "hex-colouring 2": dict(type="tiling", tiling_type="hex-colouring", n=2),
-        "square-colouring 2": dict(type="tiling", tiling_type="square-colouring", n=2),
+        "crosses 2": dict(type="tiling", tiling_type="cross", n=2),
+        "hex-colouring 2": dict(type="tiling", tiling_type="hex-col", n=2),
+        "square-colouring 2": dict(type="tiling", tiling_type="square-col", n=2),
         "hex-slice 2": dict(type="tiling", tiling_type="hex-slice", n=2),
+        "laves 3.3.3.4.4": dict(type="tiling", tiling_type="lave", code="3.3.3.4.4"),
       },
       3: {
         "cube weave a--|b--|c--": dict(type= "weave", weave_type="cube", strands="a--|b--|c--"),
@@ -859,15 +873,15 @@ def setup_tilings_dictionary():
         "twill weave ab|c-": dict(type="weave", weave_type="twill", strands="ab|c-", n="2"),
         "basket weave ab|c-": dict(type="weave", weave_type="basket", strands="ab|c-", n="2"),
         "hex-slice 3": dict(type="tiling", tiling_type="hex-slice", n=3),
-        # "laves 3.6.3.6": dict(type="tiling", tiling_type="laves", code="3.6.3.6"),
-        "hex-colouring 3": dict(type="tiling", tiling_type="hex-colouring", n=3),
-        "crosses 3": dict(type="tiling", tiling_type="crosses", n=3),
-        "square-colouring 3": dict(type="tiling", tiling_type="square-colouring", n=3),
-        "archimedean 3.6.3.6": dict(type="tiling", tiling_type="archimedean", code="3.6.3.6"),
-        "archimedean 3.12.12": dict(type="tiling", tiling_type="archimedean", code="3.12.12"),
+        "hex-colouring 3": dict(type="tiling", tiling_type="hex-col", n=3),
+        "crosses 3": dict(type="tiling", tiling_type="cross", n=3),
+        "square-colouring 3": dict(type="tiling", tiling_type="square-col", n=3),
+        "archimedean 3.6.3.6": dict(type="tiling", tiling_type="archi", code="3.6.3.6"),
+        "archimedean 3.12.12": dict(type="tiling", tiling_type="archi", code="3.12.12"),
         "square-slice 3": dict(type="tiling", tiling_type="square-slice", n=3),
-        # "twill weave ab|c-": dict(type="weave", weave_type="twill", strands="ab|c-", n="2"),
-        # "basket weave ab|c-": dict(type="weave", weave_type="basket", strands="ab|c-", n="2"),
+        "archimedean 3.3.3.4.4": dict(type="tiling", tiling_type="archi", code="3.3.3.4.4"),
+        "hex-dissection 3": dict(type="tiling", tiling_type="hex-dissect", n=3, offset=0, offset_angle=0),
+        "square-dissection 3": dict(type="tiling", tiling_type="square-dissect", n=3, offset=0, offset_angle=0),
       },
       4: {
         "laves 3.3.4.3.4": dict(type="tiling", tiling_type="laves", code="3.3.4.3.4"),
@@ -884,16 +898,15 @@ def setup_tilings_dictionary():
         "twill weave ab-|cd": dict(type="weave", weave_type="twill", strands="ab-|cd", n="3"),
         "basket weave ab-|cd-": dict(type="weave", weave_type="basket", strands="ab-|cd-", n="3"),
         "twill weave ab-|cd-": dict(type="weave", weave_type="twill", strands="ab-|cd-", n="3"),
-        # "laves 4.8.8": dict(type="tiling", tiling_type="laves", code="4.8.8"),
-        "crosses 4": dict(type="tiling", tiling_type="crosses", n=4),
+        "crosses 4": dict(type="tiling", tiling_type="cross", n=4),
         "square-slice 4": dict(type="tiling", tiling_type="square-slice", n=4),
-        "hex-colouring 4": dict(type="tiling", tiling_type="hex-colouring", n=4),
-        # "square-colouring 4": dict(type="tiling", tiling_type="square-colouring", n=4),
-        "hex-dissection 4": dict(type="tiling", tiling_type="hex-dissection", n=4),
+        "square-colouring 4": dict(type="tiling", tiling_type="square-col", n=4),
+        "hex-colouring 4": dict(type="tiling", tiling_type="hex-col", n=4),
         "hex-slice 4": dict(type="tiling", tiling_type="hex-slice", n=4),
+        "hex-dissection 4": dict(type="tiling", tiling_type="hex-dissect", n=4, offset=0, offset_angle=0),
       },
       5: {
-        "square-colouring 5": dict(type="tiling", tiling_type="square-colouring", n=5),
+        "square-colouring 5": dict(type="tiling", tiling_type="square-col", n=5),
         "crosses 5": dict(type="tiling", tiling_type="crosses", n=5),
         "plain weave abc|de": dict(type="weave", weave_type="plain", strands="abc|de", n="1"),
         "plain weave abc-|de": dict(type="weave", weave_type="plain", strands="abc-|de", n="1"),
@@ -904,17 +917,17 @@ def setup_tilings_dictionary():
         "basket weave abc|de": dict(type="weave", weave_type="basket", strands="abc|de", n="3"),
         "basket weave abc|de-": dict(type="weave", weave_type="basket", strands="abc|de-", n="3"),
         "basket weave abc-|de-": dict(type="weave", weave_type="basket", strands="abc-|de-", n="3"),
-        "hex-colouring 5": dict(type="tiling", tiling_type="hex-colouring", n=5),
+        "hex-colouring 5": dict(type="tiling", tiling_type="hex-col", n=5),
         "hex-slice 5": dict(type="tiling", tiling_type="hex-slice", n=5),
         "square-slice 5": dict(type="tiling", tiling_type="square-slice", n=5),
+        "square-dissection 5": dict(type="tiling", tiling_type="square-dissect", n=5, offset=0, offset_angle=0),
       },
       6: {
         "hex-slice 6": dict(type="tiling", tiling_type="hex-slice", n=6),
         "square-slice 6": dict(type="tiling", tiling_type="square-slice", n=6),
-        "square-colouring 6": dict(type="tiling", tiling_type="square-colouring", n=6),
-        "laves 3.3.3.3.6": dict(type="tiling", tiling_type="laves", code="3.3.3.3.6"),
-        # "laves 3.4.6.4": dict(type="tiling", tiling_type="laves", code="3.4.6.4"),
-        "laves 3.12.12": dict(type="tiling", tiling_type="laves", code="3.12.12"),
+        "square-colouring 6": dict(type="tiling", tiling_type="square-col", n=6),
+        "laves 3.3.3.3.6": dict(type="tiling", tiling_type="lave", code="3.3.3.3.6"),
+        "laves 3.12.12": dict(type="tiling", tiling_type="lave", code="3.12.12"),
         "cube weave a-b|c-d|e-f": dict(type= "weave", weave_type="cube", strands="a-b|c-d|e-f"),
         "plain weave abc|def": dict(type="weave", weave_type="plain", strands="abc|def", n="1"),
         "plain weave abc-|def": dict(type="weave", weave_type="plain", strands="abc-|def", n="1"),
@@ -925,16 +938,15 @@ def setup_tilings_dictionary():
         "twill weave abc-|def": dict(type="weave", weave_type="twill", strands="abc-|def", n="3"),
         "basket weave abc-|def-": dict(type="weave", weave_type="basket", strands="abc-|def-", n="4"),
         "twill weave abc-|def-": dict(type="weave", weave_type="twill", strands="abc-|def-", n="4"),
-        "archimedean 3.3.4.3.4": dict(type="tiling", tiling_type="archimedean", code="3.3.4.3.4"),
-        "archimedean 3.4.6.4": dict(type="tiling", tiling_type="archimedean", code="3.4.6.4"),
-        "archimedean 4.6.12": dict(type="tiling", tiling_type="archimedean", code="4.6.12"),
-        "crosses 6": dict(type="tiling", tiling_type="crosses", n=6),
-        "hex-colouring 6": dict(type="tiling", tiling_type="hex-colouring", n=6),
+        "archimedean 3.3.4.3.4": dict(type="tiling", tiling_type="archi", code="3.3.4.3.4"),
+        "archimedean 3.4.6.4": dict(type="tiling", tiling_type="archi", code="3.4.6.4"),
+        "archimedean 4.6.12": dict(type="tiling", tiling_type="archi", code="4.6.12"),
+        "crosses 6": dict(type="tiling", tiling_type="cross", n=6),
+        "hex-colouring 6": dict(type="tiling", tiling_type="hex-col", n=6),
       },
       7: {
-        "hex-colouring 7": dict(type="tiling", tiling_type="hex-colouring", n=7),
-        "crosses 7": dict(type="tiling", tiling_type="crosses", n=7),
-        "hex-dissection 7": dict(type="tiling", tiling_type="hex-dissection", n=7),
+        "hex-colouring 7": dict(type="tiling", tiling_type="hex-col", n=7),
+        "crosses 7": dict(type="tiling", tiling_type="cross", n=7),
         "plain weave abcd|efg": dict(type="weave", weave_type="plain", strands="abcd|efg", n="1"),
         "plain weave abcd|efg-": dict(type="weave", weave_type="plain", strands="abcd|efg-", n="1"),
         "plain weave abcd-|efg-": dict(type="weave", weave_type="plain", strands="abcd-|efg-", n="1"),
@@ -944,9 +956,10 @@ def setup_tilings_dictionary():
         "twill weave abcd|efg": dict(type="weave", weave_type="twill", strands="abcd|efg", n="3"),
         "twill weave abcd|efg-": dict(type="weave", weave_type="twill", strands="abcd|efg-", n="4"),
         "twill weave abcd|efg- 2": dict(type="weave", weave_type="twill", strands="abcd|efg-", n="2"),
-        "square-colouring 7": dict(type="tiling", tiling_type="square-colouring", n=7),
+        "square-colouring 7": dict(type="tiling", tiling_type="square-col", n=7),
         "hex-slice 7": dict(type="tiling", tiling_type="hex-slice", n=7),
         "square-slice 7": dict(type="tiling", tiling_type="square-slice", n=7),
+        "hex-dissection 7": dict(type="tiling", tiling_type="hex-dissect", n=7, offset=0, offset_angle=0),
       },
       8: {
         "square-slice 8": dict(type="tiling", tiling_type="square-slice", n=8),
@@ -957,20 +970,22 @@ def setup_tilings_dictionary():
         "basket weave abcd|efgh 2": dict(type="weave", weave_type="basket", strands="abcd|efgh", n="2"),
         "twill weave abcd|efgh": dict(type="weave", weave_type="twill", strands="abcd|efgh", n="4"),
         "twill weave abcd|efgh 2": dict(type="weave", weave_type="twill", strands="abcd|efgh", n="2"),
-        "square-colouring 8": dict(type="tiling", tiling_type="square-colouring", n=8),
+        "square-colouring 8": dict(type="tiling", tiling_type="square-col", n=8),
         "hex-slice 8": dict(type="tiling", tiling_type="hex-slice", n=8),
-        "hex-colouring 8": dict(type="tiling", tiling_type="hex-colouring", n=8),
+        "hex-colouring 8": dict(type="tiling", tiling_type="hex-col", n=8),
       },
       9: {
         "cube weave abc|def|ghi": dict(type= "weave", weave_type="cube", strands="abc|def|ghi"),
         "hex-slice 9": dict(type="tiling", tiling_type="hex-slice", n=9),
-        "square-colouring 9": dict(type="tiling", tiling_type="square-colouring", n=9),
-        "hex-colouring 9": dict(type="tiling", tiling_type="hex-colouring", n=9),
+        "square-colouring 9": dict(type="tiling", tiling_type="square-col", n=9),
+        "hex-colouring 9": dict(type="tiling", tiling_type="hex-col", n=9),
         "square-slice 9": dict(type="tiling", tiling_type="square-slice", n=9),
-        "archimedean 3.3.3.3.6": dict(type="tiling", tiling_type="archimedean", code="3.3.3.3.6"),
+        "archimedean 3.3.3.3.6": dict(type="tiling", tiling_type="archi", code="3.3.3.3.6"),
         "plain weave abcde|fghi": dict(type="weave", weave_type="plain", strands="abcde|fghi", n="1"),
         "plain weave abcde-|fghi": dict(type="weave", weave_type="plain", strands="abcde-|fghi", n="1"),
         "plain weave abcde-|fghi-": dict(type="weave", weave_type="plain", strands="abcde-|fghi-", n="1"),
+        "hex-dissection 9": dict(type="tiling", tiling_type="hex-dissect", n=9, offset=0, offset_angle=0),
+        "square-dissection 9": dict(type="tiling", tiling_type="square-dissect", n=9, offset=0, offset_angle=0),
       },
       10: {
         "hex-slice 10": dict(type="tiling", tiling_type="hex-slice", n=10),

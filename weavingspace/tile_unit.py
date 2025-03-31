@@ -118,6 +118,10 @@ class TileUnit(Tileable):
         return tiling_geometries.setup_square_slice(self)
       elif "col" in self.tiling_type:
         return tiling_geometries.setup_square_colouring(self)
+      elif "trisect" in self.tiling_type:
+        return tiling_geometries.setup_square_trisection(self)
+      elif "dissect" in self.tiling_type:
+        return tiling_geometries.setup_square_dissection(self)
     elif "lave" in self.tiling_type:
       return tiling_geometries.setup_laves(self)
     elif "archi" in self.tiling_type:

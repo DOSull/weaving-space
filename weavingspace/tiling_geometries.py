@@ -44,6 +44,7 @@ from shapely import line_interpolate_point
 from weavingspace import TileShape
 from weavingspace import tiling_utils
 
+sqrt3 = np.sqrt(3)
 
 def setup_cairo(unit:TileUnit) -> None:
   """Sets up the Cairo tiling. King of tilings. All hail the Cairo tiling.
@@ -73,7 +74,7 @@ def setup_cairo(unit:TileUnit) -> None:
   """
   # MAKE GEOMETRIES
   d = unit.spacing
-  x = d/2 / (np.cos(np.radians(15)) + np.cos(np.radians(75)))
+  x = d/2 / (np.cos(np.pi/12) + np.cos(5*np.pi/12))
   # the following is just the geometry, it is what it is...
   # points are (more or less)
   #
@@ -84,8 +85,8 @@ def setup_cairo(unit:TileUnit) -> None:
   #
   # then rotate -15 and make 4 copies at 90 degree rotations
   p1 = geom.Polygon([(x, 0), (0, 0), (0, x),
-                     (x * np.sqrt(3) / 2, x + x/2),
-                     (x * (1 + np.sqrt(3)) / 2, x * (3 - np.sqrt(3)) / 2)])
+                     (x * sqrt3/2, x + x/2),
+                     (x * (1 + sqrt3) / 2, x * (3 - sqrt3) / 2)])
   p1 = affine.rotate(p1, -15, (0, 0))
   p2 = affine.rotate(p1, 90, (0, 0))
   p3 = affine.rotate(p1, 180, (0, 0))
@@ -107,7 +108,6 @@ def setup_cairo(unit:TileUnit) -> None:
   # RETURN NONE
   return None
 
-
 def setup_hex_slice(unit:TileUnit) -> None:
   """Arbitrary number of radial slices of a hexagon, with an optional
   offset starting point.
@@ -117,24 +117,26 @@ def setup_hex_slice(unit:TileUnit) -> None:
   Places unit.n points equally spaced around the perimeter of the hexagon.
   Slices are formed by connecting some sequence of these points (and any
   intervening hexagon corners) and the hexagon centre to form a pie slice.
-  unit.offset = 0 starts from corner 0. unit.offse = 1 starts half way between
+  unit.offset = 0 starts from corner 0. unit.offset = 1 starts half way between
   corner 0 and corner 1. Other values of unit.offset scale linearly between
   these.
 
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
+  if any([k not in unit.__dict__ for k in ["n", "offset"]]):
+    return (f"""Hex slice tiling requires both n and offset values
+            to be supplied.""")
   hexagon = tiling_utils.get_regular_polygon(unit.spacing, 6)
   slices = _get_radially_sliced_polygon(hexagon, unit.n, unit.offset)
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(slices))
-  unit.setup_vectors((                            0,  unit.spacing    ), 
-                     (unit.spacing * np.sqrt(3) / 2,  unit.spacing / 2),
-                     (unit.spacing * np.sqrt(3) / 2, -unit.spacing / 2))
+  unit.setup_vectors((                       0,  unit.spacing    ), 
+                     (unit.spacing * sqrt3/2,  unit.spacing / 2),
+                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
   return None
-
 
 def setup_square_slice(unit:TileUnit) -> None:
   """Arbitrary number of radial slices of a square, with an optional
@@ -152,6 +154,9 @@ def setup_square_slice(unit:TileUnit) -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
+  if any([k not in unit.__dict__ for k in ["n", "offset"]]):
+    return (f"""Square slice tiling requires both n and offset values
+            to be supplied.""")
   square = tiling_utils.get_regular_polygon(unit.spacing, 4)
   slices = _get_radially_sliced_polygon(square, unit.n, unit.offset)
   unit.tiles = gpd.GeoDataFrame(
@@ -160,7 +165,6 @@ def setup_square_slice(unit:TileUnit) -> None:
     geometry = gpd.GeoSeries(slices))
   unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
   return None
-
 
 def _get_radially_sliced_polygon(
   shape:geom.Polygon, 
@@ -214,7 +218,6 @@ def _get_radially_sliced_polygon(
       slices.append(geom.Polygon([p1] + skipped_corners + [p2, (0, 0)]))
   return gpd.GeoSeries(slices)
 
-
 def setup_crosses(unit:TileUnit) -> None:
   """Tilings by varying numbers of crosses.
 
@@ -226,6 +229,8 @@ def setup_crosses(unit:TileUnit) -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
+  if any([k not in unit.__dict__ for k in ["n"]]):
+    return (f"""Crosses tiling requires n to be supplied.""")
   square = tiling_utils.get_regular_polygon(unit.spacing, 4)
   x = unit.spacing / np.sqrt(unit.n * 5)
   cross = geom.Polygon([
@@ -269,7 +274,6 @@ def setup_crosses(unit:TileUnit) -> None:
     geometry = gpd.GeoSeries(parts))
   return None
 
-
 def setup_laves(unit:TileUnit) -> None:
   """The Laves tilings. See 
   
@@ -283,6 +287,8 @@ def setup_laves(unit:TileUnit) -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
+  if any([k not in unit.__dict__ for k in ["code"]]):
+    return (f"""Laves tiling requires vertex degree code to be supplied.""")
   match unit.code:
     case "3.3.3.3.3.3":
       # this is the regular hexagons
@@ -355,13 +361,13 @@ def _setup_laves_3_3_3_3_6(unit:TileUnit) -> None:
   # now replace first and last points by (0, 0)
   # (note shapely doesn't require closure of the polygon)
   petal = geom.Polygon([(0, 0)] + hex_p[1:5])
-  offset_a = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
+  offset_a = np.degrees(np.arctan(1 / 3 / sqrt3))
   petals = [
     tiling_utils.gridify(affine.rotate(petal, a + offset_a, origin = (0, 0)))
     for a in range(30, 360, 60)]
   unit.setup_vectors((                            0,  unit.spacing    ), 
-                     (unit.spacing * np.sqrt(3) / 2,  unit.spacing / 2),
-                     (unit.spacing * np.sqrt(3) / 2, -unit.spacing / 2))
+                     (unit.spacing * sqrt3/2,  unit.spacing / 2),
+                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdef")},
     crs = unit.crs,
@@ -386,14 +392,13 @@ def _setup_laves_3_12_12(unit:TileUnit) -> None:
   # reorder so the 'inner' and 'outer' triangles are labelled alternately
   tris = itertools.chain(*zip(tris1, tris2))
   unit.setup_vectors((                            0,  unit.spacing    ), 
-                     (unit.spacing * np.sqrt(3) / 2,  unit.spacing / 2),
-                     (unit.spacing * np.sqrt(3) / 2, -unit.spacing / 2))
+                     (unit.spacing * sqrt3/2,  unit.spacing / 2),
+                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdef")}, crs = unit.crs,
     geometry = gpd.GeoSeries(tris)
   )
   return None
-
 
 def setup_archimedean(unit:TileUnit) -> None:
   r"""The Archimedean 'regular tilings. See 
@@ -410,6 +415,9 @@ def setup_archimedean(unit:TileUnit) -> None:
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
+  if any([k not in unit.__dict__ for k in ["code"]]):
+    return (f"""Archimedean tiling requires vertex degree code to be supplied.
+            """)
   match unit.code:
     case "3.3.3.3.3.3":
       unit.base_shape = TileShape.TRIANGLE
@@ -444,26 +452,34 @@ def setup_archimedean(unit:TileUnit) -> None:
       return  f"({unit.code}) is not a valid Archimedean code."
   return None
 
+# Note that where possible in the functions that follow the following short
+# variable names are used:
+#  t for height of triangles
+#  s for height of squares
+#  h for height of hexagons
+#  o for height of octagons
+#  d for height of dodecagons
+# rescaling so that the resulting tile unit meets the unit.spacing request is
+# in most cases exact, but where the tile unit departs from a plain square or
+# hexagon it's approximate.
 def setup_archimedean_3_3_3_3_6(unit:TileUnit) -> None:
-  s = unit.spacing * np.sqrt(3 / 7)
-  hexagon = tiling_utils.get_regular_polygon(s, 6)
-  tri = tiling_utils.get_regular_polygon(s / 2, 3)
-  tri_down = affine.rotate(tiling_utils.get_regular_polygon(s / 2, 3), 180)
+  h = unit.spacing * np.sqrt(3/7)
+  t = h / 2
+  hexagon = tiling_utils.get_regular_polygon(h, 6)
+  tri = tiling_utils.get_regular_polygon(t, 3)
   tri_up = affine.translate(tri, 0, -tri.bounds[3])
-  tri_down = affine.rotate(tri_up, 180, origin = (0, 0))
-  w, h = tri.bounds[2] - tri.bounds[0], tri.bounds[3] - tri.bounds[1]
-  triangles = [affine.translate(tri_down, -w/2, h),
-               affine.translate(tri_up, 0, 2*h),
-               affine.translate(tri_down, w/2, h),
-               affine.translate(tri_up, w, 2*h),
-               affine.translate(tri_down, w, 0),
-               affine.translate(tri_up, 3*w/2, h),
-               affine.translate(tri_down, 3*w/2, -h),
-               affine.translate(tri_up, w, 0)]
+  tri_dn = affine.rotate(tri_up, 180, origin = (0, 0))
+  wdth, hght = tri.bounds[2] - tri.bounds[0], tri.bounds[3] - tri.bounds[1]
+  triangles = [affine.translate(tri_up,        0,  2*hght),
+               affine.translate(tri_up,   wdth  ,  2*hght),
+               affine.translate(tri_dn,   wdth  ,       0),
+               affine.translate(tri_up, 3*wdth/2,    hght),
+               affine.translate(tri_dn, 3*wdth/2,   -hght),
+               affine.translate(tri_up,   wdth  ,       0),
+               affine.translate(tri_dn,   wdth  , -2*hght),
+               affine.translate(tri_dn,        0, -2*hght)]
   polys = [hexagon] + triangles
-  unit.setup_vectors((   -w/2, 3 * h), 
-                     (2 * w  , 2 * h),
-                     (5 * w/2,    -h))
+  unit.setup_vectors((-wdth/2, 3*hght), (2*wdth, 2*hght), (5*wdth/2, -hght))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdefghi")}, crs = unit.crs,
     geometry = gpd.GeoSeries(polys)
@@ -471,16 +487,14 @@ def setup_archimedean_3_3_3_3_6(unit:TileUnit) -> None:
   return None
 
 def setup_archimedean_3_3_3_4_4(unit:TileUnit) -> None:
-  s = unit.spacing / np.sqrt(1 + np.sqrt(3))
-  t = s * np.sqrt(3) / 2
+  s = unit.spacing / np.sqrt(1 + sqrt3)
+  t = s * sqrt3/2
   square = tiling_utils.get_regular_polygon(s, 4)
   tri = tiling_utils.get_regular_polygon(t, 3)
-  tri_up = affine.translate(tri, 0, -tri.bounds[1] + s / 2)
-  tri_down = affine.rotate(tri_up, 180, origin = (0, 0))
-  polys = [square, tri_up, tri_down]
-  unit.setup_vectors((s/2,  s + t), 
-                     (s  ,  0),
-                     (s/2, -s - t))
+  tri_up = affine.translate(tri, 0, -tri.bounds[1] + s/2)
+  tri_dn = affine.rotate(tri_up, 180, origin = (0, 0))
+  polys = [square, tri_up, tri_dn]
+  unit.setup_vectors((s/2, s+t), (s, 0), (s/2, -s-t))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abc")}, crs = unit.crs,
     geometry = gpd.GeoSeries(polys)
@@ -488,21 +502,20 @@ def setup_archimedean_3_3_3_4_4(unit:TileUnit) -> None:
   return None
 
 def setup_archimedean_3_3_4_3_4(unit:TileUnit) -> None:
-  s = unit.spacing / 2 / np.cos(np.pi / 12)
-  t = s * np.sqrt(3) / 2
+  s = unit.spacing/2/np.cos(np.pi/12)
+  t = s * sqrt3/2
   square = tiling_utils.get_regular_polygon(s, 4)
   tri = tiling_utils.get_regular_polygon(t, 3)
   tri1 = affine.translate(tri, 0, -tri.bounds[3])
-  tri2 = affine.rotate(tri1, 180, origin = (0, -t))
-  tri3 = affine.rotate(tri1, 150, origin = (0, 0))
-  tri4 = affine.rotate(tri1, -150, origin = (0, 0))
+  tri2 = affine.rotate(tri1,  180, origin = (0, -t))
+  tri3 = affine.rotate(tri1,  150, origin = (0,  0))
+  tri4 = affine.rotate(tri1, -150, origin = (0,  0))
   sq1 = affine.translate(square, s/2, -s/2)
-  sq1 = affine.rotate(sq1, 30, origin = (0, 0))
+  sq1 = affine.rotate(sq1,   30, origin = (0, 0))
   sq2 = affine.rotate(sq1, -150, origin = (0, 0))
   polys = [tri2, tri1, sq2, tri4, tri3, sq1]
   polys = [affine.translate(p, 0, t - s/2) for p in polys]
-  unit.setup_vectors((t + s/2,  t + s/2), 
-                     (t + s/2, -t - s/2))
+  unit.setup_vectors((t + s/2,  t + s/2), (t + s/2, -t - s/2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdef")}, crs = unit.crs,
     geometry = gpd.GeoSeries(polys)
@@ -510,8 +523,8 @@ def setup_archimedean_3_3_4_3_4(unit:TileUnit) -> None:
   return None
 
 def setup_archimedean_3_4_6_4(unit:TileUnit) -> None:
-  h = unit.spacing / (1 + np.sqrt(3)) * np.sqrt(3)
-  s = h / np.sqrt(3)
+  h = unit.spacing / (1 + sqrt3) * sqrt3
+  s = h / sqrt3
   t = h / 2
   hex    = tiling_utils.get_regular_polygon(h, 6)
   square = tiling_utils.get_regular_polygon(s, 4)
@@ -524,9 +537,7 @@ def setup_archimedean_3_4_6_4(unit:TileUnit) -> None:
   tri1 = affine.rotate(tri1, 90, origin = (-s / 2, t))
   tri2 = affine.rotate(tri2, -90, origin = (s / 2, t))
   polys = [hex, sq2, tri1, sq1, tri2, sq3]
-  unit.setup_vectors((            0,  h + s), 
-                     (t + 3 * s / 2,  t + s / 2), 
-                     (t + 3 * s / 2, -t - s / 2))
+  unit.setup_vectors((0, h + s), (t + 3*s/2,  t + s/2), (t + 3*s/2, -t - s/2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdef")}, crs = unit.crs,
     geometry = gpd.GeoSeries(polys)
@@ -534,16 +545,15 @@ def setup_archimedean_3_4_6_4(unit:TileUnit) -> None:
   return None
 
 def setup_archimedean_3_6_3_6(unit:TileUnit) -> None:
-  h = unit.spacing * np.sqrt(3) / 2
+  h = unit.spacing * sqrt3/2
   t = h / 2
   hex = tiling_utils.get_regular_polygon(h, 6)
   tri = tiling_utils.get_regular_polygon(t, 3)
-  tri1 = affine.translate(tri, 0,   t - tri.bounds[1])
+  tri1 = affine.translate(tri, 0, t - tri.bounds[1])
   tri2 = affine.rotate(tri, 180)
   tri2 = affine.translate(tri2, 0, -t - tri.bounds[3])
   polys = [hex, tri1, tri2]
-  unit.setup_vectors((t * 2 / np.sqrt(3),  h),
-                     (t * 2 / np.sqrt(3), -h))
+  unit.setup_vectors((t*2/sqrt3,  h), (t*2/sqrt3, -h))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abc")}, crs = unit.crs,
     geometry = gpd.GeoSeries(polys)
@@ -552,16 +562,14 @@ def setup_archimedean_3_6_3_6(unit:TileUnit) -> None:
 
 def setup_archimedean_3_12_12(unit:TileUnit) -> None:
   d = unit.spacing
-  t = d * np.sqrt(3) / 2 / (2 + np.sqrt(3))
+  t = d * sqrt3/2 / (2 + sqrt3)
   dodecagon = tiling_utils.get_regular_polygon(d, 12)
   tri = tiling_utils.get_regular_polygon(t, 3)
   tri = affine.translate(tri, 0, unit.spacing / 2 - tri.bounds[1])
   tri_1 = affine.rotate(tri,  30, origin = (0, 0))
   tri_2 = affine.rotate(tri, -30, origin = (0, 0))
   polys = [dodecagon, tri_1, tri_2]
-  unit.setup_vectors((                 0,  d    ), 
-                     (d * np.sqrt(3) / 2,  d / 2),
-                     (d * np.sqrt(3) / 2, -d / 2))
+  unit.setup_vectors((0, d), (d * sqrt3/2,  d/2), (d * sqrt3/2, -d/2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abc")}, crs = unit.crs,
     geometry = gpd.GeoSeries(polys)
@@ -569,9 +577,9 @@ def setup_archimedean_3_12_12(unit:TileUnit) -> None:
   return None
 
 def setup_archimedean_4_6_12(unit:TileUnit) -> None:
-  d = unit.spacing * (2 + np.sqrt(3)) / (3 + np.sqrt(3))
-  s = d / (2 + np.sqrt(3))
-  h = s * np.sqrt(3)
+  d = unit.spacing * (2 + sqrt3) / (3 + sqrt3)
+  s = d / (2 + sqrt3)
+  h = s * sqrt3
   dodecagon = tiling_utils.get_regular_polygon(d, 12)
   hex = tiling_utils.get_regular_polygon(h, 6)
   square = tiling_utils.get_regular_polygon(s, 4)
@@ -583,8 +591,8 @@ def setup_archimedean_4_6_12(unit:TileUnit) -> None:
   hex2 = affine.rotate(hex1, -60, origin = (0, 0))
   polys = [dodecagon, sq2, hex1, sq1, hex2, sq3]  
   unit.setup_vectors((                       0,   d + s), 
-                     ((d + s) * np.sqrt(3) / 2,  (d + s) / 2),
-                     ((d + s) * np.sqrt(3) / 2, -(d + s) / 2))
+                     ((d + s) * sqrt3/2,  (d + s) / 2),
+                     ((d + s) * sqrt3/2, -(d + s) / 2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdef")}, crs = unit.crs,
     geometry = gpd.GeoSeries(polys)
@@ -606,12 +614,25 @@ def setup_archimedean_4_8_8(unit:TileUnit) -> None:
   )
   return None
 
-o = 1000
-s = o / (1 + np.sqrt(2))
-octagon = tiling_utils.get_regular_polygon(o, 8)
-square = tiling_utils.get_regular_polygon(s, 4)
-square = affine.translate(square, 0, (o + s) / 2)
-polys = [octagon, square]
+def setup_square_trisection(unit:TileUnit) -> None:
+  s1 = unit.spacing / np.sqrt(2)
+  p1 = geom.Point(  0,  s1)
+  p2 = geom.Point( s1,   0)
+  p3 = geom.Point(  0, -s1)
+  p4 = geom.Point(-s1,   0)
+  p5 = geom.Point( s1 / sqrt3,  s1 - s1 / sqrt3)
+  p6 = geom.Point(               0,  s1 - (2 * s1) / sqrt3)
+  p7 = geom.Point(-s1 / sqrt3,  s1 - s1 / sqrt3)
+  sq = geom.Polygon([p6, p7, p1, p5])
+  shp1 = geom.Polygon([p6, p5, p2, p3])
+  shp2 = geom.Polygon([p6, p3, p4, p7])
+  polys = [sq, shp1, shp2]
+  unit.setup_vectors((s1,  s1), (s1, -s1))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abc")}, crs = unit.crs,
+    geometry = gpd.GeoSeries(polys)
+  )
+  return None
 
 def setup_hex_colouring(unit:TileUnit) -> None:
   """2 through 9 colourings of a regular array of hexagons. The supplied unit
@@ -620,6 +641,8 @@ def setup_hex_colouring(unit:TileUnit) -> None:
   Args:
     unit (TileUnit): the TileUnit to setup.
   """
+  if any([k not in unit.__dict__ for k in ["n"]]):
+    return (f"""Hex colouring tiling requires n to be supplied.""")
   hexagon = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 6)
   bounds = hexagon.bounds
   w = bounds[2] - bounds[0]
@@ -652,9 +675,9 @@ def setup_hex_colouring(unit:TileUnit) -> None:
       hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
       w, h = h, w
       hex1 = affine.translate(hexagon, unit.spacing / 4, 0)
-      hex2 = affine.translate(hexagon, 0, unit.spacing * np.sqrt(3) / 4)
+      hex2 = affine.translate(hexagon, 0, unit.spacing * sqrt3 / 4)
       hex3 = affine.translate(hexagon, -unit.spacing / 4, 0)
-      hex4 = affine.translate(hexagon, 0, -unit.spacing * np.sqrt(3) / 4)
+      hex4 = affine.translate(hexagon, 0, -unit.spacing * sqrt3 / 4)
       hexes = [hex1, hex2, hex3, hex4]
       unit.setup_vectors((w,  3*h/2), (w, -3*h/2))
     case 4:
@@ -665,9 +688,9 @@ def setup_hex_colouring(unit:TileUnit) -> None:
       hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
       w, h = h, w
       hex1 = affine.translate(hexagon, unit.spacing / 4, 0)
-      hex2 = affine.translate(hexagon, 0, unit.spacing * np.sqrt(3) / 4)
+      hex2 = affine.translate(hexagon, 0, unit.spacing * sqrt3 / 4)
       hex3 = affine.translate(hexagon, -unit.spacing / 4, 0)
-      hex4 = affine.translate(hexagon, 0, -unit.spacing * np.sqrt(3) / 4)
+      hex4 = affine.translate(hexagon, 0, -unit.spacing * sqrt3 / 4)
       hexes = [hex1, hex2, hex3, hex4]
       unit.setup_vectors((w,  3*h/2), (w, -3*h/2))
     case 5:
@@ -690,11 +713,11 @@ def setup_hex_colouring(unit:TileUnit) -> None:
       bounds = base_hex.bounds
       w = bounds[2] - bounds[0]
       h = bounds[3] - bounds[1]
-      rotation = np.degrees(np.arctan(1 / 3 / np.sqrt(3)))
+      rotation = np.degrees(np.arctan(1 / 3 / sqrt3))
       corners = [p for p in hexagon.exterior.coords][:-1]
       hexagon = affine.rotate(hexagon, 30)
       hexes = [hexagon] + [affine.translate(
-        hexagon, x * np.sqrt(3), y * np.sqrt(3)) for x, y in corners]
+        hexagon, x * sqrt3, y * sqrt3) for x, y in corners]
       hexes = [affine.rotate(h, rotation, origin = (0, 0))
               for h in hexes]
       unit.setup_vectors((0,  h), (3*w/4,  h/2), (3*w/4, -h/2))
@@ -723,15 +746,15 @@ def setup_hex_colouring(unit:TileUnit) -> None:
     geometry = gpd.GeoSeries(hexes))
   return None
 
-
 def setup_square_colouring(unit:TileUnit) -> None:
   """2 through 9 colourings of a regular array of squares. The supplied unit
   must have unit.n set.
 
-
   Args:
     unit (TileUnit):  the TileUnit to setup.
   """
+  if any([k not in unit.__dict__ for k in ["n"]]):
+    return (f"""Square colouring tiling requires n to be supplied.""")
   sq = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 4)
   s = sq.bounds[2] - sq.bounds[0]
   match unit.n:
@@ -807,167 +830,342 @@ def setup_square_colouring(unit:TileUnit) -> None:
     geometry = gpd.GeoSeries(squares))
   return None
 
+def get_corners_and_mid_points(shape:geom.Polygon, offset:float = 0.5):
+  corners = [geom.Point(p) for p in shape.exterior.coords]
+  midpoints = [ls.interpolate(offset, True) for ls in tiling_utils.get_sides(shape)]
+  return list(itertools.chain(*[[a, b] for a, b in zip(corners, midpoints)]))
 
-def setup_hex_dissection(unit:TileUnit) -> None:
-  """Tilings from dissection of a hexagon into parts. Only 3 options are
-  supported, 4, 7, and 9, and each is handled in its own function.
-
-  The supplied unit should have offset and n set. In this case offset is an
-  int either 0 or 1
-
-  unit.offset == 1 starts at midpoints, 0 at hexagon corners
-  unit.n is the number of parts to the dissection and should be 4, 7, or 9.
-
-  Args:
-    unit (TileUnit):  the TileUnit to setup.
-  """
+def setup_square_dissection(unit:TileUnit) -> None:
+  if any(not k in unit.__dict__ for k in ["n", "offset", "offset_angle"]):
+    return (f"""Square dissection tiling requires n, offset, and offset_angle
+            to be be supplied.""")
+  outer = tiling_utils.get_regular_polygon(unit.spacing, 4)
+  inner = affine.scale(outer, 1 / np.sqrt(unit.n), 1 / np.sqrt(unit.n))
+  inner = affine.rotate(inner, unit.offset_angle)
+  outer_pts = get_corners_and_mid_points(outer)
+  inner_pts = get_corners_and_mid_points(inner)
+  outer_pts = outer_pts + outer_pts[:1]
+  inner_pts = inner_pts + inner_pts[:1]
+  inner_pts = inner_pts[::-1]
   match unit.n:
-    case 4:
-      parts = get_4_parts_of_hexagon(unit)
-    case 7:
-      parts = get_7_parts_of_hexagon(unit)
+    case 3:
+      polys = [inner]
+      if unit.offset == 1:
+        polys = polys + [
+          geom.Polygon(outer_pts[1:3] + outer_pts[4:6] + inner_pts[3:5] + inner_pts[6:8]),
+          geom.Polygon(outer_pts[5:7] + outer_pts[0:2] + inner_pts[7:9] + inner_pts[2:4])]
+      else:
+        polys = polys + [
+          geom.Polygon(outer_pts[0:5:2] + inner_pts[4:9:2]),          
+          geom.Polygon(outer_pts[4:9:2] + inner_pts[0:5:2])]
+    case 5:
+      polys = [inner]
+      if unit.offset == 1:
+        polys = polys + [
+          geom.Polygon(outer_pts[1:4] + inner_pts[5:8]),
+          geom.Polygon(outer_pts[3:6] + inner_pts[3:6]),
+          geom.Polygon(outer_pts[5:8] + inner_pts[1:4]),
+          geom.Polygon(outer_pts[7:9] + outer_pts[1:2] + 
+                       inner_pts[7:9] + inner_pts[1:2])]
+      else:
+        polys = polys + [
+          geom.Polygon(outer_pts[0:3:2] + inner_pts[6:9:2]),
+          geom.Polygon(outer_pts[2:5:2] + inner_pts[4:7:2]),
+          geom.Polygon(outer_pts[4:7:2] + inner_pts[2:5:2]),
+          geom.Polygon(outer_pts[6:9:2] + inner_pts[0:3:2])]
     case 9:
-      parts = get_9_parts_of_hexagon(unit)
+      polys = [inner]
+      if unit.offset == 1:
+        polys = polys + [
+          geom.Polygon(outer_pts[1:3] + inner_pts[7:9]),
+          geom.Polygon(outer_pts[2:4] + inner_pts[6:8]),
+          geom.Polygon(outer_pts[3:5] + inner_pts[5:7]),
+          geom.Polygon(outer_pts[4:6] + inner_pts[4:6]),
+          geom.Polygon(outer_pts[5:7] + inner_pts[3:5]),
+          geom.Polygon(outer_pts[6:8] + inner_pts[2:4]),
+          geom.Polygon(outer_pts[7:9] + inner_pts[1:3]),
+          geom.Polygon(outer_pts[0:2] + inner_pts[0:2])]
+      else:
+        polys = polys + [
+          geom.Polygon(outer_pts[0:2] + inner_pts[7:9]),
+          geom.Polygon(outer_pts[1:3] + inner_pts[6:8]),
+          geom.Polygon(outer_pts[2:4] + inner_pts[5:7]),
+          geom.Polygon(outer_pts[3:5] + inner_pts[4:6]),
+          geom.Polygon(outer_pts[4:6] + inner_pts[3:5]),
+          geom.Polygon(outer_pts[5:7] + inner_pts[2:4]),
+          geom.Polygon(outer_pts[6:8] + inner_pts[1:3]),
+          geom.Polygon(outer_pts[7:9] + inner_pts[0:2])]
     case _:
-      unit.base_shape = TileShape.HEXAGON
-      return  (f"""a {unit.n} hex-dissection is not implemented. 
-               Try 4, 7, or 9 elements instead.""")
-  unit.setup_vectors((                            0,  unit.spacing    ), 
-                     (unit.spacing * np.sqrt(3) / 2,  unit.spacing / 2),
-                     (unit.spacing * np.sqrt(3) / 2, -unit.spacing / 2))
+      unit.base_shape = TileShape.RECTANGLE
+      return f"{unit.n} dissection of square not available"
+  unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
-    geometry = gpd.GeoSeries(parts))
+    geometry = gpd.GeoSeries(polys))
   return None
 
-
-def get_4_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
-  """Returns 4 pieces that together compose the hexagon in the supplied 
-  TileUnit.
-
-  Args:
-    unit (TileUnit): the TileUnit containing the hexagon.
-
-  Returns:
-    list[geom.Polygon]: a list of 4 geom.Polygon parts of the original
-      hexagon
-  """
-  outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
-  inner_h = affine.scale(outer_h, 0.5, 0.5)
-  if unit.offset == 1:
-    inner_h = affine.rotate(inner_h, 30, (0, 0))
-  o_hx = tiling_utils.get_corners(outer_h)
-  i_hx = tiling_utils.get_corners(inner_h)
-  if unit.offset == 1:
-    o = []
-    for p1, p2 in zip(o_hx[:-1], o_hx[1:]):
-      o.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
-    return [
-      inner_h,
-      geom.Polygon([i_hx[2], i_hx[1], i_hx[0], o[11], o[0], o[2], o[3]]),
-      geom.Polygon([i_hx[4], i_hx[3], i_hx[2], o[3], o[4], o[6], o[7]]),
-      geom.Polygon([i_hx[0], i_hx[5], i_hx[4], o[7], o[8], o[10], o[11]])
-    ]
+def setup_hex_dissection(unit:TileUnit):
+  # scale:float = 1000, n:int = 2, offset_angle:float = 0., mids:bool = False):
+  if any(not k in unit.__dict__ for k in ["n", "offset", "offset_angle"]):
+    return (f"""Hex dissection tiling requires n, offset, and offset_angle
+            to be be supplied.""")
+  outer = tiling_utils.get_regular_polygon(unit.spacing, 6)
+  if unit.n == 9:
+    inner = affine.scale(outer, 1/np.sqrt(3), 1/np.sqrt(3))
   else:
-    return [
-      inner_h,
-      geom.Polygon([i_hx[2], i_hx[1], i_hx[0], o_hx[0], o_hx[1], o_hx[2]]),
-      geom.Polygon([i_hx[4], i_hx[3], i_hx[2], o_hx[2], o_hx[3], o_hx[4]]),
-      geom.Polygon([i_hx[0], i_hx[5], i_hx[4], o_hx[4], o_hx[5], o_hx[0]])
-    ]
+    inner = affine.scale(outer, 1 / np.sqrt(unit.n), 1 / np.sqrt(unit.n))
+  inner = affine.rotate(inner, unit.offset_angle)
+  outer_pts = get_corners_and_mid_points(outer)
+  inner_pts = get_corners_and_mid_points(inner)
+  outer_pts = outer_pts + outer_pts[:1]
+  inner_pts = inner_pts + inner_pts[:1]
+  inner_pts = inner_pts[::-1]
+  match unit.n:
+    case 3:
+      polys = [inner]
+      if unit.offset == 1:
+        polys = polys + [
+          geom.Polygon(outer_pts[1:3] + outer_pts[2:7:2] + 
+                       outer_pts[7:8] + inner_pts[6::2]),
+          geom.Polygon(outer_pts[7:9] + outer_pts[8::2] + 
+                       outer_pts[0:2] + inner_pts[0:7:2])]
+      else:
+        polys = polys + [
+          geom.Polygon(outer_pts[0:7:2] + inner_pts[6::2]),          
+          geom.Polygon(outer_pts[6::2]  + inner_pts[0:7:2])]
+    case 4:
+      polys = [inner]
+      if unit.offset == 1:
+        polys = polys + [
+          geom.Polygon(outer_pts[1:3]  + outer_pts[2:5:2] + 
+                       outer_pts[4:6]  + inner_pts[8::2]),
+          geom.Polygon(outer_pts[5:7]  + outer_pts[6:11:2] + 
+                       outer_pts[8:10] + inner_pts[4:9:2]),
+          geom.Polygon(outer_pts[9:11] + outer_pts[10::2] + 
+                       outer_pts[0:2]  + inner_pts[0:5:2])]
+      else:
+        polys = polys + [
+          geom.Polygon(outer_pts[0:5:2] + inner_pts[8::2]),
+          geom.Polygon(outer_pts[4:9:2] + inner_pts[4:9:2]),
+          geom.Polygon(outer_pts[8::2]  + inner_pts[0:5:2])]
+    case 7:
+      polys = [inner]
+      if unit.offset == 1:
+        polys = polys + [
+          geom.Polygon(outer_pts[1:3]  + outer_pts[2:4]   + inner_pts[10::2]),
+          geom.Polygon(outer_pts[3:5]  + outer_pts[4:6]   + inner_pts[8:11:2]),
+          geom.Polygon(outer_pts[5:7]  + outer_pts[6:8]   + inner_pts[6:9:2]),
+          geom.Polygon(outer_pts[7:9]  + outer_pts[8:10]  + inner_pts[4:7:2]),
+          geom.Polygon(outer_pts[9:11] + outer_pts[10:12] + inner_pts[2:5:2]),
+          geom.Polygon(outer_pts[11:]  + outer_pts[:2]    + inner_pts[0:3:2])]
+      else:
+        polys = polys + [
+          geom.Polygon(outer_pts[0:3:2]  + inner_pts[10::2]),
+          geom.Polygon(outer_pts[2:5:2]  + inner_pts[8:11:2]),
+          geom.Polygon(outer_pts[4:7:2]  + inner_pts[6:9:2]),
+          geom.Polygon(outer_pts[6:9:2]  + inner_pts[4:7:2]),
+          geom.Polygon(outer_pts[8:11:2] + inner_pts[2:5:2]),
+          geom.Polygon(outer_pts[10::2]  + inner_pts[0:3:2])]
+    case 9:
+      if unit.offset == 1:
+        polys = [
+          geom.Polygon(inner_pts[1:3]  + inner_pts[2:5:2] + 
+                       inner_pts[4:6]  + [(0, 0)]), 
+          geom.Polygon(inner_pts[5:7]  + inner_pts[6:9:2] + 
+                       inner_pts[8:10] + [(0, 0)]),
+          geom.Polygon(inner_pts[9:11] + inner_pts[10::2] +
+                       inner_pts[0:2]  + [(0, 0)]),
+          geom.Polygon(outer_pts[1:3]  + outer_pts[2:4]   + inner_pts[10::2]),
+          geom.Polygon(outer_pts[3:5]  + outer_pts[4:6]   + inner_pts[8:11:2]),
+          geom.Polygon(outer_pts[5:7]  + outer_pts[6:8]   + inner_pts[6:9:2]),
+          geom.Polygon(outer_pts[7:9]  + outer_pts[8:10]  + inner_pts[4:7:2]),
+          geom.Polygon(outer_pts[9:11] + outer_pts[10:12] + inner_pts[2:5:2]),
+          geom.Polygon(outer_pts[11:]  + outer_pts[:2]    + inner_pts[0:3:2])]
+      else:
+        polys = [
+          geom.Polygon(inner_pts[0:5:2] + [(0, 0)]),
+          geom.Polygon(inner_pts[4:9:2] + [(0, 0)]),
+          geom.Polygon(inner_pts[8::2]  + [(0, 0)]),
+          geom.Polygon(outer_pts[0:3:2]  + inner_pts[10::2]),
+          geom.Polygon(outer_pts[2:5:2]  + inner_pts[8:11:2]),
+          geom.Polygon(outer_pts[4:7:2]  + inner_pts[6:9:2]),
+          geom.Polygon(outer_pts[6:9:2]  + inner_pts[4:7:2]),
+          geom.Polygon(outer_pts[8:11:2] + inner_pts[2:5:2]),
+          geom.Polygon(outer_pts[10::2]  + inner_pts[0:3:2])]
+    case _:
+      unit.base_shape = TileShape.HEXAGON
+      return f"{unit.n} dissection of hexagon not available"
+  unit.setup_vectors((0, unit.spacing), 
+                     (unit.spacing * sqrt3/2, unit.spacing / 2),
+                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:unit.n]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(polys))
+  return None
 
+# def setup_hex_dissection(unit:TileUnit) -> None:
+#   """Tilings from dissection of a hexagon into parts. Only 3 options are
+#   supported, 4, 7, and 9, and each is handled in its own function.
 
-def get_7_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
-  """Returns 7 pieces that together compose the hexagon in the supplied 
-  TileUnit.
+#   The supplied unit should have offset and n set. In this case offset is an
+#   int either 0 or 1
 
-  Args:
-    unit (TileUnit): the TileUnit containing the hexagon.
+#   unit.offset == 1 starts at midpoints, 0 at hexagon corners
+#   unit.n is the number of parts to the dissection and should be 4, 7, or 9.
 
-  Returns:
-    list[geom.Polygon]: a list of 7 geom.Polygon parts of the original
-      hexagon
-  """
-  outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
-  inner_h = affine.scale(outer_h, 1/np.sqrt(7), 1/np.sqrt(7))
-  if unit.offset == 1:
-    inner_h = affine.rotate(inner_h, 30, (0, 0))
-  outer = tiling_utils.get_corners(outer_h)
-  inner = tiling_utils.get_corners(inner_h)
-  if unit.offset == 1:
-    o = []
-    for p1, p2 in zip(outer[:-1], outer[1:]):
-      o.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
-    i = []
-    for p1, p2 in zip(inner[:-1], inner[1:]):
-      i.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
-    return [
-      inner_h,
-      geom.Polygon([i[2], i[0], o[11], o[0], o[1]]),
-      geom.Polygon([i[4], i[2]] + o[1:4]),
-      geom.Polygon([i[6], i[4]] + o[3:6]),
-      geom.Polygon([i[8], i[6]] + o[5:8]),
-      geom.Polygon([i[10], i[8]] + o[7:10]),
-      geom.Polygon([i[0], i[10]] + o[9:])
-    ]
-  else:
-    return [
-      inner_h,
-      geom.Polygon([inner[1], inner[0], outer[0], outer[1]]),
-      geom.Polygon([inner[2], inner[1], outer[1], outer[2]]),
-      geom.Polygon([inner[3], inner[2], outer[2], outer[3]]),
-      geom.Polygon([inner[4], inner[3], outer[3], outer[4]]),
-      geom.Polygon([inner[5], inner[4], outer[4], outer[5]]),
-      geom.Polygon([inner[0], inner[5], outer[5], outer[0]])
-    ]
+#   Args:
+#     unit (TileUnit):  the TileUnit to setup.
+#   """
+#   if any([k not in unit.__dict__ for k in ["n", "offset"]]):
+#     return (f"""Hex dissection tiling requires n and offset to be supplied.""")
+#   match unit.n:
+#     case 4:
+#       parts = get_4_parts_of_hexagon(unit)
+#     case 7:
+#       parts = get_7_parts_of_hexagon(unit)
+#     case 9:
+#       parts = get_9_parts_of_hexagon(unit)
+#     case _:
+#       unit.base_shape = TileShape.HEXAGON
+#       return  (f"""a {unit.n} hex-dissection is not implemented. 
+#                Try 4, 7, or 9 elements instead.""")
+#   unit.setup_vectors((                            0,  unit.spacing    ), 
+#                      (unit.spacing * sqrt3/2,  unit.spacing / 2),
+#                      (unit.spacing * sqrt3/2, -unit.spacing / 2))
+#   unit.tiles = gpd.GeoDataFrame(
+#     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
+#     crs = unit.crs,
+#     geometry = gpd.GeoSeries(parts))
+#   return None
 
+# def get_4_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
+#   """Returns 4 pieces that together compose the hexagon in the supplied 
+#   TileUnit.
 
-def get_9_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
-  """Returns 9 pieces that together compose the hexagon in the supplied 
-  TileUnit.
+#   Args:
+#     unit (TileUnit): the TileUnit containing the hexagon.
 
-  Args:
-    unit (TileUnit): the TileUnit containing the hexagon.
+#   Returns:
+#     list[geom.Polygon]: a list of 4 geom.Polygon parts of the original
+#       hexagon
+#   """
+#   outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
+#   inner_h = affine.scale(outer_h, 0.5, 0.5)
+#   if unit.offset == 1:
+#     inner_h = affine.rotate(inner_h, 30, (0, 0))
+#   o_hx = tiling_utils.get_corners(outer_h)
+#   i_hx = tiling_utils.get_corners(inner_h)
+#   if unit.offset == 1:
+#     o = []
+#     for p1, p2 in zip(o_hx[:-1], o_hx[1:]):
+#       o.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
+#     return [
+#       inner_h,
+#       geom.Polygon([i_hx[2], i_hx[1], i_hx[0], o[11], o[0], o[2], o[3]]),
+#       geom.Polygon([i_hx[4], i_hx[3], i_hx[2], o[3], o[4], o[6], o[7]]),
+#       geom.Polygon([i_hx[0], i_hx[5], i_hx[4], o[7], o[8], o[10], o[11]])
+#     ]
+#   else:
+#     return [
+#       inner_h,
+#       geom.Polygon([i_hx[2], i_hx[1], i_hx[0], o_hx[0], o_hx[1], o_hx[2]]),
+#       geom.Polygon([i_hx[4], i_hx[3], i_hx[2], o_hx[2], o_hx[3], o_hx[4]]),
+#       geom.Polygon([i_hx[0], i_hx[5], i_hx[4], o_hx[4], o_hx[5], o_hx[0]])
+#     ]
 
-  Returns:
-    list[geom.Polygon]: a list of 9 geom.Polygon parts of the original
-      hexagon
-  """
-  c = geom.Point(0, 0)
-  outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
-  inner_h = affine.scale(outer_h, 1/np.sqrt(3), 1/np.sqrt(3))
-  if unit.offset == 1:
-    inner_h = affine.rotate(inner_h, 30, (0, 0))
-  outer = tiling_utils.get_corners(outer_h)
-  inner = tiling_utils.get_corners(inner_h)
-  if unit.offset == 1:
-    o = []
-    for p1, p2 in zip(outer[:-1], outer[1:]):
-      o.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
-    i = []
-    for p1, p2 in zip(inner[:-1], inner[1:]):
-      i.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
-    return [
-      geom.Polygon([c, i[1], i[2], i[4], i[5]]),
-      geom.Polygon([c, i[5], i[6], i[8], i[9]]),
-      geom.Polygon([c, i[9], i[10], i[0], i[1]]),
-      geom.Polygon([o[0], o[1], i[2], i[0], o[11]]),
-      geom.Polygon([o[2], o[3], i[4], i[2], o[1]]),
-      geom.Polygon([o[4], o[5], i[6], i[4], o[3]]),
-      geom.Polygon([o[6], o[7], i[8], i[6], o[5]]),
-      geom.Polygon([o[8], o[9], i[10], i[8], o[7]]),
-      geom.Polygon([o[10], o[11], i[0], i[10], o[9]])
-    ]
-  else:
-    return [
-      geom.Polygon([c, inner[0], inner[1], inner[2]]),
-      geom.Polygon([c, inner[2], inner[3], inner[4]]),
-      geom.Polygon([c, inner[4], inner[5], inner[0]]),
-      geom.Polygon([inner[1], inner[0], outer[0], outer[1]]),
-      geom.Polygon([inner[2], inner[1], outer[1], outer[2]]),
-      geom.Polygon([inner[3], inner[2], outer[2], outer[3]]),
-      geom.Polygon([inner[4], inner[3], outer[3], outer[4]]),
-      geom.Polygon([inner[5], inner[4], outer[4], outer[5]]),
-      geom.Polygon([inner[0], inner[5], outer[5], outer[0]])
-    ]
+# def get_7_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
+#   """Returns 7 pieces that together compose the hexagon in the supplied 
+#   TileUnit.
+
+#   Args:
+#     unit (TileUnit): the TileUnit containing the hexagon.
+
+#   Returns:
+#     list[geom.Polygon]: a list of 7 geom.Polygon parts of the original
+#       hexagon
+#   """
+#   outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
+#   inner_h = affine.scale(outer_h, 1/np.sqrt(7), 1/np.sqrt(7))
+#   if unit.offset == 1:
+#     inner_h = affine.rotate(inner_h, 30, (0, 0))
+#   outer = tiling_utils.get_corners(outer_h)
+#   inner = tiling_utils.get_corners(inner_h)
+#   if unit.offset == 1:
+#     o = []
+#     for p1, p2 in zip(outer[:-1], outer[1:]):
+#       o.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
+#     i = []
+#     for p1, p2 in zip(inner[:-1], inner[1:]):
+#       i.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
+#     return [
+#       inner_h,
+#       geom.Polygon([i[2], i[0], o[11], o[0], o[1]]),
+#       geom.Polygon([i[4], i[2]] + o[1:4]),
+#       geom.Polygon([i[6], i[4]] + o[3:6]),
+#       geom.Polygon([i[8], i[6]] + o[5:8]),
+#       geom.Polygon([i[10], i[8]] + o[7:10]),
+#       geom.Polygon([i[0], i[10]] + o[9:])
+#     ]
+#   else:
+#     return [
+#       inner_h,
+#       geom.Polygon([inner[1], inner[0], outer[0], outer[1]]),
+#       geom.Polygon([inner[2], inner[1], outer[1], outer[2]]),
+#       geom.Polygon([inner[3], inner[2], outer[2], outer[3]]),
+#       geom.Polygon([inner[4], inner[3], outer[3], outer[4]]),
+#       geom.Polygon([inner[5], inner[4], outer[4], outer[5]]),
+#       geom.Polygon([inner[0], inner[5], outer[5], outer[0]])
+#     ]
+
+# def get_9_parts_of_hexagon(unit: TileUnit) -> list[geom.Polygon]:
+#   """Returns 9 pieces that together compose the hexagon in the supplied 
+#   TileUnit.
+
+#   Args:
+#     unit (TileUnit): the TileUnit containing the hexagon.
+
+#   Returns:
+#     list[geom.Polygon]: a list of 9 geom.Polygon parts of the original
+#       hexagon
+#   """
+#   c = geom.Point(0, 0)
+#   outer_h = tiling_utils.get_regular_polygon(unit.spacing, 6)
+#   inner_h = affine.scale(outer_h, 1/sqrt3, 1/sqrt3)
+#   # if unit.offset == 1:
+#   #   inner_h = tiling_utils.rotate_preserving_order(inner_h, 30, (0, 0))
+#   inner_h = tiling_utils.rotate_preserving_order(inner_h, 
+#                                                  30 * unit.offset, (0, 0))
+#   outer = tiling_utils.get_corners(outer_h)
+#   inner = tiling_utils.get_corners(inner_h)
+#   if unit.offset == 1:
+#     o = []
+#     for p1, p2 in zip(outer[:-1], outer[1:]):
+#       o.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
+#     i = []
+#     for p1, p2 in zip(inner[:-1], inner[1:]):
+#       i.extend([p1, geom.Point([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2])])
+#     return [
+#       geom.Polygon([c, i[1], i[2], i[4], i[5]]),
+#       geom.Polygon([c, i[5], i[6], i[8], i[9]]),
+#       geom.Polygon([c, i[9], i[10], i[0], i[1]]),
+#       geom.Polygon([o[0], o[1], i[2], i[0], o[11]]),
+#       geom.Polygon([o[2], o[3], i[4], i[2], o[1]]),
+#       geom.Polygon([o[4], o[5], i[6], i[4], o[3]]),
+#       geom.Polygon([o[6], o[7], i[8], i[6], o[5]]),
+#       geom.Polygon([o[8], o[9], i[10], i[8], o[7]]),
+#       geom.Polygon([o[10], o[11], i[0], i[10], o[9]])
+#     ]
+#   else:
+#     return [
+#       geom.Polygon([c, inner[0], inner[1], inner[2]]),
+#       geom.Polygon([c, inner[2], inner[3], inner[4]]),
+#       geom.Polygon([c, inner[4], inner[5], inner[0]]),
+#       geom.Polygon([inner[1], inner[0], outer[0], outer[1]]),
+#       geom.Polygon([inner[2], inner[1], outer[1], outer[2]]),
+#       geom.Polygon([inner[3], inner[2], outer[2], outer[3]]),
+#       geom.Polygon([inner[4], inner[3], outer[3], outer[4]]),
+#       geom.Polygon([inner[5], inner[4], outer[4], outer[5]]),
+#       geom.Polygon([inner[0], inner[5], outer[5], outer[0]])
+#     ]

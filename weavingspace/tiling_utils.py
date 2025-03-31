@@ -233,6 +233,28 @@ def get_clean_polygon(
     return gridify(geom.Polygon(corners))
 
 
+def rotate_preserving_order(
+    polygon:geom.Polygon, 
+    angle:float,
+    centre:geom.Point = None) -> geom.Polygon:
+  """
+  Returns the supplied polygon rotated with the order of its corner points
+    preserved (not guaranteed by shapely.affinity.rotate).
+
+    Args:
+        polygon (geom.Polygon): polygon to rotate.
+        angle (float): desired angle of rotation (in degrees).
+        centre (geom.Point): the rotation centre (passed on to shapely.affinity.
+          rotate).
+
+    Returns:
+        geom.Polygon: rotated polygon.
+  """
+  ctr = "center" if centre is None else centre
+  corners = get_corners(polygon, repeat_first = False)
+  return geom.Polygon([affine.rotate(c, angle, ctr) for c in corners])
+
+
 def get_inner_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
   r"""Returns the angle (in degrees) between line p1-p2 and p2-p3, i.e., the 
   angle A below
