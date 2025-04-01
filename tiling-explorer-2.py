@@ -14,8 +14,8 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.04.01-09:45</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
-        mo.md(f"<span title='Requires weavingspace 0.0.6.36'>0.0.6.36</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.01</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Requires weavingspace 0.0.6.37'>0.0.6.37-20:00</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
 
@@ -512,7 +512,7 @@ def setup_chosen_tiling_options(
                                          show_value=True,
                                          debounce=True)
         else:
-            _offset_angle = mo.ui.slider(steps=[x for x in range(-30, 51)],
+            _offset_angle = mo.ui.slider(steps=[x for x in range(-30, 71)],
                                          value=0,
                                          label="#### Inner angle offset",
                                          show_value=True,

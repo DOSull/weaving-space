@@ -852,8 +852,10 @@ def setup_square_dissection(unit:TileUnit) -> None:
       polys = [inner]
       if unit.offset == 1:
         polys = polys + [
-          geom.Polygon(outer_pts[1:3] + outer_pts[4:6] + inner_pts[3:5] + inner_pts[6:8]),
-          geom.Polygon(outer_pts[5:7] + outer_pts[0:2] + inner_pts[7:9] + inner_pts[2:4])]
+          geom.Polygon(outer_pts[1:3] + outer_pts[4:6] + inner_pts[4:9:2]),
+                      #  inner_pts[3:5] + inner_pts[6:8]),
+          geom.Polygon(outer_pts[5:7] + outer_pts[0:2] + inner_pts[0:5:2])]
+                      #  inner_pts[7:9] + inner_pts[2:4])]
       else:
         polys = polys + [
           geom.Polygon(outer_pts[0:5:2] + inner_pts[4:9:2]),          
@@ -862,11 +864,11 @@ def setup_square_dissection(unit:TileUnit) -> None:
       polys = [inner]
       if unit.offset == 1:
         polys = polys + [
-          geom.Polygon(outer_pts[1:4] + inner_pts[5:8]),
-          geom.Polygon(outer_pts[3:6] + inner_pts[3:6]),
-          geom.Polygon(outer_pts[5:8] + inner_pts[1:4]),
-          geom.Polygon(outer_pts[7:9] + outer_pts[1:2] + 
-                       inner_pts[7:9] + inner_pts[1:2])]
+          geom.Polygon(outer_pts[1:4] + inner_pts[6:9:2]), #inner_pts[5:8]),
+          geom.Polygon(outer_pts[3:6] + inner_pts[4:7:2]), #inner_pts[3:6]),
+          geom.Polygon(outer_pts[5:8] + inner_pts[2:5:2]), #inner_pts[1:4]),
+          geom.Polygon(outer_pts[7:9] + outer_pts[1:2] + inner_pts[0:3:2])] 
+                      #  inner_pts[7:9] + inner_pts[1:2])]
       else:
         polys = polys + [
           geom.Polygon(outer_pts[0:3:2] + inner_pts[6:9:2]),
@@ -877,14 +879,14 @@ def setup_square_dissection(unit:TileUnit) -> None:
       polys = [inner]
       if unit.offset == 1:
         polys = polys + [
-          geom.Polygon(outer_pts[1:3] + inner_pts[7:9]),
-          geom.Polygon(outer_pts[2:4] + inner_pts[6:8]),
-          geom.Polygon(outer_pts[3:5] + inner_pts[5:7]),
-          geom.Polygon(outer_pts[4:6] + inner_pts[4:6]),
-          geom.Polygon(outer_pts[5:7] + inner_pts[3:5]),
-          geom.Polygon(outer_pts[6:8] + inner_pts[2:4]),
-          geom.Polygon(outer_pts[7:9] + inner_pts[1:3]),
-          geom.Polygon(outer_pts[0:2] + inner_pts[0:2])]
+          geom.Polygon(outer_pts[1:3] + inner_pts[7:9]), # + inner_pts[7:9]),
+          geom.Polygon(outer_pts[2:4] + inner_pts[6:8]), # + inner_pts[6:8]),
+          geom.Polygon(outer_pts[3:5] + inner_pts[5:7]), # + inner_pts[5:7]),
+          geom.Polygon(outer_pts[4:6] + inner_pts[3:6]), # + inner_pts[4:6]),
+          geom.Polygon(outer_pts[5:7] + inner_pts[3:5]), # + inner_pts[3:5]),
+          geom.Polygon(outer_pts[6:8] + inner_pts[2:4]), # + inner_pts[2:4]),
+          geom.Polygon(outer_pts[7:9] + inner_pts[1:3]), # + inner_pts[1:3]),
+          geom.Polygon(outer_pts[0:2] + inner_pts[0:2])] # + inner_pts[0:2])]
       else:
         polys = polys + [
           geom.Polygon(outer_pts[0:2] + inner_pts[7:9]),
