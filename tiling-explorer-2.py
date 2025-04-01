@@ -14,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.04.01-09:45</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.01</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
         mo.md(f"<span title='Requires weavingspace 0.0.6.36'>0.0.6.36</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
@@ -438,9 +438,9 @@ def setup_tiling_modifiers(
     if tile_or_weave.value == "tiling":
         _str = f"""
             #### Spacing {tool_tip(spacing, 'In units of the map CRS, the approximate dimension of the repeating group.')}
-            #### Rotate by {tool_tip(tile_rotate, 'Rotate tiling (degrees). Note that the tile group is rotated before any scaling or skew transforms are applied.')}
             #### Scale left-right {tool_tip(tile_scale_x, 'Scale in the x direction.')}
             #### Scale up-down {tool_tip(tile_scale_y, 'Scale in the y direction.')}
+            #### Rotate by {tool_tip(tile_rotate, 'Rotate weave (degrees).')}
             #### Skew left-right {tool_tip(tile_skew_x, 'Skew in the x direction (degrees).')}
             #### Skew up-down {tool_tip(tile_skew_y, 'Skew in the y direction (degrees).')}
             #### Tile group inset {tool_tip(p_inset, 'Inset the tile group (% spacing).')}
@@ -449,12 +449,12 @@ def setup_tiling_modifiers(
     else:
         _str = f"""
             #### Spacing {tool_tip(spacing, 'In units of the map CRS, the distance between strand centre lines.')}
-            #### Rotate by {tool_tip(tile_rotate, "'Rotate weave (degrees). Note that the weave is rotated before any scaling or skew transforms are applied.'")}
-            #### Scale left-right {tool_tip(tile_scale_x, "'Scale in the x direction.'")}
-            #### Scale up-down {tool_tip(tile_scale_y, "'Scale in the y direction.'")}
-            #### Skew left-right {tool_tip(tile_skew_x, "'Skew in the x direction (degrees).'")}
-            #### Skew up-down {tool_tip(tile_skew_y, "'Skew in the y direction (degrees).'")}
-            #### Strands inset {tool_tip(t_inset, "'Inset strands (% width).'")}
+            #### Scale left-right {tool_tip(tile_scale_x, 'Scale in the x direction.')}
+            #### Scale up-down {tool_tip(tile_scale_y, 'Scale in the y direction.')}
+            #### Rotate by {tool_tip(tile_rotate, 'Rotate weave (degrees). Note that the weave is scaled, then rotated, then skewed in that order.')}
+            #### Skew left-right {tool_tip(tile_skew_x, 'Skew in the x direction (degrees).')}
+            #### Skew up-down {tool_tip(tile_skew_y, 'Skew in the y direction (degrees).')}
+            #### Strands inset {tool_tip(t_inset, 'Inset strands (% width).')}
             """
     mo.md(_str)
     return
@@ -534,7 +534,7 @@ def setup_chosen_tiling_options(
             tooltips = ["0 starts at the base tile corners, 1 at the mid-point along segments equally dividing the base tile perimeter into the requested number of tiles."]
         elif "dissect" in family.value:
             tile_spec = mo.ui.dictionary({"offset": _offset, "offset_angle": _offset_angle,})
-            tooltips = ["0 starts at the base tile corners, 1 at the mid-point along segments equally dividing the base tile perimeter into the requested number of tiles.", "Angle by which inner polygon is rotated relative to the outer. Reverse the angle for a different look."]
+            tooltips = ["0 starts at the outer tile corners, 1 at the mid-points of their sides. In square dissections connections are to also to corners or side midpoints respectively, but in the hex case the corners of the inner hexagon are always used.", "Angle by which inner polygon is rotated relative to the outer. Reverse the angle for a different look."]
         else:
             tile_spec = None
     else:
@@ -678,15 +678,15 @@ def _(
         # make any requested modifications to the tile or weave unit
         if tile_or_weave.value == "tiling":
             return get_base_tile_unit() \
-               .transform_rotate(tile_rotate.value) \
                .transform_scale(tile_scale_x.value, tile_scale_y.value) \
+               .transform_rotate(tile_rotate.value) \
                .transform_skew(tile_skew_x.value, tile_skew_y.value) \
                .inset_tiles(t_inset.value * spacing.value / 100) \
                .inset_prototile(p_inset.value * spacing.value / 100)
         else:
             return get_base_tile_unit() \
-               .transform_rotate(tile_rotate.value) \
                .transform_scale(tile_scale_x.value, tile_scale_y.value) \
+               .transform_rotate(tile_rotate.value) \
                .transform_skew(tile_skew_x.value, tile_skew_y.value) \
                .inset_tiles(t_inset.value * tile_spec["aspect"].value * spacing.value / 100)
     return (get_modded_tile_unit,)
