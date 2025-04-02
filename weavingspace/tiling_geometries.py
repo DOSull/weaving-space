@@ -44,6 +44,7 @@ from shapely import line_interpolate_point
 from weavingspace import TileShape
 from weavingspace import tiling_utils
 
+sqrt2 = np.sqrt(2)
 sqrt3 = np.sqrt(3)
 
 def setup_cairo(unit:TileUnit) -> None:
@@ -96,14 +97,15 @@ def setup_cairo(unit:TileUnit) -> None:
   p2 = affine.translate(p2, unit.spacing / 2, 0)
   p3 = affine.translate(p3, unit.spacing / 2, 0)
   p4 = affine.translate(p4, -unit.spacing / 2, 0)
-  
+  polys = [affine.rotate(p, 45, origin = (0, 0)) for p in [p1, p2, p3, p4]]
   # MAKE THE GEODATAFRAME
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcd")}, crs = unit.crs,
-    geometry = gpd.GeoSeries([p1, p2, p3, p4]))
+    geometry = gpd.GeoSeries(polys))
   
   # SET THE TRANSLATION VECTORS
-  unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
+  unit.setup_vectors((unit.spacing / sqrt2,  unit.spacing/sqrt2),
+                     (unit.spacing / sqrt2, -unit.spacing/sqrt2))
   
   # RETURN NONE
   return None
@@ -601,7 +603,7 @@ def setup_archimedean_4_6_12(unit:TileUnit) -> None:
 
 def setup_archimedean_4_8_8(unit:TileUnit) -> None:
   o = unit.spacing
-  s = o / (1 + np.sqrt(2))
+  s = o / (1 + sqrt2)
   octagon = tiling_utils.get_regular_polygon(o, 8)
   square = tiling_utils.get_regular_polygon(s, 4)
   square = affine.translate(square, 0, (o + s) / 2)
@@ -615,7 +617,7 @@ def setup_archimedean_4_8_8(unit:TileUnit) -> None:
   return None
 
 def setup_square_trisection(unit:TileUnit) -> None:
-  s1 = unit.spacing / np.sqrt(2)
+  s1 = unit.spacing / sqrt2
   p1 = geom.Point(  0,  s1)
   p2 = geom.Point( s1,   0)
   p3 = geom.Point(  0, -s1)
@@ -768,7 +770,7 @@ def setup_square_colouring(unit:TileUnit) -> None:
       tr = [(-s/2, -s/2), (s/2, -s/2), (-s/2, s/2)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       squares = [affine.rotate(sq, 45, (0, 0)) for sq in squares]
-      x = s * np.sqrt(2)
+      x = s * sqrt2
       unit.setup_vectors((0,  x), (3*x/2,  x/2), (3*x/2, -x/2)) 
     case 4:
       # Copy and translate square
@@ -793,7 +795,7 @@ def setup_square_colouring(unit:TileUnit) -> None:
                       (0,  s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       squares = [affine.rotate(sq, -45, origin = (0, 0)) for sq in squares]
-      x = s * np.sqrt(2)
+      x = s * sqrt2
       unit.setup_vectors(( x/2,  3*x/2), (2*x,  0), (3*x/2, -3*x/2)) 
     case 7:
       # Copy and translate square
@@ -802,7 +804,7 @@ def setup_square_colouring(unit:TileUnit) -> None:
                       (0,  s), ( s,  s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       squares = [affine.rotate(sq, -45, (0, 0)) for sq in squares]
-      x = s * np.sqrt(2)
+      x = s * sqrt2
       unit.setup_vectors(( x/2,  3*x/2), (5*x/2,  x/2), (2*x, -x)) 
     case 8:
       # Copy and translate square
@@ -811,7 +813,7 @@ def setup_square_colouring(unit:TileUnit) -> None:
             (-s,  s), (0,  s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       squares = [affine.rotate(sq, 45, origin = (0, 0)) for sq in squares]
-      x  = s * np.sqrt(2)
+      x  = s * sqrt2
       unit.setup_vectors((0, 2*x), (2*x,  x), (2*x,  -x)) 
     case 9:
       # Copy and translate square
@@ -908,7 +910,6 @@ def setup_square_dissection(unit:TileUnit) -> None:
   return None
 
 def setup_hex_dissection(unit:TileUnit):
-  # scale:float = 1000, n:int = 2, offset_angle:float = 0., mids:bool = False):
   if any(not k in unit.__dict__ for k in ["n", "offset", "offset_angle"]):
     return (f"""Hex dissection tiling requires n, offset, and offset_angle
             to be be supplied.""")
@@ -1006,6 +1007,103 @@ def setup_hex_dissection(unit:TileUnit):
     crs = unit.crs,
     geometry = gpd.GeoSeries(polys))
   return None
+
+def get_regular_polygon_from_one_side(
+    side:geom.LineString, 
+    n:int):
+  points = list(side.coords)
+  turn_angle = np.pi - 2 * np.pi / n
+  for i in range(1, n):
+    points.append(
+      affine.rotate(geom.Point(points[-2]), 
+                    turn_angle, origin = points[-1], 
+                    use_radians = True))
+  return geom.Polygon(points[1:])
+
+def get_n_star_n_poly(
+    spacing:float, 
+    n_star:int, 
+    n_poly:int,
+    point_angle:float):
+  pt_angle = np.radians(point_angle)
+  x = spacing * np.cos(pt_angle / 2)
+  y = spacing * np.sin(pt_angle / 2)
+  interior_angles = np.linspace(0, 2 * np.pi, 
+                                2 * n_star, endpoint = False)
+  tips = [geom.Point(x * np.cos(a), x * np.sin(a)) 
+          for a in interior_angles[::2]]
+  dents = [geom.Point(y * np.cos(a), y * np.sin(a)) 
+             for a in interior_angles[1::2]]
+  star = geom.Polygon(
+    [p for p in itertools.chain(*zip(tips, dents))])
+  star_sides = tiling_utils.get_sides(star)
+  polys = [get_regular_polygon_from_one_side(star_sides[0], n_poly)]
+  if n_poly == 3 and n_star == 3:
+    polys.append(get_regular_polygon_from_one_side(star_sides[5], n_poly))
+  elif n_poly == 3 and n_star == 6:
+    polys.append(get_regular_polygon_from_one_side(star_sides[6], n_poly))
+  stars = [star]
+  if n_poly == 6 and n_star == 3:
+    c = polys[0].centroid
+    stars.append(affine.rotate(star, 180, origin = c))
+    polys = [affine.translate(p, -c.x, -c.y) for p in polys]
+    stars = [affine.translate(p, -c.x, -c.y) for p in stars]
+  return stars + polys          
+
+def setup_star_polygon(unit:TileUnit):
+  if any(not k in unit.__dict__ for k in ["code", "point_angle"]):
+    return (f"""Star tiling requires code and point_angle
+            to be be supplied.""")
+  match unit.code:
+    case "33":
+      unit.base_shape = TileShape.HEXAGON
+      polys = get_n_star_n_poly(unit.spacing, 3, 3, unit.point_angle)
+    case "36":
+      unit.base_shape = TileShape.HEXAGON
+      polys = get_n_star_n_poly(unit.spacing, 3, 6, unit.point_angle)
+    case "44":
+      unit.base_shape = TileShape.RECTANGLE
+      polys = get_n_star_n_poly(unit.spacing, 4, 4, unit.point_angle)
+    case "63":
+      unit.base_shape = TileShape.HEXAGON
+      polys = get_n_star_n_poly(unit.spacing, 6, 3, unit.point_angle)
+    case _:
+      return f"Invalid code supplied for star tiling"
+  star = polys[0]
+  tips = [p for p in star.exterior.coords][0::2]
+  dents = [p for p in star.exterior.coords][1::2]
+  match unit.code:
+    case "33":
+      v1 = geom.Point(dents[0][0] - tips[2][0], dents[0][1] - tips[2][1])
+      v2 = affine.rotate(v1, -60, (0, 0))
+      v3 = affine.rotate(v2, -60, (0, 0))
+      unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+    case "36":
+      pts = [p for p in polys[2].exterior.coords]
+      dents2 = [p for p in polys[1].exterior.coords][1::2]
+      v1 = geom.Point(dents2[2][0] - tips[0][0], dents2[2][1] - tips[0][1])
+      v2 = affine.rotate(v1, -60, (0, 0))
+      v3 = affine.rotate(v2, -60, (0, 0))
+      unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+    case "44":
+      v1 = geom.Point(tips[0][0] - dents[1][0], tips[0][1] - dents[1][1])
+      v2 = affine.rotate(v1, -90, (0, 0))
+      unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y))
+    case "63":
+      hex = polys[2]
+      pts = [p for p in hex.exterior.coords]
+      dents2 = [p for p in polys[1].exterior.coords][1::2]
+      v1 = geom.Point(dents[0][0] - tips[4][0], dents[0][1] - tips[4][1])
+      v2 = affine.rotate(v1, -60, (0, 0))
+      v3 = affine.rotate(v2, -60, (0, 0))
+      unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(polys))
+  return None
+
 
 # def setup_hex_dissection(unit:TileUnit) -> None:
 #   """Tilings from dissection of a hexagon into parts. Only 3 options are

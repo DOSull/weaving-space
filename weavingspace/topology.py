@@ -943,34 +943,37 @@ correct Topology, extract the tileable attribute and rebuild Topology from that.
 """)
     topo = pickle.loads(pickle.dumps(self)) if new_topology else self
     transform_args = topo.get_kwargs(getattr(topo, type), **kwargs)
-    if type == "zigzag_edge":
-      for e in topo.edges.values():
-        if e.label in selector:
-          topo.zigzag_edge(e, **transform_args)
-    # ---------------------------
-    elif type == "rotate_edge":
-      for e in topo.edges.values():
-        if e.label in selector:
-          topo.rotate_edge(e, **transform_args)
-    # ---------------------------
-    elif type == "scale_edge":
-      for e in topo.edges.values():
-        if e.label in selector:
-          topo.scale_edge(e, **transform_args)
-    # ---------------------------
-    elif type == "push_vertex":
-      pushes = {}
-      for v in topo.vertices_in_tiles(topo.tiles[:topo.n_tiles]):
-        if v.label in selector:
-          pushes[v.base_ID] = topo.push_vertex(v, **transform_args)
-      for base_ID, (dx, dy) in pushes.items():
-        for v in [v for v in topo.points.values() if v.base_ID == base_ID]:
-          v.point = affine.translate(v.point, dx, dy)
-    # ---------------------------
-    elif type == "nudge_vertex":
-       for v in topo.points.values():
-         if v.label in selector:
-           topo.nudge_vertex(v, **transform_args)
+    match type:
+
+      case "zigzag_edge":
+        for e in topo.edges.values():
+          if e.label in selector:
+            topo.zigzag_edge(e, **transform_args)
+
+      case "rotate_edge":
+        for e in topo.edges.values():
+          if e.label in selector:
+            topo.rotate_edge(e, **transform_args)
+
+      case "scale_edge":
+        for e in topo.edges.values():
+          if e.label in selector:
+            topo.scale_edge(e, **transform_args)
+
+      case "push_vertex":
+        pushes = {}
+        for v in topo.vertices_in_tiles(topo.tiles[:topo.n_tiles]):
+          if v.label in selector:
+            pushes[v.base_ID] = topo.push_vertex(v, **transform_args)
+        for base_ID, (dx, dy) in pushes.items():
+          for v in [v for v in topo.points.values() if v.base_ID == base_ID]:
+            v.point = affine.translate(v.point, dx, dy)
+
+      case "nudge_vertex":
+         for v in topo.points.values():
+          if v.label in selector:
+            topo.nudge_vertex(v, **transform_args)
+
     if apply_to_tiles:
       for t in topo.tiles:
         t.set_corners_from_edges()
