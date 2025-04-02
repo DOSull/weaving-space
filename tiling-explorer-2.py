@@ -14,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.04.01-23:45</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.02-00:30</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
         mo.md(f"<span title='Requires weavingspace 0.0.6.38'>0.0.6.38</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
@@ -723,7 +723,15 @@ def _(Union):
 
 
 @app.cell(hide_code=True)
-def _(get_selected_colour_palettes, mpl, num_tiles, view_settings, wsp):
+def _(
+    get_selected_colour_palettes,
+    get_tile_ids,
+    get_variables,
+    mpl,
+    num_tiles,
+    view_settings,
+    wsp,
+):
     def plot_tiles(tiles:wsp.Tileable) -> mpl.axis:
         """
         Returns a matplotlib axis with the Tileable supplied plotted on it
@@ -744,6 +752,8 @@ def _(get_selected_colour_palettes, mpl, num_tiles, view_settings, wsp):
             plot.set_frame_on(False)
         else:
             plot.axis("off")
+        _blanks = [id for id, v in zip(get_tile_ids(), get_variables()) if v == "---"]
+        tiles.tiles.loc[tiles.tiles["tile_id"].isin(_blanks)].plot(ax = plot.axes, fc="#00000000", hatch="////", ec="w")
         return plot
     return (plot_tiles,)
 
