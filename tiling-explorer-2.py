@@ -14,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.04.02-00:30</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.02-08:45</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
         mo.md(f"<span title='Requires weavingspace 0.0.6.38'>0.0.6.38</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
@@ -109,7 +109,7 @@ def marimo_states(
 @app.cell(hide_code=True)
 def upload_data(mo, set_input_data, tool_tip):
     _file_browser = mo.ui.file(filetypes=[".geojson", ".json"], 
-                    on_change=set_input_data, label=f"Upload GeoJSON")
+                    on_change=set_input_data, label=f"Upload")
     mo.md(f"{tool_tip(_file_browser, "Your data should be polygons. Currently only GeoJSON formatted data is readable.")}").left()
     return
 
@@ -272,7 +272,7 @@ def set_number_of_variables(mo, tool_tip):
 
 @app.cell(hide_code=True)
 def variable_palette_map_header(mo):
-    mo.md(f"### Variable &rarr; palette map")
+    mo.md(f"### Variables &lrarr; palettes")
     return
 
 
@@ -611,11 +611,11 @@ def _(mo):
 @app.cell(hide_code=True)
 def design_view_ui_elements(mo, tool_tip, view_settings):
     mo.md(f"""
-    #### Show tile IDs {tool_tip(view_settings['show_ids'], 'Show the tiling element labels used to match tiles to variables in the map data.')}
-    #### Show base tile {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the simple tile (usually a square or hexagon) which forms the basis of the pattern.')}
-    #### Show vectors {tool_tip(view_settings['show_vectors'], 'Show the translations that map repeating tiles in the pattern onto one another.')}
-    #### Show &lsquo;jigsaw piece&rsquo; {tool_tip(view_settings['show_reg_prototile'], 'Show in a red outline the repeating set tile group that pieces together jigsaw-like to form the pattern.')}
-    #### Show scale {tool_tip(view_settings['show_scale'], 'Give an indication of scale in map units.')}
+    #### {tool_tip(view_settings['show_ids'], 'Show the tiling element labels used to match tiles to variables in the map data.')} Show tile IDs
+    #### {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the simple tile (usually a square or hexagon) which forms the basis of the pattern.')} Show base tile
+    #### {tool_tip(view_settings['show_vectors'], 'Show the translations that map repeating tiles in the pattern onto one another.')} Show vectors
+    #### {tool_tip(view_settings['show_reg_prototile'], 'Show in a red outline the repeating set tile group that pieces together jigsaw-like to form the pattern.')} Show &lsquo;jigsaw piece&rsquo;
+    #### {tool_tip(view_settings['show_scale'], 'Give an indication of scale in map units.')} Show scale
     #### Tile group 'shells' to show {tool_tip(view_settings['radius'], 'The number of &lsquo;shells&rsquo; of the tiling to show around the base tile group.')}
     """)
     return
@@ -745,7 +745,7 @@ def _(
                           show_prototile=view_settings["show_prototile"].value,
                           show_reg_prototile=view_settings["show_reg_prototile"].value,
                           show_ids=view_settings["show_ids"].value,
-                          cmap=cm, figsize=(4.25, 4.25), r_alpha=0.5)
+                          cmap=cm, figsize=(4.5, 4), r_alpha=0.5)
         if view_settings["show_scale"].value:
             plot.xaxis.set_visible(True)
             plot.yaxis.set_visible(False)
@@ -753,7 +753,8 @@ def _(
         else:
             plot.axis("off")
         _blanks = [id for id, v in zip(get_tile_ids(), get_variables()) if v == "---"]
-        tiles.tiles.loc[tiles.tiles["tile_id"].isin(_blanks)].plot(ax = plot.axes, fc="#00000000", hatch="////", ec="w")
+        if len(_blanks) > 0:
+            tiles.tiles.loc[tiles.tiles["tile_id"].isin(_blanks)].plot(ax = plot.axes, fc="#00000000", hatch="////", ec="w")
         return plot
     return (plot_tiles,)
 
