@@ -1026,13 +1026,14 @@ def get_n_star_n_poly(
     n_poly:int,
     point_angle:float):
   pt_angle = np.radians(point_angle)
-  x = spacing * np.cos(pt_angle / 2)
-  y = spacing * np.sin(pt_angle / 2)
+  hp = spacing * (np.cos(pt_angle / 2) + 
+                  np.sin(pt_angle / 2) / np.tan(np.pi / n_star))
+  hd = spacing * np.sin(pt_angle / 2) / np.sin(np.pi / n_star)
   interior_angles = np.linspace(0, 2 * np.pi, 
                                 2 * n_star, endpoint = False)
-  tips = [geom.Point(x * np.cos(a), x * np.sin(a)) 
+  tips = [geom.Point(hp * np.cos(a), hp * np.sin(a)) 
           for a in interior_angles[::2]]
-  dents = [geom.Point(y * np.cos(a), y * np.sin(a)) 
+  dents = [geom.Point(hd * np.cos(a), hd * np.sin(a)) 
              for a in interior_angles[1::2]]
   star = geom.Polygon(
     [p for p in itertools.chain(*zip(tips, dents))])

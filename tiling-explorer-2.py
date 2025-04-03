@@ -14,8 +14,8 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.04.02-08:45</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
-        mo.md(f"<span title='Requires weavingspace 0.0.6.38'>0.0.6.38</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.02-15:45</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Requires weavingspace 0.0.6.40'>0.0.6.40</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
 
@@ -519,7 +519,7 @@ def setup_chosen_tiling_options(
                                          show_value=True,
                                          debounce=True)
     elif "star" in family.value:
-        _point_angle = mo.ui.slider(steps=[x for x in range(15, 91)],
+        _point_angle = mo.ui.slider(steps=[x for x in range(10, 121)],
                                     value=30,
                                     label="#### Point angle",
                                     show_value=True,

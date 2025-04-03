@@ -255,6 +255,25 @@ def rotate_preserving_order(
   return geom.Polygon([affine.rotate(c, angle, ctr) for c in corners])
 
 
+def ensure_cw(shape:geom.Polygon) -> geom.Polygon:
+  """Returns the polygon with its outer boundary vertices in clockwise order.
+
+  It is important to note that shapely.set_precision() imposes clockwise order
+  on polygons, and since it is used widely throughout theses modules, it makes
+  sense to impose this order.
+
+    Args:
+    shape (geom.Polygon): the polygon.
+
+  Returns:
+    geom.Polygon: the polygon in clockwise order.
+  """
+  if geom.LinearRing(shape.exterior.coords).is_ccw:
+    return shape.reverse()
+  else:
+    return shape
+
+
 def get_inner_angle(p1:geom.Point, p2:geom.Point, p3:geom.Point) -> float:
   r"""Returns the angle (in degrees) between line p1-p2 and p2-p3, i.e., the 
   angle A below
