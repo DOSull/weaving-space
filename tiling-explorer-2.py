@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.30"
+__generated_with = "0.12.10"
 app = marimo.App(
     width="full",
     app_title="MapWeaver",
@@ -14,8 +14,8 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.04.02-15:45</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
-        mo.md(f"<span title='Requires weavingspace 0.0.6.40'>0.0.6.40</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.20-09:00</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Requires weavingspace 0.0.6.42'>0.0.6.42</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
 
@@ -87,7 +87,7 @@ def marimo_states(
     # palettes currently selected by the user
     get_palettes, set_palettes = mo.state(available_palettes)
     # palette reverse settings
-    get_reversed, set_reversed = mo.state([False] * 12)
+    get_reversed, set_reversed = mo.state([False] * 18)
     # app status message
     get_status_message, set_status_message = mo.state(ok_message)
     return (
@@ -260,6 +260,7 @@ def _(get_selected_colour_palettes, get_tile_ids, get_variables, tiled_map):
 @app.cell(hide_code=True)
 def set_number_of_variables(mo, tool_tip):
     num_tiles = mo.ui.slider(steps=range(2, 13), 
+                             # steps=[x for x in range(2, 16)] + [18], # if we figure out why >12 is a problem for the app...
                              value=4, 
                              debounce=True, 
                              show_value=True)
@@ -285,6 +286,7 @@ def status_panel(
     num_tiles,
     set_status_message,
 ):
+    set_status_message("STATUS All good!")
     if len(get_numeric_variables(get_gdf())) < num_tiles.value:
         set_status_message(f"WARNING! More tiles ({num_tiles.value}) than variables ({len(get_numeric_variables(get_gdf()))})")
 
@@ -509,16 +511,16 @@ def setup_chosen_tiling_options(
         if "hex" in family.value:
             _offset_angle = mo.ui.slider(steps=[x for x in range(-50, 86)],
                                          value=0,
-                                         label="#### Inner angle offset",
+                                         label="#### Inner angle",
                                          show_value=True,
                                          debounce=True)
         else:
             _offset_angle = mo.ui.slider(steps=[x for x in range(-30, 71)],
                                          value=0,
-                                         label="#### Inner angle offset",
+                                         label="#### Inner angle",
                                          show_value=True,
                                          debounce=True)
-    elif "star" in family.value:
+    elif "star1" in family.value:
         _point_angle = mo.ui.slider(steps=[x for x in range(10, 121)],
                                     value=30,
                                     label="#### Point angle",
@@ -541,7 +543,7 @@ def setup_chosen_tiling_options(
         elif "dissect" in family.value:
             tile_spec = mo.ui.dictionary({"offset": _offset, "offset_angle": _offset_angle,})
             tooltips = ["0 starts at the base tile corners, 1 at the mid-point along segments equally dividing the base tile perimeter into the requested number of tiles.", "Angle by which inner polygon is rotated relative to the outer. Reverse the angle for a different look."]
-        elif "star" in family.value:
+        elif "star1" in family.value:
             tile_spec = mo.ui.dictionary({"point_angle": _point_angle})
             tooltips = ["Set the interior angle of the star points."]
         else:
@@ -882,7 +884,7 @@ def setup_tilings_dictionary():
         "archimedean 4.8.8": dict(type="tiling", tiling_type="archi", code="4.8.8"),
         "square-slice 2": dict(type="tiling", tiling_type="square-slice", n=2, offset=0),
         "crosses 2": dict(type="tiling", tiling_type="cross", n=2),
-        "star 44": dict(type="tiling", tiling_type="star", code="44", point_angle=30),
+        "star1 44": dict(type="tiling", tiling_type="star1", code="44", point_angle=30),
         "hex-colouring 2": dict(type="tiling", tiling_type="hex-col", n=2),
         "square-colouring 2": dict(type="tiling", tiling_type="square-col", n=2),
         "hex-slice 2": dict(type="tiling", tiling_type="hex-slice", n=2, offset=0),
@@ -897,7 +899,7 @@ def setup_tilings_dictionary():
         "hex-slice 3": dict(type="tiling", tiling_type="hex-slice", n=3, offset=0),
         "hex-colouring 3": dict(type="tiling", tiling_type="hex-col", n=3),
         "crosses 3": dict(type="tiling", tiling_type="cross", n=3),
-        "star 33": dict(type="tiling", tiling_type="star", code="33", point_angle=30),
+        "star1 33": dict(type="tiling", tiling_type="star1", code="33", point_angle=30),
         "square-colouring 3": dict(type="tiling", tiling_type="square-col", n=3),
         "archimedean 3.6.3.6": dict(type="tiling", tiling_type="archi", code="3.6.3.6"),
         "archimedean 3.12.12": dict(type="tiling", tiling_type="archi", code="3.12.12"),
@@ -905,8 +907,9 @@ def setup_tilings_dictionary():
         "archimedean 3.3.3.4.4": dict(type="tiling", tiling_type="archi", code="3.3.3.4.4"),
         "hex-dissection 3": dict(type="tiling", tiling_type="hex-dissect", n=3, offset=0, offset_angle=0),
         "square-dissection 3": dict(type="tiling", tiling_type="square-dissect", n=3, offset=0, offset_angle=0),
-        "star 36": dict(type="tiling", tiling_type="star", code="36", point_angle=30),
-        "star 63": dict(type="tiling", tiling_type="star", code="63", point_angle=30),
+        "star2 66": dict(type="tiling", tiling_type="star2", code="66"),
+        "star1 36": dict(type="tiling", tiling_type="star1", code="36", point_angle=30),
+        "star1 63": dict(type="tiling", tiling_type="star1", code="63", point_angle=30),
       },
       4: {
         "laves 3.3.4.3.4": dict(type="tiling", tiling_type="laves", code="3.3.4.3.4"),
@@ -927,6 +930,9 @@ def setup_tilings_dictionary():
         "square-slice 4": dict(type="tiling", tiling_type="square-slice", n=4, offset=0),
         "square-colouring 4": dict(type="tiling", tiling_type="square-col", n=4),
         "hex-colouring 4": dict(type="tiling", tiling_type="hex-col", n=4),
+        "star2 64": dict(type="tiling", tiling_type="star2", code="64"),
+        "star2 464": dict(type="tiling", tiling_type="star2", code="464"),
+        "star2 844": dict(type="tiling", tiling_type="star2", code="844"),
         "hex-slice 4": dict(type="tiling", tiling_type="hex-slice", n=4, offset=0),
         "hex-dissection 4": dict(type="tiling", tiling_type="hex-dissect", n=4, offset=0, offset_angle=0),
       },
@@ -967,6 +973,8 @@ def setup_tilings_dictionary():
         "archimedean 3.4.6.4": dict(type="tiling", tiling_type="archi", code="3.4.6.4"),
         "archimedean 4.6.12": dict(type="tiling", tiling_type="archi", code="4.6.12"),
         "crosses 6": dict(type="tiling", tiling_type="cross", n=6),
+        "star2 45": dict(type="tiling", tiling_type="star2", code="45"),
+        "star2 663": dict(type="tiling", tiling_type="star2", code="663"),
         "hex-colouring 6": dict(type="tiling", tiling_type="hex-col", n=6),
       },
       7: {
@@ -1013,6 +1021,7 @@ def setup_tilings_dictionary():
         "square-dissection 9": dict(type="tiling", tiling_type="square-dissect", n=9, offset=0, offset_angle=0),
       },
       10: {
+        "hex-colouring 10": dict(type="tiling", tiling_type="hex-col", n=10),
         "hex-slice 10": dict(type="tiling", tiling_type="hex-slice", n=10, offset=0),
         "square-slice 10": dict(type="tiling", tiling_type="square-slice", n=10, offset=0),
         "plain weave abcde|fghij": dict(type="weave", weave_type="plain", strands="abcde|fghij", n="1"),
@@ -1020,8 +1029,11 @@ def setup_tilings_dictionary():
         "plain weave abcde-|fghij-": dict(type="weave", weave_type="plain", strands="abcde-|fghij-", n="1"),
       },
       11: {
+        "hex-colouring 11": dict(type="tiling", tiling_type="hex-col", n=11),
         "hex-slice 11": dict(type="tiling", tiling_type="hex-slice", n=11, offset=0),
         "square-slice 11": dict(type="tiling", tiling_type="square-slice", n=11, offset=0),
+        "chavey E": dict(type="tiling", tiling_type="chavey", code="E"),
+        "chavey G": dict(type="tiling", tiling_type="chavey", code="G"),
         "plain weave abcdef|ghijk": dict(type="weave", weave_type="plain", strands="abcdef|ghijk", n="1"),
         "plain weave abcdef|ghijk-": dict(type="weave", weave_type="plain", strands="abcdef|ghijk-", n="1"),
         "plain weave abcdef-|ghijk-": dict(type="weave", weave_type="plain", strands="abcdef-|ghijk-", n="1"),
@@ -1033,6 +1045,19 @@ def setup_tilings_dictionary():
         "plain weave abcdef-|ghijkl": dict(type="weave", weave_type="plain", strands="abcdef-|ghijkl", n="1"),
         "plain weave abcdef-|ghijkl-": dict(type="weave", weave_type="plain", strands="abcdef-|ghijkl-", n="1"),
       },
+      # 13: {
+      #   "chavey A": dict(type="tiling", tiling_type="chavey", code="A"),
+      # },
+      # 14: {
+      #   "chavey B": dict(type="tiling", tiling_type="chavey", code="B"),
+      # },
+      # 15: {
+      #   "chavey F": dict(type="tiling", tiling_type="chavey", code="F"),
+      # },
+      # 18: {
+      #   "chavey C": dict(type="tiling", tiling_type="chavey", code="C"),
+      #   "chavey D": dict(type="tiling", tiling_type="chavey", code="D"),
+      # },
     }
     return (tilings_by_n,)
 
