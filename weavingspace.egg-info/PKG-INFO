@@ -1,8 +1,9 @@
 Metadata-Version: 2.4
 Name: weavingspace
-Version: 0.0.6.40
+Version: 0.0.6.42
 Summary: A package for making tiled mapping layers
 Author-email: David O'Sullivan <osullivan512@gmail.com>
+License-Expression: MIT
 Project-URL: Homepage, https://github.com/DOSull/weaving-space
 Project-URL: Repository, https://github.com/DOSull/weaving-space
 Classifier: Programming Language :: Python :: 3

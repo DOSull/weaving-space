@@ -8,7 +8,7 @@ exclude = ["superseded"]
 
 [project]
 name = "weavingspace"
-version = "0.0.6.40"
+version = "0.0.6.42"
 authors = [
   { name="David O'Sullivan", email="osullivan512@gmail.com" },
 ]
@@ -19,7 +19,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
 dependencies = [
     "requests",
     'importlib-metadata; python_version>="3.12"',
