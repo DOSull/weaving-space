@@ -239,8 +239,8 @@ class WeaveUnit(Tileable):
     real_polys = [not p.is_empty for p in weave_polys]
     weave_polys = [p for p, b in zip(weave_polys, real_polys) if b]
     strand_ids = [id for id, b in zip(strand_ids, real_polys) if b]
-    # note that the tile is important for the biaxial case, which may
-    # also a little hard to understand why the behaviour is so differe in 
+    # note that the tile is important for the biaxial case, which makes it
+    # a little hard to understand why the behaviour is so different in 
     # the biaxial and triaxial cases; however below seems to work...
     if loom.n_axes == 3:
       tile = grid.get_tile_from_cells(cells)

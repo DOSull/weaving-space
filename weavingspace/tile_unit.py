@@ -129,10 +129,14 @@ class TileUnit(Tileable):
       return tiling_geometries.setup_archimedean(self)
     elif "cross" in self.tiling_type:
       return tiling_geometries.setup_crosses(self)
-    elif "star" in self.tiling_type:
-      return tiling_geometries.setup_star_polygon(self)
+    elif "star1" in self.tiling_type:
+      return tiling_geometries.setup_star_polygon_1(self)
+    elif "star2" in self.tiling_type:
+      return tiling_geometries.setup_star_polygon_2(self)
+    elif "chavey" in self.tiling_type:
+      return tiling_geometries.setup_chavey(self)
     else:
-      return f"No supported tiling type provided."
+      return tiling_geometries.setup_base_tiling(self)
 
 
   def _setup_regularised_prototile(self) -> None:

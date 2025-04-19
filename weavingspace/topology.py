@@ -117,7 +117,6 @@ class Topology:
     self._find_tile_transitivity_classes(ignore_tile_ids)
     self._find_vertex_transitivity_classes(ignore_tile_ids)
     self._find_edge_transitivity_classes(ignore_tile_ids)
-    # self._label_tiles() # now no longer required...
     self.generate_dual()
 
   def __str__(self) -> str:
@@ -350,7 +349,7 @@ class Topology:
           to_add = to_add - 1
 
   def _match_reference_tile_corners(self, tile1:Tile, tile2:Tile):
-    """Finds vertices that are corners in tile2 but vertices in tile1 and 
+    """Finds vertices that are corners in tile1 but vertices in tile2 and 
     updates tile2 to match - merging edges as required.
 
     Args:
@@ -502,8 +501,8 @@ class Topology:
     }
     if ignore_tile_id_labels:
       n_symmetries = len(self.tile_matching_transforms)
-      pt = self.tileable.prototile.loc[0, "geometry"]
-      for tr in Shape_Matcher(pt).get_polygon_matches(pt):
+      ptile = self.tileable.prototile.loc[0, "geometry"]
+      for tr in Shape_Matcher(ptile).get_polygon_matches(ptile):
         if not tr.transform_type in ["identity", "translation"]:
           self.tile_matching_transforms[n_symmetries] = tr
           n_symmetries = n_symmetries + 1
@@ -823,12 +822,12 @@ class Topology:
     return gpd.GeoSeries([e.get_topology().parallel_offset(offset)
                           for e in self.edges.values()])
 
-  def plot(self, show_original_tiles: bool = True,  
+  def plot(self, 
+           show_original_tiles: bool = True,  
            show_tile_centres: bool = False,
-           show_tile_vertex_labels: bool = False, 
-           show_tile_edge_labels: bool = False, 
-           show_vertex_ids: bool = False,
            show_vertex_labels: bool = True,
+           show_vertex_ids: bool = False,
+          #  show_tile_edge_labels: bool = False, 
            show_edges: bool = True,
            offset_edges: bool = True,
            show_edge_labels:bool = False,
@@ -836,64 +835,136 @@ class Topology:
     fig = pyplot.figure(figsize = (10, 10))
     ax = fig.add_axes(111)
     extent = gpd.GeoSeries([t.shape for t in self.tiles]).total_bounds
-    dist = max([extent[2] - extent[0], extent[3] - extent[1]])
+    dist = max([extent[2] - extent[0], extent[3] - extent[1]]) / 100
     if show_original_tiles:
-      self._get_tile_geoms().plot(column = "transitivity_class", cmap = "Set2",
-        ax = ax, ec = "#444444", alpha = 0.2, lw = 0.75)
+      self._plot_tiles(ax)
     if show_tile_centres:
-      for i, tile in enumerate(self.tiles):
-        ax.annotate(i, xy = (tile.centre.x, tile.centre.y), color = "b", 
-                    fontsize = 10, ha = "center", va = "center")
+      self._plot_tile_centres(ax)
     if show_vertex_labels:
-      for v in self.points.values():
-        ax.annotate(v.ID if show_vertex_ids else v.label, 
-                    xy = (v.point.x, v.point.y), color = "r", fontsize = 10,
-                    ha = "center", va = "center",
-                    bbox = dict(boxstyle="circle", lw=0, fc="#ffffff40"))
-    if show_tile_vertex_labels:
-      for tile in self.tiles:
-        for posn, label in zip(tile.get_vertex_label_positions(), 
-                               tile.vertex_labels):
-          ax.annotate(label, xy = (posn.x, posn.y), fontsize = 8, 
-                      ha = "center", va = "center", color = "b")
-    if show_tile_edge_labels:
-      for tile in self.tiles:
-        for posn, label in zip(tile.get_edge_label_positions(),
-                               tile.edge_labels):
-          ax.annotate(label, xy = (posn.x, posn.y), color = "b",
-                      ha = "center", va = "center", fontsize = 8)
-    if show_edge_labels:
-      if show_edges:
-        edges = self._get_edge_geoms(dist / 100 if offset_edges else 0)
-        edges.plot(ax = ax, color = "forestgreen", ls = "dashed", lw = 1)
-      else:
-        edges = [e.get_geometry() for e in self.edges.values()]
-      for l, e in zip(edges, self.edges.values()):
-        c = l.centroid
-        ax.annotate(e.label, xy = (c.x, c.y), ha = "center", va = "center",
-          fontsize = 10 if show_edge_labels else 7, color = "k")
+      self._plot_vertex_labels(ax, show_vertex_ids)
+    if show_edge_labels or show_edges:
+      self._plot_edges(ax, show_edges, show_edge_labels, dist, offset_edges)
     if show_dual_tiles:
-      gpd.GeoSeries(self.dual_tiles).buffer(
-        -dist / 400, join_style = 2, cap_style = 3).plot(
-          ax = ax, fc = "k", alpha = 0.2)
+      self._plot_dual_tiles(ax, dist)
     pyplot.axis("off")
     return ax
 
-  def plot_tiling_symmetries(self, **kwargs):
+  def _plot_tiles(self, ax:pyplot.Axes) -> pyplot.Axes:
+    """Plots the Topology's Tileable polygons on supplied Axes.
+
+    Args:
+      ax (pyplot.Axes): Axes on which to plot.
+
+    Returns:
+      pyplot.Axes: the Axes.
+    """
+    self._get_tile_geoms().plot(column = "transitivity_class",
+      ax = ax, ec = "#444444", lw = 0.75, alpha = 0.25, cmap = "Greys")
+    return ax
+
+  def _plot_tile_centres(self, ax:pyplot.Axes) -> pyplot.Axes:
+    """Prints the tile transitivity class at each tile centroid.
+
+    Args:
+      ax (pyplot.Axes): Axes on which to plot.
+
+    Returns:
+      pyplot.Axes: the Axes.
+    """
+    for i, tile in enumerate(self.tiles):
+      ax.annotate(tile.transitivity_class, xy = (tile.centre.x, tile.centre.y), 
+                  ha = "center", va = "center")
+    return ax
+
+  def _plot_vertex_labels(self, ax:pyplot.Axes, 
+                          show_vertex_ids:bool = False) -> pyplot.Axes:
+    """Plots either the Vertex transitivity class label or its sequential ID.
+
+    Args:
+      ax (pyplot.Axes): Axes on which to plot.
+      show_vertex_ids (bool, optional): If True plots the ID, else plots the
+        transitivity class. Defaults to False.
+
+    Returns:
+      pyplot.Axes: the Axes.
+    """
+    for v in self.points.values():
+      ax.annotate(v.ID if show_vertex_ids else v.label, 
+                  xy = (v.point.x, v.point.y), color = "k",
+                  ha = "center", va = "center")
+    return ax
+  
+  def _plot_edges(self, 
+                  ax:pyplot.Axes,
+                  show_edges:bool = False,
+                  show_edge_labels:bool = False,
+                  dist:float = 0.0,
+                  offset_edges:bool = True) -> pyplot.Axes:
+    """Plots edges, including an offset if specified and also labels if
+    requested. Can also be called to only plot the labels.
+
+    Args:
+      ax (pyplot.Axes): Axes on which to plot.
+      show_edges (bool, optional): if True includes the edges as. a dotted blue
+        line, optionally offset (for clarity) from the tile boundary. Defaults
+        to False.
+      show_edge_labels (bool, optional): if True shows an edge label. Defaults
+        to False.
+      dist (float, optional): a distance by which to offset the dotted line for
+        the edge from the tile boundary. Defaults to 0.0.
+      offset_edges (bool, optional): if True applies the edge drawing offset,
+        if False the edge is drawn along the tile boundary. Defaults to True.
+
+    Returns:
+      pyplot.Axes: the Axes.
+    """
+    if show_edges:
+      edges = self._get_edge_geoms(dist if offset_edges else 0)
+      edges.plot(ax = ax, color = "dodgerblue", ls = ":")
+    else:
+      edges = [e.get_geometry() for e in self.edges.values()]
+    if show_edge_labels:
+      for l, e in zip(edges, self.edges.values()):
+        c = l.centroid
+        ax.annotate(e.label, xy = (c.x, c.y), color = "k",
+                    ha = "center", va = "center")
+    return ax
+  
+  def _plot_dual_tiles(self, ax:pyplot.Axes,
+                       dist:float = 0.0) -> pyplot.Axes:
+    gpd.GeoSeries(self.dual_tiles).buffer(
+      -dist / 4, join_style = 2, cap_style = 3).plot(
+        ax = ax, fc = "g", alpha = 0.25)
+    return ax
+
+  def plot_tiling_symmetries(self, **kwargs) -> None:
     n = len(self.tile_matching_transforms)
     nc = int(np.ceil(np.sqrt(n)))
     nr = int(np.ceil(n / nc))
-    gs = gpd.GeoSeries([t.shape for t in self.tiles])
-    gsb = gs[:self.n_tiles]
+    # gs = gpd.GeoSeries([t.shape for t in self.tiles])
+    # gsb = gs[:self.n_tiles]
     fig = pyplot.figure(figsize = (12, 12 * nr / nc))
     for i, tr in enumerate(self.tile_matching_transforms.values()):
       ax = fig.add_subplot(nr, nc, i + 1)
-      gs.plot(ax = ax, fc = "b", alpha = 0.15, ec = "k", lw = 0.5)
-      gsb.plot(ax = ax, fc = "#00000000", ec = "w", lw = 1, zorder = 2)
-      gsm = gpd.GeoSeries([tr.apply(g) for g in gsb])
-      gsm.plot(ax = ax, fc = "r", alpha = 0.2, lw = 0, ec = "r")
-      tr.draw(ax, **kwargs)
-      pyplot.axis("off")
+      self._plot_tiling_symmetry(tr, ax, **kwargs)
+      # gs.plot(ax = ax, fc = "b", alpha = 0.15, ec = "k", lw = 0.5)
+      # gsb.plot(ax = ax, fc = "#00000000", ec = "w", lw = 1, zorder = 2)
+      # gsm = gpd.GeoSeries([tr.apply(g) for g in gsb])
+      # gsm.plot(ax = ax, fc = "r", alpha = 0.2, lw = 0, ec = "r")
+      # tr.draw(ax, **kwargs)
+      # pyplot.axis("off")
+    # return fig
+    return None
+  
+  def _plot_tiling_symmetry(self, tr:Transform, ax:pyplot.axes, **kwargs):
+    gs = gpd.GeoSeries([t.shape for t in self.tiles])
+    gsb = gs[:self.n_tiles]
+    gs.plot(ax = ax, fc = "b", alpha = 0.15, ec = "k", lw = 0.5)
+    gsb.plot(ax = ax, fc = "#00000000", ec = "w", lw = 1, zorder = 2)
+    gsm = gpd.GeoSeries([tr.apply(g) for g in gsb])
+    gsm.plot(ax = ax, fc = "r", alpha = 0.2, lw = 0, ec = "r")
+    tr.draw(ax, **kwargs)
+    pyplot.axis("off")
 
   def transform_geometry(self, new_topology:bool, apply_to_tiles:bool,
                          selector:str, type:str, **kwargs) -> "Topology":
@@ -1411,33 +1482,33 @@ class Tile(object):
     """
     return self.edge_labels[self.get_corner_IDs().index(v.ID)]
 
-  def get_vertex_label_positions(self) -> list[geom.Point]:
-    """Returns a viable location at which to position corner labels inside
-    tile shape. The method is convoluted because a negative buffer may remove
-    colinear corners resulting in fewer positions than we have corners in the
-    tile shape!
+  # def get_vertex_label_positions(self) -> list[geom.Point]:
+  #   """Returns a viable location at which to position corner labels inside
+  #   tile shape. The method is convoluted because a negative buffer may remove
+  #   colinear corners resulting in fewer positions than we have corners in the
+  #   tile shape!
 
-    Returns:
-        list[geom.Point]: list of locations.
-    """
-    d = (self.shape.area ** 0.5) / 8
-    c = self.centre
-    corners = [c.point for c in self.corners]
-    return [geom.LineString([p, c]).line_interpolate_point(d) for p in corners]
+  #   Returns:
+  #       list[geom.Point]: list of locations.
+  #   """
+  #   d = (self.shape.area ** 0.5) / 8
+  #   c = self.centre
+  #   corners = [c.point for c in self.corners]
+  #   return [geom.LineString([p, c]).line_interpolate_point(d) for p in corners]
     
-  def get_edge_label_positions(self) -> list[geom.Point]:
-    """Returns a reasonable location at which to position edge labels inside
-    tile shape.
+  # def get_edge_label_positions(self) -> list[geom.Point]:
+  #   """Returns a reasonable location at which to position edge labels inside
+  #   tile shape.
 
-    Returns:
-        list[geom.Point]: list of locations
-    """
-    d = (self.shape.area ** 0.5) / 8
-    c = self.centre
-    # note direction is important as edge might not be a simple line segment
-    sides = [e.get_geometry(CW) for e, CW in zip(self.edges, self.edges_CW)]
-    return [geom.LineString([s.centroid, c]).line_interpolate_point(d) 
-            for s in sides]
+  #   Returns:
+  #       list[geom.Point]: list of locations
+  #   """
+  #   d = (self.shape.area ** 0.5) / 8
+  #   c = self.centre
+  #   # note direction is important as edge might not be a simple line segment
+  #   sides = [e.get_geometry(CW) for e, CW in zip(self.edges, self.edges_CW)]
+  #   return [geom.LineString([s.centroid, c]).line_interpolate_point(d) 
+  #           for s in sides]
 
   def angle_at(self, v:Vertex) -> float:
     """Returns interior angle at the specified corner (in degrees).

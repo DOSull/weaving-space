@@ -17,3 +17,7 @@ marimo/
 superseded/
 examples/scratch-pad.ipynb
 examples/jev-reporting-layer.ipynb
+paper/*
+paper/*/*
+.weaving-space/
+Wellington-Python-meetup-2025/

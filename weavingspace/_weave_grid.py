@@ -122,7 +122,7 @@ class WeaveGrid:
       polygon = self.grid_cell
       xy = self.get_coordinates(coords)
       polygon = affine.translate(polygon, xy[0], xy[1])
-    if self.n_axes == 2 or sum(coords) %2 == 0:
+    if self.n_axes == 2 or sum(coords) % 2 == 0:
       return polygon
     else:
       # triaxial case where triangle cell has to be flipped

@@ -321,12 +321,14 @@ class Tileable:
         of 'layers'.
     """
     # a dictionary of all the vectors we need, starting with (0, 0)
+    three_vecs = len([k for k in self.vectors.keys()][0]) == 3
     vecs = (
       {(0, 0, 0): (0, 0)}
-      if self.base_shape in (TileShape.HEXAGON,)
+      if three_vecs
+      # if self.base_shape in (TileShape.HEXAGON,)
       else {(0, 0): (0, 0)}
     )
-    steps = r if self.base_shape in (TileShape.HEXAGON,) else r * 2
+    steps = r if three_vecs else r * 2
     # a dictionary of the last 'layer' of added vectors
     last_vecs = copy.deepcopy(vecs)
     # get the translation vectors in a dictionary indexed by coordinates
@@ -346,7 +348,7 @@ class Tileable:
       vecs = vecs | new_vecs
       last_vecs = new_vecs
     if not include_0:  # throw away the identity vector
-      vecs.pop((0, 0, 0) if self.base_shape in (TileShape.HEXAGON,) else (0, 0))
+      vecs.pop((0, 0, 0) if three_vecs else (0, 0))
     ids, tiles = [], []
     # we need to add the translated prototiles in order of their distance from 
     # tile 0, esp. in the square case, i.e. something like this:
@@ -548,7 +550,8 @@ class Tileable:
       r:int = 0, 
       prototile_edgecolour:str = "k",
       reg_prototile_edgecolour:str = "r", 
-      r_alpha:float = 0.3,
+      vector_edgecolour:str = "k",
+      r_alpha:float = 0.5,
       cmap:list[str] = None, 
       figsize:tuple[float] = (8, 8), 
       **kwargs) -> pyplot.axes:
@@ -570,11 +573,13 @@ class Tileable:
       r (int, optional): passed to `get_local_patch()` to show context if
         greater than 0. Defaults to `0`.
       r_alpha (float, optional): alpha setting for units other than the
-        central one. Defaults to 0.3.
+        central one. Defaults to 0.5.
       prototile_edgecolour (str, optional): outline colour for the tile.
         Defaults to `"k"`.
       reg_prototile_edgecolour (str, optional): outline colour for the
         regularised. Defaults to `"r"`.
+      vector_edgecolour (str, optional): colour for the translation vectors.
+        Defaults to `"k"`.
       cmap (list[str], optional): colour map to apply to the central
         tiles. Defaults to `None`.
       figsize (tuple[float], optional): size of the figure.
@@ -617,7 +622,7 @@ class Tileable:
     if show_vectors:  # note that arrows in mpl are dimensioned in plotspace
       vecs = self.get_vectors()
       for v in vecs[: len(vecs) // 2]:
-        ax.arrow(0, 0, v[0], v[1], color = "k", width = w * 0.002,
+        ax.arrow(0, 0, v[0], v[1], color = vector_edgecolour, width = w * 0.002,
           head_width = w * 0.05, length_includes_head = True, zorder = 3)
     if show_reg_prototile:
       self.regularised_prototile.plot(

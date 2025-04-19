@@ -259,7 +259,7 @@ class Transform:
       ax = ax, color = "r", lw = 1, ls = "dashdot", zorder = 5)
     no_slide = np.isclose(r, 0, rtol = 1e-6, atol = 1e-6)
     if not no_slide:
-      pyplot.arrow(
+      ax.arrow(
         x - dx / 2, y - dy / 2, dx, dy, length_includes_head = True,
         width = w, fc = "k", ec = None, head_width = w * 6, zorder = 5)
     if add_title:
@@ -289,8 +289,9 @@ class Transform:
       the Axes with the rendering of this transform added.
     """
     gpd.GeoSeries([c]).plot(ax = ax, color = "b")
-    pyplot.arrow(c.x, c.y, self.translation[0], self.translation[1], lw = 0.5,
-                width = w, fc = "b", ec = None, head_width = w * 6, zorder = 5)
+    ax.arrow(c.x, c.y, self.translation[0], self.translation[1], 
+             length_includes_head = True, lw = 0.5, width = w, 
+             fc = "b", ec = None, head_width = w * 6, zorder = 5)
     if add_title:
       w = ax.get_window_extent().width
       ax.set_title(f"{self.transform_type} ({self.translation[0]:.1f}, {self.translation[1]:.1f})",
@@ -403,23 +404,29 @@ class Symmetries():
       list[Transform]: a list of Transform objects representing the polygon
         symmetries.
     """
-    # ==== Rotations ====
-    self.rotation_shifts = self.matcher.find_matches(self.poly_code)
-    # ==== Reflections ====
-    self.reflection_shifts = self.matcher.find_matches(self.poly_code_r)
-    return self.get_rotations(self.rotation_shifts) + \
-           self.get_reflections(self.reflection_shifts)
+    # # ==== Rotations ====
+    # self.rotation_shifts = self.matcher.find_matches(self.poly_code)
+    # # ==== Reflections ====
+    # self.reflection_shifts = self.matcher.find_matches(self.poly_code_r)
+    # return self.get_rotations(self.rotation_shifts) + \
+    #        self.get_reflections(self.reflection_shifts)
+    return self.get_rotations() + self.get_reflections()
 
 
   def get_rotations(
       self,
-      offsets:list[int]) -> list[Transform]:
+      offsets:None|list[int] = None
+      # offsets:list[int]
+    ) -> list[Transform]:
     """Gets the rotations associated with this collection of symmetries.
 
     Returns:
       list[Transform]: A list of the rotation symmetries associated with this
         Symmetries instance's polygon.
     """
+    if offsets is None:
+      self.rotation_shifts = self.matcher.find_matches(self.poly_code)
+      offsets = self.rotation_shifts
     c = self.polygon.centroid
     rot_angles = [np.round(i * 360 / self.n, 6) for i in offsets] 
     rotation_transforms = [
@@ -431,7 +438,9 @@ class Symmetries():
 
   def get_reflections(
       self,
-      offsets:list[int]) -> list[Transform]:
+      offsets:None|list[int] = None
+      # offsets:list[int]
+    ) -> list[Transform]:
     """Gets the reflections associated with this collection of symmetries.
 
     Args:
@@ -448,6 +457,9 @@ class Symmetries():
     bearings = tiling_utils.get_side_bearings(self.polygon)
     reflection_axes = []
     interior_angles = tiling_utils.get_interior_angles(self.polygon)
+    if offsets is None:
+      self.reflection_shifts = self.matcher.find_matches(self.poly_code_r)
+      offsets = self.reflection_shifts
     for i in range(self.n):
       # the angle bisectors
       reflection_axes.append(bearings[i] - interior_angles[i] / 2)
@@ -576,6 +588,10 @@ class Shape_Matcher:
         when matching transforms will be included in the associated list. If
         there are no matches (False, []) will be returned.
     """
+    # need this locally to check for equality of all members of a list
+    def all_equal(lst):
+      return all([np.isclose(lst[0], x, 1e-3, 1e-3) for x in lst])
+
     matches = self.s1.matcher.find_matches(s2.poly_code)
     if len(matches) == 0:
       return False, None
@@ -584,21 +600,42 @@ class Shape_Matcher:
       # get lists of polygon corners aligned correctly to measure the angle
       p1_corners = tiling_utils.get_corners(self.shape, repeat_first = False)
       p2_corners = tiling_utils.get_corners(s2.polygon, repeat_first = False)
+      corner_distances = self._get_corner_distances_between_polys(
+        p1_corners, p2_corners, matches)
+      equalities = [all_equal(d) for d in corner_distances]
+      if all(equalities):
+        # the two shapes are identical and in the same spot
+        # so rotations symmetries are those of the target shape
+        transforms.extend(self.s1.get_rotations(matches))
+        return True, transforms
+      elif any(equalities):
+        # the one where all are equal is a translation so we'll skip it below
+        # and add it here as a translation transform
+        m = equalities.index(True)
+        del matches[m]
+        dx, dy = (p1_corners[0].x - p2_corners[m].x, 
+                  p1_corners[0].y - p2_corners[m].y)
+        transforms.append(
+          Transform("translation", None, None, (dx, dy), (1, 0, 0, 1, dx, dy)))
       for m in matches:
         a, c = self._get_angle_between_polygons(p1_corners, p2_corners, m)
-        if a == "translation":
-          # print("One of the rotation matches is a translation.")
-          transforms.append(
-            Transform("translation", None, None, c, (1, 0, 0, 1, c[0], c[1])))
-        elif a == "identity":
-          transforms.append(
-            Transform("identity", None, None, c, (1, 0, 0, 1, 0, 0)))
-        elif a is None:
+        if a is None:
           continue
         else:
           transforms.append(Transform("rotation", a, c, (0, 0),
             tiling_utils.get_rotation_transform(a, (c.x, c.y))))
       return True, transforms
+
+
+  def _get_corner_distances_between_polys(
+    self,
+    corners1:list[geom.Point],
+    corners2:list[geom.Point],
+    offsets:list[int]
+    ) -> list[list[float]]:
+    return [
+      [p1.distance(p2) for p1, p2 in zip(corners1, corners2[i:] + corners2[:i])]
+      for i in offsets]
 
 
   def _get_angle_between_polygons(
@@ -629,7 +666,7 @@ class Shape_Matcher:
       # polygons already aligned similarly so we just need to find translation
       if np.isclose(dists[0], 0, atol = 1e-3, rtol  = 1e-3):
         return "identity", (0, 0)
-      else:
+      elif offset == 0:
         return "translation", (corners1[0].x - corners2[0].x,
                                corners1[0].y - corners2[0].y)
     # Polygons not lined up. Order them by distances between them

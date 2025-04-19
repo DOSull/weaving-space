@@ -241,7 +241,8 @@ class Tiling:
       region:gpd.GeoDataFrame,
       prototile_margin:float = 0, 
       tiles_sf:float = 1,
-      tiles_margin:float = 0, 
+      tiles_margin:float = 0,
+      debug:bool = False, 
       as_icons:bool = False) -> None:
     """Class to persist a tiling by filling an area relative to a region 
     sufficient to apply the tiling at any rotation.
@@ -273,10 +274,12 @@ class Tiling:
       as_icons (bool, optional): if True prototiles will only be placed at the 
         region's zone centroids, one per zone. Defaults to False.
     """
-    t1 = perf_counter()
+    if debug:
+      t1 = perf_counter()
     self.tileable = tileable
-    t2 = perf_counter()
-    print(f"Initialising Tiling: {t2 - t1}")
+    if debug:
+      t2 = perf_counter()
+      print(f"Initialising Tiling: {t2 - t1}")
     self.rotation = 0
     if tiles_margin > 0:
       self.tileable = self.tileable.inset_tiles(tiles_margin)
@@ -290,23 +293,28 @@ class Tiling:
               f"Ignoring prototile_margin setting of {prototile_margin}.")
     self.region = region
     self.region.sindex # this probably speeds up overlay
-    t2, t1 = perf_counter(), t2
-    print(f"Indexing the region: {t2 - t1}")
+    if debug:
+      t2, t1 = perf_counter(), t2
+      print(f"Indexing the region: {t2 - t1}")
     self.region_union = self.region.geometry.union_all()
-    t2, t1 = perf_counter(), t2
-    print(f"Forming the region union: {t2 - t1}")
+    if debug:
+      t2, t1 = perf_counter(), t2
+      print(f"Forming the region union: {t2 - t1}")
     self.grid = _TileGrid(
       self.tileable, 
       self.region.geometry if as_icons else gpd.GeoSeries([self.region_union]), 
       as_icons)
-    t2, t1 = perf_counter(), t2
-    print(f"Building the grid: {t2 - t1}")
+    if debug:
+      t2, t1 = perf_counter(), t2
+      print(f"Building the grid: {t2 - t1}")
     self.tiles, self.prototiles = self.make_tiling()
-    t2, t1 = perf_counter(), t2
-    print(f"Making the tiles: {t2 - t1}")
+    if debug:
+      t2, t1 = perf_counter(), t2
+      print(f"Making the tiles: {t2 - t1}")
     self.tiles.sindex # again this probably speeds up overlay
-    t2, t1 = perf_counter(), t2
-    print(f"Indexing the tiles: {t2 - t1}")
+    if debug:
+      t2, t1 = perf_counter(), t2
+      print(f"Indexing the tiles: {t2 - t1}")
 
 
   def get_tiled_map(
@@ -315,8 +323,8 @@ class Tiling:
       join_on_prototiles:bool = True,
       prioritise_tiles:bool = True,
       ragged_edges:bool = True,
-      use_centroid_lookup_approximation = False,
-      debug = False) -> "TiledMap":
+      use_centroid_lookup_approximation:bool = False,
+      debug:bool = False) -> "TiledMap":
     """Returns a `TiledMap` filling a region at the requested rotation.
 
     HERE BE DRAGONS! This function took a lot of trial and error to get right,
@@ -748,11 +756,6 @@ class TiledMap:
     self._set_colourspecs()
     bb = self.map.geometry.total_bounds
     if self.legend:
-      axes["map"].set_axis_off()
-      axes["map"].set_xlim(bb[0], bb[2])
-      axes["map"].set_ylim(bb[1], bb[3])
-      self._plot_subsetted_gdf(axes["map"], self.map, **kwargs)
-      self.plot_legend(ax = axes["legend"], **kwargs)
       if (self.legend_dx != 0 or self.legend_dx != 0):
         box = axes["legend"].get_position()
         box.x0 += self.legend_dx
@@ -760,6 +763,11 @@ class TiledMap:
         box.y0 += self.legend_dy
         box.y1 += self.legend_dy
         axes["legend"].set_position(box)
+      axes["map"].set_axis_off()
+      axes["map"].set_xlim(bb[0], bb[2])
+      axes["map"].set_ylim(bb[1], bb[3])
+      self._plot_subsetted_gdf(axes["map"], self.map, **kwargs)
+      self.plot_legend(ax = axes["legend"], **kwargs)
     else:
       axes.set_axis_off()
       axes.set_xlim(bb[0], bb[2])
@@ -1012,7 +1020,6 @@ class TiledMap:
 
       if self.categoricals is None or not isinstance(self.categoricals, Iterable):
         # provide a set of defaults
-        print(f"""Setting defaults for the 'categoricals' attribute of the map.""")
         self.categoricals = [col not in numeric_columns for col in self.vars_to_map]
       # print(f"{self.categoricals=}")
       
