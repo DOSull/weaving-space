@@ -147,17 +147,18 @@ class TileUnit(Tileable):
     # For whatever reasons in the web app version the unioning operation as
     # operated by tiling_utils.safe_union() is anything but and produces
     # TopologyException crashes... so here is a safe_union avoidant way...
-    tiles = copy.deepcopy(self.tiles.geometry)
-    tiles = gpd.GeoSeries(
-      [tiling_utils.gridify(p.buffer(
-        tiling_utils.RESOLUTION * 10, join_style=2, cap_style=3))
-        for p in tiles])
-    self.regularised_prototile = gpd.GeoDataFrame(
-      geometry = gpd.GeoSeries(
-        [tiles.union_all().buffer(-tiling_utils.RESOLUTION * 10, 
-                                  join_style=2, cap_style=3).simplify(
-                                    tiling_utils.RESOLUTION * 10)]),
-      crs = self.crs)
+    if self.regularised_prototile is None:
+      tiles = copy.deepcopy(self.tiles.geometry)
+      tiles = gpd.GeoSeries(
+        [tiling_utils.gridify(p.buffer(
+          tiling_utils.RESOLUTION * 10, join_style=2, cap_style=3))
+          for p in tiles])
+      self.regularised_prototile = gpd.GeoDataFrame(
+        geometry = gpd.GeoSeries(
+          [tiles.union_all().buffer(-tiling_utils.RESOLUTION * 10, 
+                                    join_style=2, cap_style=3).simplify(
+                                      tiling_utils.RESOLUTION * 10)]),
+        crs = self.crs)
     return None
 
 
