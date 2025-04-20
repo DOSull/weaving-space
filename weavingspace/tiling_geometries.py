@@ -1100,6 +1100,11 @@ def setup_star_polygon_1(unit:TileUnit):
       setup_star_polys_63(unit)
     case _:
       return f"Invalid code supplied for star tiling 1"
+  # star polygons cause issues for _setup_regularised_prototile
+  # due to negative buffering required in unioning, so each of
+  # these calculates a unit.union polygon and we assign here
+  unit.regularised_prototile = gpd.GeoDataFrame(
+    geometry = gpd.GeoSeries([unit.union]), crs = unit.crs)
   return None
 
 def setup_star_polys_33(unit:TileUnit) -> None:
@@ -1107,7 +1112,7 @@ def setup_star_polys_33(unit:TileUnit) -> None:
   s_sides = tiling_utils.get_sides(star)
   tri1 = get_regular_polygon_from_one_side(s_sides[0], 3)
   tri2 = get_regular_polygon_from_one_side(s_sides[5], 3)
-  union = geom.Polygon(tri1.exterior.coords[2:0:-1] + 
+  unit.union = geom.Polygon(tri1.exterior.coords[2:0:-1] + 
                        star.exterior.coords[2:6] + 
                        tri2.exterior.coords[2:0:-1])
   tips = [p for p in star.exterior.coords][0::2]
@@ -1120,8 +1125,6 @@ def setup_star_polys_33(unit:TileUnit) -> None:
     data = {"tile_id": list("abc")},
     crs = unit.crs,
     geometry = gpd.GeoSeries([star, tri1, tri2]))
-  unit.regularised_prototile = gpd.GeoDataFrame(
-    geometry = gpd.GeoSeries([union]), crs = unit.crs)
   return None
   
 def setup_star_polys_36(unit:TileUnit) -> None:
@@ -1131,28 +1134,25 @@ def setup_star_polys_36(unit:TileUnit) -> None:
   star1 = affine.translate(star1, -c.x, -c.y)
   hex = affine.translate(hex, -c.x, -c.y)
   star2 = affine.rotate(star1, 180, (0, 0))
-  union = geom.Polygon(
+  unit.union = geom.Polygon(
     hex.exterior.coords[5:3:-1] + star2.exterior.coords[1:7] +
     hex.exterior.coords[2:0:-1] + star1.exterior.coords[1:7])
   tips1 = [p for p in star1.exterior.coords][0::2]
   dents2 = [p for p in star2.exterior.coords][1::2]
   v1 = geom.Point(dents2[2][0] - tips1[0][0], dents2[2][1] - tips1[0][1])
   v2 = affine.rotate(v1, -60, (0, 0))
-  v3 = affine.rotate(v2, -60, (0, 0))
-  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abc")},
     crs = unit.crs,
     geometry = gpd.GeoSeries([star1, star2, hex]))
-  unit.regularised_prototile = gpd.GeoDataFrame(
-    geometry = gpd.GeoSeries([union]), crs = unit.crs)
   return None
   
 def setup_star_polys_44(unit:TileUnit) -> None:
   star = get_star(4, unit.spacing / 2, unit.point_angle)
   square = get_regular_polygon_from_one_side(
     tiling_utils.get_sides(star)[0], 4)
-  union = geom.Polygon(
+  unit.union = geom.Polygon(
     square.exterior.coords[3:1:-1] + star.exterior.coords[1:])
   tips = [p for p in star.exterior.coords][0::2]
   dents = [p for p in star.exterior.coords][1::2]
@@ -1163,8 +1163,6 @@ def setup_star_polys_44(unit:TileUnit) -> None:
     data = {"tile_id": list("ab")},
     crs = unit.crs,
     geometry = gpd.GeoSeries([star, square]))
-  unit.regularised_prototile = gpd.GeoDataFrame(
-    geometry = gpd.GeoSeries([union]), crs = unit.crs)
   return None
   
 def setup_star_polys_63(unit:TileUnit) -> None:
@@ -1172,7 +1170,7 @@ def setup_star_polys_63(unit:TileUnit) -> None:
   s_sides = tiling_utils.get_sides(star)
   tri1 = get_regular_polygon_from_one_side(s_sides[0], 3)
   tri2 = get_regular_polygon_from_one_side(s_sides[6], 3)
-  union = geom.Polygon(
+  unit.union = geom.Polygon(
     tri1.exterior.coords[2:0:-1] + star.exterior.coords[2:7] + 
     tri2.exterior.coords[2:0:-1] + star.exterior.coords[8:])
   tips = [p for p in star.exterior.coords][0::2]
@@ -1185,8 +1183,6 @@ def setup_star_polys_63(unit:TileUnit) -> None:
     data = {"tile_id": list("abc")},
     crs = unit.crs,
     geometry = gpd.GeoSeries([star, tri1, tri2]))
-  unit.regularised_prototile = gpd.GeoDataFrame(
-    geometry = gpd.GeoSeries([union]), crs = unit.crs)
   return None
   
 def get_regular_polygon_from_one_side(
@@ -1200,26 +1196,6 @@ def get_regular_polygon_from_one_side(
                     turn_angle, origin = points[-1], 
                     use_radians = True))
   return geom.Polygon(points[:-1])
-
-def get_n_star_n_poly(
-    spacing:float, 
-    n_star:int, 
-    n_poly:int,
-    point_angle:float):
-  star = get_star(n_star, spacing, point_angle)
-  star_sides = tiling_utils.get_sides(star)
-  polys = [get_regular_polygon_from_one_side(star_sides[0], n_poly)]
-  if n_poly == 3 and n_star == 3:
-    polys.append(get_regular_polygon_from_one_side(star_sides[5], n_poly))
-  elif n_poly == 3 and n_star == 6:
-    polys.append(get_regular_polygon_from_one_side(star_sides[6], n_poly))
-  stars = [star]
-  if n_poly == 6 and n_star == 3:
-    c = polys[0].centroid
-    stars.append(affine.rotate(star, 180, origin = c))
-    polys = [affine.translate(p, -c.x, -c.y) for p in polys]
-    stars = [affine.translate(p, -c.x, -c.y) for p in stars]
-  return stars + polys      
 
 def get_star(
     n:int,
@@ -1257,6 +1233,11 @@ def setup_star_polygon_2(unit:TileUnit):
       setup_star_polys_844(unit)
     case _:
       return f"Invalid code supplied for star tiling 2"
+  # star polygons cause issues for _setup_regularised_prototile
+  # due to negative buffering required in unioning, so each of
+  # these calculates a unit.union polygon and we assign here
+  unit.regularised_prototile = gpd.GeoDataFrame(
+    geometry = gpd.GeoSeries([unit.union]), crs = unit.crs)
   return None
 
 def setup_star_polys_45(unit:TileUnit) -> None:
@@ -1277,6 +1258,10 @@ def setup_star_polys_45(unit:TileUnit) -> None:
                 for a in range(0, 360, 90)]
   star1 = geom.Polygon(itertools.chain(*zip(star_dents, star_pts)))
   star2 = affine.rotate(star1, -126, tiling_utils.get_corners(pents[0])[2])
+  unit.union = geom.Polygon(
+    star1.exterior.coords[4:8] + star2.exterior.coords[:4] + 
+    pents[3].exterior.coords[3:] + pents[2].exterior.coords[1:5] + 
+    pents[1].exterior.coords[1:4])
   ppts = [p for p in pents[0].exterior.coords][:-1]
   spts = [p for p in star1.exterior.coords][:-1]
   v1 = geom.Point(spts[5][0] - ppts[-1][0], spts[5][0] - ppts[-1][0])
@@ -1289,32 +1274,14 @@ def setup_star_polys_45(unit:TileUnit) -> None:
   )
   return None
 
-def setup_star_polys_64(unit:TileUnit) -> None:
-  star = get_star(6, unit.spacing / 2, 30)
-  square = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[0], 4)
-  squares = [affine.rotate(square, a, (0, 0)) for a in range(0, 360, 60)]
-  union = geom.Polygon(
-    squares[0].exterior.coords[3:1:-1] + squares[1].exterior.coords[3:1:-1] +
-    squares[2].exterior.coords[3:1:-1] + star.exterior.coords[6:])
-  p1 = tiling_utils.get_corners(star)[4]
-  p0 = tiling_utils.get_corners(star)[8]
-  v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
-  v2, v3 = tuple([affine.rotate(v1, a, (0, 0)) for a in [-60, -120]])
-  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
-  unit.tiles = gpd.GeoDataFrame(
-    data = {"tile_id": list("abcd")},
-    geometry = gpd.GeoSeries([star] + squares),
-    crs = unit.crs
-  )
-  unit.regularised_prototile = gpd.GeoDataFrame(
-    geometry = gpd.GeoSeries([union]), crs = unit.crs)
-  return None
-
 def setup_star_polys_464(unit:TileUnit) -> None:
   star = get_star(4, unit.spacing / 3, 30)
   hex1 = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[0], 6)
   hex2 = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[2], 6)
   square = get_regular_polygon_from_one_side(tiling_utils.get_sides(hex2)[5].reverse(), 4)
+  unit.union = geom.Polygon(
+    hex1.exterior.coords[5:2:-1] + square.exterior.coords[2:1:-1] +
+    hex2.exterior.coords[5:1:-1] + star.exterior.coords[5:])
   p0 = tiling_utils.get_corners(star)[6]
   p1 = tiling_utils.get_corners(hex2)[3]
   v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
@@ -1327,16 +1294,38 @@ def setup_star_polys_464(unit:TileUnit) -> None:
   )
   return None
 
+def setup_star_polys_64(unit:TileUnit) -> None:
+  star = get_star(6, unit.spacing / 2, 30)
+  square = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[0], 4)
+  squares = [affine.rotate(square, a, (0, 0)) for a in range(0, 360, 60)]
+  unit.union = geom.Polygon(
+    squares[0].exterior.coords[3:1:-1] + squares[1].exterior.coords[3:1:-1] +
+    squares[2].exterior.coords[3:1:-1] + star.exterior.coords[6:])
+  p1 = tiling_utils.get_corners(star)[4]
+  p0 = tiling_utils.get_corners(star)[8]
+  v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
+  v2, v3 = tuple([affine.rotate(v1, a, (0, 0)) for a in [-60, -120]])
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abcd")},
+    geometry = gpd.GeoSeries([star] + squares),
+    crs = unit.crs
+  )
+  return None
+
 def setup_star_polys_66(unit:TileUnit) -> None:
   star = get_star(6, unit.spacing / 4, 60)
   hex1 = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[0], 6)
   hex2 = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[6], 6)
   polys = [affine.rotate(p, -30, (0, 0)) for p in [star, hex1, hex2]]
+  unit.union = geom.Polygon(
+    polys[1].exterior.coords[5:1:-1] + polys[0].exterior.coords[3:7] +
+    polys[2].exterior.coords[5:1:-1] + polys[0].exterior.coords[8:])
   vs = tiling_utils.get_corners(polys[0])[0:12:2]
   p0, p1 = vs[0], vs[3]
   v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
-  v2, v3 = tuple([affine.rotate(v1, a, (0, 0)) for a in [-60, -120]])
-  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+  v2 = affine.rotate(v1, -120, (0, 0))
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abc")},
     geometry = gpd.GeoSeries(polys),
@@ -1351,6 +1340,9 @@ def setup_star_polys_663(unit:TileUnit) -> None:
   tri = get_regular_polygon_from_one_side(
     tiling_utils.get_sides(hexes[0])[2].reverse(), 3)
   triangles = [affine.rotate(tri, a, (0, 0)) for a in [0, 60]]
+  unit.union = geom.Polygon(
+    star.exterior.coords[0:6] + hexes[0].exterior.coords[-1:-5:-1] +
+    hexes[1].exterior.coords[5:2:-1] + hexes[2].exterior.coords[5:2:-1])
   vs = tiling_utils.get_corners(star)[1:12:2]
   p0, p1 = vs[0], vs[3]
   v1 = geom.Point(2 * (p1.x - p0.x), 2 * (p1.y - p0.y))
@@ -1370,10 +1362,13 @@ def setup_star_polys_844(unit:TileUnit) -> None:
   polys = [affine.rotate(p, -22.5, (0, 0)) for p in [star] + squares]
   polys[2] = affine.scale(polys[2], 2, 2, 
                           origin = tiling_utils.get_corners(polys[2])[1])
+  unit.union = geom.Polygon(
+    polys[1].exterior.coords[3:1:-1] + polys[2].exterior.coords[4:1:-1] +
+    polys[3].exterior.coords[4:1:-1] + polys[0].exterior.coords[7:])
   vs = tiling_utils.get_corners(polys[0])
   p0, p1 = vs[10], vs[0]
   v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
-  v2 = affine.rotate(v1, -90, (0, 0))
+  v2 = affine.rotate(v1, 90, (0, 0))
   unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcd")},

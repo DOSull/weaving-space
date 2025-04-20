@@ -14,8 +14,8 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.04.21-00:00</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
-        mo.md(f"<span title='Requires weavingspace 0.0.6.71'>0.0.6.71</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.22-10:00</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Requires weavingspace 0.0.6.73'>0.0.6.73</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
 
@@ -884,7 +884,7 @@ def setup_tilings_dictionary():
         "archimedean 4.8.8": dict(type="tiling", tiling_type="archi", code="4.8.8"),
         "square-slice 2": dict(type="tiling", tiling_type="square-slice", n=2, offset=0),
         "crosses 2": dict(type="tiling", tiling_type="cross", n=2),
-        # "star1 44": dict(type="tiling", tiling_type="star1", code="44", point_angle=30),
+        "star1 44": dict(type="tiling", tiling_type="star1", code="44", point_angle=30),
         "hex-colouring 2": dict(type="tiling", tiling_type="hex-col", n=2),
         "square-colouring 2": dict(type="tiling", tiling_type="square-col", n=2),
         "hex-slice 2": dict(type="tiling", tiling_type="hex-slice", n=2, offset=0),
@@ -930,7 +930,7 @@ def setup_tilings_dictionary():
         "square-slice 4": dict(type="tiling", tiling_type="square-slice", n=4, offset=0),
         "square-colouring 4": dict(type="tiling", tiling_type="square-col", n=4),
         "hex-colouring 4": dict(type="tiling", tiling_type="hex-col", n=4),
-        # "star2 64": dict(type="tiling", tiling_type="star2", code="64"),
+        "star2 64": dict(type="tiling", tiling_type="star2", code="64"),
         "star2 464": dict(type="tiling", tiling_type="star2", code="464"),
         "star2 844": dict(type="tiling", tiling_type="star2", code="844"),
         "hex-slice 4": dict(type="tiling", tiling_type="hex-slice", n=4, offset=0),
