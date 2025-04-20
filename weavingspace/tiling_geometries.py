@@ -403,9 +403,9 @@ def _setup_laves_3_3_3_3_6(unit:TileUnit) -> None:
   petal = geom.Polygon([(0, 0)] + hex_p[1:5])
   offset_a = np.degrees(np.arctan(1 / 3 / sqrt3))
   petals = [
-    tiling_utils.gridify(affine.rotate(petal, a + offset_a, origin = (0, 0)))
+    affine.rotate(petal, a + offset_a, origin = (0, 0))
     for a in range(30, 360, 60)]
-  unit.setup_vectors((                            0,  unit.spacing    ), 
+  unit.setup_vectors((                     0,  unit.spacing    ), 
                      (unit.spacing * sqrt3/2,  unit.spacing / 2),
                      (unit.spacing * sqrt3/2, -unit.spacing / 2))
   unit.tiles = gpd.GeoDataFrame(
@@ -1091,52 +1091,75 @@ def setup_star_polygon_1(unit:TileUnit):
             to be be supplied.""")
   match unit.code:
     case "33":
-      unit.base_shape = TileShape.HEXAGON
-      polys = get_n_star_n_poly(unit.spacing / 2, 3, 3, unit.point_angle)
+      setup_star_polys_33(unit)
     case "36":
-      unit.base_shape = TileShape.HEXAGON
-      polys = get_n_star_n_poly(unit.spacing / 3, 3, 6, unit.point_angle)
+      setup_star_polys_36(unit)
     case "44":
-      unit.base_shape = TileShape.RECTANGLE
-      polys = get_n_star_n_poly(unit.spacing / 2, 4, 4, unit.point_angle)
+      setup_star_polys_44(unit)
     case "63":
-      unit.base_shape = TileShape.HEXAGON
-      polys = get_n_star_n_poly(unit.spacing / 2, 6, 3, unit.point_angle)
+      setup_star_polys_63(unit)
     case _:
       return f"Invalid code supplied for star tiling 1"
+  return None
+
+def setup_star_polys_33(unit:TileUnit) -> None:
+  polys = get_n_star_n_poly(unit.spacing / 2, 3, 3, unit.point_angle)
   star = polys[0]
   tips = [p for p in star.exterior.coords][0::2]
   dents = [p for p in star.exterior.coords][1::2]
-  match unit.code:
-    case "33":
-      v1 = geom.Point(dents[0][0] - tips[2][0], dents[0][1] - tips[2][1])
-      v2 = affine.rotate(v1, -60, (0, 0))
-      v3 = affine.rotate(v2, -60, (0, 0))
-      unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
-    case "36":
-      pts = [p for p in polys[2].exterior.coords]
-      dents2 = [p for p in polys[1].exterior.coords][1::2]
-      v1 = geom.Point(dents2[2][0] - tips[0][0], dents2[2][1] - tips[0][1])
-      v2 = affine.rotate(v1, -60, (0, 0))
-      v3 = affine.rotate(v2, -60, (0, 0))
-      unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
-    case "44":
-      v1 = geom.Point(tips[0][0] - dents[1][0], tips[0][1] - dents[1][1])
-      v2 = affine.rotate(v1, -90, (0, 0))
-      unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y))
-    case "63":
-      hex = polys[2]
-      pts = [p for p in hex.exterior.coords]
-      dents2 = [p for p in polys[1].exterior.coords][1::2]
-      v1 = geom.Point(dents[0][0] - tips[4][0], dents[0][1] - tips[4][1])
-      v2 = affine.rotate(v1, -60, (0, 0))
-      v3 = affine.rotate(v2, -60, (0, 0))
-      unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+  v1 = geom.Point(dents[0][0] - tips[2][0], dents[0][1] - tips[2][1])
+  v2 = affine.rotate(v1, -60, (0, 0))
+  v3 = affine.rotate(v2, -60, (0, 0))
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(polys))
   return None
+  
+def setup_star_polys_36(unit:TileUnit) -> None:
+  polys = get_n_star_n_poly(unit.spacing / 3, 3, 6, unit.point_angle)
+  tips1 = [p for p in polys[0].exterior.coords][0::2]
+  dents2 = [p for p in polys[1].exterior.coords][1::2]
+  v1 = geom.Point(dents2[2][0] - tips1[0][0], dents2[2][1] - tips1[0][1])
+  v2 = affine.rotate(v1, -60, (0, 0))
+  v3 = affine.rotate(v2, -60, (0, 0))
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(polys))
+  return None
+  
+def setup_star_polys_44(unit:TileUnit) -> None:
+  polys = get_n_star_n_poly(unit.spacing / 2, 4, 4, unit.point_angle)
+  star = polys[0]
+  tips = [p for p in star.exterior.coords][0::2]
+  dents = [p for p in star.exterior.coords][1::2]
+  v1 = geom.Point(tips[0][0] - dents[1][0], tips[0][1] - dents[1][1])
+  v2 = affine.rotate(v1, 90, (0, 0))
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(polys))
+  return None
+  
+def setup_star_polys_63(unit:TileUnit) -> None:
+  polys = get_n_star_n_poly(unit.spacing / 2, 6, 3, unit.point_angle)
+  star = polys[0]
+  tips = [p for p in star.exterior.coords][0::2]
+  dents = [p for p in star.exterior.coords][1::2]
+  v1 = geom.Point(dents[0][0] - tips[4][0], dents[0][1] - tips[4][1])
+  v2 = affine.rotate(v1, -60, (0, 0))
+  v3 = affine.rotate(v2, -60, (0, 0))
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(polys))
+  return None
+  
 def get_regular_polygon_from_one_side(
     side:geom.LineString, 
     n:int):
@@ -1147,7 +1170,7 @@ def get_regular_polygon_from_one_side(
       affine.rotate(geom.Point(points[-2]), 
                     turn_angle, origin = points[-1], 
                     use_radians = True))
-  return geom.Polygon(points[1:])
+  return geom.Polygon(points[:-1])
 
 def get_n_star_n_poly(
     spacing:float, 
@@ -1192,31 +1215,20 @@ def setup_star_polygon_2(unit:TileUnit):
             to be be supplied.""")
   match unit.code:
     case "45":
-      unit.base_shape = TileShape.RECTANGLE
       setup_star_polys_45(unit)
-      return None
     case "464":
-      unit.base_shape = TileShape.RECTANGLE
       setup_star_polys_464(unit)
-      return None
     case "64":
-      unit.base_shape = TileShape.HEXAGON
       setup_star_polys_64(unit)
-      return None
     case "66":
-      unit.base_shape = TileShape.HEXAGON
       setup_star_polys_66(unit)
-      return None
     case "663":
-      unit.base_shape = TileShape.HEXAGON
       setup_star_polys_663(unit)
-      return None
     case "844":
-      unit.base_shape = TileShape.HEXAGON
       setup_star_polys_844(unit)
-      return None
     case _:
       return f"Invalid code supplied for star tiling 2"
+  return None
 
 def setup_star_polys_45(unit:TileUnit) -> None:
   pents = []
@@ -1224,8 +1236,10 @@ def setup_star_polys_45(unit:TileUnit) -> None:
   pents.append(affine.translate(pent, 0, -pent.bounds[1]))
   pents.append(affine.rotate(pents[0], -126, tiling_utils.get_corners(pents[0])[0]))
   pents.extend([affine.rotate(p, 180, (0, 0)) for p in pents])
-  star_diag1 = geom.LineString([tiling_utils.get_corners(pents[0])[2],
-                                tiling_utils.get_corners(pents[1])[3]])
+  star_diag1 = geom.LineString([
+    tiling_utils.get_corners(pents[0])[2],
+    affine.rotate(tiling_utils.get_corners(pents[0])[2], -90, 
+                  tiling_utils.get_corners(pents[0])[0])])
   star_diag2 = affine.rotate(star_diag1, 90)
   star_centre = star_diag1.intersection(star_diag2)
   star_pts = [affine.rotate(tiling_utils.get_corners(pents[0])[0], a, star_centre)
@@ -1234,11 +1248,11 @@ def setup_star_polys_45(unit:TileUnit) -> None:
                 for a in range(0, 360, 90)]
   star1 = geom.Polygon(itertools.chain(*zip(star_dents, star_pts)))
   star2 = affine.rotate(star1, -126, tiling_utils.get_corners(pents[0])[2])
-  v1_0 = tiling_utils.get_corners(pents[0])[4]
-  v1_1 = tiling_utils.get_corners(star1)[5]
-  v1 = (v1_1.x - v1_0.x, v1_1.y - v1_0.y)
-  v2 = (v1[0], -v1[1])
-  unit.setup_vectors(v1, v2)
+  ppts = [p for p in pents[0].exterior.coords][:-1]
+  spts = [p for p in star1.exterior.coords][:-1]
+  v1 = geom.Point(spts[5][0] - ppts[-1][0], spts[5][0] - ppts[-1][0])
+  v2 = affine.rotate(v1, -90, (0, 0))
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdef")},
     geometry = gpd.GeoSeries(pents + [star1, star2]),
@@ -1250,13 +1264,12 @@ def setup_star_polys_64(unit:TileUnit) -> None:
   star = get_star(6, unit.spacing / 2, 30)
   square = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[0], 4)
   squares = [affine.rotate(square, a, (0, 0)) for a in range(0, 360, 60)]
-  p1 = tiling_utils.get_corners(star)[0]
-  p2 = tiling_utils.get_corners(star)[4]
-  p3 = tiling_utils.get_corners(star)[8]
-  v1 = ( p1.x - p3.x,  p1.y - p3.y)
-  v2 = (-p2.x + p1.x, -p2.y + p1.y)
-  v3 = ( p3.x - p2.x,  p3.y - p2.y)
-  unit.setup_vectors(v1, v2, v3)
+  # p1 = tiling_utils.get_corners(star)[0]
+  p1 = tiling_utils.get_corners(star)[4]
+  p0 = tiling_utils.get_corners(star)[8]
+  v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
+  v2, v3 = tuple([affine.rotate(v1, a, (0, 0)) for a in [-60, -120]])
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcd")},
     geometry = gpd.GeoSeries([star] + squares),
@@ -1268,13 +1281,12 @@ def setup_star_polys_464(unit:TileUnit) -> None:
   star = get_star(4, unit.spacing / 3, 30)
   hex1 = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[0], 6)
   hex2 = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[2], 6)
-  square = get_regular_polygon_from_one_side(tiling_utils.get_sides(hex2)[4].reverse(), 4)
-  p1 = tiling_utils.get_corners(star)[6]
-  p2 = tiling_utils.get_corners(hex1)[4]
-  p3 = tiling_utils.get_corners(hex2)[2]
-  v1 = ( p2.x - p1.x,  p2.y - p1.y)
-  v2 = ( p3.x - p1.x,  p3.y - p1.y)
-  unit.setup_vectors(v1, v2)
+  square = get_regular_polygon_from_one_side(tiling_utils.get_sides(hex2)[5].reverse(), 4)
+  p0 = tiling_utils.get_corners(star)[6]
+  p1 = tiling_utils.get_corners(hex2)[3]
+  v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
+  v2 = affine.rotate(v1, -90, (0, 0))
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcd")},
     geometry = gpd.GeoSeries([star, hex1, hex2, square]),
@@ -1288,10 +1300,10 @@ def setup_star_polys_66(unit:TileUnit) -> None:
   hex2 = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[6], 6)
   polys = [affine.rotate(p, -30, (0, 0)) for p in [star, hex1, hex2]]
   vs = tiling_utils.get_corners(polys[0])[0:12:2]
-  v1 = ( vs[3].x - vs[0].x, vs[3].y - vs[0].y )
-  v2 = ( vs[2].x - vs[5].x, vs[2].y - vs[5].y )
-  v3 = ( vs[1].x - vs[4].x, vs[1].y - vs[4].y )
-  unit.setup_vectors(v1, v2, v3)
+  p0, p1 = vs[0], vs[3]
+  v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
+  v2, v3 = tuple([affine.rotate(v1, a, (0, 0)) for a in [-60, -120]])
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abc")},
     geometry = gpd.GeoSeries(polys),
@@ -1304,13 +1316,13 @@ def setup_star_polys_663(unit:TileUnit) -> None:
   hex = get_regular_polygon_from_one_side(tiling_utils.get_sides(star)[0], 6)
   hexes = [affine.rotate(hex, a, (0, 0)) for a in range(180, 360, 60)]
   tri = get_regular_polygon_from_one_side(
-    tiling_utils.get_sides(hexes[0])[1].reverse(), 3)
+    tiling_utils.get_sides(hexes[0])[2].reverse(), 3)
   triangles = [affine.rotate(tri, a, (0, 0)) for a in [0, 60]]
   vs = tiling_utils.get_corners(star)[1:12:2]
-  v1 = ( 2 * (vs[3].x - vs[0].x), 2 * (vs[3].y - vs[0].y) )
-  v2 = ( 2 * (vs[2].x - vs[5].x), 2 * (vs[2].y - vs[5].y) )
-  v3 = ( 2 * (vs[1].x - vs[4].x), 2 * (vs[1].y - vs[4].y) )
-  unit.setup_vectors(v1, v2, v3)
+  p0, p1 = vs[0], vs[3]
+  v1 = geom.Point(2 * (p1.x - p0.x), 2 * (p1.y - p0.y))
+  v2, v3 = tuple([affine.rotate(v1, a, (0, 0)) for a in [-60, -120]])
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcdef")},
     geometry = gpd.GeoSeries([star] + hexes + triangles),
@@ -1324,11 +1336,12 @@ def setup_star_polys_844(unit:TileUnit) -> None:
   squares = [affine.rotate(square, a, (0, 0)) for a in range(0, 135, 45)]
   polys = [affine.rotate(p, -22.5, (0, 0)) for p in [star] + squares]
   polys[2] = affine.scale(polys[2], 2, 2, 
-                          origin = tiling_utils.get_corners(polys[2])[0])
+                          origin = tiling_utils.get_corners(polys[2])[1])
   vs = tiling_utils.get_corners(polys[0])
-  v1 = ( vs[0].x - vs[10].x, 0 )
-  v2 = ( 0, v1[0] )
-  unit.setup_vectors(v1, v2)
+  p0, p1 = vs[10], vs[0]
+  v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
+  v2 = affine.rotate(v1, -90, (0, 0))
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcd")},
     geometry = gpd.GeoSeries(polys),
@@ -1379,7 +1392,6 @@ def setup_chavey(unit:TileUnit) -> str|None:
 def setup_chavey_a(unit:TileUnit) -> str|None:
   """Sets up 3.3.3.4.4;3.3.4.3.4;4.4.4.4
   """
-  unit.base_shape = TileShape.RECTANGLE
   s = unit.spacing / np.sqrt(5 + 2 * sqrt3)
   t = s * sqrt3 / 2
   sq = tiling_utils.get_regular_polygon(s, 4)
@@ -1406,7 +1418,6 @@ def setup_chavey_a(unit:TileUnit) -> str|None:
 def setup_chavey_b(unit:TileUnit) -> str|None:
   """Sets up 3.4.4.6;3.4.6.4;4.4.4.4
   """
-  unit.base_shape = TileShape.RECTANGLE
   h = unit.spacing * sqrt3 / (1 + sqrt3) / sqrt2
   s = h / sqrt3
   t = h / 2
@@ -1434,7 +1445,6 @@ def setup_chavey_b(unit:TileUnit) -> str|None:
 def setup_chavey_c(unit:TileUnit) -> str|None:
   """Sets up 3.4.4.6;3.4.6.4
   """
-  unit.base_shape = TileShape.HEXAGON
   h = unit.spacing * sqrt3 / (3 + sqrt3)
   s = h / sqrt3
   t = h / 2
@@ -1470,7 +1480,6 @@ def setup_chavey_c(unit:TileUnit) -> str|None:
 def setup_chavey_d(unit:TileUnit) -> str|None:
   """Sets up 3.3.3.4.4;3.3.4.3.4
   """
-  unit.base_shape = TileShape.RECTANGLE
   s = unit.spacing * sqrt2 / (3 + sqrt3)
   t = s * sqrt3 / 2
   squares, triangles = [], []
@@ -1500,7 +1509,6 @@ def setup_chavey_d(unit:TileUnit) -> str|None:
 def setup_chavey_e(unit:TileUnit) -> str|None:
   """Sets up 3.3.3.3.3.3;3.3.4.3.4
   """
-  unit.base_shape = TileShape.HEXAGON
   s = unit.spacing / (1 + sqrt3)
   t = s * sqrt3 / 2
   squares, triangles = [], []
@@ -1528,7 +1536,6 @@ def setup_chavey_e(unit:TileUnit) -> str|None:
 def setup_chavey_f(unit:TileUnit) -> str|None:
   """Sets up 3.3.4.3.4;3.4.6.4
   """
-  unit.base_shape = TileShape.HEXAGON
   h = unit.spacing / (1 + 2 / sqrt3)
   s = h / sqrt3
   t = h / 2
@@ -1555,7 +1562,6 @@ def setup_chavey_f(unit:TileUnit) -> str|None:
 def setup_chavey_g(unit:TileUnit) -> str|None:
   """Sets up 3.3.3.3.3.3;3.3.3.3.6
   """
-  unit.base_shape = TileShape.RECTANGLE
   h = unit.spacing * sqrt3 / np.sqrt(7)
   s = h / sqrt3
   t = h / 2
@@ -1578,7 +1584,6 @@ def setup_chavey_g(unit:TileUnit) -> str|None:
 def setup_chavey_h(unit:TileUnit) -> str|None:
   """Sets up 3.3.3.3.3.3;3.3.3.3.6 (another one)
   """
-  unit.base_shape = TileShape.HEXAGON
   h = unit.spacing / 2 
   s = h / sqrt3
   t = h / 2

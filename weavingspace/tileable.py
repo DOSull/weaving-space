@@ -187,7 +187,7 @@ class Tileable:
       q1 = geom.Polygon([v1, v2, v4, v5]) 
       q2 = geom.Polygon([v2, v3, v5, v6]) 
       q3 = geom.Polygon([v3, v4, v6, v1])
-      prototile = tiling_utils.gridify(q3.intersection(q2).intersection(q1))
+      prototile = q3.intersection(q2).intersection(q1)
     return gpd.GeoDataFrame(
       geometry = gpd.GeoSeries([prototile]),
       crs = self.crs)
@@ -428,12 +428,10 @@ class Tileable:
       TileUnit: the scaled TileUnit.
     """
     if individually:
-      self.tiles.geometry = gpd.GeoSeries([
-        tiling_utils.gridify(affine.scale(g, sf, sf))
-        for g in self.tiles.geometry])
+      self.tiles.geometry = gpd.GeoSeries(
+        [affine.scale(g, sf, sf) for g in self.tiles.geometry])
     else:
-      self.tiles.geometry = tiling_utils.gridify(
-        self.tiles.geometry.scale(sf, sf, origin = (0, 0)))
+      self.tiles.geometry = self.tiles.geometry.scale(sf, sf, origin = (0, 0))
     return self
 
 
@@ -451,12 +449,12 @@ class Tileable:
       Tileable: the transformed Tileable.
     """
     result = copy.deepcopy(self)
-    result.tiles.geometry = tiling_utils.gridify(
-      self.tiles.geometry.scale(xscale, yscale, origin=(0, 0)))
-    result.prototile.geometry = tiling_utils.gridify(
-      self.prototile.geometry.scale(xscale, yscale, origin=(0, 0)))
-    result.regularised_prototile.geometry = tiling_utils.gridify(
-      self.regularised_prototile.geometry.scale(xscale, yscale, origin=(0, 0)))
+    result.tiles.geometry = self.tiles.geometry.scale(
+      xscale, yscale, origin=(0, 0))
+    result.prototile.geometry = self.prototile.geometry.scale(
+      xscale, yscale, origin=(0, 0))
+    result.regularised_prototile.geometry = \
+      self.regularised_prototile.geometry.scale(xscale, yscale, origin=(0, 0))
     result._set_vectors_from_prototile()
     return result
 
@@ -473,12 +471,11 @@ class Tileable:
       Tileable: the transformed Tileable.
     """
     result = copy.deepcopy(self)
-    result.tiles.geometry = tiling_utils.gridify(
-      self.tiles.geometry.rotate(angle, origin=(0, 0)))
-    result.prototile.geometry = tiling_utils.gridify(
-      self.prototile.geometry.rotate(angle, origin=(0, 0)))
-    result.regularised_prototile.geometry = tiling_utils.gridify(
-      self.regularised_prototile.geometry.rotate(angle, origin=(0, 0)))
+    result.tiles.geometry = self.tiles.geometry.rotate(angle, origin=(0, 0))
+    result.prototile.geometry = \
+      self.prototile.geometry.rotate(angle, origin=(0, 0))
+    result.regularised_prototile.geometry = \
+      self.regularised_prototile.geometry.rotate(angle, origin=(0, 0))
     result._set_vectors_from_prototile()
     result.rotation = self.rotation + angle
     return result
@@ -498,12 +495,11 @@ class Tileable:
       Tileable: the transformed Tileable.
     """
     result = copy.deepcopy(self)
-    result.tiles.geometry = tiling_utils.gridify(
-      self.tiles.geometry.skew(xa, ya, origin=(0, 0)))
-    result.prototile.geometry = tiling_utils.gridify(
-      self.prototile.geometry.skew(xa, ya, origin=(0, 0)))
-    result.regularised_prototile.geometry = tiling_utils.gridify(
-      self.regularised_prototile.geometry.skew(xa, ya, origin=(0, 0)))
+    result.tiles.geometry = self.tiles.geometry.skew(xa, ya, origin=(0, 0))
+    result.prototile.geometry = \
+      self.prototile.geometry.skew(xa, ya, origin=(0, 0))
+    result.regularised_prototile.geometry = \
+      self.regularised_prototile.geometry.skew(xa, ya, origin=(0, 0))
     result._set_vectors_from_prototile()
     return result
 
@@ -678,7 +674,6 @@ class Tileable:
                                   geometry = gpd.GeoSeries(tiles), 
                                   crs = 3857)
     self.crs = 3857
-    self.tiles.geometry = tiling_utils.gridify(self.tiles.geometry)
     self.prototile = self.get_prototile_from_vectors()
     self.regularised_prototile = copy.deepcopy(self.prototile)
     return None

@@ -107,7 +107,6 @@ def get_regular_polygon(spacing, n:int) -> geom.Polygon:
   angles = [angle_0 + a_diff * i for i in range(n)]
   corners = [(R * np.cos(angle), R * np.sin(angle)) for angle in angles]
   return geom.Polygon(corners)
-  # return gridify(geom.Polygon(corners))
 
 
 def get_corners(shape:geom.Polygon,
@@ -126,7 +125,7 @@ def get_corners(shape:geom.Polygon,
   Returns:
     list[geom.Point]: list of geom.Point vertices of the polygon.
   """
-  corners = [gridify(geom.Point(pt)) for pt in shape.exterior.coords]
+  corners = [geom.Point(pt) for pt in shape.exterior.coords]
   return corners if repeat_first else corners[:-1]
 
 
@@ -142,7 +141,7 @@ def get_sides(shape:geom.Polygon) -> list[geom.LineString]:
     list[geom.LineString]: list of geom.LineString sides of the polygon.
   """
   corners = get_corners(shape)
-  return [gridify(geom.LineString([p1, p2]))
+  return [geom.LineString([p1, p2])
           for p1, p2 in zip(corners[:-1], corners[1:])]
 
 
@@ -722,9 +721,8 @@ def get_bounding_ellipse(
   c = geom.Point(l + w / 2, b + h / 2)
   r = min(w, h) * np.sqrt(2)
   circle = [c.buffer(r)]
-  return gridify(gpd.GeoSeries(
-    circle, crs = shapes.crs).scale(w / r * mag / np.sqrt(2), 
-                                    h / r * mag / np.sqrt(2), origin = c))
+  return gpd.GeoSeries(circle, crs = shapes.crs) \
+    .scale(w / r * mag / np.sqrt(2), h / r * mag / np.sqrt(2), origin = c)
 
 
 def get_tiling_edges(tiles:gpd.GeoSeries) -> gpd.GeoSeries:
@@ -782,7 +780,7 @@ def get_polygon_sector(polygon:geom.Polygon, start:float = 0.0,
     arc = shapely.ops.substring(geom.LineString(polygon.exterior.coords),
                                 start, end, normalized = True)
     sector = geom.Polygon([polygon.centroid] + list(arc.coords))
-  return gridify(sector)
+  return sector
 
 
 def repair_polygon(
@@ -855,9 +853,9 @@ def safe_union(gs:gpd.GeoSeries,
                          crs = gs.crs) \
       .union_all().buffer(-r, join_style = 2, cap_style = 3)
   if as_polygon:
-    return gridify(union)
+    return union
   else:
-    return gridify(gpd.GeoSeries([union], crs = gs.crs))
+    return gpd.GeoSeries([union], crs = gs.crs)
 
 
 # def zigzag_between_points(

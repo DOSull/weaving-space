@@ -161,24 +161,6 @@ class TileUnit(Tileable):
     return None
 
 
-  # # Make up a regularised tile by carefully unioning the tiles
-  # def _setup_regularised_prototile(self) -> None:
-  #   """Sets the regularised tile to a union of the tiles."""
-  #   self.regularised_prototile = copy.deepcopy(self.prototile)
-  #   self.regularised_prototile.geometry = [tiling_utils.safe_union(
-  #     self.tiles.geometry, as_polygon = True)]
-  #   # This simplification seems very crude but fixes all kinds of issues...
-  #   # particularly with the triaxial weave units... where intersection 
-  #   # operations are prone to creating spurious vertices, etc.
-  #   self.regularised_prototile.loc[0, 'geometry'] = \
-  #     self.regularised_prototile.loc[0, 'geometry'].simplify(
-  #       self.spacing * tiling_utils.RESOLUTION)
-  #   # self.regularised_prototile.geometry[0] = \
-  #   #   self.regularised_prototile.geometry[0].simplify(
-  #   #     self.spacing * tiling_utils.RESOLUTION)
-  #   return
-
-
   def _get_legend_key_shapes(
       self, 
       polygon:geom.Polygon,
@@ -243,6 +225,7 @@ class TileUnit(Tileable):
     Returns:
       TileUnit: the new TileUnit with inset applied.
     """
+    if d == 0: return self
     inset_tile = \
       self.regularised_prototile.loc[0, "geometry"] \
         .buffer(-d, join_style = 2, cap_style = 3)

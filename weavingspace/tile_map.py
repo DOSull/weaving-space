@@ -98,7 +98,6 @@ class _TileGrid():
     else:
       self.points = self._get_grid()
     self.points.crs = self.tile_unit.crs
-    self.points = tiling_utils.gridify(self.points)
     return None
 
 
@@ -186,7 +185,7 @@ class _TileGrid():
     b = _b - (h - _h) / 2
     xs, ys = np.array(np.meshgrid(np.arange(w) + l,
                                   np.arange(h) + b)).reshape((2, w * h))
-    pts = [tiling_utils.gridify(geom.Point(x, y)) for x, y in zip(xs, ys)]
+    pts = [geom.Point(x, y) for x, y in zip(xs, ys)]
     return gpd.GeoSeries([p for p in pts if p.within(self.extent_in_grid_space)]) \
       .affine_transform(self.to_map_space)
 
@@ -239,38 +238,14 @@ class Tiling:
       self, 
       tileable:Tileable, 
       region:gpd.GeoDataFrame,
-      prototile_margin:float = 0, 
-      tiles_sf:float = 1,
-      tiles_margin:float = 0,
       debug:bool = False, 
       as_icons:bool = False) -> None:
     """Class to persist a tiling by filling an area relative to a region 
     sufficient to apply the tiling at any rotation.
 
-    The Tiling constructor allows a number of adjustments to the supplied
-    `weavingspace.tileable.Tileable` object:
-
-    + `prototile_margin` values greater than 0 will introduce spacing of the 
-    specified distance between tiles on the boundary of each tile by applying 
-    the `TileUnit.inset_prototile()` method. Note that this operation does not 
-    make much sense for `WeaveUnit` objects, and may not preserve the equality
-    of tile areas.
-    + `tiles_sf` scale tiles by applying the `TileUnit.scale_tiles()` method. 
-    This allows for some visually interesting (if hard to interpret) effects.
-    + `tiles_margin` values greater than one apply a negative buffer of
-    the specified distance to every tile in the tiling by applying the
-    `Tileable.inset_tiles()` method. This option is applicable to both
-    `WeaveUnit` and `TileUnit` objects and negative values will work to produce
-    interesting visual effects (again, hard to interpret).
-
     Args:
       tileable (Tileable): the TileUnit or WeaveUnit to use.
       region (gpd.GeoDataFrame): the region to be tiled.
-      prototile_margin (float, optional): values greater than 0 apply an inset 
-        margin to the tile unit. Defaults to 0.
-      tiles_sf (float, optional): scales the tiles. Defaults to 1.
-      tiles_margin (float, optional): applies a negative buffer to the tiles
-        (not the Tileable, individual tiles within it). Defaults to 0.
       as_icons (bool, optional): if True prototiles will only be placed at the 
         region's zone centroids, one per zone. Defaults to False.
     """
@@ -281,16 +256,6 @@ class Tiling:
       t2 = perf_counter()
       print(f"Initialising Tiling: {t2 - t1}")
     self.rotation = 0
-    if tiles_margin > 0:
-      self.tileable = self.tileable.inset_tiles(tiles_margin)
-    if tiles_margin != 1:
-      self.tileable = self.tileable.scale_tiles(tiles_sf)
-    if prototile_margin > 0:
-      if isinstance(self.tileable, TileUnit):
-        self.tileable = self.tileable.inset_prototile(prototile_margin)
-      else:
-        print(f"prototile margin for a WeaveUnit does not make sense.\n"
-              f"Ignoring prototile_margin setting of {prototile_margin}.")
     self.region = region
     self.region.sindex # this probably speeds up overlay
     if debug:
@@ -517,7 +482,7 @@ class Tiling:
   def rotated(self, rotation:float = None) -> tuple[gpd.GeoDataFrame]:
     """Returns the stored tiling rotated. The stored tiling never changes and
     if it was originally made with a Tileable that was rotated it will retain
-    that rotations. The requested rotation is _additional_ to that baseline
+    that rotation. The requested rotation is _additional_ to that baseline
     rotation.
 
     Args:
@@ -535,13 +500,13 @@ class Tiling:
       data = {"tile_id": self.tiles.tile_id,
               "prototile_id": self.tiles.tile_id},
       crs = self.tiles.crs,
-      geometry = tiling_utils.gridify(
-        self.tiles.geometry.rotate(rotation, origin = self.grid.centre)))
+      geometry = self.tiles.geometry.rotate(
+        rotation, origin = self.grid.centre))
     prototiles = gpd.GeoDataFrame(
       data = {"prototile_id": self.prototiles.prototile_id},
       crs = self.prototiles.crs,
-      geometry = tiling_utils.gridify(
-        self.prototiles.geometry.rotate(rotation, origin = self.grid.centre)))
+      geometry = self.prototiles.geometry.rotate(
+        rotation, origin = self.grid.centre))
     self.rotation = rotation
     return tiles, prototiles
 
