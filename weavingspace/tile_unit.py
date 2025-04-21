@@ -139,7 +139,7 @@ class TileUnit(Tileable):
       return tiling_geometries.setup_base_tiling(self)
 
 
-  def _setup_regularised_prototile(self) -> None:
+  def _setup_regularised_prototile(self, override = False) -> None:
     """Sets up a 'regularised prototile' which fully contains all the tile
     elements, i.e. it does not cut them. In all TileUnit cases a suitable shape
     is the union of the elements.
@@ -147,7 +147,7 @@ class TileUnit(Tileable):
     # For whatever reasons in the web app version the unioning operation as
     # operated by tiling_utils.safe_union() is anything but and produces
     # TopologyException crashes... so here is a safe_union avoidant way...
-    if self.regularised_prototile is None:
+    if self.regularised_prototile is None or override:
       tiles = copy.deepcopy(self.tiles.geometry)
       tiles = gpd.GeoSeries(
         [tiling_utils.gridify(p.buffer(
