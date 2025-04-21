@@ -1,6 +1,8 @@
+
+
 import marimo
 
-__generated_with = "0.12.10"
+__generated_with = "0.13.0"
 app = marimo.App(
     width="full",
     app_title="MapWeaver",
@@ -14,7 +16,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.04.22-10:00</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.22-15:15</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
         mo.md(f"<span title='Requires weavingspace 0.0.6.73'>0.0.6.73</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
@@ -25,6 +27,7 @@ def module_imports():
     import io                     # for in-memory loading of inputs and outputs
     from pathlib import Path
     from typing import Union
+    from itertools import zip_longest
     import matplotlib as mpl
     import math
     import pandas as pd
@@ -87,7 +90,7 @@ def marimo_states(
     # palettes currently selected by the user
     get_palettes, set_palettes = mo.state(available_palettes)
     # palette reverse settings
-    get_reversed, set_reversed = mo.state([False] * 18)
+    get_reversed, set_reversed = mo.state([])
     # app status message
     get_status_message, set_status_message = mo.state(ok_message)
     return (
@@ -107,7 +110,7 @@ def marimo_states(
 
 
 @app.cell(hide_code=True)
-def upload_data(mo, set_input_data, tool_tip):
+def upload_data(mo, set_input_data):
     _file_browser = mo.ui.file(filetypes=[".geojson", ".json"], 
                     on_change=set_input_data, label=f"Upload")
     mo.md(f"{tool_tip(_file_browser, "Your data should be polygons. Currently only GeoJSON formatted data is readable.")}").left()
@@ -183,7 +186,7 @@ def read_gdf(
 
 
 @app.cell(hide_code=True)
-def _(mo, tool_tip):
+def _(mo):
     download_type = mo.ui.dropdown(options=["GeoJSON", "GeoPackage", "SVG", "PNG"], value="GeoJSON")
     mo.md(f"{tool_tip(download_type, 'Set the file format for downloaded map data')}")
     return (download_type,)
@@ -199,7 +202,6 @@ def _(
     result,
     tiled_map,
     tiling_map,
-    tool_tip,
 ):
     mo.stop(tiling_map)
     if isinstance(get_input_data(), str) or len(get_input_data()) == 0:
@@ -258,9 +260,9 @@ def _(get_selected_colour_palettes, get_tile_ids, get_variables, tiled_map):
 
 
 @app.cell(hide_code=True)
-def set_number_of_variables(mo, tool_tip):
-    num_tiles = mo.ui.slider(steps=range(2, 13), 
-                             # steps=[x for x in range(2, 16)] + [18], # if we figure out why >12 is a problem for the app...
+def set_number_of_variables(mo):
+    num_tiles = mo.ui.slider(# steps=range(2, 13), 
+                             steps=[x for x in range(2, 16)] + [18, 19], # if we figure out why >12 is a problem for the app...
                              value=4, 
                              debounce=True, 
                              show_value=True)
@@ -319,11 +321,13 @@ def build_variable_and_palette_dropdowns(
     mo.stop(tiling_map)
     if num_tiles.value < len(get_variables()):
         set_variables(get_variables()[:num_tiles.value])
-    elif num_tiles.value > len(get_variables()):
+        set_reversed(get_reversed()[:num_tiles.value])
+    elif num_tiles.value >= len(get_variables()):
         # add as many additional variables as we have to work with
         n_to_add = min(num_tiles.value, len(get_numeric_variables(get_gdf()))) - len(get_variables())
         to_add = [v for v in get_numeric_variables(get_gdf()) if v not in get_variables()][:n_to_add]
         set_variables(get_variables() + to_add)
+        set_reversed(get_reversed() + [False] * len(to_add))
 
     _chosen_palettes = get_palettes()[:num_tiles.value]
     _chosen_reversed = get_reversed()[:num_tiles.value]
@@ -335,7 +339,7 @@ def build_variable_and_palette_dropdowns(
         on_change=set_palettes)
     rev_pals = mo.ui.array(
         [mo.ui.switch(r) for r in _chosen_reversed], on_change=set_reversed)
-    return n_to_add, pals, rev_pals, to_add, variables
+    return pals, rev_pals, variables
 
 
 @app.cell(hide_code=True)
@@ -345,7 +349,6 @@ def build_var_palette_mapping(
     mo,
     pals,
     rev_pals,
-    tool_tip,
     variables,
 ):
     _cols = [pal.value + ("_r" if rev.value else "") for pal, rev in zip(pals, rev_pals)]
@@ -435,7 +438,6 @@ def setup_tiling_modifiers(
     tile_skew_x,
     tile_skew_y,
     tiling_map,
-    tool_tip,
 ):
     mo.stop(tiling_map)
     if tile_or_weave.value == "tiling":
@@ -464,7 +466,7 @@ def setup_tiling_modifiers(
 
 
 @app.cell(hide_code=True)
-def tiling_or_weave_chooser(mo, num_tiles, tilings_by_n, tool_tip):
+def tiling_or_weave_chooser(mo, num_tiles, tilings_by_n):
     _options = list(set([v["type"] for v in tilings_by_n[num_tiles.value].values()]))
     tile_or_weave = mo.ui.dropdown(options=_options, value="tiling", label="#### Pick tiling or weave")
     mo.md(f"{tool_tip(tile_or_weave, 'Choose tiling or a weave tiling')}")
@@ -472,7 +474,7 @@ def tiling_or_weave_chooser(mo, num_tiles, tilings_by_n, tool_tip):
 
 
 @app.cell(hide_code=True)
-def tiling_type_chooser(mo, num_tiles, tile_or_weave, tilings_by_n, tool_tip):
+def tiling_type_chooser(mo, num_tiles, tile_or_weave, tilings_by_n):
     _options = [k for k, v in tilings_by_n[num_tiles.value].items() if v["type"] == tile_or_weave.value]
 
     family = mo.ui.dropdown(options=_options, 
@@ -567,7 +569,6 @@ def additional_tiling_options(
     tile_or_weave,
     tile_spec,
     tiling_map,
-    tool_tip,
     tooltips,
 ):
     mo.stop(tiling_map)
@@ -611,7 +612,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def design_view_ui_elements(mo, tool_tip, view_settings):
+def design_view_ui_elements(mo, view_settings):
     mo.md(f"""
     #### {tool_tip(view_settings['show_ids'], 'Show the tiling element labels used to match tiles to variables in the map data.')} Show tile IDs
     #### {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the simple tile (usually a square or hexagon) which forms the basis of the pattern.')} Show base tile
@@ -628,7 +629,6 @@ def _(
     family,
     get_gdf,
     get_over_under,
-    get_tile_ids,
     num_tiles,
     spacing,
     tile_or_weave,
@@ -662,8 +662,8 @@ def _(
                 aspect=tile_spec["aspect"].value,
                 crs=get_gdf().crs)
         # remove tiles for which no variables are available
-        slice = [id in get_tile_ids() for id in result.tiles.tile_id]
-        result.tiles = result.tiles.loc[slice]
+        # slice = [id in get_tile_ids() for id in result.tiles.tile_id]
+        # result.tiles = result.tiles.loc[slice]
         return result
     return (get_base_tile_unit,)
 
@@ -725,39 +725,35 @@ def _(Union):
 
 
 @app.cell(hide_code=True)
-def _(
-    get_selected_colour_palettes,
-    get_tile_ids,
-    get_variables,
-    mpl,
-    num_tiles,
-    view_settings,
-    wsp,
-):
+def _(get_selected_colour_palettes, mpl, num_tiles, view_settings, wsp):
     def plot_tiles(tiles:wsp.Tileable) -> mpl.axis:
         """
         Returns a matplotlib axis with the Tileable supplied plotted on it
         """
+        fig, ax = mpl.pyplot.subplots(1, 1, figsize=(4.5, 4))
         cols = [mpl.colormaps.get(p)(2/3) for p in get_selected_colour_palettes()]
+        blanks = []
         while len(cols) < num_tiles.value:
             cols = cols + ["#ffffff00"]
+            blanks.append("abcdefghijklmnopqrstuvwxyz"[len(cols) - 1])
         cm = mpl.colors.ListedColormap(cols)
-        plot = tiles.plot(r=view_settings["radius"].value, 
-                          show_vectors=view_settings["show_vectors"].value, 
-                          show_prototile=view_settings["show_prototile"].value,
-                          show_reg_prototile=view_settings["show_reg_prototile"].value,
-                          show_ids=view_settings["show_ids"].value,
-                          cmap=cm, figsize=(4.5, 4), r_alpha=0.5)
+        tiles.plot(ax = ax,
+                   r=view_settings["radius"].value,
+                   show_vectors=view_settings["show_vectors"].value,
+                   show_prototile=view_settings["show_prototile"].value,
+                   show_reg_prototile=view_settings["show_reg_prototile"].value,
+                   show_ids=view_settings["show_ids"].value,
+                   cmap=cm, 
+                   r_alpha=0.5)
         if view_settings["show_scale"].value:
-            plot.xaxis.set_visible(True)
-            plot.yaxis.set_visible(False)
-            plot.set_frame_on(False)
+            ax.xaxis.set_visible(True)
+            ax.yaxis.set_visible(False)
+            ax.set_frame_on(False)
         else:
-            plot.axis("off")
-        _blanks = [id for id, v in zip(get_tile_ids(), get_variables()) if v == "---"]
-        if len(_blanks) > 0:
-            tiles.tiles.loc[tiles.tiles["tile_id"].isin(_blanks)].plot(ax = plot.axes, fc="#00000000", hatch="////", ec="w")
-        return plot
+            ax.set_axis_off()
+        if len(blanks) > 0:
+            tiles.tiles.loc[tiles.tiles["tile_id"].isin(blanks)].plot(ax = ax, fc="#00000000", hatch="////", ec="lightgrey")
+        return ax
     return (plot_tiles,)
 
 
@@ -768,7 +764,7 @@ def _(get_gdf, get_numeric_variables):
         Returns a list of lower case letters starting ['a', 'b', ...] length limited
         by the number of available numeric variables in the data
         """
-        return list("abcdefghijkl")[:len(get_numeric_variables(get_gdf()))]
+        return list("abcdefghijklmnopqrstuvwxyz")[:len(get_numeric_variables(get_gdf()))]
     return (get_tile_ids,)
 
 
@@ -844,15 +840,13 @@ def _(get_gdf, math):
     return (get_spacings,)
 
 
-@app.cell(hide_code=True)
-def tool_tip():
-    def tool_tip(ele:str, tip:str) -> str:
-        """
-        Returns a HTML <span> string putting a tooltip around the supplied element 
-        """
-        # convenience function to add a tooltip to supplied string
-        return f'<span title="{tip}">{ele}</span>'
-    return (tool_tip,)
+@app.function(hide_code=True)
+def tool_tip(ele:str, tip:str) -> str:
+    """
+    Returns a HTML <span> string putting a tooltip around the supplied element 
+    """
+    # convenience function to add a tooltip to supplied string
+    return f'<span title="{tip}">{ele}</span>'
 
 
 @app.cell(hide_code=True)
@@ -1045,19 +1039,14 @@ def setup_tilings_dictionary():
         "plain weave abcdef-|ghijkl": dict(type="weave", weave_type="plain", strands="abcdef-|ghijkl", n="1"),
         "plain weave abcdef-|ghijkl-": dict(type="weave", weave_type="plain", strands="abcdef-|ghijkl-", n="1"),
       },
-      # 13: {
-      #   "chavey A": dict(type="tiling", tiling_type="chavey", code="A"),
-      # },
-      # 14: {
-      #   "chavey B": dict(type="tiling", tiling_type="chavey", code="B"),
-      # },
-      # 15: {
-      #   "chavey F": dict(type="tiling", tiling_type="chavey", code="F"),
-      # },
-      # 18: {
-      #   "chavey C": dict(type="tiling", tiling_type="chavey", code="C"),
-      #   "chavey D": dict(type="tiling", tiling_type="chavey", code="D"),
-      # },
+      13: {"chavey A": dict(type="tiling", tiling_type="chavey", code="A"),},
+      14: {"chavey B": dict(type="tiling", tiling_type="chavey", code="B"),},
+      15: {"chavey F": dict(type="tiling", tiling_type="chavey", code="F"),},
+      18: {
+        "chavey C": dict(type="tiling", tiling_type="chavey", code="C"),
+        "chavey D": dict(type="tiling", tiling_type="chavey", code="D"),
+      },
+      19: {"chavey H": dict(type="tiling", tiling_type="chavey", code="H"),},
     }
     return (tilings_by_n,)
 
