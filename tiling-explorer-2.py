@@ -1,8 +1,6 @@
-
-
 import marimo
 
-__generated_with = "0.13.0"
+__generated_with = "0.13.4"
 app = marimo.App(
     width="full",
     app_title="MapWeaver",
@@ -16,7 +14,7 @@ app = marimo.App(
 def _(centred, mo):
     mo.vstack([
         mo.image(src="mw.png").style(centred),
-        mo.md(f"<span title='Weaving maps of complex data'>2025.04.22-15:15</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
+        mo.md(f"<span title='Weaving maps of complex data'>2025.04.22</span>").style({'background-color':'rgba(255,255,255,0.5'}).center(),
         mo.md(f"<span title='Requires weavingspace 0.0.6.73'>0.0.6.73</span>").style({'background-color':'rgba(255,255,255,0.5','font-style':'italic'}).center(),
     ])
     return
@@ -275,7 +273,7 @@ def set_number_of_variables(mo):
 
 @app.cell(hide_code=True)
 def variable_palette_map_header(mo):
-    mo.md(f"### Variables &lrarr; palettes")
+    mo.md(f"""### Variables &lrarr; palettes""")
     return
 
 
@@ -372,7 +370,7 @@ def set_spacing_limits(get_spacings, mo):
 
 @app.cell
 def _(mo, tile_or_weave):
-    mo.md(f"### {tile_or_weave.value.capitalize()} modifiers")
+    mo.md(f"""### {tile_or_weave.value.capitalize()} modifiers""")
     return
 
 
@@ -382,13 +380,13 @@ def tiling_modifier_ui_elements(mo):
                                value=0, 
                                show_value=True, 
                                debounce=True)
-    tile_scale_x = mo.ui.slider(start=1, 
+    tile_scale_x = mo.ui.slider(start=0.5, 
                                 stop=4, 
                                 step=0.1, 
                                 value=1, 
                                 show_value=True, 
                                 debounce=True)
-    tile_scale_y = mo.ui.slider(start=1, 
+    tile_scale_y = mo.ui.slider(start=0.5, 
                                 stop=4, 
                                 step=0.1, 
                                 value=1, 
@@ -607,20 +605,22 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(f"### Design view options")
+    mo.md(f"""### Design view options""")
     return
 
 
 @app.cell(hide_code=True)
 def design_view_ui_elements(mo, view_settings):
-    mo.md(f"""
+    mo.md(
+        f"""
     #### {tool_tip(view_settings['show_ids'], 'Show the tiling element labels used to match tiles to variables in the map data.')} Show tile IDs
     #### {tool_tip(view_settings['show_prototile'], 'Show in fine black outline the simple tile (usually a square or hexagon) which forms the basis of the pattern.')} Show base tile
     #### {tool_tip(view_settings['show_vectors'], 'Show the translations that map repeating tiles in the pattern onto one another.')} Show vectors
     #### {tool_tip(view_settings['show_reg_prototile'], 'Show in a red outline the repeating set tile group that pieces together jigsaw-like to form the pattern.')} Show &lsquo;jigsaw piece&rsquo;
     #### {tool_tip(view_settings['show_scale'], 'Give an indication of scale in map units.')} Show scale
     #### Tile group 'shells' to show {tool_tip(view_settings['radius'], 'The number of &lsquo;shells&rsquo; of the tiling to show around the base tile group.')}
-    """)
+    """
+    )
     return
 
 
@@ -853,9 +853,9 @@ def tool_tip(ele:str, tip:str) -> str:
 def _(mo):
     mo.md(
         f"""
-        ### Available tilings
-        Organised by number of variables to symbolise
-        """
+    ### Available tilings
+    Organised by number of variables to symbolise
+    """
     )
     return
 
