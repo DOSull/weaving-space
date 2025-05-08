@@ -438,7 +438,8 @@ class Tileable:
   def transform_scale(
       self, 
       xscale:float = 1.0, 
-      yscale:float = 1.0) -> "Tileable":
+      yscale:float = 1.0,
+      independent_of_tiling = False) -> "Tileable":
     """Transforms tileable by scaling.
 
     Args:
@@ -451,17 +452,19 @@ class Tileable:
     result = copy.deepcopy(self)
     result.tiles.geometry = self.tiles.geometry.scale(
       xscale, yscale, origin=(0, 0))
-    result.prototile.geometry = self.prototile.geometry.scale(
-      xscale, yscale, origin=(0, 0))
-    result.regularised_prototile.geometry = \
-      self.regularised_prototile.geometry.scale(xscale, yscale, origin=(0, 0))
-    result._set_vectors_from_prototile()
+    if not independent_of_tiling:
+      result.prototile.geometry = self.prototile.geometry.scale(
+        xscale, yscale, origin=(0, 0))
+      result.regularised_prototile.geometry = \
+        self.regularised_prototile.geometry.scale(xscale, yscale, origin=(0, 0))
+      result._set_vectors_from_prototile()
     return result
 
 
   def transform_rotate(
       self, 
-      angle:float = 0.0) -> "Tileable":
+      angle:float = 0.0,
+      independent_of_tiling = False) -> "Tileable":
     """Transforms tiling by rotation.
 
     Args:
@@ -472,19 +475,21 @@ class Tileable:
     """
     result = copy.deepcopy(self)
     result.tiles.geometry = self.tiles.geometry.rotate(angle, origin=(0, 0))
-    result.prototile.geometry = \
-      self.prototile.geometry.rotate(angle, origin=(0, 0))
-    result.regularised_prototile.geometry = \
-      self.regularised_prototile.geometry.rotate(angle, origin=(0, 0))
-    result._set_vectors_from_prototile()
-    result.rotation = self.rotation + angle
+    if not independent_of_tiling:
+      result.prototile.geometry = \
+        self.prototile.geometry.rotate(angle, origin=(0, 0))
+      result.regularised_prototile.geometry = \
+        self.regularised_prototile.geometry.rotate(angle, origin=(0, 0))
+      result._set_vectors_from_prototile()
+      result.rotation = self.rotation + angle
     return result
 
 
   def transform_skew(
       self,
       xa:float = 0.0, 
-      ya:float = 0.0) -> "Tileable":
+      ya:float = 0.0,
+      independent_of_tiling = False) -> "Tileable":
     """Transforms tiling by skewing
 
     Args:
@@ -496,11 +501,12 @@ class Tileable:
     """
     result = copy.deepcopy(self)
     result.tiles.geometry = self.tiles.geometry.skew(xa, ya, origin=(0, 0))
-    result.prototile.geometry = \
-      self.prototile.geometry.skew(xa, ya, origin=(0, 0))
-    result.regularised_prototile.geometry = \
-      self.regularised_prototile.geometry.skew(xa, ya, origin=(0, 0))
-    result._set_vectors_from_prototile()
+    if not independent_of_tiling:
+      result.prototile.geometry = \
+        self.prototile.geometry.skew(xa, ya, origin=(0, 0))
+      result.regularised_prototile.geometry = \
+        self.regularised_prototile.geometry.skew(xa, ya, origin=(0, 0))
+      result._set_vectors_from_prototile()
     return result
 
 
@@ -547,6 +553,7 @@ class Tileable:
       prototile_edgecolour:str = "k",
       reg_prototile_edgecolour:str = "r", 
       vector_edgecolour:str = "k",
+      alpha:float = 1.0,
       r_alpha:float = 0.5,
       cmap:list[str] = None, 
       figsize:tuple[float] = (8, 8), 
@@ -593,7 +600,7 @@ class Tileable:
       cm = cmap
     if ax is None:
       ax = self.tiles.plot(
-        column="tile_id", cmap=cm, figsize=figsize, **kwargs)
+        column="tile_id", cmap=cm, figsize=figsize, alpha = alpha, **kwargs)
     else:
       self.tiles.plot(
         ax=ax, column="tile_id", cmap=cm, figsize=figsize, **kwargs)
