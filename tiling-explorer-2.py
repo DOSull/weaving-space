@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.13.4"
+__generated_with = "0.11.30"
 app = marimo.App(
     width="full",
     app_title="MapWeaver",
@@ -46,6 +46,7 @@ def module_imports():
         mpl,
         pd,
         wsp,
+        zip_longest,
     )
 
 
@@ -108,7 +109,7 @@ def marimo_states(
 
 
 @app.cell(hide_code=True)
-def upload_data(mo, set_input_data):
+def upload_data(mo, set_input_data, tool_tip):
     _file_browser = mo.ui.file(filetypes=[".geojson", ".json"], 
                     on_change=set_input_data, label=f"Upload")
     mo.md(f"{tool_tip(_file_browser, "Your data should be polygons. Currently only GeoJSON formatted data is readable.")}").left()
@@ -184,7 +185,7 @@ def read_gdf(
 
 
 @app.cell(hide_code=True)
-def _(mo):
+def _(mo, tool_tip):
     download_type = mo.ui.dropdown(options=["GeoJSON", "GeoPackage", "SVG", "PNG"], value="GeoJSON")
     mo.md(f"{tool_tip(download_type, 'Set the file format for downloaded map data')}")
     return (download_type,)
@@ -200,6 +201,7 @@ def _(
     result,
     tiled_map,
     tiling_map,
+    tool_tip,
 ):
     mo.stop(tiling_map)
     if isinstance(get_input_data(), str) or len(get_input_data()) == 0:
@@ -258,7 +260,7 @@ def _(get_selected_colour_palettes, get_tile_ids, get_variables, tiled_map):
 
 
 @app.cell(hide_code=True)
-def set_number_of_variables(mo):
+def set_number_of_variables(mo, tool_tip):
     num_tiles = mo.ui.slider(# steps=range(2, 13), 
                              steps=[x for x in range(2, 16)] + [18, 19], # if we figure out why >12 is a problem for the app...
                              value=4, 
@@ -337,7 +339,7 @@ def build_variable_and_palette_dropdowns(
         on_change=set_palettes)
     rev_pals = mo.ui.array(
         [mo.ui.switch(r) for r in _chosen_reversed], on_change=set_reversed)
-    return pals, rev_pals, variables
+    return n_to_add, pals, rev_pals, to_add, variables
 
 
 @app.cell(hide_code=True)
@@ -347,6 +349,7 @@ def build_var_palette_mapping(
     mo,
     pals,
     rev_pals,
+    tool_tip,
     variables,
 ):
     _cols = [pal.value + ("_r" if rev.value else "") for pal, rev in zip(pals, rev_pals)]
@@ -436,6 +439,7 @@ def setup_tiling_modifiers(
     tile_skew_x,
     tile_skew_y,
     tiling_map,
+    tool_tip,
 ):
     mo.stop(tiling_map)
     if tile_or_weave.value == "tiling":
@@ -464,7 +468,7 @@ def setup_tiling_modifiers(
 
 
 @app.cell(hide_code=True)
-def tiling_or_weave_chooser(mo, num_tiles, tilings_by_n):
+def tiling_or_weave_chooser(mo, num_tiles, tilings_by_n, tool_tip):
     _options = list(set([v["type"] for v in tilings_by_n[num_tiles.value].values()]))
     tile_or_weave = mo.ui.dropdown(options=_options, value="tiling", label="#### Pick tiling or weave")
     mo.md(f"{tool_tip(tile_or_weave, 'Choose tiling or a weave tiling')}")
@@ -472,7 +476,7 @@ def tiling_or_weave_chooser(mo, num_tiles, tilings_by_n):
 
 
 @app.cell(hide_code=True)
-def tiling_type_chooser(mo, num_tiles, tile_or_weave, tilings_by_n):
+def tiling_type_chooser(mo, num_tiles, tile_or_weave, tilings_by_n, tool_tip):
     _options = [k for k, v in tilings_by_n[num_tiles.value].items() if v["type"] == tile_or_weave.value]
 
     family = mo.ui.dropdown(options=_options, 
@@ -567,6 +571,7 @@ def additional_tiling_options(
     tile_or_weave,
     tile_spec,
     tiling_map,
+    tool_tip,
     tooltips,
 ):
     mo.stop(tiling_map)
@@ -610,7 +615,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def design_view_ui_elements(mo, view_settings):
+def design_view_ui_elements(mo, tool_tip, view_settings):
     mo.md(
         f"""
     #### {tool_tip(view_settings['show_ids'], 'Show the tiling element labels used to match tiles to variables in the map data.')} Show tile IDs
@@ -840,13 +845,15 @@ def _(get_gdf, math):
     return (get_spacings,)
 
 
-@app.function(hide_code=True)
-def tool_tip(ele:str, tip:str) -> str:
-    """
-    Returns a HTML <span> string putting a tooltip around the supplied element 
-    """
-    # convenience function to add a tooltip to supplied string
-    return f'<span title="{tip}">{ele}</span>'
+@app.cell(hide_code=True)
+def tool_tip():
+    def tool_tip(ele:str, tip:str) -> str:
+        """
+        Returns a HTML <span> string putting a tooltip around the supplied element 
+        """
+        # convenience function to add a tooltip to supplied string
+        return f'<span title="{tip}">{ele}</span>'
+    return (tool_tip,)
 
 
 @app.cell(hide_code=True)
