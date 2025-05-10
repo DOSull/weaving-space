@@ -4,7 +4,7 @@ __generated_with = "0.11.30"
 app = marimo.App(
     width="full",
     app_title="MapWeaver",
-    layout_file="layouts/tiling-explorer-2.grid.json",
+    layout_file="layouts/tiling-explorer-2/.grid.json",
     css_file="",
     html_head_file="splash.html",
 )
@@ -531,8 +531,11 @@ def setup_chosen_tiling_options(
                                     show_value=True,
                                     debounce=True)
     elif "weave" in family.value:
-        _aspect = mo.ui.slider(steps=[x / 12 for x in range(1,13)], 
-                               value=3/4, 
+        _aspect = mo.ui.slider(steps=[0.083, 0.167, 0.25,
+                                      0.333, 0.417, 0.5,
+                                      0.583, 0.667, 0.75,
+                                      0.833, 0.917, 1], 
+                               value=0.75, 
                                label="#### Strand width",
                                show_value=True, 
                                debounce=True)
