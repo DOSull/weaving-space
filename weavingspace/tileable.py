@@ -94,7 +94,7 @@ class Tileable:
 
   def setup_vectors(
       self, 
-      *args:list[tuple[float]]) -> None:
+      *args) -> None:
     """Sets up translation vectors of a Tileable, from either two or three
     supplied tuples. Two non-parallel vectors are sufficient for a tiling to
     work, but usually three will be supplied for tiles with a hexagonal base
@@ -547,7 +547,7 @@ class Tileable:
       ax:pyplot.Axes = None, 
       show_prototile:bool = True, 
       show_reg_prototile:bool = True, 
-      show_ids:str = "tile_id",
+      show_ids:str|bool = "tile_id",
       show_vectors:bool = False, 
       r:int = 0, 
       prototile_edgecolour:str = "k",
@@ -555,7 +555,7 @@ class Tileable:
       vector_edgecolour:str = "k",
       alpha:float = 1.0,
       r_alpha:float = 0.5,
-      cmap:list[str] = None, 
+      cmap:list[str]|str = None, 
       figsize:tuple[float] = (8, 8), 
       **kwargs) -> pyplot.axes:
     """Plots a representation of the Tileable on the supplied axis. **kwargs

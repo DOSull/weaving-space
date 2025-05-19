@@ -1223,8 +1223,8 @@ def setup_star_polygon_2(unit:TileUnit):
       setup_star_polys_45(unit)
     case "464":
       setup_star_polys_464(unit)
-    # case "466":
-    #   setup_star_polys_464(unit)
+    case "466":
+      setup_star_polys_466(unit)
     case "64":
       setup_star_polys_64(unit)
     case "66":
@@ -1292,6 +1292,42 @@ def setup_star_polys_464(unit:TileUnit) -> None:
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcd")},
     geometry = gpd.GeoSeries([star, hex1, hex2, square]),
+    crs = unit.crs
+  )
+  return None
+
+def setup_star_polys_466(unit:TileUnit) -> None:
+  hex1 = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(1 + sqrt3 / 2), 6)
+  hex2 = affine.scale(hex1, 0.5, 0.5)
+  hex1 = affine.rotate(hex1, 30)
+  w1 = hex1.bounds[2] - hex1.bounds[0]
+  w2 = hex2.bounds[2] - hex2.bounds[0]
+  hex2 = affine.translate(hex2, w1/2 + w2/2)
+  hexes = [hex1] + [affine.rotate(hex2, a, (0, 0)) for a in [60, 120]]
+  h1_pts = list(hexes[1].exterior.coords)
+  h2_pts = list(hexes[2].exterior.coords) 
+  long_diag_1 = geom.LineString([h1_pts[4], h2_pts[0]])
+  long_diag_2 = affine.rotate(long_diag_1, 90)
+  short_diag_1 = geom.LineString([h1_pts[3], h2_pts[5]])
+  short_diag_2 = affine.rotate(short_diag_1, 90)
+  star = geom.Polygon([long_diag_1.coords[0], short_diag_1.coords[0],
+                       long_diag_2.coords[0], short_diag_2.coords[0], 
+                       long_diag_1.coords[1], short_diag_1.coords[1],
+                       long_diag_2.coords[1], short_diag_2.coords[1]]) 
+  stars = [affine.rotate(star, a, (0, 0)) for a in [-60, 0, 60]]
+  unit.union = geom.Polygon(
+    hexes[0].exterior.coords[4:6] + hexes[0].exterior.coords[0:1] +
+    stars[0].exterior.coords[7:2:-1] + hexes[1].exterior.coords[2:4] +
+    stars[1].exterior.coords[4:5] + hexes[2].exterior.coords[2:4] +
+    stars[2].exterior.coords[4:0:-1])
+  p0 = tiling_utils.get_corners(hexes[0])[5]
+  p1 = tiling_utils.get_corners(stars[1])[3]
+  v1 = geom.Point(p1.x - p0.x, p1.y - p0.y)
+  v2, v3 = tuple([affine.rotate(v1, a, (0, 0)) for a in [-60, -120]])  
+  unit.setup_vectors((v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list("abcdef")},
+    geometry = gpd.GeoSeries(hexes + stars),
     crs = unit.crs
   )
   return None
