@@ -1,0 +1,152 @@
+---
+title: "Look ma!<br>(Almost)<br>no javascript!"
+author: David O'Sullivan, Geospatial Stuff
+format: 
+  revealjs:
+    theme: [beige, custom.scss]
+    transition: fade
+    transition-speed: slow
+    navigation-mode: vertical
+    fragment-in-url: true
+    # controls-layout: bottom-right
+    # controls-tutorial: true
+    slide-number: c/t
+    center: true
+    # logo: images/logo.png
+    footer: "Wellington Python meetup - 2025"
+    self-contained: true
+jupyter: python3
+---
+
+```{python}
+#| echo: false
+import os
+os.chdir("/Users/david/Documents/code/weaving-space")
+```
+
+# Mapping multivariate<br>data is hard {.smaller background-image="images/detailed-weave.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+
+##
+
+::: {.r-stack}
+![](images/small-multiples.png "Tufte recommends this approach"){.fragment .fade-out fragment-index=1 width="800"}
+
+![](images/bivariate-choropleth-stevens-qgis.png "2-colours, OK"){.fragment .fade-in-then-out fragment-index=1 width="800"}
+
+![](images/tricolore.png "3-colours, brown"){.fragment .fade-in-then-out fragment-index=2 width="800"}
+
+![](images/choropleth-with-symbols-qgis.png "Probably the most conventional option"){.fragment .fade-in-then-out fragment-index=3 width="800"}
+
+![](images/dorling-chernoff-faces.jpg "Probably the least conventional option"){.fragment .fade-in-then-out fragment-index=4 width="500"}
+
+![](images/dot-map.png "This approach is older than you might imagine, see Jenks GF, 1953, “‘Pointilism’ as a cartographic technique” The Professional Geographer 5(5) 4–6
+"){.fragment .fade-in fragment-index=5 width="800"}
+:::
+
+# Mapweaver {.smaller background-image="images/mapweaver-app.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+
+At [dosull.github.io/mapweaver/app/](https://dosull.github.io/mapweaver/app/)
+
+# `weavingspace` {.smaller background-image="images/imd-escher.png" background-opacity=0.65 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+
+## Making a tiled map
+`weavingspace` is a python module developed for making tiled maps
+
+[github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
+
+Uses `geopandas` and a lot of geometry, leveraging `shapely`
+
+Implements many options (well over a hundred tilings and weave tiling patterns)
+
+##
+
+```{python}
+#| echo: true
+#| output-location: slide
+
+import geopandas as gpd             # <1>
+from weavingspace import TileUnit   # <2>  
+from weavingspace import Tiling     # <3>
+
+data = gpd.read_file("examples/data/imd-auckland-2018.gpkg")
+tile = TileUnit(tiling_type = "cairo", spacing = 500, 
+                crs = data.crs).inset_prototile(10)
+tile.plot(r = 1, show_vectors = True)
+```
+1. `geopandas` adds 'geometry' to `pandas` dataframes.
+2. A `TileUnit` stores geometry of a tiling and translation vectors so we can tile a map.
+3. A `Tiling` is the result of applying a `TileUnit` to a geospatial dataset.
+
+## The tiling process
+<!-- The `Tiling` holds a `TileGrid` which determines where to translate copies of the tileable units to form a tiled map.
+
+![](images/the-tiling-process.png)-->
+
+::: {.r-stack}
+
+![](images/the-tiling-process-1.png){width="1482"}
+
+![](images/the-tiling-process-2.png){.fragment .fade-in fragment-index=1 width="1482"}
+
+![](images/the-tiling-process-3.png){.fragment .fade-in fragment-index=2 width="1482"}
+
+![](images/the-tiling-process-4.png){.fragment .fade-in fragment-index=3 width="1482"}
+
+![](images/the-tiling-process-5.png){.fragment .fade-in fragment-index=4 width="1482"}
+
+![](images/the-tiling-process-6.png){.fragment .fade-in fragment-index=5 width="1482"}
+:::
+
+##
+
+```{python}
+#| echo: true
+#| output-location: slide
+
+tiling = Tiling(tile, data) # <1> 
+tiled_map = tiling.get_tiled_map(prioritise_tiles = True)
+
+tiled_map.legend        = False # <2>
+tiled_map.ids_to_map    = list("abcd")
+tiled_map.vars_to_map   = ["Rank_Emplo", "Rank_Crime", 
+                           "Rank_Housi", "Rank_Incom"]
+tiled_map.colors_to_use = ["Reds", "Blues", "Greens", "Greys"]
+
+tiled_map.render() # <3>
+```
+1. Make the tiling and get a map.
+2. Set up a bunch of parameters for the final map.
+3. Render.
+
+## Challenges {background-image="images/chevron-fabric.jpg" background-opacity=0.65 background-transition="none"} 
+
+::: {.fragment .semi-fade-out .shrink fragment-index=1}
+Using colour well is hard at the best of times&mdash;using several colours at once is even harder!
+
+Potential for use in combination with hierarchical spatial indices like H3?
+
+Legends are a challenge&mdash;ideas welcome!
+
+We've worked hard to make the code easy to use...
+:::
+
+::: {.fragment .highlight-red fragment-index=1}
+... but it's still code
+:::
+
+# Enter `marimo` {.smaller background-image="images/marimo-moss-ball.jpg" background-opacity=1 style="text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;"}
+Image from [flickr.com](https://www.flickr.com/photos/limako/40100136635/) by [Steven Brewer](https://www.flickr.com/photos/limako/). [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/deed.en).
+
+## {data-background-iframe="https://docs.marimo.io" background-interactive=true}
+
+## {data-background="images/vermeer-the-geographer.jpg" background-opacity=0.5}
+
+<h2>Live demo time!</h2>
+
+## {style="text-align:center;"}
+### Questions? {.r-fit-text} 
+[github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
+
+[dosull.github.io/mapweaver/app/](https://dosull.github.io/mapweaver/app/)
+
+[dosull.github.io](https://dosull.github.io)

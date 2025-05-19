@@ -20,6 +20,5 @@ examples/jev-reporting-layer.ipynb
 paper/*
 paper/*/*
 .weaving-space/
-Wellington-Python-meetup-2025/
 election-counties*
 *.Rproj
