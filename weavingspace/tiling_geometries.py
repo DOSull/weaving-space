@@ -1450,6 +1450,8 @@ def setup_chavey(unit:TileUnit) -> str|None:
       setup_chavey_g(unit)
     case "h":
       setup_chavey_h(unit)
+    case "i":
+      setup_chavey_i(unit)
     case _:
       unit.base_shape = TileShape.HEXAGON
       return f"No valid Chavey tiling code supplied."  
@@ -1640,7 +1642,8 @@ def setup_chavey_g(unit:TileUnit) -> str|None:
   triangles.extend([affine.rotate(tr, a, (0, 0)) for a in range(60, 360, 60)
                                                  for tr in triangles])
   polys = hexes + triangles[:10] # just throw some away!
-  unit.setup_vectors(( -s/2, 3*t), (5*s/2, t)) #, (3*s, -h))
+  polys = [affine.translate(p, -s/4, -t/2) for p in polys]
+  unit.setup_vectors(( -s/2, 3*t), (5*s/2, t))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
     crs = unit.crs,
@@ -1663,6 +1666,34 @@ def setup_chavey_h(unit:TileUnit) -> str|None:
                                                  for tr in triangles])
   polys = hexes + triangles
   unit.setup_vectors((0, 2*h), (3*s, h), (3*s, -h))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(polys))
+  return None
+
+def setup_chavey_i(unit:TileUnit) -> str|None:
+  """Sets up 3.3.3.3.3.3;3.3.4.3.4
+  """
+  h = unit.spacing / (1 + 2 / sqrt3)
+  s = h / sqrt3
+  t = h / 2
+  triangles1, squares, triangles2 = [], [], []
+  hex_c = tiling_utils.get_corners(tiling_utils.get_regular_polygon(h, 6))
+  triangles1 = [geom.Polygon([(0, 0), p1, p2])
+                for p1, p2 in zip(hex_c[:-1], hex_c[1:])]
+  squares.append(
+    affine.translate(tiling_utils.get_regular_polygon(s, 4), 0, t + s/2))
+  squares.extend([affine.rotate(squares[0], i * 60, (0, 0)) for i in range(1, 6)])
+  polys = [affine.rotate(p, 30, (0, 0)) for p in triangles1 + squares]
+  triangles2.append(geom.Polygon([(-s/2, -s - t), (0, -s), (s/2, -s - t)]))
+  triangles2.extend([affine.rotate(triangles2[0], i * 60, (0, 0)) for i in range(1, 6)])
+  triangles2.append(geom.Polygon([(s/2, s + t), (s/2 + t, 3*s/2 + t), (s/2 + t, s/2 + t)]))
+  triangles2.append(affine.rotate(triangles2[-1], 60, (0, 0)))
+  polys = polys + triangles2
+  unit.setup_vectors((0, unit.spacing), 
+                     (unit.spacing * sqrt3/2, unit.spacing / 2),
+                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
     crs = unit.crs,
