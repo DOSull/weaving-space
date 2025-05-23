@@ -145,7 +145,7 @@ def setup_cairo(unit:TileUnit) -> None:
   # RETURN NONE
   return None
 
-def setup_hex_slice(unit:TileUnit) -> None:
+def setup_hex_slice(unit:TileUnit) -> str|None:
   """Arbitrary number of radial slices of a hexagon, with an optional
   offset starting point.
 
@@ -175,7 +175,7 @@ def setup_hex_slice(unit:TileUnit) -> None:
                      (unit.spacing * sqrt3/2, -unit.spacing / 2))
   return None
 
-def setup_square_slice(unit:TileUnit) -> None:
+def setup_square_slice(unit:TileUnit) -> str|None:
   """Arbitrary number of radial slices of a square, with an optional
   offset starting point.
 
@@ -255,7 +255,7 @@ def _get_radially_sliced_polygon(
       slices.append(geom.Polygon([p1] + skipped_corners + [p2, (0, 0)]))
   return gpd.GeoSeries(slices)
 
-def setup_crosses(unit:TileUnit) -> None:
+def setup_crosses(unit:TileUnit) -> str|None:
   """Tilings by varying numbers of crosses.
 
   The supplied unit should have n set. The specific arrangements used are
@@ -311,7 +311,7 @@ def setup_crosses(unit:TileUnit) -> None:
     geometry = gpd.GeoSeries(parts))
   return None
 
-def setup_laves(unit:TileUnit) -> None:
+def setup_laves(unit:TileUnit) -> str|None:
   """The Laves tilings. See 
   
   https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Laves_tilings.
@@ -440,7 +440,7 @@ def _setup_laves_3_12_12(unit:TileUnit) -> None:
   )
   return None
 
-def setup_archimedean(unit:TileUnit) -> None:
+def setup_archimedean(unit:TileUnit) -> str|None:
   r"""The Archimedean 'regular tilings. See 
   
   https://en.wikipedia.org/wiki/List_of_Euclidean_uniform_tilings#Convex_uniform_tilings_of_the_Euclidean_plane
@@ -674,7 +674,7 @@ def setup_square_trisection(unit:TileUnit) -> None:
   )
   return None
 
-def setup_hex_colouring(unit:TileUnit) -> None:
+def setup_hex_colouring(unit:TileUnit) -> str|None:
   """2 through 9 colourings of a regular array of hexagons. The supplied unit
   must have unit.n set.
 
@@ -815,16 +815,36 @@ def setup_hex_colouring(unit:TileUnit) -> None:
                 ]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
       unit.setup_vectors((-w/2, 9*h/4), (7*w/2, 3*h/4), (4*w, -3*h/2)) 
+    case 16:
+      #       1 
+      #     2   3
+      #   4   5   6
+      # 7   8   9  10
+      #  11  12  13
+      #    14  15
+      #      16
+      hexagon = affine.rotate(hexagon, 30, (0, 0))
+      w, h = h, w
+      offsets = [         (0,  9*h/4),
+                  (-w/2,  3*h/2), (w/2,  3*h/2), 
+              (-w,  3*h/4), (0,  3*h/4),  ( w,  3*h/4),
+          (-3*w/2, 0), (-w/2, 0), ( w/2, 0), ( 3*w/2, 0),
+              (-w, -3*h/4), (0, -3*h/4),  ( w, -3*h/4),
+                  (-w/2, -3*h/2), (w/2, -3*h/2),
+                          (0, -9*h/4)
+                ]
+      hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
+      unit.setup_vectors((2*w, 3*h), (2*w, -3*h)) 
     case _:
       return (f"""{unit.n}-colouring of hexes is not supported. 
-              Try a number between 2 and 9.""")
+              Try a number between 2 and 9, or 16.""")
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(hexes))
   return None
 
-def setup_square_colouring(unit:TileUnit) -> None:
+def setup_square_colouring(unit:TileUnit) -> str|None:
   """2 through 9 colourings of a regular array of squares. The supplied unit
   must have unit.n set.
 
@@ -898,9 +918,17 @@ def setup_square_colouring(unit:TileUnit) -> None:
             (-s,  s), (0,  s), ( s,  s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       unit.setup_vectors((0, unit.spacing), (unit.spacing, 0)) 
+    case 16:
+      # Copy and translate square
+      tr = [(-3*s/2, -3*s/2), (-s/2, -3*s/2), ( s/2, -3*s/2), ( 3*s/2, -3*s/2),
+            (-3*s/2,   -s/2), (-s/2,   -s/2), ( s/2,   -s/2), ( 3*s/2,   -s/2),
+            (-3*s/2,    s/2), (-s/2,    s/2), ( s/2,    s/2), ( 3*s/2,    s/2),
+            (-3*s/2,  3*s/2), (-s/2,  3*s/2), ( s/2,  3*s/2), ( 3*s/2,  3*s/2)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      unit.setup_vectors((0, unit.spacing), (unit.spacing, 0)) 
     case _:
       return (f"""{unit.n}-colouring of squares is not supported. 
-              Try a number between 2 and 9.""")
+              Try a number between 2 and 9, or 16.""")
 
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
@@ -913,7 +941,7 @@ def get_corners_and_mid_points(shape:geom.Polygon, offset:float = 0.5):
   midpoints = [ls.interpolate(offset, True) for ls in tiling_utils.get_sides(shape)]
   return list(itertools.chain(*[[a, b] for a, b in zip(corners, midpoints)]))
 
-def setup_square_dissection(unit:TileUnit) -> None:
+def setup_square_dissection(unit:TileUnit) -> str|None:
   if any(not k in unit.__dict__ for k in ["n", "offset", "offset_angle"]):
     return (f"""Square dissection tiling requires n, offset, and offset_angle
             to be be supplied.""")
