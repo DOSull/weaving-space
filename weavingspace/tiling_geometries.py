@@ -1452,6 +1452,10 @@ def setup_chavey(unit:TileUnit) -> str|None:
       setup_chavey_h(unit)
     case "i":
       setup_chavey_i(unit)
+    case "j":
+      setup_chavey_j(unit)
+    case "k":
+      setup_chavey_k(unit)
     case _:
       unit.base_shape = TileShape.HEXAGON
       return f"No valid Chavey tiling code supplied."  
@@ -1602,32 +1606,6 @@ def setup_chavey_e(unit:TileUnit) -> str|None:
   return None
 
 def setup_chavey_f(unit:TileUnit) -> str|None:
-  """Sets up 3.3.4.3.4;3.4.6.4
-  """
-  h = unit.spacing / (1 + 2 / sqrt3)
-  s = h / sqrt3
-  t = h / 2
-  hexes, squares, triangles = [], [], []
-  hexes.append(tiling_utils.get_regular_polygon(h, 6))
-  squares.append(
-    affine.translate(tiling_utils.get_regular_polygon(s, 4), 0, t + s/2))
-  squares.extend([affine.rotate(squares[0], i * 60, (0, 0)) for i in range(1, 6)])
-  polys = [affine.rotate(p, 30, (0, 0)) for p in hexes + squares]
-  triangles.append(geom.Polygon([(-s/2, -s - t), (0, -s), (s/2, -s - t)]))
-  triangles.extend([affine.rotate(triangles[0], i * 60, (0, 0)) for i in range(1, 6)])
-  triangles.append(geom.Polygon([(s/2, s + t), (s/2 + t, 3*s/2 + t), (s/2 + t, s/2 + t)]))
-  triangles.append(affine.rotate(triangles[-1], 60, (0, 0)))
-  polys = polys + triangles
-  unit.setup_vectors((0, unit.spacing), 
-                     (unit.spacing * sqrt3/2, unit.spacing / 2),
-                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
-  unit.tiles = gpd.GeoDataFrame(
-    data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
-    crs = unit.crs,
-    geometry = gpd.GeoSeries(polys))
-  return None
-
-def setup_chavey_g(unit:TileUnit) -> str|None:
   """Sets up 3.3.3.3.3.3;3.3.3.3.6
   """
   h = unit.spacing * sqrt3 / np.sqrt(7)
@@ -1650,7 +1628,7 @@ def setup_chavey_g(unit:TileUnit) -> str|None:
     geometry = gpd.GeoSeries(polys))
   return None
 
-def setup_chavey_h(unit:TileUnit) -> str|None:
+def setup_chavey_g(unit:TileUnit) -> str|None:
   """Sets up 3.3.3.3.3.3;3.3.3.3.6 (another one)
   """
   h = unit.spacing / 2 
@@ -1666,6 +1644,32 @@ def setup_chavey_h(unit:TileUnit) -> str|None:
                                                  for tr in triangles])
   polys = hexes + triangles
   unit.setup_vectors((0, 2*h), (3*s, h), (3*s, -h))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(polys))
+  return None
+
+def setup_chavey_h(unit:TileUnit) -> str|None:
+  """Sets up 3.3.4.3.4;3.4.6.4
+  """
+  h = unit.spacing / (1 + 2 / sqrt3)
+  s = h / sqrt3
+  t = h / 2
+  hexes, squares, triangles = [], [], []
+  hexes.append(tiling_utils.get_regular_polygon(h, 6))
+  squares.append(
+    affine.translate(tiling_utils.get_regular_polygon(s, 4), 0, t + s/2))
+  squares.extend([affine.rotate(squares[0], i * 60, (0, 0)) for i in range(1, 6)])
+  polys = [affine.rotate(p, 30, (0, 0)) for p in hexes + squares]
+  triangles.append(geom.Polygon([(-s/2, -s - t), (0, -s), (s/2, -s - t)]))
+  triangles.extend([affine.rotate(triangles[0], i * 60, (0, 0)) for i in range(1, 6)])
+  triangles.append(geom.Polygon([(s/2, s + t), (s/2 + t, 3*s/2 + t), (s/2 + t, s/2 + t)]))
+  triangles.append(affine.rotate(triangles[-1], 60, (0, 0)))
+  polys = polys + triangles
+  unit.setup_vectors((0, unit.spacing), 
+                     (unit.spacing * sqrt3/2, unit.spacing / 2),
+                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
     crs = unit.crs,
@@ -1699,4 +1703,57 @@ def setup_chavey_i(unit:TileUnit) -> str|None:
     crs = unit.crs,
     geometry = gpd.GeoSeries(polys))
   return None
+
+def setup_chavey_j(unit:TileUnit) -> str|None:
+  """Sets up 
+  """
+  h = unit.spacing / (1 + 2 / sqrt3)
+  s = h / sqrt3
+  t = h / 2
+  hex = tiling_utils.get_regular_polygon(h, 6)
+  sq = affine.translate(tiling_utils.get_regular_polygon(s, 4), 0, (s + h)/2)
+  squares = [affine.rotate(sq, a, (0, 0)) for a in range(0, 360, 60)]
+  tri = get_regular_polygon_from_one_side(tiling_utils.get_sides(sq)[0], 3)
+  triangles = [affine.rotate(tri, a, (0, 0)) for a in range(0, 360, 60)]
+  triangles.append(affine.translate(triangles[3],  s + t, h + 3*s/2))
+  triangles.append(affine.translate(triangles[4], -s - t, h + 3*s/2))
+  polys = [hex] + squares + triangles
+  unit.setup_vectors((0, unit.spacing), 
+                     (unit.spacing * sqrt3/2, unit.spacing / 2),
+                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(polys))
+  return None
+
+def setup_chavey_k(unit:TileUnit) -> str|None:
+  """Sets up 
+  """
+  h = unit.spacing / (1 + 2 / sqrt3)
+  s = h / sqrt3
+  t = h / 2
+  triangles1, squares, triangles2 = [], [], []
+  hex_c = tiling_utils.get_corners(tiling_utils.get_regular_polygon(h, 6))
+  triangles1 = [geom.Polygon([(0, 0), p1, p2])
+                for p1, p2 in zip(hex_c[:-1], hex_c[1:])]
+  squares.append(
+    affine.translate(tiling_utils.get_regular_polygon(s, 4), 0, t + s/2))
+  squares.extend([affine.rotate(squares[0], i * 60, (0, 0)) for i in range(1, 6)])
+  polys = [affine.rotate(p, 30, (0, 0)) for p in triangles1 + squares]
+  triangles2.append(geom.Polygon([(-s/2, -s - t), (0, -s), (s/2, -s - t)]))
+  triangles2.extend([affine.rotate(triangles2[0], i * 60, (0, 0)) for i in range(1, 6)])
+  triangles2.append(geom.Polygon([(s/2, s + t), (s/2 + t, 3*s/2 + t), (s/2 + t, s/2 + t)]))
+  triangles2.append(affine.rotate(triangles2[-1], 60, (0, 0)))
+  polys = polys + triangles2
+  polys[:-2] = [affine.rotate(p, 30, (0, 0)) for p in polys[:-2]]
+  unit.setup_vectors((0, unit.spacing), 
+                     (unit.spacing * sqrt3/2, unit.spacing / 2),
+                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(polys))
+  return None
+
 

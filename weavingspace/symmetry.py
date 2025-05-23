@@ -218,8 +218,8 @@ class Transform:
                  y + radius * np.sin(np.radians(a)))
       for a in np.linspace(0, self.angle, 50)])
     gpd.GeoSeries([self.centre]).plot(
-      ax = ax, color = "r", markersize = 4, zorder = 5)
-    gpd.GeoSeries([axis, arc]).plot(ax = ax, color = "r", lw = .5)
+      ax = ax, color = "k", markersize = 4, zorder = 5)
+    gpd.GeoSeries([axis, arc]).plot(ax = ax, color = "k", lw = .5)
     if add_title:
       w = ax.get_window_extent().width
       ax.set_title(
@@ -256,7 +256,7 @@ class Transform:
       (x + mirror_length / 2 * np.cos(np.radians(self.angle)), 
        y + mirror_length / 2 * np.sin(np.radians(self.angle)))])
     gpd.GeoSeries([mirror]).plot(
-      ax = ax, color = "r", lw = 1, ls = "dashdot", zorder = 5)
+      ax = ax, color = "k", lw = 1, ls = "dashdot", zorder = 5)
     no_slide = np.isclose(r, 0, rtol = 1e-6, atol = 1e-6)
     if not no_slide:
       ax.arrow(
@@ -288,14 +288,15 @@ class Transform:
     Returns:
       the Axes with the rendering of this transform added.
     """
-    gpd.GeoSeries([c]).plot(ax = ax, color = "b")
+    gpd.GeoSeries([c]).plot(ax = ax, color = "k")
     ax.arrow(c.x, c.y, self.translation[0], self.translation[1], 
              length_includes_head = True, lw = 0.5, width = w, 
-             fc = "b", ec = None, head_width = w * 6, zorder = 5)
+             fc = "k", ec = None, head_width = w * 6, zorder = 5)
     if add_title:
       w = ax.get_window_extent().width
-      ax.set_title(f"{self.transform_type} ({self.translation[0]:.1f}, {self.translation[1]:.1f})",
-                   fontsize = w / 20)
+      ax.set_title(
+        f"{self.transform_type} ({self.translation[0]:.1f}, {self.translation[1]:.1f})",
+        fontsize = w / 20)
     return ax
 
 

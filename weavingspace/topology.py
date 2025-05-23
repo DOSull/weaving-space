@@ -959,10 +959,10 @@ class Topology:
   def _plot_tiling_symmetry(self, tr:Transform, ax:pyplot.axes, **kwargs):
     gs = gpd.GeoSeries([t.shape for t in self.tiles])
     gsb = gs[:self.n_tiles]
-    gs.plot(ax = ax, fc = "b", alpha = 0.15, ec = "k", lw = 0.5)
+    gs.plot(ax = ax, fc = "k", alpha = 0.15, ec = "k", lw = 0.5)
     gsb.plot(ax = ax, fc = "#00000000", ec = "w", lw = 1, zorder = 2)
     gsm = gpd.GeoSeries([tr.apply(g) for g in gsb])
-    gsm.plot(ax = ax, fc = "r", alpha = 0.2, lw = 0, ec = "r")
+    gsm.plot(ax = ax, fc = "k", alpha = 0.2, lw = 0, ec = "k")
     tr.draw(ax, **kwargs)
     pyplot.axis("off")
 
