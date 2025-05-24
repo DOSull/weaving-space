@@ -285,7 +285,8 @@ class Tiling:
   def get_tiled_map(
       self, 
       rotation:float = 0.,
-      join_on_prototiles:bool = True,
+      join_on_prototiles:bool = False,
+      retain_tileables:bool = False,
       prioritise_tiles:bool = True,
       ragged_edges:bool = True,
       use_centroid_lookup_approximation:bool = False,
@@ -311,7 +312,7 @@ class Tiling:
         are joined to tiles based on the prototile to which they belong. If 
         False the join is based on the tiles in relation to the region areas.
         For weave-based tilings False is probably to be preferred. Defaults to
-        True.
+        False.
       prioritise_tiles (bool, optional): if True tiles will not be broken at
         boundaries in the region dataset. Defaults to True.
       ragged_edges (bool, optional): if True tiles at the edge of the region
@@ -356,8 +357,8 @@ class Tiling:
       print(f"STEP 1: prep data (rotation if requested): {t2 - t1:.3f}")
 
     if prioritise_tiles:  
-      # maintain tile continuity across zone boundaries so we have to do more
-      # work than a simple overlay
+      # maintain tile continuity across zone boundaries
+      # so we have to do more work than a simple overlay
       if use_centroid_lookup_approximation:
         t5 = perf_counter()
         tile_pts = copy.deepcopy(join_layer)
@@ -406,7 +407,7 @@ class Tiling:
       if debug:
         print(f"STEP B2: overlay tiling with zones: {t7 - t2:.3f}")
 
-    if join_on_prototiles:
+    if not retain_tileables:
       tiled_map = tiled_map.loc[
         shapely.intersects(self.region_union, np.array(tiled_map.geometry)), :]
 
@@ -445,7 +446,7 @@ class Tiling:
     return dzid
 
 
-  def make_tiling(self) -> gpd.GeoDataFrame:
+  def make_tiling(self) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Tiles the region with a tile unit, returning a GeoDataFrame
 
     Returns:
@@ -479,7 +480,7 @@ class Tiling:
     return tiles_gdf, prototiles_gdf
 
 
-  def rotated(self, rotation:float = None) -> tuple[gpd.GeoDataFrame]:
+  def rotated(self, rotation:float = 0.0) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Returns the stored tiling rotated. The stored tiling never changes and
     if it was originally made with a Tileable that was rotated it will retain
     that rotation. The requested rotation is _additional_ to that baseline
@@ -493,7 +494,7 @@ class Tiling:
       gpd.GeoDataFrame: Rotated tiling.
     """
     if self.tiles is None:
-      self.tiles = self.make_tiling()
+      self.tiles = self.make_tiling()[0]
     if rotation == 0:
       return self.tiles, self.prototiles
     tiles = gpd.GeoDataFrame(
