@@ -490,7 +490,7 @@ the returned edges would be (0 1 v) and (v 2 5).</p></div>
     the associated tile centre.
     &#34;&#34;&#34;
     self.shape = geom.Polygon([c.point for c in self.corners])
-    self.centre = tiling_utils.incentre(
+    self.centre = tiling_utils.get_incentre(
       tiling_utils.get_clean_polygon(self.shape))
 
   def set_corners_from_edges(self, update_shape:bool = True):
@@ -1429,7 +1429,7 @@ direction, but if we have (0, 1) (2, 3) then it is not.</p></div>
   the associated tile centre.
   &#34;&#34;&#34;
   self.shape = geom.Polygon([c.point for c in self.corners])
-  self.centre = tiling_utils.incentre(
+  self.centre = tiling_utils.get_incentre(
     tiling_utils.get_clean_polygon(self.shape))</code></pre>
 </details>
 <div class="desc"><p>Sets the shape attribute based on the current list of corners, and sets

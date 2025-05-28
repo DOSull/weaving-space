@@ -1,17 +1,11 @@
-#!/usr/bin/env python
-# coding: utf-8
+"""Handles combining the ordering of which strands are on top in weaves."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 import numpy as np
 
-_decode_orders = (
-  {1: (0,  ), 2: (1,  ), 3: (   ), 4: (0, 1), 5: (1, 0)}, # biaxial case
-  {1: (1,  ), 2: (0,  ), 3: (   ), 4: (1, 0), 5: (0, 1)}, # triaxial 0|1
-  {1: (2,  ), 2: (1,  ), 3: (   ), 4: (2, 1), 5: (1, 2)}, # triaxial 1|2
-  {1: (0,  ), 2: (2,  ), 3: (   ), 4: (0, 2), 5: (2, 0)}  # triaxial 2|0
-)
 """Initially in a biaxial weave intersection sites are encoded numerically:
 
   1 = warp is absent
@@ -25,9 +19,19 @@ depending on the input axis, where item 0 is the biaxial case with layers 0 and
 1 only, item 1 is layers 0 and 1, item 2 is layers 1 and 2, and item 3 is
 layers 2 and 0.
 """
+_decode_orders:tuple[dict,dict,dict,dict] = (
+  {1: (0,  ), 2: (1,  ), 3: (   ), 4: (0, 1), 5: (1, 0)}, # biaxial case
+  {1: (1,  ), 2: (0,  ), 3: (   ), 4: (1, 0), 5: (0, 1)}, # triaxial 0|1
+  {1: (2,  ), 2: (1,  ), 3: (   ), 4: (2, 1), 5: (1, 2)}, # triaxial 1|2
+  {1: (0,  ), 2: (2,  ), 3: (   ), 4: (0, 2), 5: (2, 0)}, # triaxial 2|0
+)
 
-
-_combined_orderings = {
+"""Nested dictionary to combine layer orders from 3 biaxial weaves
+into a single consistent order of layers. Inconsistent combinations
+will not return a value. Layers 0 and 1 are present in the first 'tier',
+layers 1 and 2 in the second and 2 and 0 in the third.
+"""
+_combined_orderings:dict[tuple,dict] = {
   (    ): {(    ): {(    ): None,         # -- -- --  ->  All absent
                     (2,  ): (2,  )},      # -- -- 2-  ->  Only 2 present
            (1,  ): {(    ): (1,  )},      # -- 1- --  ->  Only 1 present
@@ -46,13 +50,8 @@ _combined_orderings = {
   (1, 0): {(1,  ): {(0,  ): (1, 0)},      # 10 1- 0-  ->  1 > 0
            (1, 2): {(2, 0): (1, 2, 0),    # 10 12 20  ->  1 > 2 > 0
                     (0, 2): (1, 0, 2)},   # 10 12 02  ->  1 > 0 > 2
-           (2, 1): {(2, 0): (2, 1, 0)}}   # 10 21 20  ->  2 > 1 > 0
+           (2, 1): {(2, 0): (2, 1, 0)}},  # 10 21 20  ->  2 > 1 > 0
 }
-"""Nested dictionary to combine layer orders from 3 biaxial weaves
-into a single consistent order of layers. Inconsistent combinations
-will not return a value. Layers 0 and 1 are present in the first 'tier',
-layers 1 and 2 in the second and 2 and 0 in the third.
-"""
 
 
 @dataclass(slots=True)
@@ -66,6 +65,7 @@ class Loom:
     indices:   [(0, 0), (0, 1), (1, 0), (1, 1)]
     orderings: [(0, 1), (1, 0), (1, 0), (0, 1)]
   """
+
   indices:list[tuple]
   """grid coordinate pairs."""
   orderings:list
@@ -79,11 +79,14 @@ class Loom:
   n_axes:int
   """number of axes, 2 or 3."""
 
-  def __init__(self, 
-               *matrices:np.ndarray
-               ) -> None:
-    """Constructor for a Loom. Takes either one or three weave matrices
-    as input and initialises the loom based on these.
+  def __init__(
+      self,
+      *matrices:np.ndarray,
+    ) -> None:
+    """Return a Loom instance.
+
+    Takes either one or three weave matrices as input and initialises the loom
+    based on these.
     """
     if len(matrices) == 1:
       m = matrices[0]
@@ -123,17 +126,17 @@ class Loom:
       order_20 = [_decode_orders[3][m_20[ij]]
                   for ij in [(x[0], x[2]) for x in self.indices]]
       # # combine orders from the three matrices stacked
-      self.orderings = [self._combine_orders(abc)
-                        for abc in zip(order_01, order_12, order_20)]
-      return None
+      self.orderings = [
+        self._combine_orders(abc)
+        for abc in zip(order_01, order_12, order_20, strict = True)]
 
 
   # convenience wrapper for the combined_orderings dictionary
   # missing values return "NA"
-  def _combine_orders(self, 
-                      orders:list[tuple[int]]
-                      ) -> tuple[int]:
-    # print(f"orders: {orders}")
+  def _combine_orders(
+      self,
+      orders:tuple[tuple[int],...],
+    ) -> tuple[int]|str:
     try:
       result = _combined_orderings[orders[0]][orders[1]][orders[2]]
     except KeyError as e:

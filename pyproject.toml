@@ -40,3 +40,23 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/DOSull/weaving-space"
 Repository = "https://github.com/DOSull/weaving-space"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "SLF001",
+  "PLR2004",
+  "RUF007",
+  "N802",
+  "N803",
+  "N806",
+  "N815",
+  "FBT001",
+  "FBT002",
+  "TC002",
+  "T201",
+  "D105"
+]
+
+[tool.ruff]
+line-length = 80

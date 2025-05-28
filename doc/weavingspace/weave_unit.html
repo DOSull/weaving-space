@@ -298,16 +298,16 @@ class WeaveUnit(Tileable):
       # grow for dissolve
       weave.geometry = weave.geometry.buffer(
         self.spacing * tiling_utils.RESOLUTION, 
-        join_style = 2, cap_style = 3)
+        join_style = "mitre", cap_style = "square")
       weave = weave.dissolve(by = &#34;tile_id&#34;, as_index = False)
       # shrink by more to explode into separate polygons
       weave.geometry = weave.geometry.buffer(
         -2 * self.spacing * tiling_utils.RESOLUTION, 
-        join_style = 2, cap_style = 3)
+        join_style = "mitre", cap_style = "square")
       weave = weave.explode(ignore_index = True)
       weave.geometry = weave.geometry.buffer(
         self.spacing * tiling_utils.RESOLUTION, 
-        join_style = 2, cap_style = 3)
+        join_style = "mitre", cap_style = "square")
     else: # aspect &lt; 1 is fine without buffering
       weave = weave.dissolve(by = &#34;tile_id&#34;, as_index = False)
       weave = weave.explode(ignore_index = True)

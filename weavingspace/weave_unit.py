@@ -1,40 +1,43 @@
-#!/usr/bin/env python
-# coding: utf-8
+"""The `WeaveUnit` subclass of `weavingspace.tileable.Tileable`.
 
-"""The `WeaveUnit` subclass of `weavingspace.tileable.Tileable` implements
-tileable geometric patterns constructed by specifying 2- or 3-axial weaves.
+Implements tileable geometric patterns constructed by specifying 2- and 3-axial
+weaves.
 
 Examples:
   Explain usage here...
+
 """
 
 from __future__ import annotations
+
 import itertools
 import logging
 from dataclasses import dataclass
-from typing import Iterable
+from typing import TYPE_CHECKING
 
-import pandas as pd
 import geopandas as gpd
 import numpy as np
-import shapely.geometry as geom
+import pandas as pd
 import shapely.affinity as affine
+import shapely.geometry as geom
 import shapely.ops
 
-from weavingspace import weave_matrices
-from weavingspace import tiling_utils
+from weavingspace import (
+  Loom,
+  Tileable,
+  TileShape,
+  WeaveGrid,
+  tiling_utils,
+  weave_matrices,
+)
 
-from weavingspace import Loom
-from weavingspace import WeaveGrid
-
-from weavingspace import TileShape
-from weavingspace import Tileable
+if TYPE_CHECKING:
+  from collections.abc import Iterable
 
 
 @dataclass
 class WeaveUnit(Tileable):
-  """Extends Tileable to allow for tiles that appear like woven patterns.
-  """
+  """Extend Tileable to allow for tiles that appear like woven patterns."""
 
   weave_type:str = "plain"
   """type of weave pattern, one of `plain`, `twill`, `basket`, `cube`, `hex` or
@@ -42,8 +45,8 @@ class WeaveUnit(Tileable):
   aspect:float = 1.
   """width of strands relative to the `spacing`. Defaults to 1.0."""
   n:int|tuple[int] = (2, 2)
-  """number of over-under strands in biaxial weaves. Only one item is 
-  required in a plain weave. Twill and basket patterns expect an even number of 
+  """number of over-under strands in biaxial weaves. Only one item is
+  required in a plain weave. Twill and basket patterns expect an even number of
   entries in the tuple."""
   strands:str = "a|b|c"
   """specification of the strand labels along each axis. Defaults to `a|b|c`."""
@@ -54,60 +57,37 @@ class WeaveUnit(Tileable):
   _th:np.ndarray = None
   """optional threading array to pass through for `this` weave type."""
 
-  def __init__(self, **kwargs):
-    super(WeaveUnit, self).__init__(**kwargs)
+  def __init__(self, **kwargs:float|str) -> None:
+    super().__init__(**kwargs)
 
 
   def _setup_tiles(self) -> None:
-    """Returns dictionary with weave unit and tile GeoDataFrames based on
-    parameters already supplied to the constructor.
-    """
-    self._parameter_info()
-
+    """Set up weave unit."""
     if self.weave_type in ("hex", "cube"):
       self.base_shape = TileShape.HEXAGON
       self._setup_triaxial_weave_unit()
     else:
       self.base_shape = TileShape.RECTANGLE
       self._setup_biaxial_weave_unit()
-    return
 
 
   def _setup_regularised_prototile(self) -> None:
-    """Sets up a 'regularised prototile' which fully contains all the tile
-    elements, i.e. it does not intersect. The work is carried out by the two
-    methods  that follow _regularise_tiles() and _merge_fragments().
+    """Set up regularised prototile fully containing all tile elements.
+
+    The work is carried out by the two methods  that follow _regularise_tiles()
+    and _merge_fragments().
     """
     self._regularise_tiles()
     # it's prudent to do some cleanup given all the manipulation of geometries
-    # carried out to generate the regularised prototile. But note that the 
+    # carried out to generate the regularised prototile. But note that the
     # regularised prototile has no functional purpose, so it's OK if it has,
     # for example, additional points along line segments.
     self.regularised_prototile.geometry = tiling_utils.repair_polygon(
       self.regularised_prototile.geometry)
-    return None
-
-
-  def _parameter_info(self) -> None:
-    """Outputs logging message concerning the supplied aspect settings.
-    """
-    if self.aspect == 0:
-      logging.info("Setting aspect to 0 is probably not a great plan.")
-
-    if self.aspect < 0 or self.aspect > 1:
-      logging.warning(
-        """Values of aspect outside the range 0 to 1 won't produce tiles 
-        that will look like weaves, but they might be pretty anyway! Values
-        less than -1 seem particularly promising, especially with opacity 
-        set less than 1.""")
-
-    return None
 
 
   def _setup_biaxial_weave_unit(self) -> None:
-    """Returns weave tiles GeoDataFrame and tile GeoDataFrame in a 
-    dictionary based on paramters already supplied to constructor.
-    """
+    """Set up weave tiles GeoDataFrame and tile GeoDataFrame."""
     warp_threads, weft_threads, _ = \
       tiling_utils.get_strand_ids(self.strands)
     if self.weave_type == "basket" and isinstance(self.n, (list, tuple)):
@@ -122,22 +102,22 @@ class WeaveUnit(Tileable):
     w = (bb[2] - bb[0]) // self.spacing * self.spacing
     h = (bb[3] - bb[1]) // self.spacing * self.spacing
     self.setup_vectors((0, h), (w, 0))
-    return None
 
 
   def _get_triaxial_weave_matrices(self,
-    strands_1:list[str]|tuple[str] = ["a"],
-    strands_2:list[str]|tuple[str] = ["b"],
-    strands_3:list[str]|tuple[str] = ["c"]) -> Loom:
-    """Returns encoded weave pattern matrix as Loom of three biaxial matrices.
+      strands_1:list[str]|tuple[str] = ("a",),
+      strands_2:list[str]|tuple[str] = ("b",),
+      strands_3:list[str]|tuple[str] = ("c",),
+    ) -> Loom:
+    """Return encoded weave pattern matrix as Loom of three biaxial matrices.
 
     Allowed weave_types: "cube" or "hex".
 
-    "hex" is not flexible and will fail with any strand label lists that are 
-    not length 3 or include more than one non-blank "-" item. You can 
+    "hex" is not flexible and will fail with any strand label lists that are
+    not length 3 or include more than one non-blank "-" item. You can
     generate the "hex" weave with the default settings in any case!
 
-    Strand lists should be length 3 or length 1. "cube" tolerates more 
+    Strand lists should be length 3 or length 1. "cube" tolerates more
     than "hex" for the items in the strand lists.
 
     Defaults will produce 'mad weave'.
@@ -153,6 +133,7 @@ class WeaveUnit(Tileable):
     Returns:
       Loom: which combines the three biaxial weaves 12, 23 and 31 implied
       by the strand label lists.
+
     """
     if self.weave_type == "hex":
       loom = Loom(
@@ -181,9 +162,7 @@ class WeaveUnit(Tileable):
 
 
   def _setup_triaxial_weave_unit(self) -> None:
-    """Returns weave tiles GeoDataFrame and tile GeoDataFrame in a
-    dictionary based on parameters already supplied to constructor.
-    """
+    """Return weave tiles GeoDataFrame and tile GeoDataFrame."""
     strands_1, strands_2, strands_3 = \
       tiling_utils.get_strand_ids(self.strands)
     loom = self._get_triaxial_weave_matrices(
@@ -193,13 +172,13 @@ class WeaveUnit(Tileable):
     self.setup_vectors((0, 6 * self.spacing),
                        (3 * self.spacing * np.sqrt(3),  3 * self.spacing),
                        (3 * self.spacing * np.sqrt(3), -3 * self.spacing))
-    return None
 
 
   def _make_shapes_from_coded_weave_matrix(
-    self, loom:Loom, strand_labels:list[list[str]] = [["a"], ["b"], ["c"]]
+      self,
+      loom:Loom, strand_labels:list[list[str]] = (["a"], ["b"], ["c"]),
     ) -> None:
-    """Returns weave tiles and prototile GeoDataFrames in a dictionary
+    """Set up weave tiles and prototile GeoDataFrames in a dictionary.
 
     Builds the geometries associated with a given weave supplied as
     'loom' containing the coordinates in an appropriate grid (Cartesian or
@@ -210,37 +189,40 @@ class WeaveUnit(Tileable):
       pattern.
       strand_labels (list[list[str]], optional): list of lists of labels
       for strands in each direction. Defaults to [["a"], ["b"], ["c"]]
+
     """
     grid = WeaveGrid(loom.n_axes, loom.orientations, self.spacing)
     # expand the list of strand labels if needed in each direction
-    # labels = []
     labels = [thread * int(np.ceil(dim // len(thread)))
-              for dim, thread in zip(loom.dimensions, strand_labels)]
-    weave_polys = [] 
-    strand_ids = [] 
+              for dim, thread in zip(loom.dimensions, strand_labels,
+                                     strict = False)]
+    weave_polys = []
+    strand_ids = []
     cells = []
-    for k, strand_order in zip(loom.indices, loom.orderings):
-      ids = [thread[coord] for coord, thread in zip(k, labels)]
+    for k, strand_order in zip(loom.indices, loom.orderings, strict = True):
+      IDs = [thread[coord] for coord, thread in zip(k, labels, strict = True)]
       cells.append(grid.get_grid_cell_at(k))
       if strand_order is None:
         continue  # No strands present
       if strand_order == "NA":
         continue  # Inconsistency in layer order
-      n_slices = [len(id) for id in ids]
+      n_slices = [len(ID) for ID in IDs]
       next_polys = grid.get_visible_cell_strands(
         width = self.aspect, coords = k,
         strand_order = strand_order, n_slices = n_slices)
       weave_polys.extend(next_polys)
-      next_labels = [list(ids[i]) for i in strand_order]  # list of lists
+      next_labels = [list(IDs[i]) for i in strand_order]  # list of lists
       next_labels = list(itertools.chain(*next_labels))   # flatten
       strand_ids.extend(next_labels)
     # sometimes empty polygons make it to here, so
     # filter those out along with the associated IDs
     real_polys = [not p.is_empty for p in weave_polys]
-    weave_polys = [p for p, b in zip(weave_polys, real_polys) if b]
-    strand_ids = [id for id, b in zip(strand_ids, real_polys) if b]
+    weave_polys = [
+      p for p, b in zip(weave_polys, real_polys, strict = True) if b]
+    strand_ids = [
+      ID for ID, b in zip(strand_ids, real_polys, strict = True) if b]
     # note that the tile is important for the biaxial case, which makes it
-    # a little hard to understand why the behaviour is so different in 
+    # a little hard to understand why the behaviour is so different in
     # the biaxial and triaxial cases; however below seems to work...
     if loom.n_axes == 3:
       tile = grid.get_tile_from_cells(cells)
@@ -252,14 +234,12 @@ class WeaveUnit(Tileable):
     self.tiles = self._get_weave_tiles_gdf(weave_polys, strand_ids, shift)
     self.prototile = gpd.GeoDataFrame(
       geometry = gpd.GeoSeries([tile]), crs = self.crs)
-    # self.setup_vectors()
-    return None
 
 
   def _get_weave_tiles_gdf(
-      self, polys:list[geom.Polygon], strand_ids:list[str], 
+      self, polys:list[geom.Polygon], strand_ids:list[str],
       offset:tuple[float]) -> gpd.GeoDataFrame:
-    """Makes a GeoDataFrame from weave tile polygons, labels, etc.
+    """Make a GeoDataFrame from weave tile polygons, labels, etc.
 
     Args:
       polys (list[Polygon | MultiPolygon]): list of weave tile
@@ -271,6 +251,7 @@ class WeaveUnit(Tileable):
     Returns:
       geopandas.GeoDataFrame: GeoDataFrame clipped to the tile, with
         margin applied.
+
     """
     weave = gpd.GeoDataFrame(
       data = {"tile_id": strand_ids},
@@ -279,26 +260,26 @@ class WeaveUnit(Tileable):
     weave = weave[weave.tile_id != "-"]
     weave.geometry = gpd.GeoSeries(
       [tiling_utils.get_clean_polygon(p) for p in weave.geometry])
-    
+
     # some buffering is required if aspect is 1 to safely dissolve and
     # explode weave unit tiles that meet at corners
     if self.aspect == 1:
       # grow for dissolve
       weave.geometry = weave.geometry.buffer(
-        # self.spacing * tiling_utils.RESOLUTION, 
-        tiling_utils.RESOLUTION, 
-        join_style = 2, cap_style = 3)
+        # self.spacing * tiling_utils.RESOLUTION,
+        tiling_utils.RESOLUTION,
+        join_style = "mitre", cap_style = "square")
       weave = weave.dissolve(by = "tile_id", as_index = False)
       # shrink by more to explode into separate polygons
       weave.geometry = weave.geometry.buffer(
-        # -2 * self.spacing * tiling_utils.RESOLUTION, 
-        -2 * tiling_utils.RESOLUTION, 
-        join_style = 2, cap_style = 3)
+        # -2 * self.spacing * tiling_utils.RESOLUTION,
+        -2 * tiling_utils.RESOLUTION,
+        join_style = "mitre", cap_style = "square")
       weave = weave.explode(ignore_index = True)
       weave.geometry = weave.geometry.buffer(
-        # self.spacing * tiling_utils.RESOLUTION, 
-        tiling_utils.RESOLUTION, 
-        join_style = 2, cap_style = 3)
+        # self.spacing * tiling_utils.RESOLUTION,
+        tiling_utils.RESOLUTION,
+        join_style = "mitre", cap_style = "square")
     else: # aspect < 1 is fine without buffering
       weave = weave.dissolve(by = "tile_id", as_index = False)
       weave = weave.explode(ignore_index = True)
@@ -308,7 +289,7 @@ class WeaveUnit(Tileable):
 
 
   def _get_axis_from_label(self, label:str = "a", strands:str = None):
-    """Determines the axis of a tile_id from the strands spec string.
+    """Determine the axis of a tile_id from the strands spec string.
 
     Args:
       label (str, optional): the tile_id. Defaults to "a".
@@ -317,6 +298,7 @@ class WeaveUnit(Tileable):
 
     Returns:
       _type_: the axis in which the supplied tile is found.
+
     """
     if strands == None:
       strands = self.strands
@@ -325,7 +307,7 @@ class WeaveUnit(Tileable):
 
 
   def _get_legend_tiles(self) -> gpd.GeoDataFrame:
-    """Returns tiles suitable for use in a legend representation.
+    """Return tiles suitable for use in a legend representation.
 
     One tile for each tile_id value will be chosen, close to the
     centre of the prototile extent, and not among the smallest tiles present
@@ -334,6 +316,7 @@ class WeaveUnit(Tileable):
 
     Returns:
       gpd.GeoDataFrame: the chosen tiles.
+
     """
     angles = ((0, 240, 120)
               if self.weave_type in ("hex", "cube")
@@ -355,13 +338,14 @@ class WeaveUnit(Tileable):
 
   def _get_most_central_large_tile(self, tiles:gpd.GeoDataFrame,
           other_tiles:list[geom.Polygon]) -> geom.Polygon:
-    """Gets a large tile close to the centre of the WeaveUnit.
+    """Get a large tile close to the centre of the WeaveUnit.
 
     Args:
       tiles (gpd.GeoDataFrame): the set of tiles to choose from.
 
     Returns:
       geom.Polygon: the chosen, large central tile.
+
     """
     areas = [g.area for g in tiles.geometry]
     min_area, max_area = min(areas), max(areas)
@@ -380,14 +364,16 @@ class WeaveUnit(Tileable):
     return geoms[d.index(min(d))]
 
 
-  def _get_legend_key_shapes(self, 
-                             polygon:geom.Polygon,
-                             counts:Iterable = [1] * 25, 
-                             angle:float = 0,
-                             radial:bool = False) -> list[geom.Polygon]:
-    """Returns a list of polygons obtained by slicing the supplied polygon
-    across its length into n slices. Orientation of the polygon is
-    indicated by the angle.
+  def _get_legend_key_shapes(
+      self,
+      polygon:geom.Polygon,
+      counts:Iterable = [1] * 25,
+      angle:float = 0,
+      radial:bool = False,
+    ) -> list[geom.Polygon]:
+    """Return polygons obtained by slicing polygon crosswise into n slices.
+
+    Orientation of the polygon is indicated by the angle.
 
     The returned list of polygons can be used to form a colour ramp in a
     legend.
@@ -397,10 +383,11 @@ class WeaveUnit(Tileable):
       counts (Iterable, optional): an iterable list of the numbers of
         slices in each category. Defaults to [1] * 25.
       angle (float, optional): orientation of the polygon. Defaults to 0.
-      categorical (bool, optional): ignored by WeaveUnit.
+      radial (bool, optional): ignored by WeaveUnit.
 
     Returns:
       list[geom.Polygon]: a list of polygons.
+
     """
     c = polygon.centroid
     g = affine.rotate(polygon, -angle, origin = c)
@@ -414,11 +401,11 @@ class WeaveUnit(Tileable):
     bottom = bottom - margin
     top = bottom + height + 2 * margin
     slices = []
-    for l, r in zip(cuts[:-1], cuts[1:]):
+    for l, r in zip(cuts[:-1], cuts[1:], strict = True):
       # we add a margin to left and right so that they overplot; otherwise in
       # rendering matplotlib leaves small gaps which give a washed out look
       # to the fill colour!
-      slice = geom.Polygon([(l - margin, bottom), (r + margin, bottom), 
+      slice = geom.Polygon([(l - margin, bottom), (r + margin, bottom),
                             (r + margin,    top), (l - margin,    top)])
       slices.append(slice.intersection(g))
     return [affine.rotate(s, angle, origin = c) for s in slices]

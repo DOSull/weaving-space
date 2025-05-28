@@ -1,58 +1,55 @@
-#!/usr/bin/env python
-# coding: utf-8
+"""Classes for tiling maps.
 
-"""Classes for tiling maps. `weavingspace.tile_map.Tiling` and
+`weavingspace.tile_map.Tiling` and
 `weavingspace.tile_map.TiledMap` are exposed in the  public API and
 respectively enable creation of a tiling and plotting of the tiling as a
 multivariate map.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass
-import itertools
+
 import copy
+import itertools
+import typing
 from collections.abc import Iterable
-
-import numpy as np
-import geopandas as gpd
-import pandas as pd
-
-from matplotlib.figure import Figure
-import matplotlib.colors
-import matplotlib.pyplot as pyplot
-
-import shapely.geometry as geom
-import shapely.affinity as affine
-import shapely.ops
-
-from weavingspace import Tileable
-from weavingspace import TileUnit
-
-from weavingspace import tiling_utils
-
+from dataclasses import dataclass
 from time import perf_counter
 
-CMAPS_SEQUENTIAL = list(itertools.chain(*[[x, x + "_r"] for x in 
-  ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds',
-   'viridis', 'plasma', 'inferno', 'magma', 'cividis',
-   'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
-   'GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn',
-   'binary', 'gist_yarg', 'gist_gray', 'gray', 'bone',
-   'pink', 'spring', 'summer', 'autumn', 'winter', 'cool',
-   'Wistia', 'hot', 'afmhot', 'gist_heat', 'copper']]))
+import geopandas as gpd
+import matplotlib.colors
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import shapely.affinity as affine
+import shapely.geometry as geom
+import shapely.ops
+
+from weavingspace import Tileable, TileUnit, tiling_utils
+
+if typing.TYPE_CHECKING:
+  from matplotlib.figure import Figure
+
+CMAPS_SEQUENTIAL = list(itertools.chain(*[[x, x + "_r"] for x in
+  ["Greys", "Purples", "Blues", "Greens", "Oranges", "Reds",
+   "viridis", "plasma", "inferno", "magma", "cividis",
+   "YlOrBr", "YlOrRd", "OrRd", "PuRd", "RdPu", "BuPu",
+   "GnBu", "PuBu", "YlGnBu", "PuBuGn", "BuGn", "YlGn",
+   "binary", "gist_yarg", "gist_gray", "gray", "bone",
+   "pink", "spring", "summer", "autumn", "winter", "cool",
+   "Wistia", "hot", "afmhot", "gist_heat", "copper"]]))
 
 CMAPS_DIVERGING = list(itertools.chain(*[[x, x + "_r"] for x in
-  ['PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu', 'RdYlBu',
-   'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic']]))
-# these ones not yet in MPL 3.8.4: 'berlin', 'managua', 'vanimo'
+  ["PiYG", "PRGn", "BrBG", "PuOr", "RdGy", "RdBu", "RdYlBu",
+   "RdYlGn", "Spectral", "coolwarm", "bwr", "seismic"]]))
+# these ones not yet in MPL 3.8.4: "berlin", "managua", "vanimo"
 
 CMAPS_CATEGORICAL = list(itertools.chain(*[[x, x + "_r"] for x in
-  ['Pastel1', 'Pastel2', 'Paired', 'Accent', 'Dark2',
-   'Set1', 'Set2', 'Set3', 'tab10', 'tab20', 'tab20b',
-   'tab20c']]))
+  ["Pastel1", "Pastel2", "Paired", "Accent", "Dark2",
+   "Set1", "Set2", "Set3", "tab10", "tab20", "tab20b",
+   "tab20c"]]))
 
 @dataclass(slots=True, init=False)
-class _TileGrid():
+class _TileGrid:
   """A class to represent the translation centres of a tiling.
 
   We store the grid as a GeoSeries of Point objects to make it simple to plot
@@ -62,30 +59,31 @@ class _TileGrid():
   space where the tile spacing is unit squares, then transforming this back
   into the original map space. Some member variables of the class are in
   the transformed grid generation space, some in the map space. We store the
-  translation vectors as shapely Points, and the extent of the grid in grid 
+  translation vectors as shapely Points, and the extent of the grid in grid
   space as a shapely Polygon so we can more easily visualise if needed.
   """
-  tile_unit:TileUnit
+
+  tile_unit:Tileable
   """the base tile in map space."""
   oriented_rect_to_tile:geom.Polygon
   """oriented rectangular region in map space that is to be tiled."""
-  to_grid_space:tuple[float]
+  to_grid_space:tuple[float,...]
   """the forward transformation from map space to tiling grid generation space,
   stored as a shapely.affinity transform tuple of 6 floats."""
-  to_map_space:tuple[float]
+  to_map_space:tuple[float,...]
   """the inverse transform from tiling grid space to map space."""
   extent_in_grid_space:geom.Polygon
-  """geometry of the circular extent of the tiling transformed into grid 
+  """geometry of the circular extent of the tiling transformed into grid
   generation space."""
   centre:geom.Point
-  """centre point of the grid in map space - this is required for later 
+  """centre point of the grid in map space - this is required for later
   rotations of a generated tiling in map space"""
   points:gpd.GeoSeries
   """geom.Points recording translation vectors of the tiling in map space."""
 
   def __init__(
-      self, 
-      tile_unit:TileUnit, 
+      self,
+      tile_unit:Tileable,
       to_tile:gpd.GeoSeries,
       at_centroids:bool = False) -> None:
     self.tile_unit = tile_unit
@@ -98,13 +96,13 @@ class _TileGrid():
     else:
       self.points = self._get_grid()
     self.points.crs = self.tile_unit.crs
-    return None
 
 
   def _get_rect_to_tile(
-      self, 
+      self,
       region_to_tile:gpd.GeoSeries) -> geom.Polygon:
-    """Generates an oriented rectangle that encompasses the region to be tiled.
+    """Generate an oriented rectangle that encompasses the region to be tiled.
+
     This will be rotated to generate a circular are that will actually be tiled
     so that if new orientations of the tiled pattern are requested they can be
     generated quickly without much recalculation.
@@ -115,34 +113,35 @@ class _TileGrid():
     Returns:
       geom.Polygon: an oriented rectangle encompassing the region to be tiled
         with some buffering to avoid cutting off tiling elements.
+
     """
     # buffer the region by an amount dictated by the size of the tile unit
     bb = self.tile_unit.tiles.total_bounds
     diagonal = np.hypot(bb[2] - bb[0], bb[3] - bb[1])
-    return region_to_tile.union_all().buffer(diagonal) \
-                                     .minimum_rotated_rectangle
+    return (region_to_tile.union_all().buffer(diagonal)
+            .minimum_rotated_rectangle)
 
 
-  def _get_transforms(self) -> tuple[float]:
-    """Returns the forward and inverse transforms from map space to
-    grid generation space.
+  def _get_transforms(self) -> tuple[tuple[float,...],tuple[float,...]]:
+    """Return forward and inverse transforms from map space to grid space.
 
     In grid generation space the translation vectors are (1, 0) and (0, 1)
     so we simply form a matrix from two translation vectors to get the
     transform from grid space to map space, and invert it to get transform from
     map space to grid space.
 
-    See pages 18-22 in Kaplan CS, 2009. Introductory Tiling Theory for Computer 
+    See pages 18-22 in Kaplan CS, 2009. Introductory Tiling Theory for Computer
     Graphics (Morgan & Claypool) for the logic of this approach.
 
     The results are returned as shapely affine transform tuples.
 
     Returns:
-      tuple[float]: shapely affine transform tuples (a, b, d, e, dx, dy).
+      tuple[tuple[float,...],tuple[float,...]]: shapely affine transform tuples
+        (a, b, d, e, dx, dy).
+
     """
     v = self.tile_unit.get_vectors()
     # unpack the first two vectors and funnel them into a 2x2 matrix
-    # grid_to_map = np.array([*v[:2]]).reshape((2, 2))
     grid_to_map = np.array([[v[0][0], v[1][0]], [v[0][1], v[1][1]]])
     map_to_grid = np.linalg.inv(grid_to_map)
     return (self._np_to_shapely_transform(grid_to_map),
@@ -150,24 +149,20 @@ class _TileGrid():
 
 
   def _set_centre_in_map_space(self) -> None:
-    """ Sets the tiling centre in map space.
-    """
+    """Set the tiling centre in map space."""
     self.centre = self.oriented_rect_to_tile.centroid
-    return None
 
 
   def _set_extent_in_grid_space(self) -> None:
-    """Sets the extent of the grid in grid generation space.
-    """
+    """Set extent of the grid in grid generation space."""
     corner = geom.Point(self.oriented_rect_to_tile.exterior.coords[0])
     radius = self.centre.distance(corner)
     self.extent_in_grid_space = \
       affine.affine_transform(self.centre.buffer(radius), self.to_grid_space)
-    return None
 
 
   def _get_grid(self) -> gpd.GeoSeries:
-    """Generates the grid transformed into map space
+    """Generate the grid transformed into map space.
 
     Obtain dimensions of the transformed region, then set down a uniform grid.
     Grid generation is greatly accelerated by using the numpy meshgrid method
@@ -176,6 +171,7 @@ class _TileGrid():
 
     Returns:
       gpd.GeoSeries: the grid as a collection of geom.Points.
+
     """
     bb = self.extent_in_grid_space.bounds
     _w, _h, _l, _b = bb[2] - bb[0], bb[3] - bb[1], bb[0], bb[1]
@@ -185,29 +181,31 @@ class _TileGrid():
     b = _b - (h - _h) / 2
     xs, ys = np.array(np.meshgrid(np.arange(w) + l,
                                   np.arange(h) + b)).reshape((2, w * h))
-    pts = [geom.Point(x, y) for x, y in zip(xs, ys)]
-    return gpd.GeoSeries([p for p in pts if p.within(self.extent_in_grid_space)]) \
-      .affine_transform(self.to_map_space)
+    pts = [geom.Point(x, y) for x, y in zip(xs, ys, strict = True)]
+    return (gpd.GeoSeries(
+      [p for p in pts if p.within(self.extent_in_grid_space)])
+        .affine_transform(self.to_map_space))
 
 
   def _np_to_shapely_transform(
-      self, 
-      array:np.ndarray) -> tuple[float]:
-    """Converts a numpy affine transform matrix to shapely format.
+      self,
+      array:np.ndarray) -> tuple[float,...]:
+    """Convert a numpy affine transform matrix to shapely format.
 
         [[a b c]
          [d e f] --> (a b d e c f)
          [g h i]]
-    
+
     There is no translation in transforms in this use-case so c == f == 0
 
     Args:
       array (np.ndarray): numpy affine transform array to convert.
 
     Returns:
-      tuple[float]: shapely affine transform tuple
+      tuple[float,...]: shapely affine transform tuple
+
     """
-    return tuple(array[:2, :2].flatten().tolist() + [0, 0])
+    return (*list(array[:2, :2].flatten()), 0, 0)
 
 
 @dataclass(slots=True, init=False)
@@ -218,11 +216,12 @@ class Tiling:
   covers a region sufficient that the tiling can be rotated to any desired
   angle. Rotation can be requested when the render method is called.
   """
+
   tileable:Tileable
   """Tileable on which the tiling is based."""
   region:gpd.GeoDataFrame
   """the region to be tiled."""
-  region_union: geom.Polygon
+  region_union:geom.Polygon
   """a single polygon of all the areas in the region to be tiled"""
   grid:_TileGrid
   """the grid which will be used to apply the tiling."""
@@ -235,63 +234,47 @@ class Tiling:
   been 'baked in' to the Tileable."""
 
   def __init__(
-      self, 
-      tileable:Tileable, 
+      self,
+      tileable:Tileable,
       region:gpd.GeoDataFrame,
-      debug:bool = False, 
-      as_icons:bool = False) -> None:
-    """Class to persist a tiling by filling an area relative to a region 
-    sufficient to apply the tiling at any rotation.
+      as_icons:bool = False,
+    ) -> None:
+    """Construct a tiling by polygons extending beyond supplied region.
+
+    The tiling is extended sufficiently to allow for its application at any
+    rotation.
 
     Args:
       tileable (Tileable): the TileUnit or WeaveUnit to use.
       region (gpd.GeoDataFrame): the region to be tiled.
-      as_icons (bool, optional): if True prototiles will only be placed at the 
+      as_icons (bool, optional): if True prototiles will only be placed at the
         region's zone centroids, one per zone. Defaults to False.
+
     """
-    if debug:
-      t1 = perf_counter()
     self.tileable = tileable
-    if debug:
-      t2 = perf_counter()
-      print(f"Initialising Tiling: {t2 - t1}")
     self.rotation = 0
     self.region = region
     self.region.sindex # this probably speeds up overlay
-    if debug:
-      t2, t1 = perf_counter(), t2
-      print(f"Indexing the region: {t2 - t1}")
     self.region_union = self.region.geometry.union_all()
-    if debug:
-      t2, t1 = perf_counter(), t2
-      print(f"Forming the region union: {t2 - t1}")
     self.grid = _TileGrid(
-      self.tileable, 
-      self.region.geometry if as_icons else gpd.GeoSeries([self.region_union]), 
+      self.tileable,
+      self.region.geometry if as_icons else gpd.GeoSeries([self.region_union]),
       as_icons)
-    if debug:
-      t2, t1 = perf_counter(), t2
-      print(f"Building the grid: {t2 - t1}")
     self.tiles, self.prototiles = self.make_tiling()
-    if debug:
-      t2, t1 = perf_counter(), t2
-      print(f"Making the tiles: {t2 - t1}")
     self.tiles.sindex # again this probably speeds up overlay
-    if debug:
-      t2, t1 = perf_counter(), t2
-      print(f"Indexing the tiles: {t2 - t1}")
 
 
   def get_tiled_map(
-      self, 
+      self,
       rotation:float = 0.,
       join_on_prototiles:bool = False,
       retain_tileables:bool = False,
       prioritise_tiles:bool = True,
       ragged_edges:bool = True,
       use_centroid_lookup_approximation:bool = False,
-      debug:bool = False) -> "TiledMap":
-    """Returns a `TiledMap` filling a region at the requested rotation.
+      debug:bool = False,
+    ) -> TiledMap:
+    """Return a `TiledMap` filling a region at the requested rotation.
 
     HERE BE DRAGONS! This function took a lot of trial and error to get right,
     so modify with CAUTION!
@@ -300,19 +283,22 @@ class Tiling:
     up the tiles in `TileUnit`s at the boundaries between areas in the mapped
     region, but will instead ensure that tiles remain complete, picking up
     their data from the region zone which they overlap the most.
-    
+
     The exact order in which operations are performed affects performance. For
-    example, the final clipping to self.region when ragged_edges = False is 
+    example, the final clipping to self.region when ragged_edges = False is
     _much_ slower if it is carried out before the dissolving of tiles into the
     region zones. So... again... modify CAREFULLY!
 
     Args:
       rotation (float, optional): Optional rotation to apply. Defaults to 0.
       join_on_prototiles (bool, optional): if True data from the region dataset
-        are joined to tiles based on the prototile to which they belong. If 
+        are joined to tiles based on the prototile to which they belong. If
         False the join is based on the tiles in relation to the region areas.
         For weave-based tilings False is probably to be preferred. Defaults to
         False.
+      retain_tileables (bool, optional): if True complete tileable units will
+        be retained. If False tile unit elements that do not overlap the map
+        area will be discarded.
       prioritise_tiles (bool, optional): if True tiles will not be broken at
         boundaries in the region dataset. Defaults to True.
       ragged_edges (bool, optional): if True tiles at the edge of the region
@@ -320,13 +306,14 @@ class Tiling:
         False when edges will always be clipped to the region extent. Defaults
         to True.
       use_centroid_lookup_approximation (bool, optional): if True use tile
-        centroids for lookup of region data - ignored if prioritise_tiles is 
+        centroids for lookup of region data - ignored if prioritise_tiles is
         False when it is irrelevant. Defaults to False.
-      debug (bool, optional): if True prints timing messages. Defaults to 
+      debug (bool, optional): if True prints timing messages. Defaults to
         False.
 
     Returns:
       TiledMap: a TiledMap of the region with attributes attached to tiles.
+
     """
     if debug:
       t1 = perf_counter()
@@ -339,24 +326,21 @@ class Tiling:
         tiled_map, join_layer = self.rotated(rotation)
       tiled_map["joinUID"] = self.tiles["prototile_id"]
     else:
-      if rotation == 0:
-        tiled_map = self.tiles
-      else:
-        tiled_map = self.rotated(rotation)[0]
+      tiled_map = self.tiles if rotation == 0 else self.rotated(rotation)[0]
       tiled_map["joinUID"] = self.tiles["tile_id"]
       join_layer = tiled_map
     join_layer["joinUID"] = list(range(join_layer.shape[0]))
 
     # compile a list of the variable names we are NOT going to change
     # i.e. everything except the geometry and the id_var
-    region_vars = [column for column in self.region.columns 
+    region_vars = [column for column in self.region.columns
                    if "geom" not in column and column != id_var]
 
     if debug:
       t2 = perf_counter()
       print(f"STEP 1: prep data (rotation if requested): {t2 - t1:.3f}")
 
-    if prioritise_tiles:  
+    if prioritise_tiles:
       # maintain tile continuity across zone boundaries
       # so we have to do more work than a simple overlay
       if use_centroid_lookup_approximation:
@@ -366,13 +350,12 @@ class Tiling:
         lookup = tile_pts.sjoin(
           self.region, how = "inner")[["joinUID", id_var]]
       else:
-        # determine areas of overlapping tiles and drop the data we join the 
+        # determine areas of overlapping tiles and drop the data we join the
         # data back later, so dropping makes that easier overlaying in region.
         # overlay(tiles) seems to be faster??
-        # TODO: also... this part is performance-critical, think about fixes -- 
+        # TODO: also... this part is performance-critical, think about fixes --
         # possibly including the above centroid-based approximation
         overlaps = self.region.overlay(join_layer, make_valid = False)
-        # overlaps = self.region.overlay(tiled_map, make_valid = False)
         if debug:
           t3 = perf_counter()
           print(f"STEP A2: overlay zones with tiling: {t3 - t2:.3f}")
@@ -429,13 +412,13 @@ class Tiling:
 
 
   def _setup_region_DZID(self) -> str:
-    """Creates a new guaranteed-unique attribute in the self.region
-    dataframe, and returns its name.
+    """Return guaranteed-unique new attribute name for self.region dataframe.
 
     Avoids a name clash with any existing attribute in the dataframe.
 
     Returns:
       str: name of the added attribute.
+
     """
     dzid = "DZID"
     i = 0
@@ -447,11 +430,12 @@ class Tiling:
 
 
   def make_tiling(self) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """Tiles the region with a tile unit, returning a GeoDataFrame
+    """Tile the region with a tile unit, returning a GeoDataFrame.
 
     Returns:
       geopandas.GeoDataFrame: a GeoDataFrame of the region tiled with the
         tile unit.
+
     """
     # we assume the geometry column is called geometry so make it so...
     if self.region.geometry.name != "geometry":
@@ -468,8 +452,8 @@ class Tiling:
     tile_ids = list(self.tileable.tiles.tile_id) * len(self.grid.points)
     prototile_ids = list(range(len(self.grid.points)))
     tile_prototile_ids = sorted(prototile_ids * self.tileable.tiles.shape[0])
-    tiles_gs = gpd.GeoSeries(tiles)
-    prototiles_gs = gpd.GeoSeries(prototiles)
+    tiles_gs = gpd.GeoSeries(list(tiles))
+    prototiles_gs = gpd.GeoSeries(list(prototiles))
     # assemble and return as GeoDataFrames
     tiles_gdf = gpd.GeoDataFrame(
       data = {"tile_id": tile_ids, "prototile_id": tile_prototile_ids},
@@ -480,8 +464,12 @@ class Tiling:
     return tiles_gdf, prototiles_gdf
 
 
-  def rotated(self, rotation:float = 0.0) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """Returns the stored tiling rotated. The stored tiling never changes and
+  def rotated(self,
+              rotation:float = 0.0,
+              ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Return the stored tiling rotated.
+
+    The stored tiling never changes and
     if it was originally made with a Tileable that was rotated it will retain
     that rotation. The requested rotation is _additional_ to that baseline
     rotation.
@@ -492,6 +480,7 @@ class Tiling:
 
     Returns:
       gpd.GeoDataFrame: Rotated tiling.
+
     """
     if self.tiles is None:
       self.tiles = self.make_tiling()[0]
@@ -514,7 +503,9 @@ class Tiling:
 
 @dataclass(slots=True)
 class TiledMap:
-  """Class representing a tiled map. Should not be accessed directly, but will
+  """Class representing a tiled map.
+
+  Should not be accessed directly, but will
   be created by calling `Tiling.get_tiled_map()`. After creation the variables
   and colourmaps attributes can be set, and then `TiledMap.render()` called to
   make a map. Settable attributes are explained in documentation of the
@@ -561,16 +552,18 @@ class TiledMap:
 
       tm.colors_to_use = ["Reds", "Blues", "Greys", "Purples"]
 
-    Similarly, you can specify the classification `schemes_to_use` (such as 
+    Similarly, you can specify the classification `schemes_to_use` (such as
     'quantiles') and the number of classes `n_classes` in each.
 
-    If data are categorical, this is flagged in the `categoricals` list of 
+    If data are categorical, this is flagged in the `categoricals` list of
     booleans, in which case an appropriate colour map should be used. There is
     currently no provision for control of which colour in a categorical
     colour map is applied to which variable level.
 
-    TODO: better control of categorical mapping schemes. 
+    TODO: better control of categorical mapping schemes.
+
   """
+
   # these will be set at instantion by Tiling.get_tiled_map()
   tiling:Tiling = None
   """the Tiling with the required tiles"""
@@ -585,16 +578,16 @@ class TiledMap:
   categoricals:list[bool] = None
   """list specifying if each variable is -- or is to be treated as --
   categorical"""
-  schemes_to_use:list[str] = None
+  schemes_to_use:list[str|None] = None
   """mapclassify schemes to use for each variable."""
-  n_classes:list[int] = None
+  n_classes:list[int|None] = None
   """number of classes to apply; if set to 0 will be unclassed."""
   _colourspecs:dict[str,dict] = None
-  """dictionary of dictionaries keyed by the items in `ids_to_use` with each 
+  """dictionary of dictionaries keyed by the items in `ids_to_use` with each
   dictionary forming additional kwargs to be supplied to geopandas.plot()."""
 
-  # the below parameters can be set either before calling self.render() or 
-  # passed in as parameters to self.render(). These are solely 
+  # the below parameters can be set either before calling self.render() or
+  # passed in as parameters to self.render(). These are solely
   # `TiledMap.render()` options not geopandas plot options.
   legend:bool = True
   """whether or not to show a legend"""
@@ -609,22 +602,23 @@ class TiledMap:
   ellipse_magnification:float = 1.0
   """magnification to apply to clip ellipse"""
   radial_key:bool = False
-  """if True use radial key even for ordinal/ratio data (normally these will be 
+  """if True use radial key even for ordinal/ratio data (normally these will be
   shown by concentric tile geometries)"""
   draft_mode:bool = False
   """if True plot the map coloured by tile_id"""
 
   # the parameters below are geopandas.plot options which we intercept to
   # ensure they are applied appropriately when we plot a GDF
-  figsize:tuple[float] = (20, 15)
+  figsize:tuple[float,float] = (20, 15)
   """maptlotlib figsize"""
   dpi:float = 72
   """dpi for bitmap formats"""
 
   def render(
-      self, 
-      **kwargs) -> Figure:
-    """Renders the current state to a map.
+      self,
+      **kwargs,
+    ) -> Figure:
+    """Render the current state to a map.
 
     Note that TiledMap objects will usually be created by calling
     `Tiling.get_tiled_map()`.
@@ -653,7 +647,7 @@ class TiledMap:
         legend. Defaults to 1.0.
       radial_key (bool): If True legend key for TileUnit maps will be based on
         radially dissecting the tiles, i.e. pie slices. Defaults to False.
-      draft_mode (bool): If True a map of the tiled map coloured by tile_ids 
+      draft_mode (bool): If True a map of the tiled map coloured by tile_ids
         (and with no legend) is returned. Defaults to False.
       figsize (tuple[float,floar]): plot dimensions passed to geopandas.
         plot. Defaults to (20, 15).
@@ -662,10 +656,11 @@ class TiledMap:
 
     Returns:
       matplotlib.figure.Figure: figure on which map is plotted.
+
     """
-    pyplot.rcParams['pdf.fonttype'] = 42
-    pyplot.rcParams['pdf.use14corefonts'] = True
-    matplotlib.rcParams['pdf.fonttype'] = 42
+    plt.rcParams["pdf.fonttype"] = 42
+    plt.rcParams["pdf.use14corefonts"] = True
+    matplotlib.rcParams["pdf.fonttype"] = 42
 
     to_remove = set()  # keep track of kwargs we use to setup TiledMap
     # kwargs with no corresponding class attribute will be discarded
@@ -679,7 +674,7 @@ class TiledMap:
       del kwargs[k]
 
     if self.draft_mode:
-      fig = pyplot.figure(figsize = self.figsize)
+      fig = plt.figure(figsize = self.figsize)
       ax = fig.add_subplot(111)
       self.map.plot(ax = ax, column = "tile_id", cmap = "tab20", **kwargs)
       ax.set_axis_off()
@@ -697,59 +692,60 @@ class TiledMap:
       gskw = {"height_ratios": [sf_h * tile_h, reg_h - sf_h * tile_h],
               "width_ratios":  [reg_w, sf_w * tile_w]}
 
-      fig, axes = pyplot.subplot_mosaic([["map", "legend"], ["map", "."]],
-                                        gridspec_kw = gskw, 
+      fig, axes = plt.subplot_mosaic([["map", "legend"], ["map", "."]],
+                                        gridspec_kw = gskw,
                                         figsize = self.figsize,
                                         layout = "constrained", **kwargs)
     else:
-      fig, axes = pyplot.subplots(1, 1, figsize = self.figsize,
+      fig, axes = plt.subplots(1, 1, figsize = self.figsize,
                                   layout = "constrained", **kwargs)
-    
+
     self._plot_map(axes, **kwargs)
     return fig
 
 
   def _plot_map(
       self,
-      axes:pyplot.Axes,
-      **kwargs) -> None:
-    """Plots map to the supplied axes.
+      ax:plt.Axes,
+      **kwargs,
+    ) -> None:
+    """Plot map to the supplied axes.
 
     Args:
-      axes (pyplot.Axes): axes on which maps will be drawn.
-      kwargs (dict): additional parameters to be passed to plot. 
+      axes (plt.Axes): axes on which maps will be drawn.
+      kwargs (dict): additional parameters to be passed to plot.
+
     """
     self._set_colourspecs()
     bb = self.map.geometry.total_bounds
     if self.legend:
       if (self.legend_dx != 0 or self.legend_dx != 0):
-        box = axes["legend"].get_position()
+        box = ax["legend"].get_position()
         box.x0 += self.legend_dx
         box.x1 += self.legend_dx
         box.y0 += self.legend_dy
         box.y1 += self.legend_dy
-        axes["legend"].set_position(box)
-      axes["map"].set_axis_off()
-      axes["map"].set_xlim(bb[0], bb[2])
-      axes["map"].set_ylim(bb[1], bb[3])
-      self._plot_subsetted_gdf(axes["map"], self.map, **kwargs)
-      self.plot_legend(ax = axes["legend"], **kwargs)
+        ax["legend"].set_position(box)
+      ax["map"].set_axis_off()
+      ax["map"].set_xlim(bb[0], bb[2])
+      ax["map"].set_ylim(bb[1], bb[3])
+      self._plot_subsetted_gdf(ax["map"], self.map, **kwargs)
+      self.plot_legend(ax = ax["legend"], **kwargs)
     else:
-      axes.set_axis_off()
-      axes.set_xlim(bb[0], bb[2])
-      axes.set_ylim(bb[1], bb[3])
-      self._plot_subsetted_gdf(axes, self.map, **kwargs)
-    return None
+      ax.set_axis_off()
+      ax.set_xlim(bb[0], bb[2])
+      ax.set_ylim(bb[1], bb[3])
+      self._plot_subsetted_gdf(ax, self.map, **kwargs)
 
 
   def _plot_subsetted_gdf(
-      self, 
-      ax:pyplot.Axes,
+      self,
+      ax:plt.Axes,
       gdf:gpd.GeoDataFrame,
       grouping_var:str = "tile_id",
-      **kwargs) -> None:
-    """Plots a gpd.GeoDataFrame multiple times based on a subsetting
-    attribute (assumed to be "tile_id").
+      **kwargs,
+    ) -> None:
+    """Repeatedly plot a gpd.GeoDataFrame based on a subsetting attribute.
 
     NOTE: used to plot both the main map _and_ the legend, which is why
     a separate GeoDataframe is supplied and we don't just use self.map.
@@ -760,14 +756,17 @@ class TiledMap:
 
     Raises:
       Exception: if self.colourmaps cannot be parsed exception is raised.
+
     """
     groups = gdf.groupby(grouping_var)
-    for id, cspec in self._colourspecs.items():
-      subset = groups.get_group(id)
+    for ID, cspec in self._colourspecs.items():
+      subset = groups.get_group(ID)
       n_values = len(subset[cspec["column"]].unique())
       if not cspec["categorical"] and n_values == 1:
-        print(f"""Only one level in variable {cspec["column"]}, replacing requested
-              colour map with single colour fill.""")
+        print(f"""
+              Only one level in variable {cspec['column']}, replacing requested
+              colour map with single colour fill.
+              """)
         cspec["color"] = matplotlib.colormaps.get(cspec["cmap"])(0.5)
         del cspec["column"]
         del cspec["cmap"]
@@ -780,28 +779,31 @@ class TiledMap:
 
 
   def to_file(self, fname:str) -> None:
-    """Outputs the tiled map to a layered GPKG file.
+    """Output the tiled map to a layered GPKG file.
 
     Currently delegates to `weavingspace.tiling_utils.write_map_to_layers()`.
 
     Args:
       fname (str): Filename to write. Defaults to None.
+
     """
     tiling_utils.write_map_to_layers(self.map, fname)
-    return None
 
 
-  def plot_legend(self, ax: pyplot.Axes = None, **kwargs) -> None:
-    """Plots a legend for this tiled map.
+  def plot_legend(self, ax, **kwargs) -> None:
+    """Plot a legend for this tiled map.
 
     Args:
       ax (pyplot.Axes, optional): axes to draw legend. Defaults to None.
+
     """
     ax.set_axis_off()
     legend_tiles = self.tiling.tileable._get_legend_tiles()
     # this is a bit hacky, but we will apply the rotation to text
     # annotation so for TileUnits which don't need it, reverse that now
     if isinstance(self.tiling.tileable, TileUnit):
+      # note that this confuses type hinting because pandas silently assigns 
+      # a scalar value to a Series
       legend_tiles.rotation = -self.tiling.rotation
 
     legend_key = self._get_legend_key_gdf(legend_tiles)
@@ -829,7 +831,7 @@ class TiledMap:
                               legend_tiles.rotation):
       c = tile.centroid
       ax.annotate(cs["column"], xy = (c.x, c.y),
-                  ha = "center", va = "center", 
+                  ha = "center", va = "center",
                   rotation_mode = "anchor",
                   # adjust rotation to favour text reading left to right
                   rotation = (rotn + self.tiling.rotation + 90) % 180 - 90,
@@ -844,9 +846,11 @@ class TiledMap:
       context_tiles.clip(ellipse, keep_geom_type = False).plot(
         ax = ax, fc = "#9F9F9F3F", lw = .35)
       tiling_utils.get_tiling_edges(context_tiles.geometry).clip(
-        ellipse, keep_geom_type = True).plot(ax = ax, ec = "#5F5F5F", lw = .35)
+        ellipse, keep_geom_type = True).plot(
+          ax = ax, ec = "#5F5F5F", lw = .35)
     else:
-      context_tiles.plot(ax = ax, fc = "#9F9F9F3F", ec = "#5F5F5F", lw = .35)
+      context_tiles.plot(ax = ax, fc = "#9F9F9F3F",
+                         ec = "#5F5F5F", lw = .35)
       tiling_utils.get_tiling_edges(context_tiles.geometry).plot(
         ax = ax, ec = "#5F5F5F", lw = .35)
 
@@ -855,8 +859,7 @@ class TiledMap:
 
 
   def _get_legend_key_gdf(self, tiles:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Returns a GeoDataFrame of tiles dissected and with data assigned 
-    to the slice so a map of them can stand as a legend.
+    """Return tiles dissected and with data assigned for use as a legend.
 
     'Dissection' is handled differently by `WeaveUnit` and `TileUnit`
     objects and delegated to either `WeaveUnit._get_legend_key_shapes()`
@@ -869,6 +872,7 @@ class TiledMap:
       gpd.GeoDataFrame:  with tile_id, variables and rotation
         attributes, and geometries of Tileable tiles sliced into a
         colour ramp or set of nested tiles.
+
     """
     key_tiles = []   # set of tiles to form a colour key (e.g. a ramp)
     ids = []         # tile_ids applied to the keys
@@ -899,7 +903,7 @@ class TiledMap:
       #   data_vals = sorted(d)
       #   freqs = [1] * len(data_vals)
       data_vals = sorted(d)
-      key = self.tiling.tileable._get_legend_key_shapes(
+      key = self.tiling.tileable._get_legend_key_shapes(          # type: ignore
         geom, [1] * len(data_vals), rot, False)
       key_tiles.extend(key)
       vals.extend(data_vals)
@@ -915,8 +919,8 @@ class TiledMap:
     # original data - each tile_id has data for all the variables even if it's
     # not being used to plot them: tables gonna table!
     key_data = {}
-    for id in unique_ids:
-      key_data[self.vars_to_map[self.ids_to_map.index(id)]] = vals
+    for ID in unique_ids:
+      key_data[self.vars_to_map[self.ids_to_map.index(ID)]] = vals
     key_gdf = gpd.GeoDataFrame(
       data = key_data | {"tile_id": ids, "rotation": rots},
       crs = self.map.crs,
@@ -930,14 +934,15 @@ class TiledMap:
     """
     return None
 
-  
+
   def _set_colourspecs(self) -> None:
-    """Sets the _colourspecs dictionary based on instance member variables set
-    by the user, to the extent possible. Each requested `ids_to_map` item keys
-    a dictionary in `_colourspecs` which contains the `column`, `cmap`,
-    `scheme`, `categorical`, and `k` parameters to be passed on for use by the
-    `geopandas.GeoDataFrame.plot()` calls in the `_plot_subsetted_gdf()` 
-    method.
+    """Set _colourspecs dictionary based on instance member variables.
+
+    Set up is to the extent it is possible to follow user requested variables.
+    Each requested `ids_to_map` item keys a dictionary in `_colourspecs` which
+    contains the `column`, `cmap`, `scheme`, `categorical`, and `k` parameters
+    to be passed on for use by the `geopandas.GeoDataFrame.plot()` calls in the
+    _plot_subsetted_gdf()` method.
 
     This is the place to make 'smart' adjustments to how user requests for map
     styling are handled.
@@ -951,15 +956,15 @@ class TiledMap:
       if isinstance(self.ids_to_map, str):
         # wrap a single string in a list - this would be an unusual request...
         if self.ids_to_map in list(self.map.tile_id):
-          print(f"""You have only requested a single attribute to map.
-                 That's fine, but perhaps not what you intended?""")
+          print("""You have only requested a single attribute to map.
+                That's fine, but perhaps not what you intended?""")
           self.ids_to_map = [self.ids_to_map]
         else:
           raise KeyError(
-            f"""You have requested a single non-existent attribute to map!""")
+            """You have requested a single non-existent attribute to map!""")
       elif self.ids_to_map is None or not isinstance(self.ids_to_map, Iterable):
         # default to using all of them in order
-        print(f"""No tile ids provided: setting all of them!""")
+        print("""No tile ids provided: setting all of them!""")
         self.ids_to_map = sorted(list(set(self.map.tile_id)))
 
       if self.vars_to_map is None or not isinstance(self.vars_to_map, Iterable):
@@ -970,13 +975,13 @@ class TiledMap:
                           there are no numeric columns in the data!""")
         if len(numeric_columns) < len(self.ids_to_map):
           # if there are fewer available than we need then repeat some
-          print(f"""Fewer numeric columns in the data than elements in the 
+          print("""Fewer numeric columns in the data than elements in the 
                 tile unit. Reusing as many as needed to make up the numbers""")
           reps = len(self.ids_to_map) // len(numeric_columns) + 1
           self.vars_to_map = (numeric_columns * reps)[:len(self.ids_to_map)]
         elif len(numeric_columns) > len(self.ids_to_map):
           # if there are more than we need let the user know, but trim list
-          print(f"""Note that you have supplied more variables to map than 
+          print("""Note that you have supplied more variables to map than 
                 there are distinct elements in the tile unit. Ignoring the
                 extras.""")
           self.vars_to_map = numeric_columns[:len(self.ids_to_map)]
@@ -1027,16 +1032,15 @@ class TiledMap:
       raise
 
     self._colourspecs = {
-      id: {"column": v, 
-           "cmap": c, 
-           "categorical": cat, 
-           "scheme": s, 
+      ID: {"column": v,
+           "cmap": c,
+           "categorical": cat,
+           "scheme": s,
            "k": k}
-      for id, v, c, cat, s, k 
+      for ID, v, c, cat, s, k 
       in zip(self.ids_to_map,
              self.vars_to_map,
              self.colors_to_use,
              self.categoricals,
              self.schemes_to_use,
-             self.n_classes)}
-    return None
+             self.n_classes, strict = False)}

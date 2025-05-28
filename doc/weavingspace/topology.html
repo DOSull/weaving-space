@@ -838,7 +838,7 @@ between tiling edges and tile sides.</p>
           fontsize = 10 if show_edge_labels else 7, color = &#34;k&#34;)
     if show_dual_tiles:
       gpd.GeoSeries(self.dual_tiles).buffer(
-        -dist / 400, join_style = 2, cap_style = 3).plot(
+        -dist / 400, join_style = "mitre", cap_style = "square").plot(
           ax = ax, fc = &#34;k&#34;, alpha = 0.2)
     pyplot.axis(&#34;off&#34;)
     return ax
@@ -1513,7 +1513,7 @@ actually) in shapely affine transform 6-tuple format.</dd>
         fontsize = 10 if show_edge_labels else 7, color = &#34;k&#34;)
   if show_dual_tiles:
     gpd.GeoSeries(self.dual_tiles).buffer(
-      -dist / 400, join_style = 2, cap_style = 3).plot(
+      -dist / 400, join_style = "mitre", cap_style = "square").plot(
         ax = ax, fc = &#34;k&#34;, alpha = 0.2)
   pyplot.axis(&#34;off&#34;)
   return ax</code></pre>

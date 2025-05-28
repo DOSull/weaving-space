@@ -581,7 +581,7 @@ returned list, if False it is omitted. Defaults to True.</dd>
     for poly_id in cycle:
       ids.append(local_patch.tile_id[poly_id])
       poly = local_patch.geometry[poly_id]
-      pts.append(incentre(poly))
+      pts.append(get_incentre(poly))
     # sort them into CW order so they are well formed
     sorted_coords = sort_cw([(pt.x, pt.y, id)
                               for pt, id in zip(pts, ids)])
@@ -1363,7 +1363,7 @@ will also show in the result.)</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def incentre(shape:geom.Polygon) -&gt; geom.Point:
+<pre><code class="python">def get_incentre(shape:geom.Polygon) -&gt; geom.Point:
   &#34;&#34;&#34;A different polygon centre, which produces better results for some
   dual tilings where tiles are not regular polygons... see
   https://en.wikipedia.org/wiki/Incenter
@@ -1703,12 +1703,12 @@ string.ascii_letters.</p>
   &#34;&#34;&#34;
   if shrink_then_grow:
     return polygon.buffer(
-      -RESOLUTION * 10, join_style = 2, cap_style = 3).buffer(
-      RESOLUTION * 10, join_style = 2, cap_style = 3)
+      -RESOLUTION * 10, join_style = "mitre", cap_style = "square").buffer(
+      RESOLUTION * 10, join_style = "mitre", cap_style = "square")
   else:
     return polygon.buffer(
-      RESOLUTION * 10, join_style = 2, cap_style = 3).buffer(
-      -RESOLUTION * 10, join_style = 2, cap_style = 3)</code></pre>
+      RESOLUTION * 10, join_style = "mitre", cap_style = "square").buffer(
+      -RESOLUTION * 10, join_style = "mitre", cap_style = "square")</code></pre>
 </details>
 <div class="desc"><p>Convenience function to 'repair' a shapely polyon or GeoSeries by applying
 a negative buffer then the same positive buffer.</p>
@@ -1842,8 +1842,8 @@ rotate).</dd>
     Union[gpd.GeoSeries, geom.Polygon]: the resulting union of supplied
       polygons.
   &#34;&#34;&#34;
-  union = gs.buffer(RESOLUTION * 10, join_style = 2, cap_style = 3) \
-    .unary_union.buffer(-RESOLUTION * 10, join_style = 2, cap_style = 3)
+  union = gs.buffer(RESOLUTION * 10, join_style = "mitre", cap_style = "square") \
+    .unary_union.buffer(-RESOLUTION * 10, join_style = "mitre", cap_style = "square")
   if as_polygon:
     return gridify(union)
   else:
@@ -1939,8 +1939,8 @@ clockwise order of the point locations.</dd>
   Returns:
     bool: True if they neighbour along an edge
   &#34;&#34;&#34;
-  return p1.buffer(RESOLUTION, join_style = 2, cap_style = 3) \
-    .intersection(p2.buffer(RESOLUTION, join_style = 2, cap_style = 3)) \
+  return p1.buffer(RESOLUTION, join_style = "mitre", cap_style = "square") \
+    .intersection(p2.buffer(RESOLUTION, join_style = "mitre", cap_style = "square")) \
       .area &gt; 16 * RESOLUTION ** 2</code></pre>
 </details>
 <div class="desc"><p>Tests if two polygons touch along an edge.</p>
