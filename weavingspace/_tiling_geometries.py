@@ -1609,19 +1609,21 @@ def _setup_chavey_c(unit:TileUnit) -> str|None:
   squares.append(affine.translate(squares[0], 0,  s))
   squares.append(affine.translate(squares[0], 0, -s))
   squares.extend([affine.rotate(sq,  60, origin = (0, t + 3 * s / 2))
-                  for sq in squares])
+                  for sq in squares[:2]])
   squares.extend([affine.rotate(sq, -60, origin = (0, t + 3 * s / 2))
-                  for sq in squares[:3]])
+                  for sq in squares[:2]])
+  squares.extend([affine.rotate(squares[1], a, origin = (0, t + 3 * s / 2))
+                  for a in (120, -120)])
   hexes.append(tiling_utils.get_regular_polygon(h, 6))
   hexes[0] = affine.translate(hexes[0], 0, t + 3 * s / 2)
   hexes.append(affine.rotate(hexes[0], -90, origin = (-s / 2, s / 2)))
   hexes.append(affine.rotate(hexes[1], 180, origin = (0, 0)))
   triangles.append(geom.Polygon([(s/2,    s/2), (s/2, 3*s/2), (s/2 + t, s)]))
   triangles.append(geom.Polygon([(s/2, -3*s/2), (s/2,  -s/2), (s/2 + t, -s)]))
-  triangles.append(geom.Polygon(
-    [(h + s/2, -s/2), (h + s/2, s/2), (h + s/2 + t, 0)]))
   triangles.extend([affine.rotate(tr, 180, origin = (0, 0))
                     for tr in triangles])
+  triangles.extend([affine.rotate(triangles[0], a, origin = (0, t + 3 * s / 2))
+                    for a in (60, -120)])
   polys = [affine.translate(p, 0, -t) for p in hexes + squares + triangles]
   unit.setup_vectors((0, h + 3 * s),
                      (3 * (h + s) / 2,  3 * s / 2 + t),
@@ -1643,15 +1645,17 @@ def _setup_chavey_d(unit:TileUnit) -> str|None:
   squares.append(affine.translate(squares[0],  s/2 , t + s))
   squares.append(affine.rotate(squares[0],  150, ( s/2, s/2)))
   squares.append(affine.rotate(squares[0], -150, (-s/2, s/2)))
-  triangles.append(geom.Polygon([(-s/2, -3*s/2), (-s/2 - t, -s), (-s/2, -s/2)]))
-  triangles.append(geom.Polygon([(-s/2, -s/2), (-s/2 - t, -s), (-s/2 - t, 0)]))
   triangles.append(geom.Polygon([(-s/2, -s/2), (-s/2 - t,  0), (-s/2,  s/2)]))
-  triangles.extend([affine.rotate(tr, 180, (0, -s/2)) for tr in triangles])
+  triangles.append(geom.Polygon([( s/2, -s/2), ( s/2 + t,  0), ( s/2,  s/2)]))
   triangles.append(geom.Polygon([(-s/2, s/2), (-s, t + s/2), ( 0, t + s/2)]))
   triangles.append(geom.Polygon([(-s/2, s/2), ( 0, t + s/2), ( s/2, s/2)]))
   triangles.append(geom.Polygon([( s/2, s/2), ( 0, t + s/2), ( s, t + s/2)]))
   triangles.extend([affine.rotate(tr, 180, (0, s + t))
-                    for tr in triangles[6:9]])
+                    for tr in triangles[2:5]])
+  triangles.extend([affine.rotate(triangles[2], a, (-s, t + s/2))
+                    for a in (-150, -210)])
+  triangles.extend([affine.rotate(triangles[4], a, ( s, t + s/2))
+                    for a in ( 150,  210)])
   polys = [affine.translate(p, 0, -t) for p in squares + triangles]
   unit.setup_vectors((unit.spacing / sqrt2,  unit.spacing / sqrt2),
                      (unit.spacing / sqrt2, -unit.spacing / sqrt2))
@@ -1667,8 +1671,8 @@ def _setup_chavey_e(unit:TileUnit) -> str|None:
   t = s * sqrt3 / 2
   squares, triangles = [], []
   triangles.append(geom.Polygon([(0, 0), (s/2, -t), (-s/2, -t)]))
-  triangles.extend([affine.rotate(triangles[0], 60 * i, (0, 0))
-                    for i in range(1, 6)])
+  triangles.extend([affine.rotate(triangles[0], a, (0, 0))
+                    for a in range(60, 360, 60)])
   triangles.append(geom.Polygon([(-s/2    ,       t),
                                  (-s/2 - t, s/2 + t),
                                  (-s/2    , s   + t)]))
@@ -1700,11 +1704,12 @@ def _setup_chavey_f(unit:TileUnit) -> str|None:
   triangles.append(affine.translate(tri, s, -t - tri.bounds[1]))
   triangles.append(affine.rotate(triangles[0], 180, (5*s/4, -t/2)))
   triangles.append(affine.rotate(triangles[1], 180, (3*s/2, 0)))
-  triangles.extend([affine.rotate(tr, a, (0, 0)) for a in range(60, 360, 60)
-                                                 for tr in triangles])
-  polys = hexes + triangles[:10] # just throw some away!
-  polys = [affine.translate(p, -s/4, -t/2) for p in polys]
-  unit.setup_vectors(( -s/2, 3*t), (5*s/2, t))
+  triangles.append(affine.rotate(triangles[2], 180, (5*s/4,  t/2)))
+  triangles.extend([affine.rotate(tr, 180, (0, 0)) for tr in triangles])
+  triangles.extend([affine.rotate(triangles[0], a, (0, 0))
+                    for a in (120, 300)])
+  polys = hexes + triangles
+  unit.setup_vectors((2*s, h), (2*s, -h))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
     crs = unit.crs,
@@ -1749,11 +1754,11 @@ def _setup_chavey_h(unit:TileUnit) -> str|None:
                     for a in range(60, 360, 60)])
   triangles.append(geom.Polygon(
                      [(s/2, s + t), (s/2 + t, 3*s/2 + t), (s/2 + t, s/2 + t)]))
-  triangles.append(affine.rotate(triangles[-1], 60, (0, 0)))
-  polys = polys + triangles
-  unit.setup_vectors((0, unit.spacing),
-                     (unit.spacing * sqrt3/2, unit.spacing / 2),
-                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
+  triangles.append(affine.rotate(triangles[-1], 180, (0, 0)))
+  polys = [affine.rotate(p, 30, (0, 0)) for p in polys + triangles]
+  unit.setup_vectors(( unit.spacing / 2, unit.spacing * sqrt3/2),
+                     ( unit.spacing    , 0),
+                     (-unit.spacing / 2, unit.spacing * sqrt3/2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
     crs = unit.crs,
@@ -1780,11 +1785,11 @@ def _setup_chavey_i(unit:TileUnit) -> str|None:
   triangles2.append(geom.Polygon([(s/2    ,   s   + t),
                                   (s/2 + t, 3*s/2 + t),
                                   (s/2 + t,   s/2 + t)]))
-  triangles2.append(affine.rotate(triangles2[-1], 60, (0, 0)))
-  polys = polys + triangles2
-  unit.setup_vectors((0, unit.spacing),
-                     (unit.spacing * sqrt3/2, unit.spacing / 2),
-                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
+  triangles2.append(affine.rotate(triangles2[-1], 180, (0, 0)))
+  polys = [affine.rotate(p, 30, (0, 0)) for p in polys + triangles2]
+  unit.setup_vectors(( unit.spacing / 2, unit.spacing * sqrt3/2),
+                     ( unit.spacing    , 0),
+                     (-unit.spacing / 2, unit.spacing * sqrt3/2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
     crs = unit.crs,
@@ -1801,12 +1806,13 @@ def _setup_chavey_j(unit:TileUnit) -> str|None:
   squares = [affine.rotate(sq, a, (0, 0)) for a in range(0, 360, 60)]
   tri = _get_regular_polygon_from_one_side(tiling_utils.get_sides(sq)[0], 3)
   triangles = [affine.rotate(tri, a, (0, 0)) for a in range(0, 360, 60)]
-  triangles.append(affine.translate(triangles[3],  s + t, h + 3*s/2))
-  triangles.append(affine.translate(triangles[4], -s - t, h + 3*s/2))
-  polys = [hexagon, *squares, *triangles]
-  unit.setup_vectors((0, unit.spacing),
-                     (unit.spacing * sqrt3/2,  unit.spacing / 2),
-                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
+  triangles.append(affine.translate(triangles[3],  s + t,  h + 3*s/2))
+  triangles.append(affine.translate(triangles[0], -s - t, -h - 3*s/2))
+  polys = [affine.rotate(p, 30, (0, 0))
+           for p in [hexagon, *squares, *triangles]]
+  unit.setup_vectors(( unit.spacing / 2, unit.spacing * sqrt3/2),
+                     ( unit.spacing    , 0),
+                     (-unit.spacing / 2, unit.spacing * sqrt3/2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
     crs = unit.crs,
@@ -1833,12 +1839,12 @@ def _setup_chavey_k(unit:TileUnit) -> str|None:
   triangles2.append(geom.Polygon([(s/2    ,   s   + t),
                                   (s/2 + t, 3*s/2 + t),
                                   (s/2 + t,   s/2 + t)]))
-  triangles2.append(affine.rotate(triangles2[-1], 60, (0, 0)))
+  triangles2.append(affine.rotate(triangles2[-1], 180, (0, 0)))
   polys = polys + triangles2
-  polys[:-2] = [affine.rotate(p, 30, (0, 0)) for p in polys[:-2]]
-  unit.setup_vectors((0, unit.spacing),
-                     (unit.spacing * sqrt3/2,  unit.spacing / 2),
-                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
+  polys[-2:] = [affine.rotate(p, 30, (0, 0)) for p in polys[-2:]]
+  unit.setup_vectors(( unit.spacing / 2, unit.spacing * sqrt3/2),
+                     ( unit.spacing    , 0),
+                     (-unit.spacing / 2, unit.spacing * sqrt3/2))
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:len(polys)]},
     crs = unit.crs,

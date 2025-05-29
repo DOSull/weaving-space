@@ -1058,7 +1058,7 @@ class Topology:
 
     """
     self._get_tile_geoms().plot(column = "transitivity_class",
-      ax = ax, ec = "#444444", lw = 0.75, alpha = 0.25, cmap = "Greys")
+      ax = ax, ec = "#444444", lw = 0.5, alpha = 0.25, cmap = "Greys")
     return ax
 
 
