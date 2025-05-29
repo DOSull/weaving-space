@@ -2,14 +2,13 @@ LICENSE.md
 README.md
 pyproject.toml
 weavingspace/__init__.py
-weavingspace/__topology_elements.py
 weavingspace/_loom.py
+weavingspace/_tiling_geometries.py
 weavingspace/_weave_grid.py
 weavingspace/symmetry.py
 weavingspace/tile_map.py
 weavingspace/tile_unit.py
 weavingspace/tileable.py
-weavingspace/tiling_geometries.py
 weavingspace/tiling_utils.py
 weavingspace/topology.py
 weavingspace/weave_matrices.py
