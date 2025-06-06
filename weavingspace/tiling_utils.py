@@ -523,7 +523,7 @@ def gridify(
   return None
 
 
-def get_dual_tile_unit(unit:TileUnit) -> gpd.GeoDataFrame:
+def get_dual_tile_unit(unit) -> gpd.GeoDataFrame:
   """Convert supplied TileUnit to candidate GeoDataFrame of its dual TileUnit.
 
   NOTE: this is complicated and not remotely guaranteed to work!
