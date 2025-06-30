@@ -1,0 +1,343 @@
+---
+title: |
+  The latest 
+  on tiled 
+  multivariate 
+  maps
+author: 
+  - name: David O'Sullivan
+    affiliations: 
+      - name: Geospatial Stuff
+      - name: University of Auckland
+  - name: Luke Bergmann
+    affiliations: 
+      - name: University of British Columbia
+format: 
+  revealjs:
+    theme: [serif, custom.scss]
+    transition: none
+    navigation-mode: vertical
+    fragment-in-url: true
+    slide-number: c/t
+    center: true
+    logo: images/logo.png
+    footer: "NZCS Legends in the Making 2025"
+    self-contained: true
+jupyter: python3
+execute: 
+  freeze: auto
+  cache: true
+---
+
+```{python}
+#| echo: false
+import os
+os.chdir("/Users/david/Documents/code/weaving-space")
+
+import matplotlib.pyplot as pyplot
+import geopandas as gpd
+
+from shapely.geometry import Polygon
+from shapely.affinity import rotate
+
+from weavingspace import TileUnit
+from weavingspace import TileShape  
+from weavingspace import WeaveUnit
+from weavingspace import Tiling
+from weavingspace import tiling_utils
+
+ak = gpd.read_file("examples/data/imd-auckland-2018.gpkg")
+ids = list("abcd")
+vars = [v for v in ak.columns if "Rank" in v][:4]
+cmaps = 4 * ["viridis"]
+```
+
+# Overview {.smaller background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+The TL;DR;
+
+##
+Two types of thematic map for complex multivariate data
+
+Elements in a tiled pattern 'pick up' data from area units to allow combining multiple choropleths in a single map
+
+&nbsp;
+
+::: aside
+Maps on the next slide are of the IMD. See: Exeter DJ, Zhao J, Crengle S, Lee A, Browne M, 2017, [The New Zealand Indices of Multiple Deprivation (IMD): A new suite of indicators for social and health research in Aotearoa, New Zealand](https://dx.plos.org/10.1371/journal.pone.0181260) _PLOS ONE_ **12**(8) e0181260
+:::
+
+
+## {transition="none" background-color="white"}
+
+```{python}
+tile_unit = TileUnit(tiling_type = "laves", code = "4.8.8",
+                     crs = ak.crs, spacing = 500)
+
+tiling = Tiling(tile_unit, ak)
+
+fig = tiling.get_tiled_map(prioritise_tiles = True) \
+  .render(ids_to_map = ids, vars_to_map = vars, colors_to_use = cmaps,
+          legend = False, figsize = (10, 7))
+```
+
+## {transition="none" background-color="white"}
+
+```{python}
+tile_unit = WeaveUnit(weave_type = "twill", n = 3, strands = "ab|cd",
+                      aspect = .75, crs = ak.crs, spacing = 150)
+# tile_unit = tile_unit.inset_elements(10)
+tile_unit = tile_unit.transform_rotate(30)
+tiling = Tiling(tile_unit, ak)
+
+fig = tiling.get_tiled_map(prioritise_tiles = True) \
+  .render(ids_to_map = ids, vars_to_map = vars, colors_to_use = cmaps,
+          legend = False, figsize = (10, 7))
+```
+
+# Recent examples {.smaller background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+
+## {background-color="white"}
+
+:::: {.columns}
+
+::: {.column style="width:70%;"}
+
+![](images/chen-et-al-nyc-smells.jpg)
+
+:::
+
+::: {.column style="font-size:20px;width:30%;position:relative;top:45vh;"}
+Chen Q, A Poorthuis, and A Crooks. 2025 (online first, April). [Mapping the Invisible: Decoding Perceived Urban Smells Through Geosocial Media in New York City](https:/dx/doi.org/10.1080/24694452.2025.2485233). _Annals of the Amer&shy;ican Association of Geographers_.
+:::
+
+::::
+
+## {background-color="white"}
+
+:::: {.columns}
+
+::: {.column style="width:80%;"}
+
+![](images/allen-toronto-mode-share.png)
+
+:::
+
+::: {.column style="font-size:20px;width:20%;position:relative;top:50vh;"}
+Allen J. 2025. Mapping mode share in Toronto via weaving space. At [schoolofcities.github.io](https://schoolofcities.github.io/transportation-tomorrow-survey/mode-weave).
+:::
+
+::::
+
+
+## {background-color="white"}
+
+::: {.r-stack}
+
+![](images/05-2-slices-square-alpha-overlay.png){width=80%}
+
+![](images/06-3-slices-square.png){.fragment .fade-in fragment-index=1 width=80%}
+
+![](images/07-3-slices-hex.png){.fragment .fade-in fragment-index=2 width=80%}
+
+:::
+
+# More tilings {.smaller background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+
+## Square colourings {background-color="white"}
+
+```{python}
+fig, axes = pyplot.subplots(2, 4, layout = "constrained")
+for i, n in enumerate(range(2, 10)):
+    ax = axes[i // 4, i % 4]
+    u = TileUnit(tiling_type = "square-col", n = n)
+    u.plot(ax = ax, r = 1, show_ids = False, 
+           show_reg_prototile = True,
+           show_prototile = False)
+    ax.set_title(f"{n=}")
+    ax.set_axis_off()
+```
+
+## Hexagon colourings {background-color="white"}
+
+```{python}
+fig, axes = pyplot.subplots(2, 4, layout = "constrained")
+for i, n in enumerate(range(3, 11)):
+    ax = axes[i // 4, i % 4]
+    u = TileUnit(tiling_type = "hex-col", n = n)
+    u.plot(ax = ax, r = 1, show_ids = False, 
+           show_reg_prototile = True,
+           show_prototile = False)
+    ax.set_title(f"{n=}")
+    ax.set_axis_off()
+```
+
+## Square slices {background-color="white"}
+
+```{python}
+ns      = [2, 2,   4, 4,   5, 6, 8, 8]
+offsets = [0, 0.5, 0, 0.5, 0, 0, 0, 1]
+fig, axes = pyplot.subplots(2, 4, layout = "constrained")
+
+for i, (n, offset) in enumerate(zip(ns, offsets)):
+    ax = axes[i // 4, i % 4]
+    u = TileUnit(tiling_type = "square-slice", n = n, offset = offset)
+    u.plot(ax = ax, r = 1, show_ids = False, 
+           show_reg_prototile = True,
+           show_prototile = False)
+    ax.set_title(f"n={u.n} offset={u.offset}")
+    ax.set_axis_off()
+```
+
+## Hexagon slices {background-color="white"}
+
+```{python}
+ns      = [2, 3, 3, 6, 6, 9, 12, 12]
+offsets = [0, 0, 1, 0, 1, 0,  0,  1]
+fig, axes = pyplot.subplots(2, 4, layout = "constrained")
+
+for i, (n, offset) in enumerate(zip(ns, offsets)):
+    ax = axes[i // 4, i % 4]
+    u = TileUnit(tiling_type = "hex-slice", n = n, offset = offset)
+    u.plot(ax = ax, r = 1, show_ids = False, 
+           show_reg_prototile = True,
+           show_prototile = False)
+    ax.set_title(f"n={u.n} offset={u.offset}")
+    ax.set_axis_off()
+```
+
+## Square and hexagon dissections {background-color="white"}
+
+```{python}
+ttype = ["square-dissect"] * 4 + ["hex-dissection"] * 4
+ns            = [5,  5, 9,  9, 7, 9,  9,  9]
+offsets       = [0,  0, 0,  1, 0, 0,  1,  0]
+offset_angles = [0, 45, 0, 45, 0, 0, 30, 30]
+fig, axes = pyplot.subplots(2, 4, layout = "constrained")
+
+for i, (tt, n, offset, offset_angle) in enumerate(zip(ttype, ns, offsets, offset_angles)):
+    ax = axes[i // 4, i % 4]
+    u = TileUnit(tiling_type = tt, n = n, offset = offset, offset_angle = offset_angle)
+    u.plot(ax = ax, r = 1, show_ids = False, 
+           show_reg_prototile = True,
+           show_prototile = False)
+    ax.set_title(f"{n=} {offset=} {offset_angle=}")
+    ax.set_axis_off()
+```
+
+## Crosses {background-color="white"}
+
+```{python}
+fig, axes = pyplot.subplots(2, 3, layout = "constrained")
+for i, n in enumerate(range(2, 7)):
+    ax = axes[i // 3, i % 3]
+    u = TileUnit(tiling_type = "cross", n = n)
+    u.plot(ax = ax, r = 1, show_ids = False, 
+           show_reg_prototile = True,
+           show_prototile = False)
+    ax.set_title(f"{n=}")
+    ax.set_axis_off()
+axes[1, 2].set_axis_off()
+```
+
+## Stars and polygons {background-color="white"}
+
+```{python}
+types = ["star1"] * 3 + ["star2"] * 6
+point_angles = [30] * 3 + [None] * 6
+codes = ["33", "44", "63", "45", "464", "64", "663", "844"]
+
+fig, axes = pyplot.subplots(2, 4, layout = "constrained")
+
+for i, (tt, a, c) in enumerate(zip(types, point_angles, codes)):
+    ax = axes[i // 4, i % 4]
+    u = TileUnit(tiling_type = tt, point_angle = a, code = c)
+    u.plot(ax = ax, r = 1, show_ids = False, 
+            show_reg_prototile = True,
+            show_prototile = False)
+    ax.set_axis_off()
+    ax.set_title(f"code={u.code}")
+```
+
+## Larger _n_ tilings {background-color="white"}
+
+```{python}
+fig, axes = pyplot.subplots(2, 4, layout = "constrained")
+for i, code in enumerate(list("ACDEFGIJ")):
+    ax = axes[i // 4, i % 4]
+    u = TileUnit(tiling_type = "chavey", code = code)
+    u.plot(ax = ax, r = 1, show_ids = False, 
+            show_reg_prototile = True,
+            show_prototile = False, cmap = "tab20")
+    ax.set_axis_off()
+    ax.set_title(f"{code=}")
+```
+
+## Modifying tiles (experimental) {background-color="white"}
+
+```{python}
+#| output: false
+from weavingspace import Topology
+import copy
+
+tile1a = TileUnit(tiling_type = "square-colouring", n = 4)
+topo1a = Topology(tile1a, True)
+topo1b = topo1a.transform_geometry(True, True, "a", "zigzag_edge",
+                                   n = 2, h = 0.55, smoothness = 5)
+tile1b = topo1b.tileable
+
+tile2a = TileUnit(tiling_type = "cairo").transform_rotate(45)
+topo2a = Topology(tile2a, True)
+topo2b = topo2a.transform_geometry(True, True, "b", 
+                                   "scale_edge", sf = 4)
+tile2b = topo2b.tileable
+
+tile3a = TileUnit(tiling_type = "chavey", code = "a")
+tile3a_dual = tiling_utils.get_dual_tile_unit(tile3a)
+tile3b = copy.deepcopy(tile3a)
+tile3b.tiles = tile3a_dual
+
+tile4a = TileUnit(tiling_type = "square-dissection", n = 9, 
+                  offset = 0, offset_angle = 0)
+topo4a = Topology(tile4a, True)
+tiles = list(topo4a.dual_tiles.values())
+tile4b = copy.deepcopy(tile4a)
+tile4b.tiles = gpd.GeoDataFrame(
+  data = {"tile_id": list("abcdefghijklmnopqrstuvwxyz")[:len(tiles)]},
+  geometry = gpd.GeoSeries(tiles))
+```
+
+```{python}
+#| fig-align: center
+fig, axes = pyplot.subplots(2, 4, layout = "constrained")
+tiles = [tile1a, tile1b, tile2a, tile2b,
+         tile3a, tile3b, tile4a, tile4b]
+tiles2 = [tile1b, tile1a, tile2b, tile2a,
+          tile3b, tile3a, tile4b, tile4a]
+cmaps = ["Dark2"] * 4 + ["tab20c"] * 4
+ecs =   ["w"] * 4 + ["#333333"] * 4
+for (i, t), t2, cm, ec in zip(enumerate(tiles), tiles2, cmaps, ecs):
+  ax = axes[i // 4, i % 4]
+  t.plot(ax = ax, r = 1, show_prototile = False, 
+          show_reg_prototile = False, r_alpha = 1, 
+          cmap = cm, show_ids = False)
+  t2.tiles.geometry.plot(ax = ax, fc = "#00000000", ec = ec, lw = 0.5)
+  ax.set_xlim(-900, 900)
+  ax.set_ylim(-900, 900)
+  ax.set_axis_off()
+```
+
+# A web app {.smaller data-background="images/mapweaver-app.png" background-opacity=0.75 style="text-shadow: 0px 0px 5px #fff;"}
+
+Make these maps without any code!
+
+## {data-background="images/Wile-E-Coyote-1.jpg.webp"}
+
+### Live demo time!
+
+## {style="text-align:center;"}
+### Questions? {style="font-size:144px;"} 
+[github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
+
+[dosull.github.io/mapweaver/app/](https://dosull.github.io/mapweaver/app/)
+
+[dosull.github.io](https://dosull.github.io)
