@@ -52,7 +52,7 @@ vars = [v for v in ak.columns if "Rank" in v][:4]
 cmaps = 4 * ["viridis"]
 ```
 
-# Overview {.smaller background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+# Review {.smaller background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
 The TL;DR;
 
 ##
@@ -94,7 +94,8 @@ fig = tiling.get_tiled_map(prioritise_tiles = True) \
           legend = False, figsize = (10, 7))
 ```
 
-# Recent examples {.smaller background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+# Uptake {.smaller background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+Recent examples
 
 ## {background-color="white"}
 
@@ -142,6 +143,7 @@ Allen J. 2025. Mapping mode share in Toronto via weaving space. At [schoolofciti
 :::
 
 # More tilings {.smaller background-image="images/detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+Lots more
 
 ## Square colourings {background-color="white"}
 
@@ -327,8 +329,7 @@ for (i, t), t2, cm, ec in zip(enumerate(tiles), tiles2, cmaps, ecs):
 ```
 
 # A web app {.smaller data-background="images/mapweaver-app.png" background-opacity=0.75 style="text-shadow: 0px 0px 5px #fff;"}
-
-Make these maps without any code!
+Make tiled and woven maps without code!
 
 ## {data-background="images/Wile-E-Coyote-1.jpg.webp"}
 
