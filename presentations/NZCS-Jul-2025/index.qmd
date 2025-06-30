@@ -134,11 +134,17 @@ Allen J. 2025. Mapping mode share in Toronto via weaving space. At [schoolofciti
 
 ::: {.r-stack}
 
-![](images/05-2-slices-square-alpha-overlay.png){width=80%}
+![](images/06-3-slices-square.png){width="80%"}
 
-![](images/06-3-slices-square.png){.fragment .fade-in fragment-index=1 width=80%}
+![](images/07-3-slices-hex.png){.fragment .fade-in fragment-index=1 width="80%"}
 
-![](images/07-3-slices-hex.png){.fragment .fade-in fragment-index=2 width=80%}
+![](images/05-2-slices-square-alpha-overlay.png){.fragment .fade-in fragment-index=2 width="80%"}
+
+:::
+
+::: {style="font-size:20px;width:30vw;position:relative;bottom:10vh;left:35vw;"}
+
+For more on this example see [dosull.github.io/posts/2025-05-02-tiles-and-glyphs/tiles-and-glyphs.html](https://dosull.github.io/posts/2025-05-02-tiles-and-glyphs/tiles-and-glyphs.html)
 
 :::
 
