@@ -24,7 +24,7 @@ Slides can be viewed at #link("https://dosull.github.io/weaving-space/presentati
 At previous meetings we presented work on using tiled and woven patterns to enable presentation of multiple variables in a single map view. In this presentation we reported on the latest developments in this work. These developments include:
 
 - Use of the approach ‘in the wild’ independent from our own efforts, which reassures us that the method has some value, and also that the code is sufficiently well documented to be used unassisted;
-- Many new additions to the available tiling patterns (See @square-slice[Figs], @hex-slice[], and @dissection[]), including some that support as many as 20 variables (@large-n);
+- Many new additions to the available tiling patterns (see @square-slice[Figs], @hex-slice[], and @dissection[]), including some that support as many as 20 variables (@large-n);
 - Experimental methods for modifying tiling patterns by modifying characteristics of tiling edges while preserving tile topology, or by determining the dual tiling of a given tiling (@experimental); and
 - Most importantly, these options are now available in a freely available web application (@mapweaver) that allows users to create such maps in a variety of formats without the need to write any code. The web app was briefly demonstrated live at the meeting. It can be explored further at #link("https://dosull.github.io/mapweaver/app/")
 
