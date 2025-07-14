@@ -1,0 +1,37 @@
+---
+title: |
+  Latest developments in tiled and \
+  woven multivariate maps
+author: 
+  - name: David O'Sullivan
+    affiliations: 
+      - name: Geospatial Stuff
+      - name: University of Auckland
+  - name: Luke Bergmann
+    affiliations: 
+      - name: University of British Columbia
+format: 
+  typst:
+    toc: false
+    number-sections: true
+    fig-format: png
+    fig-dpi: 600
+---
+
+```{=typst}
+Slides can be viewed at #link("https://dosull.github.io/weaving-space/presentations/NZCS-Jul-2025/")
+
+At previous meetings we presented work on using tiled and woven patterns to enable presentation of multiple variables in a single map view. In this presentation we reported on the latest developments in this work. These developments include:
+
+- Use of the approach ‘in the wild’ independent from our own efforts, which reassures us that the method has some value, and also that the code is sufficiently well documented to be used unassisted;
+- Many new additions to the available tiling patterns (See @square-slice[Figs], @hex-slice[], and @dissection[]), including some that support as many as 20 variables (@large-n);
+- Experimental methods for modifying tiling patterns by modifying characteristics of tiling edges while preserving tile topology, or by determining the dual tiling of a given tiling (@experimental); and
+- Most importantly, these options are now available in a freely available web application (@mapweaver) that allows users to create such maps in a variety of formats without the need to write any code. The web app was briefly demonstrated live at the meeting. It can be explored further at #link("https://dosull.github.io/mapweaver/app/")
+
+#figure(image("images/cell-7-output-1.png"), caption: [Tilings based on square slices], supplement: [Fig])<square-slice>
+#figure(image("images/cell-8-output-1.png"), caption: [Tilings based on hexagon slices], supplement: [Fig])<hex-slice>
+#figure(image("images/cell-9-output-1.png"), caption: [Tilings based on square and hexagon dissections], supplement: [Fig])<dissection>
+#figure(image("images/cell-12-output-1.png"), caption: [Tilings by regular polygons with as many as 20 elements], supplement: [Fig])<large-n>
+#figure(image("images/cell-14-output-1.png"), caption: [Deriving new tilings from existing ones], supplement: [Fig])<experimental>
+#figure(image("images/mapweaver-app.png"), caption: [The MapWeaver web app], supplement: [Fig])<mapweaver>
+```
