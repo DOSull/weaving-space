@@ -363,7 +363,7 @@ class Tiling:
         if debug:
           t4 = perf_counter()
           print(f"STEP A3: calculate areas: {t4 - t3:.3f}")
-        overlaps.drop(columns = region_vars, inplace = True)
+        overlaps = overlaps.drop(columns = region_vars)
         if debug:
           t5 = perf_counter()
           print(f"STEP A4: drop columns prior to join: {t5 - t4:.3f}")
@@ -381,7 +381,7 @@ class Tiling:
       if debug:
         t7 = perf_counter()
         print(f"STEP A6: perform lookup join: {t7 - t6:.3f}")
-      tiled_map.drop(columns = ["joinUID"], inplace = True)
+      tiled_map = tiled_map.drop(columns = ["joinUID"])
 
     else:  
       # here it's a simple overlay
@@ -394,8 +394,8 @@ class Tiling:
       tiled_map = tiled_map.loc[
         shapely.intersects(self.region_union, np.array(tiled_map.geometry)), :]
 
-    tiled_map.drop(columns = [id_var], inplace = True)
-    self.region.drop(columns = [id_var], inplace = True)
+    tiled_map = tiled_map.drop(columns = [id_var])
+    self.region = self.region.drop(columns = [id_var])
 
     # if we've retained tiles and want 'clean' edges, then clip
     # note that this step is slow: geopandas unary_unions the clip layer
@@ -439,7 +439,7 @@ class Tiling:
     """
     # we assume the geometry column is called geometry so make it so...
     if self.region.geometry.name != "geometry":
-      self.region.rename_geometry("geometry", inplace = True)
+      self.region = self.region.rename_geometry("geometry")
 
     # chain list of lists of GeoSeries geometries to list of geometries
     tiles = itertools.chain(*[
