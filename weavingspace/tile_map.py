@@ -799,10 +799,12 @@ class TiledMap:
 
 
   def _plot_buffer(self, ax) -> None:
-    buffer = self.map.geometry.buffer(15).union_all()
+    buffer = self.map.geometry \
+      .buffer(10, cap_style = "square", join_style = "mitre", resolution = 1) \
+      .union_all()
     gdf = gpd.GeoDataFrame(
       geometry = gpd.GeoSeries([buffer]), crs = self.map.crs)
-    gdf.plot(ax = ax, fc = self.buffer_colour, ec = "#00000000", lw = 0)
+    gdf.plot(ax = ax, fc = self.buffer_colour)
 
 
   def plot_legend(self, ax, **kwargs) -> None:
