@@ -923,9 +923,26 @@ def _setup_square_colouring(unit:TileUnit) -> str|None:
             (-3*s/2,  3*s/2), (-s/2,  3*s/2), ( s/2,  3*s/2), ( 3*s/2,  3*s/2)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
+    case 16:
+      # Copy and translate square
+      tr = [(-3*s/2, -3*s/2), (-s/2, -3*s/2), ( s/2, -3*s/2), ( 3*s/2, -3*s/2),
+            (-3*s/2,   -s/2), (-s/2,   -s/2), ( s/2,   -s/2), ( 3*s/2,   -s/2),
+            (-3*s/2,    s/2), (-s/2,    s/2), ( s/2,    s/2), ( 3*s/2,    s/2),
+            (-3*s/2,  3*s/2), (-s/2,  3*s/2), ( s/2,  3*s/2), ( 3*s/2,  3*s/2)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
+    case 25:
+      # Copy and translate square
+      tr = [(-2*s, -2*s), (-s, -2*s), (0, -2*s), ( s, -2*s), ( 2*s, -2*s),
+            (-2*s,   -s), (-s,   -s), (0,   -s), ( s,   -s), ( 2*s,   -s),
+            (-2*s,    0), (-s,    0), (0,    0), ( s,    0), ( 2*s,    0),
+            (-2*s,    s), (-s,    s), (0,    s), ( s,    s), ( 2*s,    s),
+            (-2*s,  2*s), (-s,  2*s), (0,  2*s), ( s,  2*s), ( 2*s,  2*s)]
+      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+      unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
     case _:
       return (f"""{unit.n}-colouring of squares is not supported.
-              Try a number between 2 and 9, or 16.""")
+              Try a number between 2 and 9, 16, or 25.""")
 
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},

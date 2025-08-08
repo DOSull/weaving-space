@@ -585,6 +585,10 @@ class TiledMap:
   _colourspecs:dict[str,dict] = None
   """dictionary of dictionaries keyed by the items in `ids_to_use` with each
   dictionary forming additional kwargs to be supplied to geopandas.plot()."""
+  add_buffer:bool = False
+  """if True then include a buffer of all tiles as a background"""
+  buffer_colour:str = "grey"
+  """colour of any include buffer layer"""
 
   # the below parameters can be set either before calling self.render() or
   # passed in as parameters to self.render(). These are solely
@@ -698,7 +702,7 @@ class TiledMap:
                                         layout = "constrained", **kwargs)
     else:
       fig, axes = plt.subplots(1, 1, figsize = self.figsize,
-                                  layout = "constrained", **kwargs)
+                               layout = "constrained", **kwargs)
 
     self._plot_map(axes, **kwargs)
     return fig
@@ -719,6 +723,8 @@ class TiledMap:
     self._set_colourspecs()
     bb = self.map.geometry.total_bounds
     if self.legend:
+      if self.add_buffer:
+        self._plot_buffer(ax["map"], **kwargs)
       if (self.legend_dx != 0 or self.legend_dx != 0):
         box = ax["legend"].get_position()
         box.x0 += self.legend_dx
@@ -732,6 +738,8 @@ class TiledMap:
       self._plot_subsetted_gdf(ax["map"], self.map, **kwargs)
       self.plot_legend(ax = ax["legend"], **kwargs)
     else:
+      if self.add_buffer:
+        self._plot_buffer(ax, **kwargs)
       ax.set_axis_off()
       ax.set_xlim(bb[0], bb[2])
       ax.set_ylim(bb[1], bb[3])
@@ -788,6 +796,13 @@ class TiledMap:
 
     """
     tiling_utils.write_map_to_layers(self.map, fname)
+
+
+  def _plot_buffer(self, ax) -> None:
+    buffer = self.map.geometry.buffer(15).union_all()
+    gdf = gpd.GeoDataFrame(
+      geometry = gpd.GeoSeries([buffer]), crs = self.map.crs)
+    gdf.plot(ax = ax, fc = self.buffer_colour, ec = "#00000000", lw = 0)
 
 
   def plot_legend(self, ax, **kwargs) -> None:

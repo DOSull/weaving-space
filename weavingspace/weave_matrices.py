@@ -28,7 +28,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def reps_needed(x1:int, x2:int) -> tuple[int]:
+def reps_needed(x1:int, x2:int) -> tuple[int, int]:
   """Return number of sequences of length x1 and x2 are needed to match lengths.
 
   Args:
@@ -40,7 +40,7 @@ def reps_needed(x1:int, x2:int) -> tuple[int]:
 
   """
   n = np.lcm(x1, x2)
-  return tuple(i for i in (n // x1, n // x2))
+  return n // x1, n // x2
 
 
 def get_pattern(
@@ -135,8 +135,8 @@ def make_plain_pattern(
 
 def make_twill_pattern(
     n:int|tuple[int] = 2,
-    warp_n:int = 2,
-    weft_n:int = 2,
+    warp_n:int = 1,
+    weft_n:int = 1,
   ) -> np.ndarray:
   """Return twill pattern matrix extended for warp and weft patterns.
 
@@ -222,7 +222,7 @@ def make_twill_matrix(over_under:int|tuple[int]) -> np.ndarray:
     1 0 0 1
 
   where the repeat runs in each row are lengths returned by
-  make_over_under_rown(n)
+  make_over_under_row(n)
 
   Args:
     over_under (int|tuple[int]): over-under run specification. See
@@ -243,8 +243,8 @@ def make_twill_matrix(over_under:int|tuple[int]) -> np.ndarray:
 
 def make_basket_pattern(
     n:int = 2,
-    warp_n:int = 2,
-    weft_n:int = 2,
+    warp_n:int = 1,
+    weft_n:int = 1,
   ) -> np.ndarray:
   """Return basket pattern matrix extended for warp and weft patterns.
 
