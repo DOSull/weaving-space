@@ -519,12 +519,23 @@ class Tileable:
 
     """
     result = copy.deepcopy(self)
-    result.tiles.geometry = self.tiles.geometry.skew(xa, ya, origin=(0, 0))
+    result.tiles.geometry = (self.tiles.geometry
+                             .skew(xa, ya, origin=(0, 0))
+                             .scale(np.cos(np.radians(xa)),
+                                    np.cos(np.radians(ya)),
+                                    origin = (0, 0)))
     if not independent_of_tiling:
-      result.prototile.geometry = \
-        self.prototile.geometry.skew(xa, ya, origin=(0, 0))
-      result.regularised_prototile.geometry = \
-        self.regularised_prototile.geometry.skew(xa, ya, origin=(0, 0))
+      result.prototile.geometry = (self.prototile.geometry
+                                   .skew(xa, ya, origin=(0, 0))
+                                   .scale(np.cos(np.radians(xa)),
+                                          np.cos(np.radians(ya)),
+                                          origin = (0, 0)))
+      result.regularised_prototile.geometry = (
+        self.regularised_prototile.geometry
+            .skew(xa, ya, origin=(0, 0))
+            .scale(np.cos(np.radians(xa)),
+                   np.cos(np.radians(ya)),
+                   origin = (0, 0)))
       result._set_vectors_from_prototile()
     return result
 
