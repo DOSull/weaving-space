@@ -236,9 +236,11 @@ def _get_radially_sliced_polygon(
   """
   n_sides = len(shape.exterior.coords) - 1
   boundary = geom.LineString(shape.exterior.coords)
-  offset = (offset % 1
-            if offset < 0 or offset > 1
-            else offset)
+  if abs(offset) > 1:
+    offset = offset % 1
+  # offset = (offset % 1
+  #           if offset < 0 or offset > 1
+  #           else offset)
   offset = (offset * n_sides / n_slices / 2
             if n_slices >= n_sides
             else offset / 2)
