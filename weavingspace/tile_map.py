@@ -393,9 +393,11 @@ class Tiling:
     if not retain_tileables:
       tiled_map = tiled_map.loc[
         shapely.intersects(self.region_union, np.array(tiled_map.geometry)), :]
-
-    tiled_map = tiled_map.drop(columns = [id_var])
-    self.region = self.region.drop(columns = [id_var])
+    
+    # inplace changes considered unsafe, BUT not dropping id_var in this
+    # causes it to persist in the tiled_map and region dataframes!
+    tiled_map.drop(columns = [id_var], inplace = True)
+    self.region.drop(columns = [id_var], inplace = True)
 
     # if we've retained tiles and want 'clean' edges, then clip
     # note that this step is slow: geopandas unary_unions the clip layer
