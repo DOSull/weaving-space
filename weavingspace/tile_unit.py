@@ -69,7 +69,7 @@ import numpy as np
 import shapely.geometry as geom
 
 from weavingspace import Tileable, tiling_utils
-from weavingspace import _tiling_geometries as tg
+from weavingspace import _tiling_geometries as geometries
 
 if TYPE_CHECKING:
   from collections.abc import Iterable
@@ -116,33 +116,35 @@ class TileUnit(Tileable):
     """
     match self.tiling_type:
       case "cairo":
-        return tg._setup_cairo(self)
+        return geometries._setup_cairo(self)
       case x if "hex" in x and "slice" in x:
-        return tg._setup_hex_slice(self)
+        return geometries._setup_hex_slice(self)
       case x if "hex" in x and "dissect" in x:
-        return tg._setup_hex_dissection(self)
+        return geometries._setup_hex_dissection(self)
       case x if "hex" in x and "col" in x:
-        return tg._setup_hex_colouring(self)
+        return geometries._setup_hex_colouring(self)
       case x if "square" in x and "slice" in x:
-        return tg._setup_square_slice(self)
+        return geometries._setup_square_slice(self)
       case x if "square" in x and "dissect" in x:
-        return tg._setup_square_dissection(self)
+        return geometries._setup_square_dissection(self)
       case x if "square" in x and "col" in x:
-        return tg._setup_square_colouring(self)
+        return geometries._setup_square_colouring(self)
+      case x if "stripe" in x:
+        return geometries._setup_stripes(self)
       case x if "lave" in x:
-        return tg._setup_laves(self)
+        return geometries._setup_laves(self)
       case x if "archi" in x:
-        return tg._setup_archimedean(self)
+        return geometries._setup_archimedean(self)
       case x if "star1" in x:
-        return tg._setup_star_polygon_1(self)
+        return geometries._setup_star_polygon_1(self)
       case x if "star2" in x:
-        return tg._setup_star_polygon_2(self)
+        return geometries._setup_star_polygon_2(self)
       case x if "chavey" in x:
-        return tg._setup_chavey(self)
+        return geometries._setup_chavey(self)
       case x if "cross" in x:
-        return tg._setup_crosses(self)
+        return geometries._setup_crosses(self)
       case _:
-        return tg._setup_base_tiling(self)
+        return geometries._setup_base_tiling(self)
 
 
   def _setup_regularised_prototile(

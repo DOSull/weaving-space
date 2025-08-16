@@ -274,6 +274,23 @@ def _get_radially_sliced_polygon(
   return gpd.GeoSeries(slices)
 
 
+def _setup_stripes(unit:TileUnit) -> str|None:
+  if "n" not in unit.__dict__:
+    return ("""Stripes tiling requires n to be supplied.""")
+  ymin, ymax = -unit.spacing / 2, unit.spacing / 2
+  xs = [unit.spacing * (i - unit.n / 2) / unit.n  for i in range(unit.n + 1)]
+  stripes = []
+  for xmin, xmax in zip(xs[:-1], xs[1:]):
+    stripes.append(geom.Polygon([(xmin, ymin), (xmin, ymax), 
+                                 (xmax, ymax), (xmax, ymin)]))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": list(string.ascii_letters)[:unit.n]},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(stripes))
+  unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
+  return None
+
+
 def _setup_crosses(unit:TileUnit) -> str|None:
   """Tilings by varying numbers of crosses.
 
