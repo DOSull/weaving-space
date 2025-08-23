@@ -129,6 +129,8 @@ class TileUnit(Tileable):
         return geometries._setup_square_dissection(self)
       case x if "square" in x and "col" in x:
         return geometries._setup_square_colouring(self)
+      case x if "grid" in x:
+        return geometries._setup_grid(self)
       case x if "stripe" in x:
         return geometries._setup_stripes(self)
       case x if "lave" in x:

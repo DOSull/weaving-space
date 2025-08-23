@@ -767,18 +767,28 @@ def _setup_hex_colouring(unit:TileUnit) -> str|None:
     case 7:  # the 'H3' tile
       # Make a hexagon and displace in the direction of its
       # own 6 corners, scaled as needed
-      base_hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
-      bounds = base_hex.bounds
-      w = bounds[2] - bounds[0]
-      h = bounds[3] - bounds[1]
-      rotation = np.degrees(np.arctan(1 / 3 / sqrt3))
-      corners = list(hexagon.exterior.coords)[:-1]
-      hexagon = affine.rotate(hexagon, 30)
-      hexes = [hexagon] + [affine.translate(
-        hexagon, x * sqrt3, y * sqrt3) for x, y in corners]
-      hexes = [affine.rotate(h, rotation, origin = (0, 0))
-              for h in hexes]
-      unit.setup_vectors((0,  h), (3*w/4,  h/2), (3*w/4, -h/2))
+      # base_hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
+      # bounds = base_hex.bounds
+      # w = bounds[2] - bounds[0]
+      # h = bounds[3] - bounds[1]
+      # rotation = np.degrees(np.arctan(1 / 3 / sqrt3))
+      # corners = list(hexagon.exterior.coords)[:-1]
+      # hexagon = affine.rotate(hexagon, 30)
+      # hexes = [hexagon] + [affine.translate(
+      #   hexagon, x * sqrt3, y * sqrt3) for x, y in corners]
+      # hexes = [affine.rotate(h, rotation, origin = (0, 0))
+      #         for h in hexes]
+      # unit.setup_vectors((0,  h), (3*w/4,  h/2), (3*w/4, -h/2))
+      #   1 2
+      #  3 4 5
+      #   6 7
+      hexagon = affine.rotate(hexagon, 30, (0, 0))
+      w, h = h, w
+      offsets = [ (-w/2,  3*h/4), (w/2,  3*h/4),
+                  (-w, 0),    (0, 0),   ( w, 0),
+                  (-w/2, -3*h/4), (w/2, -3*h/4) ]
+      hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
+      unit.setup_vectors((w/2, 9*h/4), (5*w/2, 3*h/4), (2*w, -3*h/2))
     case 8:
       #   1 2
       #  3 4 5
@@ -819,16 +829,67 @@ def _setup_hex_colouring(unit:TileUnit) -> str|None:
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
       unit.setup_vectors((w/2, 9*h/4), (7*w/2, 3*h/4), (3*w, -3*h/2))
     case 11:
-      #   1  2  3
-      #  4  5  6  7  8
-      #      9  10 11
+      # 1   2   3   4
+      #   5   6   7
+      # 8   9  10  11
       hexagon = affine.rotate(hexagon, 30, (0, 0))
       w, h = h, w
-      offsets = [(-3*w/2, 3*h/4), (-w/2, 3*h/4), (w/2, 3*h/4),
-                 (-2*w, 0), (-w, 0), (0, 0), (w, 0), (2*w, 0),
-                 (-w/2, -3*h/4), (w/2, -3*h/4), (3*w/2, -3*h/4)]
+      offsets = [
+        (-3*w/2,  3*h/4), (-w/2,  3*h/4), (w/2,  3*h/4), (3*w/2, 3*h/4),
+                             (-w, 0), (0, 0), (w, 0),
+        (-3*w/2, -3*h/4), (-w/2, -3*h/4), (w/2, -3*h/4), (3*w/2, -3*h/4)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((-w/2, 9*h/4), (7*w/2, 3*h/4), (4*w, -3*h/2))
+      unit.setup_vectors((w/2, 9*h/4), (4*w, 3*h/2), (7*w/2, -3*h/4))
+    case 12:
+      #     1   2   3   4
+      #   5   6   7   8
+      # 9   10  11  12
+      hexagon = affine.rotate(hexagon, 30, (0, 0))
+      w, h = h, w
+      offsets = [
+        (  -w  ,  3*h/4), (   0,  3*h/4), (w  ,  3*h/4), (2*w  , 3*h/4),
+        (-3*w/2,      0), (-w/2,      0), (w/2,      0), (3*w/2,     0),
+        (-2*w  , -3*h/4), (-w  , -3*h/4), (  0, -3*h/4), (  w  , -3*h/4)]
+      hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
+      unit.setup_vectors((3*w/2, 9*h/4), (4*w, 0), (5*w/2, -9*h/4))
+    case 13:
+      #   1   2   3   4
+      # 5   6   7   8   9
+      #   10  11  12  13
+      hexagon = affine.rotate(hexagon, 30, (0, 0))
+      w, h = h, w
+      offsets = [
+            (-3*w/2,  3*h/4), (-w/2,  3*h/4), (w/2,  3*h/4), (3*w/2,  3*h/4),
+        (-2*w, 0),       (-w, 0),         (0, 0),        ( w, 0),      (2*w, 0),
+            (-3*w/2, -3*h/4), (-w/2, -3*h/4), (w/2, -3*h/4), (3*w/2, -3*h/4)]
+      hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
+      unit.setup_vectors((w/2, 9*h/4), (9*w/2, 3*h/4), (4*w, -3*h/2))
+    case 14:
+      #     1   2   3
+      #   4   5   6   7
+      # 8   9   10  11
+      #   12  13  14
+      hexagon = affine.rotate(hexagon, 30, (0, 0))
+      w, h = h, w
+      offsets = [
+                          (-3*w/4,  9*h/8), (  w/4,  9*h/8), ( 5*w/4,  9*h/8),
+        (-5*w/4,  3*h/8), (  -w/4,  3*h/8), (3*w/4,  3*h/8), ( 7*w/4,  3*h/8),
+        (-7*w/4, -3*h/8), (-3*w/4, -3*h/8), (  w/4, -3*h/8), ( 5*w/4, -3*h/8),
+        (-5*w/4, -9*h/8), (  -w/4, -9*h/8), (3*w/4, -9*h/8)]
+      hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
+      unit.setup_vectors((w, 3*h), (4*w, 3*h/2), (3*w, -3*h/2))
+    case 15:
+      #     1   2   3   4   5
+      #   6   7   8   9   10
+      # 11  12  13  14  15
+      hexagon = affine.rotate(hexagon, 30, (0, 0))
+      w, h = h/2, w/4
+      offsets = [
+        (-3*w,  3*h), (  -w,  3*h), ( w,  3*h), (3*w,  3*h), (5*w,  3*h),
+        (-4*w,    0), (-2*w,    0), ( 0,    0), (2*w,    0), (4*w,    0),
+        (-5*w, -3*h), (-3*w, -3*h), (-w, -3*h), (  w, -3*h), (3*w, -3*h)]
+      hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
+      unit.setup_vectors((3*w, 9*h), (10*w, 0))
     case 16:
       #       1
       #     2   3
@@ -848,6 +909,24 @@ def _setup_hex_colouring(unit:TileUnit) -> str|None:
                           (0, -9*h/4)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
       unit.setup_vectors((2*w, 3*h), (2*w, -3*h))
+    case 19:
+      #       1   2   3
+      #     4   5   6   7
+      #   8   9   10  11  12
+      #     13  14  15  16
+      #       17  18  19
+      hexagon = affine.rotate(hexagon, 30, (0, 0))
+      w, h = h, w
+      offsets = [    (-w,  3*h/2), (0,  3*h/2),  ( w,  3*h/2),
+           (-3*w/2,  3*h/4), (-w/2,  3*h/4), ( w/2,  3*h/4), ( 3*w/2,  3*h/4),
+        (-2*w,  0),  (-w,      0), (0,      0),  ( w,      0), ( 2*w,  0),
+           (-3*w/2, -3*h/4), (-w/2, -3*h/4), ( w/2, -3*h/4), ( 3*w/2, -3*h/4),
+                     (-w, -3*h/2), (0, -3*h/2),  ( w, -3*h/2)]
+      hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
+      reordered = [
+        0, 1, 2, 6, 11, 15, 18, 17, 16, 12, 7, 3, 4, 5, 10, 14, 13, 8, 9]
+      hexes = [hexes[i] for i in reordered]
+      unit.setup_vectors((w/2, 15*h/4), (4*w, 3*h/2), (7*w/2, -9*h/4))
     case _:
       return (f"""{unit.n}-colouring of hexes is not supported.
               Try a number between 2 and 9, or 16.""")
@@ -855,6 +934,36 @@ def _setup_hex_colouring(unit:TileUnit) -> str|None:
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(hexes))
+  return None
+
+
+def _setup_grid(unit:TileUnit) -> str|None:
+  """Set up grid colouring of a regular array of squares.
+
+  The supplied unit must have unit.n, unit.nrows, and unit.ncols set.
+
+  Args:
+    unit (TileUnit):  the TileUnit to setup.
+
+  """
+  if any(k not in unit.__dict__ for k in ["n", "nrows", "ncols"]):
+    return "Grid tiling requires n, nrows, and ncols to be supplied."
+  sq = tiling_utils.get_regular_polygon(
+    unit.spacing / np.sqrt(unit.nrows * unit.ncols), 4)
+  s = sq.bounds[2] - sq.bounds[0]
+  h = s * unit.nrows
+  w = s * unit.ncols
+  if unit.nrows * unit.ncols < unit.n:
+    unit.n = unit.nrows * unit.ncols
+  tr = [(-w/2 + s/2 + s*col, h/2 - s/2 - s*row)
+        for row in range(unit.nrows)
+        for col in range(unit.ncols)]
+  squares = [affine.translate(sq, v[0], v[1]) for v in tr]
+  unit.setup_vectors((0, h), (w, 0))
+  unit.tiles = gpd.GeoDataFrame(
+    data = {"tile_id": sorted(list(string.ascii_letters)[:unit.n])},
+    crs = unit.crs,
+    geometry = gpd.GeoSeries(squares))
   return None
 
 
@@ -886,8 +995,8 @@ def _setup_square_colouring(unit:TileUnit) -> str|None:
       unit.setup_vectors((0,  x), (3*x/2,  x/2), (3*x/2, -x/2))
     case 4:
       # Copy and translate square
-      tr = [(-s/2, -s/2), (-s/2,  s/2),
-            ( s/2,  s/2), ( s/2, -s/2)]
+      tr = [(-s/2,  s/2), ( s/2,  s/2),
+            (-s/2, -s/2), ( s/2, -s/2)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
     case 5:
@@ -929,34 +1038,26 @@ def _setup_square_colouring(unit:TileUnit) -> str|None:
       unit.setup_vectors((0, 2*x), (2*x,  x), (2*x,  -x))
     case 9:
       # Copy and translate square
-      tr = [(-s, -s), (0, -s), ( s, -s),
+      tr = [(-s,  s), (0,  s), ( s,  s),
             (-s,  0), (0,  0), ( s,  0),
-            (-s,  s), (0,  s), ( s,  s)]
+            (-s, -s), (0, -s), ( s, -s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
     case 16:
       # Copy and translate square
-      tr = [(-3*s/2, -3*s/2), (-s/2, -3*s/2), ( s/2, -3*s/2), ( 3*s/2, -3*s/2),
-            (-3*s/2,   -s/2), (-s/2,   -s/2), ( s/2,   -s/2), ( 3*s/2,   -s/2),
+      tr = [(-3*s/2,  3*s/2), (-s/2,  3*s/2), ( s/2,  3*s/2), ( 3*s/2,  3*s/2),
             (-3*s/2,    s/2), (-s/2,    s/2), ( s/2,    s/2), ( 3*s/2,    s/2),
-            (-3*s/2,  3*s/2), (-s/2,  3*s/2), ( s/2,  3*s/2), ( 3*s/2,  3*s/2)]
-      squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-      unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
-    case 16:
-      # Copy and translate square
-      tr = [(-3*s/2, -3*s/2), (-s/2, -3*s/2), ( s/2, -3*s/2), ( 3*s/2, -3*s/2),
             (-3*s/2,   -s/2), (-s/2,   -s/2), ( s/2,   -s/2), ( 3*s/2,   -s/2),
-            (-3*s/2,    s/2), (-s/2,    s/2), ( s/2,    s/2), ( 3*s/2,    s/2),
-            (-3*s/2,  3*s/2), (-s/2,  3*s/2), ( s/2,  3*s/2), ( 3*s/2,  3*s/2)]
+            (-3*s/2, -3*s/2), (-s/2, -3*s/2), ( s/2, -3*s/2), ( 3*s/2, -3*s/2)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
     case 25:
       # Copy and translate square
-      tr = [(-2*s, -2*s), (-s, -2*s), (0, -2*s), ( s, -2*s), ( 2*s, -2*s),
-            (-2*s,   -s), (-s,   -s), (0,   -s), ( s,   -s), ( 2*s,   -s),
-            (-2*s,    0), (-s,    0), (0,    0), ( s,    0), ( 2*s,    0),
+      tr = [(-2*s,  2*s), (-s,  2*s), (0,  2*s), ( s,  2*s), ( 2*s,  2*s),
             (-2*s,    s), (-s,    s), (0,    s), ( s,    s), ( 2*s,    s),
-            (-2*s,  2*s), (-s,  2*s), (0,  2*s), ( s,  2*s), ( 2*s,  2*s)]
+            (-2*s,    0), (-s,    0), (0,    0), ( s,    0), ( 2*s,    0),
+            (-2*s,   -s), (-s,   -s), (0,   -s), ( s,   -s), ( 2*s,   -s),
+            (-2*s, -2*s), (-s, -2*s), (0, -2*s), ( s, -2*s), ( 2*s, -2*s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
     case _:
