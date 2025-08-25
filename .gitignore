@@ -22,3 +22,4 @@ papers/*/*
 .weaving-space/
 election-counties*
 *.Rproj
+weaving-space.code-workspace

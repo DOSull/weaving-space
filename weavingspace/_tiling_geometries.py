@@ -702,188 +702,133 @@ def _setup_hex_colouring(unit:TileUnit) -> str|None:
   if any(k not in unit.__dict__ for k in ["n"]):
     return ("""Hex colouring tiling requires n to be supplied.""")
   hexagon = tiling_utils.get_regular_polygon(unit.spacing / np.sqrt(unit.n), 6)
+  hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
   bounds = hexagon.bounds
-  w = bounds[2] - bounds[0]
-  h = bounds[3] - bounds[1]
+  # most distance offsets in these tilings conveniently expressed in terms of
+  # half the width and one quarter the height of point-up hexagons
+  w = (bounds[2] - bounds[0]) / 2
+  h = (bounds[3] - bounds[1]) / 4
   match unit.n:
     case 2:
       # Pair of point up hexes sideways displaced by width of a hex
       # Vectors are rectangular
-      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-      w, h = h, w
-      hexes = [affine.translate(hexagon, dx, 0) for dx in [-w/2, w/2]]
-      unit.setup_vectors((w/2, 3*h/4), (2*w, 0))
+      hexes = [affine.translate(hexagon, dx, 0) for dx in [-w, w]]
+      unit.setup_vectors((w, 3*h), (4*w, 0))
     case 3:
-      # Point up hex at '*' displaced to 3 positions:
-      #      2
-      #      *
-      #    3   1
-      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-      w, h = h, w
+      #  b
+      # c a
       # Copy and translate to alternate corners
       corners = [p for i, p in enumerate(hexagon.exterior.coords)
                  if i in (0, 2, 4)]
       hexes = [affine.translate(hexagon, p[0], p[1]) for p in corners]
-      unit.setup_vectors((0  ,  3*h/2), (3*w/2,  3*h/4), (3*w/2, -3*h/4))
+      unit.setup_vectors((0, 6*h), (3*w,  3*h), (3*w, -3*h))
     case 4:
       # Point up hex at '*' displaced to 4 positions:
-      #      2
-      #     3*1
-      #      4
-      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-      w, h = h, w
-      hex1 = affine.translate(hexagon, unit.spacing / 4, 0)
-      hex2 = affine.translate(hexagon, 0, unit.spacing * sqrt3 / 4)
-      hex3 = affine.translate(hexagon, -unit.spacing / 4, 0)
-      hex4 = affine.translate(hexagon, 0, -unit.spacing * sqrt3 / 4)
-      hexes = [hex1, hex2, hex3, hex4]
-      unit.setup_vectors((w,  3*h/2), (w, -3*h/2))
-    case 4:
-      # Point up hex at '*' displaced to 4 positions:
-      #      2
-      #     3*1
-      #      4
-      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-      w, h = h, w
-      hex1 = affine.translate(hexagon, unit.spacing / 4, 0)
-      hex2 = affine.translate(hexagon, 0, unit.spacing * sqrt3 / 4)
-      hex3 = affine.translate(hexagon, -unit.spacing / 4, 0)
-      hex4 = affine.translate(hexagon, 0, -unit.spacing * sqrt3 / 4)
-      hexes = [hex1, hex2, hex3, hex4]
-      unit.setup_vectors((w,  3*h/2), (w, -3*h/2))
+      #  b
+      # c a
+      #  d
+      tr = [(w, 0), (0, 3*h), (-w, 0), (0, -3*h)]
+      hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
+      unit.setup_vectors((2*w, 6*h), (2*w, -6*h))
     case 5:
-      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-      w, h = h, w
-      tr = [(-w,  h/4), (0,  h/4), ( w, h/4), (-w/2, -h/2), (w/2, -h/2)]
+      # a b c
+      #  d e
+      tr = [(-2*w, h), (0, h), (2*w, h), (-w, -2*h), (w, -2*h)]
       hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
-      unit.setup_vectors((0,  3*h/2), (5*w/2,  3*h/4), (5*w/2, -3*h/4))
+      unit.setup_vectors((0, 6*h), (5*w, 3*h), (5*w, -3*h))
     case 6:
-      hexagon = affine.rotate(hexagon, 30, origin = (0, 0))
-      w, h = h, w
-      tr = [(-5*w/4,  3*h/8), (-w/4,  3*h/8), (3*w/4,  3*h/8),
-            (-3*w/4, -3*h/8), ( w/4, -3*h/8), (5*w/4, -3*h/8)]
+      # a b c
+      #  d e f
+      tr = [(-5*w/2,  3*h/2), (-w/2,  3*h/2), (3*w/2,  3*h/2),
+            (-3*w/2, -3*h/2), ( w/2, -3*h/2), (5*w/2, -3*h/2)]
       hexes = [affine.translate(hexagon, v[0], v[1]) for v in tr]
-      unit.setup_vectors((0,  3*h/2), (3*w, 0))
+      unit.setup_vectors((0, 6*h), (6*w, 0))
     case 7:  # the 'H3' tile
-      # Make a hexagon and displace in the direction of its
-      # own 6 corners, scaled as needed
-      # base_hex = tiling_utils.get_regular_polygon(unit.spacing, 6)
-      # bounds = base_hex.bounds
-      # w = bounds[2] - bounds[0]
-      # h = bounds[3] - bounds[1]
-      # rotation = np.degrees(np.arctan(1 / 3 / sqrt3))
-      # corners = list(hexagon.exterior.coords)[:-1]
-      # hexagon = affine.rotate(hexagon, 30)
-      # hexes = [hexagon] + [affine.translate(
-      #   hexagon, x * sqrt3, y * sqrt3) for x, y in corners]
-      # hexes = [affine.rotate(h, rotation, origin = (0, 0))
-      #         for h in hexes]
-      # unit.setup_vectors((0,  h), (3*w/4,  h/2), (3*w/4, -h/2))
-      #   1 2
-      #  3 4 5
-      #   6 7
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
-      offsets = [ (-w/2,  3*h/4), (w/2,  3*h/4),
-                  (-w, 0),    (0, 0),   ( w, 0),
-                  (-w/2, -3*h/4), (w/2, -3*h/4) ]
+      #  a b
+      # c d e
+      #  f g
+      offsets = [(-w,  3*h), (w,  3*h),
+          (-2*w, 0),     (0, 0),    (2*w, 0),
+                 (-w, -3*h), (w, -3*h) ]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((w/2, 9*h/4), (5*w/2, 3*h/4), (2*w, -3*h/2))
+      unit.setup_vectors((w, 9*h), (5*w, 3*h), (4*w, -6*h))
     case 8:
-      #   1 2
-      #  3 4 5
-      #   6 7
-      #    8
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
-      offsets = [ (-w/2,  3*h/4), (w/2,  3*h/4),
-                  (-w, 0),    (0, 0),   ( w, 0),
-                  (-w/2, -3*h/4), (w/2, -3*h/4),
-                          (0, -3*h/2)]
+      #  a b
+      # c d e
+      #  f g
+      #   h
+      offsets = [(-w,  3*h),    ( w,  3*h),
+          (-2*w, 0),     (0,    0),     ( 2*w, 0),
+                 (-w, -3*h),    ( w, -3*h),
+                         (0, -6*h)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((0, 3*h), (2*w, 3*h/2), (2*w, -3*h/2))
+      unit.setup_vectors((0, 12*h), (4*w, 6*h), (4*w, -6*h))
     case 9:
-      #    1
-      #   2 3
-      #  4 5 6
-      #   7 8
-      #    9
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
-      offsets = [         (0,  3*h/2),
-                  (-w/2,  3*h/4), (w/2,  3*h/4),
-                  (-w, 0),    (0, 0),   ( w, 0),
-                  (-w/2, -3*h/4), (w/2, -3*h/4),
-                          (0, -3*h/2)]
+      #   a
+      #  b c
+      # d e f
+      #  g h
+      #   i
+      offsets = [      (0,   6*h),
+               (-w,  3*h),    (w,  3*h),
+        (-2*w, 0),     (0,    0),    ( 2*w, 0),
+               (-w, -3*h),    (w, -3*h),
+                       (0, -6*h)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((3*w/2, 9*h/4), (3*w/2, -9*h/4))
+      unit.setup_vectors((3*w, 9*h), (3*w, -9*h))
     case 10:
-      #   1 2 3
-      #  4 5 6 7
-      #   8 9 10
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
-      offsets = [ (-w, 3*h/4), (0, 3*h/4), (w, 3*h/4),
-                 (-3*w/2, 0), (-w/2, 0), (w/2, 0), (3*w/2, 0),
-                 (-w, -3*h/4), (0, -3*h/4), (w, -3*h/4)]
+      #  a b c
+      # d e f g
+      #  h i j
+      offsets = [(-2*w,  3*h),  (0,  3*h), (2*w,  3*h),
+          (-3*w, 0),       (-w, 0),    (w, 0),      (3*w, 0),
+                 (-2*w, -3*h),  (0, -3*h), (2*w, -3*h)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((w/2, 9*h/4), (7*w/2, 3*h/4), (3*w, -3*h/2))
+      unit.setup_vectors((w, 9*h), (7*w, 3*h), (6*w, -6*h))
     case 11:
-      # 1   2   3   4
-      #   5   6   7
-      # 8   9  10  11
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
-      offsets = [
-        (-3*w/2,  3*h/4), (-w/2,  3*h/4), (w/2,  3*h/4), (3*w/2, 3*h/4),
-                             (-w, 0), (0, 0), (w, 0),
-        (-3*w/2, -3*h/4), (-w/2, -3*h/4), (w/2, -3*h/4), (3*w/2, -3*h/4)]
+      # a b c d
+      #  e f g
+      # h i j k
+      offsets = [(-3*w,  3*h),    (-w,  3*h), (w,  3*h),   (3*w, 3*h),
+                           (-2*w, 0),     (0, 0),    (2*w, 0),
+                 (-3*w, -3*h),    (-w, -3*h), (w, -3*h),   (3*w, -3*h)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((w/2, 9*h/4), (4*w, 3*h/2), (7*w/2, -3*h/4))
+      unit.setup_vectors((w, 9*h), (8*w, 6*h), (7*w, -3*h))
     case 12:
-      #     1   2   3   4
-      #   5   6   7   8
-      # 9   10  11  12
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
-      offsets = [
-        (  -w  ,  3*h/4), (   0,  3*h/4), (w  ,  3*h/4), (2*w  , 3*h/4),
-        (-3*w/2,      0), (-w/2,      0), (w/2,      0), (3*w/2,     0),
-        (-2*w  , -3*h/4), (-w  , -3*h/4), (  0, -3*h/4), (  w  , -3*h/4)]
+      #   a b c d
+      #  e f g h
+      # i j k l
+      offsets = [(-2*w,  3*h), (   0,  3*h), (2*w,  3*h), (4*w,  3*h),
+                 (-3*w,    0), (  -w,    0), (  w,    0), (3*w,    0),
+                 (-4*w, -3*h), (-2*w, -3*h), (  0, -3*h), (2*w, -3*h)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((3*w/2, 9*h/4), (4*w, 0), (5*w/2, -9*h/4))
+      unit.setup_vectors((3*w, 9*h), (8*w, 0), (5*w, -9*h))
     case 13:
-      #   1   2   3   4
-      # 5   6   7   8   9
-      #   10  11  12  13
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
+      #  a b c d
+      # e f g h i
+      #  j k l m
       offsets = [
-            (-3*w/2,  3*h/4), (-w/2,  3*h/4), (w/2,  3*h/4), (3*w/2,  3*h/4),
-        (-2*w, 0),       (-w, 0),         (0, 0),        ( w, 0),      (2*w, 0),
-            (-3*w/2, -3*h/4), (-w/2, -3*h/4), (w/2, -3*h/4), (3*w/2, -3*h/4)]
+             (-3*w,  3*h),    (-w,  3*h), (w,  3*h),    (3*w,  3*h),
+      (-4*w, 0),       (-2*w, 0),     (0, 0),    ( 2*w, 0),      (4*w, 0),
+             (-3*w, -3*h),    (-w, -3*h), (w, -3*h),    (3*w, -3*h)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((w/2, 9*h/4), (9*w/2, 3*h/4), (4*w, -3*h/2))
+      unit.setup_vectors((w, 9*h), (9*w, 3*h), (8*w, -6*h))
     case 14:
-      #     1   2   3
-      #   4   5   6   7
-      # 8   9   10  11
-      #   12  13  14
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
+      #   a b c
+      #  d e f g
+      # h i j k
+      #  l m n
       offsets = [
-                          (-3*w/4,  9*h/8), (  w/4,  9*h/8), ( 5*w/4,  9*h/8),
-        (-5*w/4,  3*h/8), (  -w/4,  3*h/8), (3*w/4,  3*h/8), ( 7*w/4,  3*h/8),
-        (-7*w/4, -3*h/8), (-3*w/4, -3*h/8), (  w/4, -3*h/8), ( 5*w/4, -3*h/8),
-        (-5*w/4, -9*h/8), (  -w/4, -9*h/8), (3*w/4, -9*h/8)]
+                          (-3*w/2,  9*h/2), (  w/2,  9*h/2), ( 5*w/2,  9*h/2),
+        (-5*w/2,  3*h/2), (  -w/2,  3*h/2), (3*w/2,  3*h/2), ( 7*w/2,  3*h/2),
+        (-7*w/2, -3*h/2), (-3*w/2, -3*h/2), (  w/2, -3*h/2), ( 5*w/2, -3*h/2),
+        (-5*w/2, -9*h/2), (  -w/2, -9*h/2), (3*w/2, -9*h/2)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((w, 3*h), (4*w, 3*h/2), (3*w, -3*h/2))
+      unit.setup_vectors((2*w, 12*h), (8*w, 6*h), (6*w, -6*h))
     case 15:
-      #     1   2   3   4   5
-      #   6   7   8   9   10
-      # 11  12  13  14  15
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h/2, w/4
+      #   a b c d e
+      #  f g h i j
+      # k l m n o
       offsets = [
         (-3*w,  3*h), (  -w,  3*h), ( w,  3*h), (3*w,  3*h), (5*w,  3*h),
         (-4*w,    0), (-2*w,    0), ( 0,    0), (2*w,    0), (4*w,    0),
@@ -891,42 +836,59 @@ def _setup_hex_colouring(unit:TileUnit) -> str|None:
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
       unit.setup_vectors((3*w, 9*h), (10*w, 0))
     case 16:
-      #       1
-      #     2   3
-      #   4   5   6
-      # 7   8   9  10
-      #  11  12  13
-      #    14  15
-      #      16
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
-      offsets = [         (0,  9*h/4),
-                  (-w/2,  3*h/2), (w/2,  3*h/2),
-              (-w,  3*h/4), (0,  3*h/4),  ( w,  3*h/4),
-          (-3*w/2, 0), (-w/2, 0), ( w/2, 0), ( 3*w/2, 0),
-              (-w, -3*h/4), (0, -3*h/4),  ( w, -3*h/4),
-                  (-w/2, -3*h/2), (w/2, -3*h/2),
-                          (0, -9*h/4)]
+      #    a
+      #   b c
+      #  d e f
+      # g h i j
+      #  k l m
+      #   n o
+      #    p
+      offsets = [              (0,  9*h),
+                       (-w,  6*h),    (w,  6*h),
+             (-2*w,  3*h),     (0,  3*h),    ( 2*w,  3*h),
+      (-3*w, 0),       (-w,    0),    ( w,   0),       ( 3*w, 0),
+             (-2*w, -3*h),     (0, -3*h),    ( 2*w, -3*h),
+                       (-w, -6*h),    (w, -6*h),
+                               (0, -9*h)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
-      unit.setup_vectors((2*w, 3*h), (2*w, -3*h))
+      unit.setup_vectors((4*w, 12*h), (4*w, -12*h))
     case 19:
-      #       1   2   3
-      #     4   5   6   7
-      #   8   9   10  11  12
-      #     13  14  15  16
-      #       17  18  19
-      hexagon = affine.rotate(hexagon, 30, (0, 0))
-      w, h = h, w
-      offsets = [    (-w,  3*h/2), (0,  3*h/2),  ( w,  3*h/2),
-           (-3*w/2,  3*h/4), (-w/2,  3*h/4), ( w/2,  3*h/4), ( 3*w/2,  3*h/4),
-        (-2*w,  0),  (-w,      0), (0,      0),  ( w,      0), ( 2*w,  0),
-           (-3*w/2, -3*h/4), (-w/2, -3*h/4), ( w/2, -3*h/4), ( 3*w/2, -3*h/4),
-                     (-w, -3*h/2), (0, -3*h/2),  ( w, -3*h/2)]
+      #    a b c
+      #   l m n d
+      #  k r s o e
+      #   j q p f
+      #    i h g
+      offsets = [      (-2*w,  6*h), (0,  6*h), (2*w,  6*h),
+               (-3*w,  3*h), (-w,  3*h), ( w,  3*h), ( 3*w,  3*h),
+           (-4*w,  0), (-2*w,    0), (0,    0), (2*w,    0), ( 4*w,  0),
+               (-3*w, -3*h), (-w, -3*h), ( w, -3*h), ( 3*w, -3*h),
+                       (-2*w, -6*h), (0, -6*h), (2*w, -6*h)]
       hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
       reordered = [
         0, 1, 2, 6, 11, 15, 18, 17, 16, 12, 7, 3, 4, 5, 10, 14, 13, 8, 9]
       hexes = [hexes[i] for i in reordered]
-      unit.setup_vectors((w/2, 15*h/4), (4*w, 3*h/2), (7*w/2, -9*h/4))
+      unit.setup_vectors((w, 15*h), (8*w, 6*h), (7*w, -9*h))
+    case 37:
+      #    A B C D
+      #   g h i j E
+      #  f s t u k F
+      # e r y z v l G
+      #  d q x w m H
+      #   c p o n I
+      #    b a K J 
+      offsets = [ (-3*w, 9*h), (-w, 9*h), (w, 9*h), (3*w, 9*h),
+              (-4*w, 6*h), (-2*w, 6*h), (0, 6*h), (2*w, 6*h), ( 4*w, 6*h),
+          (-5*w, 3*h), (-3*w, 3*h), (-w, 3*h), (w, 3*h), (3*w, 3*h), (5*w, 3*h), 
+      (-6*w, 0), (-4*w, 0), (-2*w, 0), (0, 0), (2*w, 0), (4*w, 0), (6*w, 0),  
+          (-5*w, -3*h), (-3*w, -3*h), (-w, -3*h), (w, -3*h), (3*w, -3*h), (5*w, -3*h), 
+               (-4*w, -6*h), (-2*w, -6*h), (0, -6*h), (2*w, -6*h), (4*w, -6*h),
+                       (-3*w, -9*h), (-w, -9*h), (w, -9*h), (3*w, -9*h)]
+      hexes = [affine.translate(hexagon, dx, dy) for dx, dy in offsets]
+      reordered = [0, 1, 2, 3, 8, 14, 21, 27, 32, 36, 35, 34, 33,
+                   28, 22, 15, 9, 4, 5, 6, 7, 13, 20, 26, 31, 30,
+                   29, 23, 16, 10, 11, 12, 19, 25, 24, 17, 18]
+      hexes = [hexes[i] for i in reordered]
+      unit.setup_vectors((w, 21*h), (11*w, 9*h), (10*w, -12*h))
     case _:
       return (f"""{unit.n}-colouring of hexes is not supported.
               Try a number between 2 and 9, or 16.""")
@@ -988,54 +950,43 @@ def _setup_square_colouring(unit:TileUnit) -> str|None:
       unit.setup_vectors((0, s), (2*s, 0))
     case 3:
       # Copy and translate square
-      tr = [(-s/2, -s/2), (s/2, -s/2), (-s/2, s/2)]
+      tr = [(-s/2,  s/2),
+            (-s/2, -s/2), (s/2, -s/2)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-      squares = [affine.rotate(sq, 45, (0, 0)) for sq in squares]
-      x = s * sqrt2
-      unit.setup_vectors((0,  x), (3*x/2,  x/2), (3*x/2, -x/2))
+      unit.setup_vectors((s, s), (-s, 2*s), (2*s, -s))
     case 4:
       # Copy and translate square
-      tr = [(-s/2,  s/2), ( s/2,  s/2),
-            (-s/2, -s/2), ( s/2, -s/2)]
+      tr = [(-s/2,  s/2), ( s/2,  s/2), (-s/2, -s/2), ( s/2, -s/2)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
     case 5:
       # Copy and translate square
-      tr = [( 0, 0),
-            ( s, 0), (0,  s),
-            (-s, 0), (0, -s)]
+      tr = [         (0,  s), 
+            (-s, 0), (0,  0), ( s, 0),
+                     (0, -s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-      rotation = np.degrees(np.arctan2(1, 2))
-      squares = [affine.rotate(sq, rotation, origin = (0, 0))
-                 for sq in squares]
-      unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
+      unit.setup_vectors((s, 2*s), (2*s, -s))
     case 6:
       # Copy and translate square
-      tr = [(-s, -s), (0, -s),
-            (-s,  0), (0,  0), ( s,  0),
-                      (0,  s)]
+      tr = [(-s, s), (0,  s),
+            (-s, 0), (0,  0), ( s,  0),
+                     (0, -s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-      squares = [affine.rotate(sq, -45, origin = (0, 0)) for sq in squares]
-      x = s * sqrt2
-      unit.setup_vectors(( x/2,  3*x/2), (2*x,  0), (3*x/2, -3*x/2))
+      unit.setup_vectors((0, 3*s), (2*s, s), (2*s, -2*s))
     case 7:
       # Copy and translate square
-      tr = [(-s, -s), (0, -s),
-            (-s,  0), (0,  0), ( s,  0),
-                      (0,  s), ( s,  s)]
+      tr = [(-s, s), (0,  s),
+            (-s, 0), (0,  0), ( s,  0),
+                     (0, -s), ( s, -s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-      squares = [affine.rotate(sq, -45, (0, 0)) for sq in squares]
-      x = s * sqrt2
-      unit.setup_vectors(( x/2,  3*x/2), (5*x/2,  x/2), (2*x, -x))
+      unit.setup_vectors((2*s, s), (3*s, -2*s), (s, -3*s))
     case 8:
       # Copy and translate square
-      tr = [(-s, -s), (0, -s), ( s, -s),
-            (-s,  0), (0,  0), ( s,  0),
-            (-s,  s), (0,  s)]
+      tr = [(-s,  s), (0,  s), ( s, s),
+            (-s,  0), (0,  0), ( s, 0),
+            (-s, -s), (0, -s)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
-      squares = [affine.rotate(sq, 45, origin = (0, 0)) for sq in squares]
-      x  = s * sqrt2
-      unit.setup_vectors((0, 2*x), (2*x,  x), (2*x,  -x))
+      unit.setup_vectors((s, 3*s), (3*s, s), (2*s, -2*s))
     case 9:
       # Copy and translate square
       tr = [(-s,  s), (0,  s), ( s,  s),

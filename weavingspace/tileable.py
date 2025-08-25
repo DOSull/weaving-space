@@ -504,6 +504,7 @@ class Tileable:
       xa:float = 0.0,
       ya:float = 0.0,
       independent_of_tiling:bool = False,
+      rescale = True
     ) -> "Tileable":
     """Transform tiling by skewing.
 
@@ -513,31 +514,32 @@ class Tileable:
       independent_of_tiling (bool, optional): if True Tileable is skewed while
         leaving the translation vectors untouched, so that it can change shape
         independent from its situation when tiled. Defaults to False.
+      rescale (bool, optional): if True rescales the result so that overall
+        size and extent is more or less unaffected by the skew, otherwise the
+        simultaneous application of both x and y shears may dramatically alter
+        the size of tiling. Defaults to True.
 
     Returns:
       Tileable: the transformed Tileable.
 
     """
     result = copy.deepcopy(self)
+    area_0 = result.prototile.geometry[0].area
     result.tiles.geometry = (self.tiles.geometry
-                             .skew(xa, ya, origin=(0, 0))
-                             .scale(np.cos(np.radians(xa)),
-                                    np.cos(np.radians(ya)),
-                                    origin = (0, 0)))
+                             .skew(xa, ya, origin=(0, 0)))
     if not independent_of_tiling:
       result.prototile.geometry = (self.prototile.geometry
-                                   .skew(xa, ya, origin=(0, 0))
-                                   .scale(np.cos(np.radians(xa)),
-                                          np.cos(np.radians(ya)),
-                                          origin = (0, 0)))
+                                   .skew(xa, ya, origin=(0, 0)))
       result.regularised_prototile.geometry = (
         self.regularised_prototile.geometry
-            .skew(xa, ya, origin=(0, 0))
-            .scale(np.cos(np.radians(xa)),
-                   np.cos(np.radians(ya)),
-                   origin = (0, 0)))
+            .skew(xa, ya, origin=(0, 0)))
       result._set_vectors_from_prototile()
-    return result
+    if rescale and xa != 0 and ya != 0:
+      area_1 = result.prototile.geometry[0].area
+      sf = np.sqrt(area_0 / area_1)
+      return result.transform_scale(sf, sf, independent_of_tiling)
+    else:
+      return result
 
 
   def _set_vectors_from_prototile(self) -> None:
@@ -569,6 +571,11 @@ class Tileable:
       vec_dict = {
         (i, j, k): v for i, j, k, v in zip(i, j, k, vecs, strict = True)}
     self.vectors = vec_dict
+
+
+  def _get_mean_translation(self):
+    return np.mean(
+      [np.sqrt(dx ** 2 + dy ** 2) for (dx, dy) in self.get_vectors()])
 
 
   def plot(
