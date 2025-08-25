@@ -278,16 +278,15 @@ def _setup_stripes(unit:TileUnit) -> str|None:
   if "n" not in unit.__dict__:
     return ("""Stripes tiling requires n to be supplied.""")
   ymin, ymax = -unit.spacing / 2, unit.spacing / 2
-  xs = [unit.spacing * (i - unit.n / 2) / unit.n  for i in range(unit.n + 1)]
-  stripes = []
-  for xmin, xmax in zip(xs[:-1], xs[1:]):
-    stripes.append(geom.Polygon([(xmin, ymin), (xmin, ymax), 
-                                 (xmax, ymax), (xmax, ymin)]))
+  xs = [unit.spacing * x for x in np.linspace(-.5, .5, unit.n + 1)]
+  stripes = [geom.Polygon([(xmin, ymin), (xmin, ymax), 
+                           (xmax, ymax), (xmax, ymin)])
+             for xmin, xmax in zip(xs[:-1], xs[1:])]
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(stripes))
-  unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
+  unit.setup_vectors((unit.spacing, 0), (0, unit.spacing))
   return None
 
 
@@ -891,7 +890,7 @@ def _setup_hex_colouring(unit:TileUnit) -> str|None:
       unit.setup_vectors((w, 21*h), (11*w, 9*h), (10*w, -12*h))
     case _:
       return (f"""{unit.n}-colouring of hexes is not supported.
-              Try a number between 2 and 9, or 16.""")
+              Try a number between 2 and 16, or 19, or 37.""")
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
@@ -956,7 +955,8 @@ def _setup_square_colouring(unit:TileUnit) -> str|None:
       unit.setup_vectors((s, s), (-s, 2*s), (2*s, -s))
     case 4:
       # Copy and translate square
-      tr = [(-s/2,  s/2), ( s/2,  s/2), (-s/2, -s/2), ( s/2, -s/2)]
+      tr = [(-s/2,  s/2), ( s/2,  s/2), 
+            (-s/2, -s/2), ( s/2, -s/2)]
       squares = [affine.translate(sq, v[0], v[1]) for v in tr]
       unit.setup_vectors((0, unit.spacing), (unit.spacing, 0))
     case 5:
