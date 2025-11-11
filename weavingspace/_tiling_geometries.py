@@ -134,25 +134,23 @@ def _setup_cairo(unit:TileUnit) -> None:
                      (x * sqrt3/2, x + x/2),
                      (x * (1 + sqrt3) / 2, x * (3 - sqrt3) / 2)])
   p1 = affine.rotate(p1, -15, (0, 0))
-  p2 = affine.rotate(p1, 90, (0, 0))
+  p2 = affine.rotate(p1,  90, (0, 0))
   p3 = affine.rotate(p1, 180, (0, 0))
   p4 = affine.rotate(p1, 270, (0, 0))
-  # now move them so they are arranged as a hexagon centered on the tile
+  # now move so they are arranged as a hexagon centered on the tile
   p1 = affine.translate(p1, -unit.spacing / 2, 0)
-  p2 = affine.translate(p2, unit.spacing / 2, 0)
-  p3 = affine.translate(p3, unit.spacing / 2, 0)
+  p2 = affine.translate(p2,  unit.spacing / 2, 0)
+  p3 = affine.translate(p3,  unit.spacing / 2, 0)
   p4 = affine.translate(p4, -unit.spacing / 2, 0)
   polys = [affine.rotate(p, 45, origin = (0, 0)) for p in [p1, p2, p3, p4]]
   # MAKE THE GEODATAFRAME
   unit.tiles = gpd.GeoDataFrame(
     data = {"tile_id": list("abcd")}, crs = unit.crs,
     geometry = gpd.GeoSeries(polys))
-
   # SET THE TRANSLATION VECTORS
   unit.setup_vectors((unit.spacing / sqrt2,  unit.spacing/sqrt2),
                      (unit.spacing / sqrt2, -unit.spacing/sqrt2))
-
-  # RETURN NONE - not strictly necessary, if all is well
+  return None
 
 
 def _setup_hex_slice(unit:TileUnit) -> str|None:
@@ -168,7 +166,8 @@ def _setup_hex_slice(unit:TileUnit) -> str|None:
   intervening hexagon corners) and the hexagon centre to form a pie slice.
   unit.offset = 0 starts from corner 0. unit.offset = 1 starts half way between
   corner 0 and where corner 1 would be if offset were 0. Other values of
-  unit.offset scale linearly between these.
+  unit.offset scale linearly between these. Negative offsets similarly move the
+  first corner towards the corner before corner 0 in the offset = 0 case. 
 
   Args:
     unit (TileUnit):  the TileUnit to setup.
@@ -183,9 +182,9 @@ def _setup_hex_slice(unit:TileUnit) -> str|None:
     data = {"tile_id": list(string.ascii_letters)[:unit.n]},
     crs = unit.crs,
     geometry = gpd.GeoSeries(slices))
-  unit.setup_vectors((                     0,  unit.spacing    ),
-                     (unit.spacing * sqrt3/2,  unit.spacing / 2),
-                     (unit.spacing * sqrt3/2, -unit.spacing / 2))
+  unit.setup_vectors((                       0,  unit.spacing    ),
+                     (unit.spacing * sqrt3 / 2,  unit.spacing / 2),
+                     (unit.spacing * sqrt3 / 2, -unit.spacing / 2))
   return None
 
 def _setup_square_slice(unit:TileUnit) -> str|None:
@@ -198,7 +197,8 @@ def _setup_square_slice(unit:TileUnit) -> str|None:
   intervening squares corners) and the square centre to form a pie slice.
   unit.offset = 0 starts from corner 0. unit.offset starts half way between
   corner 0 and where corner 1 would be if offset were 0. Other values of
-  unit.offset scale linearly between these.
+  unit.offset scale linearly between these. Negative offsets similarly move the
+  first corner towards the corner before corner 0 in the offset = 0 case.
 
   Args:
     unit (TileUnit): the TileUnit to setup.
@@ -226,29 +226,26 @@ def _get_radially_sliced_polygon(
   Args:
     shape (geom.Polygon): the polygon to slice up.
     n_slices (int): the desired number of slices.
-    offset (float): a linearly scaled positional offset for the starting
-      point of the slices. 0 is at the first vertex. 1 is halfway between
-      that and the next vertex.
+    offset (float): a linearly scaled positional offset for the starting point
+      point of the slices. 0 is at the first vertex. 1 is halfway between that
+      and the next vertex. -1 is halfway between 0 and the previous vertex.
 
   Returns:
       gpd.GeoSeries: a set of slice polygons.
 
   """
   n_sides = len(shape.exterior.coords) - 1
-  boundary = geom.LineString(shape.exterior.coords)
   if abs(offset) > 1:
     offset = offset % 1
-  # offset = (offset % 1
-  #           if offset < 0 or offset > 1
-  #           else offset)
   offset = (offset * n_sides / n_slices / 2
             if n_slices >= n_sides
             else offset / 2)
   # the values in along are denominated in 'side counts' i.e. they run from
-  # 0 to the number of sides, with e.g., 2,5 halfway along the 3rd side
+  # 0 to the number of sides, with e.g., 2.5 halfway along the 3rd side
   along = [n_sides * i / n_slices + offset for i in range(n_slices)]
   along = [*along, n_sides + along[0]]
   # the cut points
+  boundary = geom.LineString(shape.exterior.coords)
   points = [line_interpolate_point(
     boundary, (a % n_sides) / n_sides, normalized = True) for a in along]
   # the corners of the original polygon
@@ -257,15 +254,15 @@ def _get_radially_sliced_polygon(
   # now we iterate over the list of values in along and in points in parallel
   # checking if any cut point has 'skipped' a corner when the integer part
   # of the values from the along list will be different
-  for a1, a2, p1, p2 in zip(along[:-1], along[1:],
-                            points[:-1], points[1:], strict = True):
+  for a1, a2, p1, p2 in zip(along[:-1],  along[1:],
+                           points[:-1], points[1:], strict = True):
     if math.floor(a1) == math.floor(a2):
       # two cut points on same polygon edge, so make the slice
       slices.append(geom.Polygon([p1, p2, (0, 0)]))
     else:
-      # there is at least one corner between the cut points so get them
+      # there are one or more corners between the cut points so get them
       skipped_corners = corners[math.ceil(a1):math.ceil(a2)]
-      # but discard any that are close to the cut points...
+      # but discard any that are close to the cut points to avoid duplicates
       skipped_corners = [
         c for c in skipped_corners
         if not (np.isclose(c.distance(p1), 0, rtol = 1e-6, atol = 1e-6)
@@ -296,7 +293,7 @@ def _setup_crosses(unit:TileUnit) -> str|None:
   The supplied unit should have n set. The specific arrangements used are
   more or less arbitrary, worked out on inkscape and/or with pencil and paper.
   There is probably an algorithmic way to relate the arrangement of crosses
-  and the tiling translation vectors, but this is fine for present purposes.
+  and the tiling translation vectors, but this is fine for now.
 
   Args:
     unit (TileUnit):  the TileUnit to setup.
@@ -316,9 +313,9 @@ def _setup_crosses(unit:TileUnit) -> str|None:
       parts = [affine.translate(cross, dx, dy) for dx, dy in trans]
       unit.setup_vectors((-3*x, -x), (-x, 3*x))
     case 3:
-      trans = [(-3*x/2, -x), (-x/2, x), (3*x/2, 0)]
+      trans = [(-x, -2*x), (0, 0), (x, 2*x)]
       parts = [affine.translate(cross, dx, dy) for dx, dy in trans]
-      unit.setup_vectors((-4*x, -3*x), (-5*x, 0), (-x,  3*x))
+      unit.setup_vectors((-x, 3*x), (4*x, 3*x))
     case 4:
       trans = [(3*x/2, x/2), (x/2, -3*x/2), (-3*x/2, -x/2), (-x/2, 3*x/2)]
       parts = [affine.translate(cross, dx, dy) for dx, dy in trans]
@@ -346,6 +343,7 @@ def _setup_crosses(unit:TileUnit) -> str|None:
     geometry = gpd.GeoSeries(parts))
   return None
 
+
 def _setup_laves(unit:TileUnit) -> str|None:
   """Set up Laves tilings.
 
@@ -367,8 +365,8 @@ def _setup_laves(unit:TileUnit) -> str|None:
     case "3.3.3.3.3.3":
       # this is the regular hexagons
       unit.base_shape = TileShape.HEXAGON
-      return ("""Laves 6.6.6 is a basic hexagonal tiling. Perhaps you want a
-              hex-colouring, hex-slice or hex-dissection tiling?""")
+      return ("""Laves 3.3.3.3.3.3 is a basic hexagonal tiling. Perhaps you
+              want a hex-colouring, hex-slice or hex-dissection tiling?""")
     case "3.3.3.3.6":
       # this one needs its own code
       _setup_laves_3_3_3_3_6(unit)
@@ -383,12 +381,12 @@ def _setup_laves(unit:TileUnit) -> str|None:
       # king of tilings!
       _setup_cairo(unit)
     case "3.4.6.4":
-      # the hex 6-dissection
+      # the hex 6-slice
       unit.n = 6
       unit.offset = 1
       _setup_hex_slice(unit)
     case "3.6.3.6":
-      # hex 3-dissection (also a cube weave!)
+      # hex 3-slice
       unit.n = 3
       unit.offset = 0
       _setup_hex_slice(unit)
@@ -401,13 +399,12 @@ def _setup_laves(unit:TileUnit) -> str|None:
       return ("""Laves 4.4.4.4 is a basic square tiling. Perhaps you want a
               square-colouring or square-slice tiling?""")
     case "4.6.12":
-      # hex 12-dissection
+      # hex 12-slice
       unit.n = 12
       unit.offset = 0
       _setup_hex_slice(unit)
     case "4.8.8":
-      # this one needs its own (a 4-dissection of the square)
-      # perhaps to be added as a category later...
+      # square 4-slice
       unit.n = 4
       unit.offset = 0.0
       _setup_square_slice(unit)

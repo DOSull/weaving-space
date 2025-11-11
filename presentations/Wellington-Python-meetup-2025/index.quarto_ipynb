@@ -1,0 +1,212 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Look ma!<br>(Almost)<br>no javascript!\"\n",
+        "author: David O'Sullivan, Geospatial Stuff\n",
+        "format: \n",
+        "  revealjs:\n",
+        "    theme: [beige, custom.scss]\n",
+        "    transition: fade\n",
+        "    transition-speed: slow\n",
+        "    navigation-mode: vertical\n",
+        "    fragment-in-url: true\n",
+        "    # controls-layout: bottom-right\n",
+        "    # controls-tutorial: true\n",
+        "    slide-number: c/t\n",
+        "    center: true\n",
+        "    # logo: images/logo.png\n",
+        "    footer: \"Wellington Python meetup - 2025\"\n",
+        "    self-contained: true\n",
+        "jupyter: python3\n",
+        "---"
+      ],
+      "id": "333f1538"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| echo: false\n",
+        "import os\n",
+        "os.chdir(\"/Users/david/Documents/code/weaving-space\")"
+      ],
+      "id": "f25079dc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# Mapping multivariate<br>data is hard {.smaller background-image=\"images/detailed-weave.png\" background-opacity=0.65 style=\"text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;\"}\n",
+        "\n",
+        "##\n",
+        "\n",
+        "::: {.r-stack}\n",
+        "![](images/small-multiples.png \"Tufte recommends this approach\"){.fragment .fade-out fragment-index=1 width=\"800\"}\n",
+        "\n",
+        "![](images/bivariate-choropleth-stevens-qgis.png \"2-colours, OK\"){.fragment .fade-in-then-out fragment-index=1 width=\"800\"}\n",
+        "\n",
+        "![](images/tricolore.png \"3-colours, brown\"){.fragment .fade-in-then-out fragment-index=2 width=\"800\"}\n",
+        "\n",
+        "![](images/choropleth-with-symbols-qgis.png \"Probably the most conventional option\"){.fragment .fade-in-then-out fragment-index=3 width=\"800\"}\n",
+        "\n",
+        "![](images/dorling-chernoff-faces.jpg \"Probably the least conventional option\"){.fragment .fade-in-then-out fragment-index=4 width=\"500\"}\n",
+        "\n",
+        "![](images/dot-map.png \"This approach is older than you might imagine, see Jenks GF, 1953, “‘Pointilism’ as a cartographic technique” The Professional Geographer 5(5) 4–6\n",
+        "\"){.fragment .fade-in fragment-index=5 width=\"800\"}\n",
+        ":::\n",
+        "\n",
+        "# Mapweaver {.smaller background-image=\"images/mapweaver-app.png\" background-opacity=0.65 style=\"text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;\"}\n",
+        "\n",
+        "At [dosull.github.io/mapweaver/app/](https://dosull.github.io/mapweaver/app/)\n",
+        "\n",
+        "# `weavingspace` {.smaller background-image=\"images/imd-escher.png\" background-opacity=0.65 style=\"text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;\"}\n",
+        "\n",
+        "## Making a tiled map\n",
+        "`weavingspace` is a python module developed for making tiled maps\n",
+        "\n",
+        "[github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)\n",
+        "\n",
+        "Uses `geopandas` and a lot of geometry, leveraging `shapely`\n",
+        "\n",
+        "Implements many options (well over a hundred tilings and weave tiling patterns)\n",
+        "\n",
+        "##\n"
+      ],
+      "id": "6f057868"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "output-location": "slide"
+      },
+      "source": [
+        "#| echo: true\n",
+        "\n",
+        "import geopandas as gpd             # <1>\n",
+        "from weavingspace import TileUnit   # <2>  \n",
+        "from weavingspace import Tiling     # <3>\n",
+        "\n",
+        "data = gpd.read_file(\"examples/data/imd-auckland-2018.gpkg\")\n",
+        "tile = TileUnit(tiling_type = \"cairo\", spacing = 500, \n",
+        "                crs = data.crs).inset_prototile(10)\n",
+        "tile.plot(r = 1, show_vectors = True)"
+      ],
+      "id": "cd053004",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "1. `geopandas` adds 'geometry' to `pandas` dataframes.\n",
+        "2. A `TileUnit` stores geometry of a tiling and translation vectors so we can tile a map.\n",
+        "3. A `Tiling` is the result of applying a `TileUnit` to a geospatial dataset.\n",
+        "\n",
+        "## The tiling process\n",
+        "<!-- The `Tiling` holds a `TileGrid` which determines where to translate copies of the tileable units to form a tiled map.\n",
+        "\n",
+        "![](images/the-tiling-process.png)-->\n",
+        "\n",
+        "::: {.r-stack}\n",
+        "\n",
+        "![](images/the-tiling-process-1.png){width=\"1482\"}\n",
+        "\n",
+        "![](images/the-tiling-process-2.png){.fragment .fade-in fragment-index=1 width=\"1482\"}\n",
+        "\n",
+        "![](images/the-tiling-process-3.png){.fragment .fade-in fragment-index=2 width=\"1482\"}\n",
+        "\n",
+        "![](images/the-tiling-process-4.png){.fragment .fade-in fragment-index=3 width=\"1482\"}\n",
+        "\n",
+        "![](images/the-tiling-process-5.png){.fragment .fade-in fragment-index=4 width=\"1482\"}\n",
+        "\n",
+        "![](images/the-tiling-process-6.png){.fragment .fade-in fragment-index=5 width=\"1482\"}\n",
+        ":::\n",
+        "\n",
+        "##\n"
+      ],
+      "id": "16b6adf5"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "output-location": "slide"
+      },
+      "source": [
+        "#| echo: true\n",
+        "\n",
+        "tiling = Tiling(tile, data) # <1> \n",
+        "tiled_map = tiling.get_tiled_map(prioritise_tiles = True)\n",
+        "\n",
+        "tiled_map.legend        = False # <2>\n",
+        "tiled_map.ids_to_map    = list(\"abcd\")\n",
+        "tiled_map.vars_to_map   = [\"Rank_Emplo\", \"Rank_Crime\", \n",
+        "                           \"Rank_Housi\", \"Rank_Incom\"]\n",
+        "tiled_map.colors_to_use = [\"Reds\", \"Blues\", \"Greens\", \"Greys\"]\n",
+        "\n",
+        "tiled_map.render() # <3>"
+      ],
+      "id": "0d84f25f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "1. Make the tiling and get a map.\n",
+        "2. Set up a bunch of parameters for the final map.\n",
+        "3. Render.\n",
+        "\n",
+        "## Challenges {background-image=\"images/chevron-fabric.jpg\" background-opacity=0.65 background-transition=\"none\"} \n",
+        "\n",
+        "::: {.fragment .semi-fade-out .shrink fragment-index=1}\n",
+        "Using colour well is hard at the best of times&mdash;using several colours at once is even harder!\n",
+        "\n",
+        "Potential for use in combination with hierarchical spatial indices like H3?\n",
+        "\n",
+        "Legends are a challenge&mdash;ideas welcome!\n",
+        "\n",
+        "We've worked hard to make the code easy to use...\n",
+        ":::\n",
+        "\n",
+        "::: {.fragment .highlight-red fragment-index=1}\n",
+        "... but it's still code\n",
+        ":::\n",
+        "\n",
+        "# Enter `marimo` {.smaller background-image=\"images/marimo-moss-ball.jpg\" background-opacity=1 style=\"text-shadow: 2px 2px 5px #ffc, -2px -2px 5px #ffc;\"}\n",
+        "Image from [flickr.com](https://www.flickr.com/photos/limako/40100136635/) by [Steven Brewer](https://www.flickr.com/photos/limako/). [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/deed.en).\n",
+        "\n",
+        "## {data-background-iframe=\"https://docs.marimo.io\" background-interactive=true}\n",
+        "\n",
+        "## {data-background=\"images/vermeer-the-geographer.jpg\" background-opacity=0.5}\n",
+        "\n",
+        "<h2>Live demo time!</h2>\n",
+        "\n",
+        "## {style=\"text-align:center;\"}\n",
+        "### Questions? {.r-fit-text} \n",
+        "[github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)\n",
+        "\n",
+        "[dosull.github.io/mapweaver/app/](https://dosull.github.io/mapweaver/app/)\n",
+        "\n",
+        "[dosull.github.io](https://dosull.github.io)"
+      ],
+      "id": "d7b4a625"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

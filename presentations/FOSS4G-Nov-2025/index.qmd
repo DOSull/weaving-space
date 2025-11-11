@@ -1,0 +1,223 @@
+---
+title: "Weavingspace: a new way to make multivariate maps"
+author: 
+  - name: David O'Sullivan
+    affiliations: 
+      - name: Geospatial Stuff
+      - name: University of Auckland
+format: 
+  revealjs:
+    theme: [serif, custom.scss]
+    transition: none
+    navigation-mode: vertical
+    fragment-in-url: true
+    slide-number: c/t
+    center: true
+    logo: images/logo.png
+    footer: "FOSS4G Oceania 2025"
+    self-contained: false
+jupyter: python3
+knitr:
+  opts_chunk: 
+    warning: false
+    message: false
+execute: 
+  freeze: auto
+  cache: true
+---
+
+# Mapping multivariate data
+A hard problem
+
+Many methods have been tried
+
+##
+::: {.r-stack}
+![](images/01-small-multiples.png "Tufte recommends this approach"){.fragment .fade-out fragment-index=1 width="800"}
+
+![](images/02-bivariate-choropleth-stevens-qgis.png "2-colours, OK"){.fragment .fade-in-then-out fragment-index=1 width="800"}
+
+![](images/03-tricolore.png "3-colours, brown"){.fragment .fade-in-then-out fragment-index=2 width="800"}
+
+![](images/04-choropleth-with-symbols-qgis.png "Probably the most conventional option"){.fragment .fade-in-then-out fragment-index=3 width="800"}
+
+![](images/05-dorling-chernoff-faces.jpg "Probably the least conventional option"){.fragment .fade-in-then-out fragment-index=4 width="500"}
+
+![](images/06-dot-map.png "This approach is older than you might imagine, see Jenks GF, 1953, “‘Pointilism’ as a cartographic technique” The Professional Geographer 5(5) 4–6
+"){.fragment .fade-in fragment-index=5 width="800"}
+:::
+
+# Enter `weavingspace` {.smaller background-image="images/00-bg-detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+
+## TL;DR;
+We've developed a method based on tiling
+
+Two types of thematic map for complex multivariate data
+
+Elements in a tiling 'pick up' data from area units by overlay so we can combine multiple choropleths into a single map
+
+&nbsp;   
+
+::: aside
+Maps on the next slide are of the IMD. See: Exeter DJ, Zhao J, Crengle S, Lee A, Browne M, 2017, [The New Zealand Indices of Multiple Deprivation (IMD): A new suite of indicators for social and health research in Aotearoa, New Zealand](https://dx.plos.org/10.1371/journal.pone.0181260) _PLOS ONE_ **12**(8) e0181260
+:::
+
+## {transition="none" data-background-image="images/07-ak-imd-4-triangles.png" background-size="contain"}
+
+## {transition="none" data-background-image="images/08-ak-imd-twill.png" background-size="contain"}
+
+# How it works
+`weavingspace` is a python module developed for making tiled maps
+
+See [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
+
+`pip install weavingspace`
+
+Uses `geopandas` and a _lot_ of geometry, leveraging `shapely`
+
+Implements many options (well over a hundred tilings and weave tiling patterns)
+
+##
+```python
+import geopandas as gpd
+from weavingspace import TileUnit   # <1>  
+from weavingspace import Tiling     # <2>
+
+tile = TileUnit(tiling_type = "cairo", spacing = 500, 
+                crs = ak.crs).inset_prototile(10)
+tile.plot(r = 1, show_vectors = True)
+```
+1. A `TileUnit` stores geometry of a tiling and translation vectors so we can tile a map.
+2. A `Tiling` is the result of applying a `TileUnit` to a geospatial dataset.
+
+## {data-background-image="images/09-cairo-unit.png" background-size="contain"}
+
+## The tiling process
+::: {.r-stack}
+![](images/10A-the-tiling-process-1.png){width="1482"}
+
+![](images/10B-the-tiling-process-2.png){.fragment .fade-in fragment-index=1 width="1482"}
+
+![](images/10C-the-tiling-process-3.png){.fragment .fade-in fragment-index=2 width="1482"}
+
+![](images/10D-the-tiling-process-4.png){.fragment .fade-in fragment-index=3 width="1482"}
+
+![](images/10E-the-tiling-process-5.png){.fragment .fade-in fragment-index=4 width="1482"}
+
+![](images/10F-the-tiling-process-6.png){.fragment .fade-in fragment-index=5 width="1482"}
+:::
+
+##
+```python
+tiling = Tiling(tile, ak) # <1> 
+tiled_map = tiling.get_tiled_map(prioritise_tiles = True)
+
+tiled_map.legend        = False # <2>
+tiled_map.ids_to_map    = list("abcd")
+tiled_map.vars_to_map   = ["income", "employment", "crime", "housing"]
+tiled_map.colors_to_use = ["Reds", "Blues", "Greens", "Greys"]
+
+fig = tiled_map.render() # <3>
+```
+1. Make the tiling and get a map.
+2. Set up a bunch of parameters for the final map.
+3. Render.
+
+## {data-background-image="images/11-ak-imd-cairo.png" background-size="contain"}
+
+# Many options {.smaller background-image="images/00-bg-detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+
+## Biaxial weaves
+![](images/12-biaxial.png)
+
+## Triaxial weaves
+![](images/13-triaxial.png)
+
+## Archimedean tilings
+![](images/14-archimedean.png)
+
+## Laves tilings
+![](images/15-laves.png)
+
+## Square colourings
+![](images/16-square-colouring.png)
+
+## Hexagon colourings {background-color="white"}
+![](images/17-hex-colouring.png)
+
+## Square slices
+![](images/18-square-slice.png)
+
+## Hexagon slices
+![](images/19-hex-slice.png)
+
+## Square and hexagon dissections
+![](images/20-dissections.png)
+
+## Crosses
+![](images/21-crosses.png)
+
+## Stars (and polygons)
+![](images/22-stars.png)
+
+## Stripes
+![](images/23-stripes.png)
+
+## Larger _n_ tilings
+![](images/24-large-n.png)
+
+## Modifying tiles (experimental)
+![](images/25-transformations.png)
+
+# A web app {.smaller data-background="images/00-bg-mapweaver-app.png" background-opacity=0.75 style="text-shadow: 0px 0px 5px #fff;"}
+Make tiled and woven maps without code!
+
+## {data-background="images/00-bg-Wile-E-Coyote-1.jpg.webp"}
+
+### Live demo time!
+
+# Some examples {.smaller background-image="images/00-bg-detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
+
+##
+:::: {.columns}
+::: {.column style="width:70%;"}
+![](images/26-chen-et-al-nyc-smells.jpg)
+:::
+::: {.column style="font-size:20px;width:30%;position:relative;top:45vh;"}
+Chen Q, A Poorthuis, and A Crooks. 2025 (online first, April). [Mapping the Invisible: Decoding Perceived Urban Smells Through Geosocial Media in New York City](https:/dx/doi.org/10.1080/24694452.2025.2485233). _Annals of the Amer&shy;ican Association of Geographers_.
+:::
+::::
+
+##
+:::: {.columns}
+::: {.column style="width:80%;"}
+![](images/27-allen-toronto-mode-share.png)
+:::
+::: {.column style="width:20%;font-size:20px;position:relative;top:50vh;"}
+Allen J. 2025. Mapping mode share in Toronto via weaving space. At [schoolofcities.github.io](https://schoolofcities.github.io/transportation-tomorrow-survey/mode-weave).
+:::
+::::
+
+##
+
+<img src="images/28-GWR-tiling-map.svg" style="width:100vw;">
+
+::: {style="font-size:20px;position:relative;top:-5vh;left:30vw;width:30vw;"}
+From Bergmann L et al. 2023. [Dominant Modes of Agricultural Production Helped Structure Initial COVID-19 Spread in the U.S. Midwest](https://dx.doi.org/10.3390/ijgi12050195). _ISPRS International Journal of Geo-Information_ **12**(5) 195.
+:::
+
+## {data-background-image="images/29-fig-19-a-tiled-eight-variable-map.png" background-size="contain"}
+
+## {data-background-image="images/30-imd-dots-h3.png" background-size="contain"}
+
+## {data-background-image="images/31-fig-02-anthromes-v2-incl-legend.png" background-size="contain"}
+
+## {data-background-image="images/32-fig-20-23-mosquitoes.png" background-size="contain"}
+
+## {style="text-align:center;"}
+### Questions? {style="font-size:144px;"} 
+[github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
+
+[dosull.github.io/mapweaver/app/](https://dosull.github.io/mapweaver/app/)
+
+[dosull.github.io](https://dosull.github.io)
