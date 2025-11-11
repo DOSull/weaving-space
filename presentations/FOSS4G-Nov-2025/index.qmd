@@ -10,8 +10,8 @@ format:
     theme: [serif, custom.scss]
     transition: none
     navigation-mode: vertical
-    fragment-in-url: true
-    slide-number: c/t
+    fragment-in-url: false
+    slide-number: false
     center: true
     logo: images/logo.png
     footer: "FOSS4G Oceania 2025"
