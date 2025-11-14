@@ -198,12 +198,10 @@ Allen J. 2025. Mapping mode share in Toronto via weaving space. At [schoolofciti
 :::
 ::::
 
-##
+## {data-background="images/28-GWR-tiling-map.png" background-size="contain"}
 
-<img src="images/28-GWR-tiling-map.svg" style="width:100vw;">
-
-::: {style="font-size:20px;position:relative;top:-5vh;left:30vw;width:30vw;"}
-From Bergmann L et al. 2023. [Dominant Modes of Agricultural Production Helped Structure Initial COVID-19 Spread in the U.S. Midwest](https://dx.doi.org/10.3390/ijgi12050195). _ISPRS International Journal of Geo-Information_ **12**(5) 195.
+::: {style="font-size:20px;position:relative;top:50vh;width:50%;left:60%;background-color:rgba(255,255,255,0.5);"}
+From Bergmann L et al. 2023. [Dominant Modes of Agri&shy;cultural Production Helped Structure Initial COVID-19 Spread in the U.S. Midwest](https://dx.doi.org/10.3390/ijgi12050195). _ISPRS Inter&shy;national Journal of Geo-Information_ **12**(5) 195.
 :::
 
 ## {data-background-image="images/29-fig-19-a-tiled-eight-variable-map.png" background-size="contain"}
