@@ -73,16 +73,23 @@ An approach based on tiling
 
 ## {transition="none" data-background-image="images/08-ak-imd-twill.png" background-size="contain"}
 
-# How it works
-`weavingspace` is a python module developed for making tiled maps
+# `weavingspace`
+:::: {.columns}
+::: {.column width="70%"}
+A python module developed for making tiled maps
 
-See [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
+[github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
 
-`pip install weavingspace`
+`> pip install weavingspace`
 
 Uses `geopandas` and a _lot_ of geometry, leveraging `shapely`
 
-Implements many options (well over a hundred tilings and weave tiling patterns)
+Implements well over a hundred tilings and weave tiling patterns
+:::
+::: {.column width="30%"}
+<img src="images/qr-weaving-space-repo.svg">
+:::
+::::
 
 ##
 ```python
