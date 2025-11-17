@@ -41,10 +41,9 @@ Many methods have been tried
 
 ![](images/04-choropleth-with-symbols-qgis.png "Probably the most conventional option"){.fragment .fade-in-then-out fragment-index=3 width="800"}
 
-![](images/05-dorling-chernoff-faces.jpg "Probably the least conventional option"){.fragment .fade-in-then-out fragment-index=4 width="500"}
+![](images/05-dorling-chernoff-faces.jpg "Figure 8.10 in Dorling D. 2012. The Visualisation of Spatial Social Structure. Chichester, England: Wiley."){.fragment .fade-in-then-out fragment-index=4 width="500"}
 
-![](images/06-dot-map.png "This approach is older than you might imagine, see Jenks GF, 1953, “‘Pointilism’ as a cartographic technique” The Professional Geographer 5(5) 4–6
-"){.fragment .fade-in fragment-index=5 width="800"}
+![](images/06-dot-map.png "This approach is older than you might imagine, see Jenks GF. 1953. ‘Pointilism’ as a cartographic technique. The Professional Geographer. 5(5) 4–6."){.fragment .fade-in fragment-index=5 width="800"}
 :::
 
 # Enter `weavingspace` {.smaller background-image="images/00-bg-detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
@@ -71,7 +70,7 @@ An approach based on tiling
 
 ## {transition="none" data-background-image="images/07-ak-imd-4-triangles.png" background-size="contain"}
 
-## {transition="none" data-background-image="images/08-ak-imd-twill.png" background-size="contain"}
+## {transition="none" data-background-image="images/08-ak-imd-basket.png" background-size="contain"}
 
 # `weavingspace`
 :::: {.columns}
@@ -211,12 +210,6 @@ Chen Q, A Poorthuis, and A Crooks. 2025 (online first, April). [Mapping the Invi
 Allen J. 2025. Mapping mode share in Toronto via weaving space. At [schoolofcities.github.io](https://schoolofcities.github.io/transportation-tomorrow-survey/mode-weave).
 :::
 ::::
-
-## {data-background="images/28-GWR-tiling-map.png" background-size="contain"}
-
-::: {style="font-size:20px;position:relative;top:50vh;width:50%;left:60%;background-color:rgba(255,255,255,0.5);"}
-From Bergmann L et al. 2023. [Dominant Modes of Agri&shy;cultural Production Helped Structure Initial COVID-19 Spread in the U.S. Midwest](https://dx.doi.org/10.3390/ijgi12050195). _ISPRS Inter&shy;national Journal of Geo-Information_ **12**(5) 195.
-:::
 
 ## {data-background-image="images/29-fig-19-a-tiled-eight-variable-map.png" background-size="contain"}
 
