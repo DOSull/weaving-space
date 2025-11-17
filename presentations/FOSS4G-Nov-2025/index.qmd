@@ -16,14 +16,9 @@ format:
     logo: images/logo.png
     footer: "FOSS4G Oceania 2025"
     self-contained: false
-jupyter: python3
-knitr:
-  opts_chunk: 
-    warning: false
-    message: false
-execute: 
-  freeze: auto
-  cache: true
+    image: images/08-ak-imd-basket.png
+    include-in-header:
+      text: "<meta property='og:description' content='A new approach to making area maps with many data attributes using beautiful tiled and woven patterns'><meta property='og:image' content='images/08-ak-imd-basket.png'>"
 ---
 
 # Mapping multivariate data
@@ -187,7 +182,7 @@ Make tiled and woven maps without code!
 
 ## {data-background="images/00-bg-Wile-E-Coyote-1.jpg.webp"}
 
-### Live demo time!
+### Live demo time! {style="font-size:72px;"}
 
 # Some examples {.smaller background-image="images/00-bg-detailed-weave.png" background-opacity=0.5 style="text-shadow: 0px 0px 5px #fff;"}
 
