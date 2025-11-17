@@ -219,12 +219,16 @@ Allen J. 2025. Mapping mode share in Toronto via weaving space. At [schoolofciti
 
 ## {data-background-image="images/32-fig-20-23-mosquitoes.png" background-size="contain"}
 
-## {style="text-align:center;"}
-### Questions? {style="font-size:144px;"} 
+#
+
+<h3 style="font-size:144px;text-align:center;">Questions?</h3>
+
+::: {style="text-align:center;"}
 [github.com/DOSull/weaving-space](https://github.com/DOSull/weaving-space)
 
-[dosull.github.io/mapweaver/app/](https://dosull.github.io/mapweaver/app/)
+[dosull.github.io/mapweaver/app](https://dosull.github.io/mapweaver/app)
 
 [dosull.github.io](https://dosull.github.io)
 
 <img src="images/qr-weaving-space-repo.svg">
+:::
